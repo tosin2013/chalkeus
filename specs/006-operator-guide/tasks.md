@@ -323,3 +323,7 @@ and teardown rows in `evidence/validation-log.md` (T028), copying the run's evid
   constitution V). `resume --run <run-id>` already exists. The agent-friendly path is GitHub
   approvals (roadmap 004, C-11): an agent drives the CLI headless, the run pauses (exit 4
   or 6), and a human approves on GitHub under their own identity, which the audit records.
+  **Then (same day, owner decision):** `pilot approve` with harness ask rules and a `pilot`
+  skill landed as an early first cut of roadmap 012 (PR #11). Without a terminal each
+  decision pauses; the human approves the one pending step, the harness asks them first, and
+  AU09/AU10 record the channel. Run `20261114T213046Z` used it for all three decisions.
