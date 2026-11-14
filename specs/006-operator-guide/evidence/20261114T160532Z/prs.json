@@ -1,0 +1,26 @@
+[
+  {
+    "attempt": 2,
+    "author": "tosin2013",
+    "created": true,
+    "draft": true,
+    "head": "pilot/20261114T160532Z/a",
+    "number": 5,
+    "operator_login": "tosin2013",
+    "publisher_identity": "tosin2013",
+    "task": "A",
+    "url": "https://github.com/tosin2013/craz3-pilot-fixture/pull/5"
+  },
+  {
+    "attempt": 1,
+    "author": "tosin2013",
+    "created": true,
+    "draft": true,
+    "head": "pilot/20261114T160532Z/b",
+    "number": 6,
+    "operator_login": "tosin2013",
+    "publisher_identity": "tosin2013",
+    "task": "B",
+    "url": "https://github.com/tosin2013/craz3-pilot-fixture/pull/6"
+  }
+]
