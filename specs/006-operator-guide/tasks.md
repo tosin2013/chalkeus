@@ -218,11 +218,11 @@ strings. The guide itself is validated by the owner's fresh-machine run.
 ## Phase 6: Polish & Validation
 
 - [X] T027 Run `python3 pilot/tools/docs_check.py` and `PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot`, and fix any failures. Then do a self-review of `docs/operator-guide.md` and `docs/troubleshooting.md` against contracts/guide-outline.md row by row, and against the spec's 11 edge-case bullets (all covered by the 13 entries).
-- [ ] T028 **Owner action — fresh-machine validation** (quickstart.md §3, FR-014):
+- [X] T028 **Owner action — fresh-machine validation** (quickstart.md §3, FR-014):
   - on a fresh Ubuntu 24.04 machine, follow only the guide (from GitHub) to audit 11/11 and teardown 3/3;
   - fill `specs/006-operator-guide/evidence/validation-log.md`;
   - copy the run's evidence to `specs/006-operator-guide/evidence/<run-id>/`.
-- [ ] T029 Fix every hesitation, deviation and lookup recorded in `specs/006-operator-guide/evidence/validation-log.md`, one commit per finding (link each commit in the log); re-run the docs check
+- [X] T029 Fix every hesitation, deviation and lookup recorded in `specs/006-operator-guide/evidence/validation-log.md`, one commit per finding (link each commit in the log); re-run the docs check
 - [X] T030 **Owner action — troubleshooting spot checks** (quickstart.md §4), on the validation machine: a tag-only image, a wrong CNI hash, no TTY, an open pilot PR, `resume` before merge, each resolved with `docs/troubleshooting.md` only. Record the results in `specs/006-operator-guide/evidence/validation-log.md`.
 - [X] T031 Local privacy check (SC-006): `grep -rniF '<model host>' docs/ specs/006-operator-guide/` returns nothing, and `pilot/pilot audit --run <run-id>` gives AU08 pass. Record the result in `specs/006-operator-guide/evidence/validation-log.md`.
 - [X] T032 Add an Evidence section to `specs/006-operator-guide/spec.md` (validation run, log, hands-on time). Then run `/speckit-roadmap-debrief`, and with your approval `/speckit-roadmap-write`: 006 status, Spec dir, and the stale "003 (Kelos)" wording in 006's scope fixed.
@@ -314,3 +314,16 @@ the fresh-machine run. Troubleshooting (US2) can be written alongside, and is ne
 after `down`), both fixture PRs merged by the owner. Still open: machine details, timings
 and teardown rows in `evidence/validation-log.md` (T028), copying the run's evidence into
 `evidence/20261114T160532Z/` (T028), and the troubleshooting spot checks (T030).
+
+- **F4: an LLM agent can't answer the approval prompts.** On the validation machine, an
+  agent ran the pilot through OpenCode's shell tool, which has no controlling terminal, so
+  every prompt answered no (troubleshooting: *Prompts answer "no"*). Suggested fix: a
+  `--yes` flag that records the confirmation. **Not adopted:** AU09 and AU10 attest that a
+  *human* confirmed, and an agent saying yes for itself would make that record false (C-04,
+  constitution V). `resume --run <run-id>` already exists. The agent-friendly path is GitHub
+  approvals (roadmap 004, C-11): an agent drives the CLI headless, the run pauses (exit 4
+  or 6), and a human approves on GitHub under their own identity, which the audit records.
+  **Then (same day, owner decision):** `pilot approve` with harness ask rules and a `pilot`
+  skill landed as an early first cut of roadmap 012 (PR #11). Without a terminal each
+  decision pauses; the human approves the one pending step, the harness asks them first, and
+  AU09/AU10 record the channel. Run `20261114T213046Z` used it for all three decisions.
