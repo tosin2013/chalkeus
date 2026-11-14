@@ -31,6 +31,17 @@ def redaction_scan(root: Path, key_files: list[Path], env_files: list[Path]) -> 
     return sorted(str(Path(h).relative_to(root)) for h in hits)
 
 
+def _channels(ev) -> dict:
+    """step -> channels of the approvals actually given ("tty", "harness"); runs before
+    approvals.py recorded channels show none, and their confirmations came from the terminal."""
+    out: dict = {}
+    for e in ev:
+        if e.get("event") == "approval_channel" and "approved=true" in (e.get("detail") or ""):
+            kv = dict(x.split("=", 1) for x in e["detail"].split() if "=" in x)
+            out.setdefault(kv.get("step"), []).append(kv.get("channel"))
+    return out
+
+
 def _row(id_, ok, desc, detail=""):
     return evidence.check_row(id_, "audit", "pass" if ok else "fail", desc, detail)
 
@@ -117,12 +128,15 @@ def audit_dir(d: Path, secret_files: list[Path] | None = None, env_files: list[P
         if e["stage"] == "attempt" and e["event"] == "attempt_created" and (e["attempt"] or 1) > 1:
             if not any(x["event"] == "retry_confirmed" and x["task"] == e["task"] and x["attempt"] == e["attempt"] for x in ev[:i]):
                 bad9.append(f"{e['task']}-{e['attempt']}")
-    rows.append(_row("AU09", not bad9, "every retry confirmed by the operator (FR-017)", f"unconfirmed={bad9}"))
+    channels = _channels(ev)
+    rows.append(_row("AU09", not bad9, "every retry confirmed by the operator (FR-017)",
+                     f"unconfirmed={bad9} channels={channels.get('retry', [])}"))
 
     # AU10: mode confirmed before the first attempt.
     m = idx(lambda e: e["event"] == "mode_confirmed")
     a = idx(lambda e: e["stage"] == "attempt")
-    rows.append(_row("AU10", m is not None and (a is None or m < a), "mode confirmed before any worker staged (FR-023)", f"mode_seq={m} first_attempt={a}"))
+    rows.append(_row("AU10", m is not None and (a is None or m < a), "mode confirmed before any worker staged (FR-023)",
+                     f"mode_seq={m} first_attempt={a} channels={channels.get('mode', [])}"))
 
     # AU11: induction only on A/1, and it withheld exactly the acceptance section.
     bad11 = []
