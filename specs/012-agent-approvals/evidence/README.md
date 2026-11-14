@@ -13,7 +13,7 @@ Never paste secrets, hostnames, IPs or personal data here. Check with
 | Check | Result |
 |---|---|
 | `20261114T213046Z` audit AU09 / AU10 lines | AU09 PASS `unconfirmed=[] channels=['harness']` · AU10 PASS `mode_seq=9 first_attempt=10 channels=['harness']` (T017 ✅) |
-| Refusal cases (quickstart §2) | _owner to fill (T018)_ |
+| Refusal cases (quickstart §2) | `approve retry` while at mode → exit 2 ✅ · `approve reconcile` while at retry → exit 2 ✅ · `resume` before merge → exit 4 ✅ · `approve reconcile` before merge → exit 4 ✅ (T018 ✅) |
 | Claude Code run: harness asked before each `approve`? audit | _owner to fill (T019)_ |
-| OpenCode run: harness asked before each `approve`? audit | _owner to fill (T020)_ |
+| OpenCode run: harness asked before each `approve`? audit | Yes — permission prompt shown before each `approve`. Run `20261114T225256Z`: 11/11 audit. AU09 PASS `channels=['harness', 'harness']` · AU10 PASS `channels=['harness']` (T020 ✅) |
 | Terminal run: AU09/AU10 `channels=['tty']` | _owner to fill (T021)_ |
