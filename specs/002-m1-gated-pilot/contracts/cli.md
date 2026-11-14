@@ -1,5 +1,7 @@
 # Contract: `pilot` CLI
 
+> Amended by 012: `pilot approve`, pause-without-terminal and the mode pause; see `specs/012-agent-approvals/contracts/cli-approve.md`.
+
 Entry point: `pilot/pilot` (a bash shim that runs `python3 -m specfoundry_pilot`). All
 commands run from the specfoundry repo root. Configuration is in [config.md](config.md).
 
