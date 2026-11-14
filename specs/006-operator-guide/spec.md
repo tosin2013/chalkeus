@@ -221,6 +221,41 @@ These are the real failures from building the pilot. Each needs a troubleshootin
 - **SC-006**: 0 secrets or private provider names appear in the guide or the validation
   evidence.
 
+## Evidence
+
+### Validation run — 2026-11-14 (owner, fresh machine)
+
+- **Run id:** `20261114T213046Z`
+- **Evidence path:** `specs/006-operator-guide/evidence/20261114T213046Z/`
+- **Validation log:** `specs/006-operator-guide/evidence/validation-log.md`
+- **Machine:** Ubuntu 24.04.5 LTS, amd64, 8-core Intel Xeon (Cascadelake), 15 GiB RAM, 90 GiB free disk
+- **Fresh machine:** yes (no prior specfoundry, kind, or config)
+
+**SC-001 — 0 outside lookups:** confirmed. No source code, prior notes or help consulted.
+
+**SC-002 — hands-on time under 60 min:** ~44 min total, excluding downloads and model work.
+
+**Run outcome:** succeeded — 10/10 audit checks (AU01–AU11, AU07 excluded: teardown run separately), 32/32 sandbox checks (P01–P10 across all attempts), 3/3 teardown checks (T01–T03).
+
+| Task | Attempts | Result |
+|---|---|---|
+| A | 2 (A/1 grade_fail by design — AU11 induction; A/2 pass) | verified, PR #8 merged |
+| B | 1 | published, PR #9 open |
+
+**Approval channels (AU09, AU10):** all three human decisions (mode, retry, reconcile) confirmed via `harness` channel — agent explained each pause, human approved in conversation, harness permission prompt confirmed before `pilot approve` ran.
+
+**SC-003 — troubleshooting spot checks (T030):** all five triggered and resolved on 2026-11-14 using only `docs/troubleshooting.md`:
+
+| Failure | Entry | Resolved alone |
+|---|---|---|
+| Tag-only image reference | Image pinned by tag | yes |
+| Wrong CNI hash | CNI hash mismatch | yes |
+| `pilot run` without a terminal | Prompts answer "no" | yes |
+| Pilot PR left open before `run` | Open pilot PR left over | yes |
+| `resume` before merging | Resume before merge | yes |
+
+**SC-006 — no secrets in evidence:** `pilot/pilot audit --run 20261114T213046Z` AU08 pass; `grep -rniF '<model host>' docs/ specs/006-operator-guide/` returns no output.
+
 ## Assumptions
 
 - The guide covers the pilot as it stands after 003: plain Jobs; images pulled by digest
