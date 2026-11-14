@@ -31,13 +31,16 @@ hostnames, IPs or personal data.
 
 ## Troubleshooting spot checks
 
+> **Status: not yet run.** Rows below are placeholders only. Run `pilot/pilot reset-fixture` first,
+> then trigger each failure on purpose and resolve it using only `docs/troubleshooting.md`.
+
 | Failure triggered | Entry used | Resolved with the doc only? |
 |---|---|---|
-| tag-only image reference | [Image pinned by tag](#tag-only-image) | yes |
-| wrong CNI hash | [CNI hash mismatch](#cni-hash-mismatch) | yes |
-| `pilot run` without a terminal | [Prompts answer "no": no question appears](#prompts-answer-no) | yes |
-| pilot PR left open before `run` | [Open pilot PR left over](#open-pilot-pr) | yes |
-| `resume` before merging | [Resume before merge](#resume-not-merged) | yes |
+| tag-only image reference | | |
+| wrong CNI hash | | |
+| `pilot run` without a terminal | | |
+| pilot PR left open before `run` | | |
+| `resume` before merging | | |
 
 ## Privacy check
 
