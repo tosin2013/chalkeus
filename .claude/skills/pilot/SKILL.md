@@ -1,0 +1,91 @@
+---
+name: "pilot"
+description: "Drive the specfoundry pilot (pilot/pilot) together with a human: run, explain each pause, and hand every decision to the human. Use when asked to run, resume, check or tear down the pilot, or when a pilot command paused or failed."
+---
+
+# Working the pilot with a human
+
+You run the commands and explain what happens. **The human makes every decision.** You never
+decide for them, and you never work around a check.
+
+The full guide is `docs/operator-guide.md`; failures are in `docs/troubleshooting.md`. Read the
+matching troubleshooting entry before suggesting any fix.
+
+## Hard rules
+
+1. **Never approve on the human's behalf.** Only run `pilot/pilot approve …` after the human
+   said yes to that exact step in this conversation, and let the harness permission prompt
+   ask them. If the harness does not ask (a bypass or auto-approve mode), stop and tell the
+   human that the approval would not be theirs; ask them to run it themselves.
+2. **Never write, edit, copy or delete anything under a run's `approvals/` folder**, and
+   never edit `events.jsonl`, `run.json` or other evidence. An approval must come from
+   `pilot approve`.
+3. **Never merge a PR.** Merges happen on GitHub, by the human.
+4. **Never print, read aloud or commit secrets:** `~/.config/specfoundry/*`, API keys, the
+   GitHub token, or the model host.
+5. Don't run `reset-fixture`, `down` or `publisher-token` without the human asking; `reset-fixture`
+   force-resets their fixture repo.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `pilot/pilot status [--run <id>]` | current run state (JSON); read `state` and `pending` |
+| `pilot/pilot up` | stand up the local cluster (several minutes) |
+| `pilot/pilot run` | start a run: gate checks, mode, task A attempts, publish A |
+| `pilot/pilot resume --run <id>` | continue a paused run |
+| `pilot/pilot approve --run <id> mode\|retry\|reconcile` | record the human's yes for the one pending step |
+| `pilot/pilot audit [--run <id>]` | evidence audit AU01–AU11 |
+| `pilot/pilot down` | tear down and verify |
+
+Always pass `--run <id>` once you know the run id (printed as `== run <id>`).
+
+## Exit codes and what to do
+
+| Exit | Meaning | Your move |
+|---|---|---|
+| 0 | OK. After `run`: A's draft PR is open | Give the PR link; ask the human to review and merge it on GitHub, then tell you |
+| 1 | FAIL | Quote the reason; find it in `docs/troubleshooting.md` |
+| 2 | ERROR (setup, config) | Quote the message; find it in `docs/troubleshooting.md` |
+| 3 | GUARD (repo guard) | The fixture repo name is wrong; explain, don't edit config yourself |
+| 4 | AWAIT_MERGE | A's PR isn't merged yet; ask the human to merge it on GitHub |
+| 5 | DECLINED, or paused for mode / reconcile approval | See "Decisions" |
+| 6 | AWAIT_RETRY: paused for retry approval | See "Decisions" |
+| 10 | REFUSE (gate refused) | Expected for B before A is verified; otherwise explain the reasons |
+
+## Decisions
+
+Without a terminal, the pilot pauses at each decision and prints
+`no terminal: approve with pilot/pilot approve --run <id> <step>`. For each one:
+
+1. **Explain it in plain words**, using what the pilot printed:
+   - `mode`: the run mode (one attempt at a time, retry limit, spend cap, deadline). Saying
+     yes lets it start staging workers.
+   - `retry`: which task failed, the attempt number, and why (from `pilot/pilot status` or the
+     attempt's `grade.json`). The first attempt of A fails on purpose (AU11 induction).
+   - `reconcile`: the roadmap change it proposes (for example `001: planned → verified`) and
+     that A's PR was merged with tasks at 100%. Saying yes unblocks task B.
+2. **Ask the human:** "Do you approve <step>?" Wait for their answer. Silence or anything but
+   a clear yes means no.
+3. On yes: run `pilot/pilot approve --run <id> <step>`. The harness asks them again; that
+   click is the approval. Then run `pilot/pilot resume --run <id>`.
+4. On no: leave it. For a retry, the run stays paused; for the mode, nothing was started.
+
+`approve` only accepts the step the run is waiting for, after it was shown, and each approval
+is used once. If it refuses, read its message to the human; don't retry with another step.
+
+## A normal run, start to finish
+
+1. `pilot/pilot status`. If a run is paused, ask whether to continue it or start fresh.
+2. `pilot/pilot run`. It pauses at `mode` → Decisions.
+3. `resume`. Attempt A/1 runs (minutes) and fails as designed; it pauses at `retry` → Decisions.
+4. `resume`. A/2 should pass; the PR is published and the run pauses for the merge.
+5. The human merges on GitHub. Then `resume`: it shows the reconcile proposal and pauses at
+   `reconcile` → Decisions.
+6. `resume`. Task B runs and is published; the audit runs. Report `run <id> succeeded` and
+   the evidence path.
+7. Only if the human asks: `pilot/pilot down`, then `pilot/pilot audit --run <id>` (AU07
+   needs the teardown).
+
+The audit lists each approval's channel in AU09 and AU10: `tty` or `harness`. Report them
+as they are.

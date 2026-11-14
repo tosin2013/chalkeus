@@ -32,6 +32,10 @@ def _parser() -> argparse.ArgumentParser:
     sub.add_parser("run", help="start a new pilot run")
     rs = sub.add_parser("resume", help="resume a paused run")
     rs.add_argument("--run")
+    ap = sub.add_parser("approve", help="approve the decision a paused run is waiting for (no-terminal use; "
+                                         "your agent harness must ask you before this runs)")
+    ap.add_argument("step", choices=["mode", "retry", "reconcile"])
+    ap.add_argument("--run", required=True, help="run id (see `pilot status`)")
     g = sub.add_parser("gate", help="evaluate the gate for one task")
     g.add_argument("task", choices=["A", "B"])
     g.add_argument("--root", help="evaluate this directory instead of a fresh clone")
@@ -101,6 +105,15 @@ def main(argv=None) -> int:
         if args.cmd == "reset-fixture":
             from . import config, fixture
             return fixture.reset(config.load(require_secrets=False), yes=args.yes)
+        if args.cmd == "approve":
+            from . import approvals, evidence
+            run = evidence.load_run(args.run)
+            if not run:
+                print(f"no run {args.run}", file=sys.stderr)
+                return EXIT_ERROR
+            code, msg = approvals.record(run, args.step)
+            print(msg, file=sys.stdout if code == 0 else sys.stderr)
+            return code
         if args.cmd == "audit":
             from . import audit, evidence
             run = evidence.load_run(args.run)

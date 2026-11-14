@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(pilot/pilot approve:*)",
+      "Bash(./pilot/pilot approve:*)",
+      "Bash(python3 -m specfoundry_pilot approve:*)"
+    ],
+    "deny": [
+      "Write(**/approvals/**)",
+      "Edit(**/approvals/**)"
+    ]
+  }
+}

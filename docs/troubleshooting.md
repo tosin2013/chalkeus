@@ -160,19 +160,27 @@ Operators who pull the published images never see it.
 ### Prompts answer "no": no question appears
 
 - **Symptom:**
-  - `pilot/pilot run` exits 5 without asking you to confirm the mode; or
+  - `pilot/pilot run` pauses at the mode prompt (exit 5) without asking, and prints
+    `paused: mode not confirmed. no terminal: approve with ...`; or
   - it pauses at the retry (exit 6) without asking; or
-  - `resume` exits 5 without showing the reconcile proposal's question.
-- **Cause:** prompts are read from your terminal. Without one (an IDE task runner, CI,
-  `nohup`, or piped input), every prompt is answered "no". This is deliberate: the pilot
-  fails closed, so nothing proceeds without a human answer.
-- **Fix:** run the command in a real interactive terminal, for example a plain SSH session.
-  Then:
-  - after exit 5 at the mode prompt, run `pilot/pilot run` again (nothing was started);
-  - after a pause, run `pilot/pilot resume`.
-- **Confirm:** you see `[y/N]` and can type `y`. `pilot/pilot status` shows the run moving on.
-- **Source:** the 002 live run (a terminal-handling bug was fixed so prompts read the
-  controlling terminal).
+  - `resume` prints `waiting for your approval of the status change` (exit 5) without asking.
+- **Cause:** prompts are read from your terminal. Without one (an agent's shell tool, an IDE
+  task runner, CI, `nohup`, or piped input), nothing is assumed: the run pauses at the
+  decision. This is deliberate: nothing proceeds without a human answer.
+- **Fix:** either
+  - run `pilot/pilot resume --run <run-id>` in a real interactive terminal, for example a plain
+    SSH session, and answer there; or
+  - when you work with an agent, approve the one pending step with
+    `pilot/pilot approve --run <run-id> mode|retry|reconcile`. The project's harness settings
+    make your agent harness ask **you** before that command runs; say yes only if you agree.
+    Then run `pilot/pilot resume --run <run-id>`. See the `pilot` skill
+    (`.claude/skills/pilot/SKILL.md`).
+
+  Merging is never approved this way: merge A's PR on GitHub yourself.
+- **Confirm:** `pilot/pilot status` shows the run moving on. In the audit, AU09 and AU10 list
+  each approval's channel: `tty` (terminal) or `harness` (`pilot approve`).
+- **Source:** the 002 live run (prompts read the controlling terminal) and the 006 validation
+  (an agent's shell has no terminal; finding F4).
 
 <a id="open-pilot-pr"></a>
 ### Open pilot PR left over: "open pilot PRs exist on …"
