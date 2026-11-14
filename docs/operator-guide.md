@@ -354,8 +354,11 @@ If stand-up fails, see [troubleshooting](troubleshooting.md#stand-up).
 
 ## 8. Run the pilot, every prompt explained
 
-Run this **in a real terminal**. Prompts read from your terminal, so if there's none (for
-example inside some IDE runners or CI), every answer counts as "no".
+Run this **in a real terminal**. Prompts read from your terminal. Without one (an agent's
+shell, some IDE runners, CI), the run **pauses** at each decision and nothing proceeds; see
+[Prompts answer "no"](troubleshooting.md#prompts-answer-no). To work through a coding agent
+instead, see the `pilot` skill (`.claude/skills/pilot/SKILL.md`): the agent runs the commands
+and you approve each decision.
 
 ```sh
 pilot/pilot run
