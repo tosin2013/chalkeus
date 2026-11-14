@@ -12,7 +12,7 @@ Never paste secrets, hostnames, IPs or personal data here. Check with
 
 | Check | Result |
 |---|---|
-| `20261114T213046Z` audit AU09 / AU10 lines | _owner to fill (T017)_ |
+| `20261114T213046Z` audit AU09 / AU10 lines | AU09 PASS `unconfirmed=[] channels=['harness']` · AU10 PASS `mode_seq=9 first_attempt=10 channels=['harness']` (T017 ✅) |
 | Refusal cases (quickstart §2) | _owner to fill (T018)_ |
 | Claude Code run: harness asked before each `approve`? audit | _owner to fill (T019)_ |
 | OpenCode run: harness asked before each `approve`? audit | _owner to fill (T020)_ |
