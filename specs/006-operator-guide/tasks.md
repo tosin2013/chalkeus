@@ -314,3 +314,12 @@ the fresh-machine run. Troubleshooting (US2) can be written alongside, and is ne
 after `down`), both fixture PRs merged by the owner. Still open: machine details, timings
 and teardown rows in `evidence/validation-log.md` (T028), copying the run's evidence into
 `evidence/20261114T160532Z/` (T028), and the troubleshooting spot checks (T030).
+
+- **F4: an LLM agent can't answer the approval prompts.** On the validation machine, an
+  agent ran the pilot through OpenCode's shell tool, which has no controlling terminal, so
+  every prompt answered no (troubleshooting: *Prompts answer "no"*). Suggested fix: a
+  `--yes` flag that records the confirmation. **Not adopted:** AU09 and AU10 attest that a
+  *human* confirmed, and an agent saying yes for itself would make that record false (C-04,
+  constitution V). `resume --run <run-id>` already exists. The agent-friendly path is GitHub
+  approvals (roadmap 004, C-11): an agent drives the CLI headless, the run pauses (exit 4
+  or 6), and a human approves on GitHub under their own identity, which the audit records.

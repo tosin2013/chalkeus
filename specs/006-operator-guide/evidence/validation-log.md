@@ -37,7 +37,7 @@ hostnames, IPs or personal data.
 | wrong CNI hash | [CNI hash mismatch](../../../docs/troubleshooting.md#cni-hash-mismatch) | yes |
 | `pilot run` without a terminal | [Prompts answer "no": no question appears](../../../docs/troubleshooting.md#prompts-answer-no) | yes |
 | pilot PR left open before `run` | [Open pilot PR left over](../../../docs/troubleshooting.md#open-pilot-pr) | yes |
-| `resume` before merging | [Resume before merge](../../../docs/troubleshooting.md#resume-not-merged) | yes |
+| `resume` before merging | [Resume before merge](../../../docs/troubleshooting.md#resume-not-merged) | pending: to be repeated by the owner in a real terminal (the first attempt ran in an agent's shell with no terminal) |
 
 ## Privacy check
 
