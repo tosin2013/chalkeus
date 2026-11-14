@@ -1,6 +1,19 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.7.1 → 1.7.2
+Bump rationale: PATCH — status transition.
+
+Changes this revision (owner approval 2026-11-14):
+  - Status: 006 planned → verified (fresh-machine run 20261114T160532Z: audit 11/11,
+    teardown 3/3, 0 outside lookups, ~44 min hands-on; troubleshooting spot checks 5/5;
+    tasks 32/32; debrief specs/006-operator-guide/roadmap-reviews/debrief-20261114.md with no
+    must-address findings; closes issue #12)
+
+Specs affected: 006
+Open questions added/resolved: none
+
+Previous revision 1.7.1 (2026-11-14):
 Version change: 1.7.0 → 1.7.1
 Bump rationale: PATCH — wording corrections and a spec dir link on 006 (issue #12).
 
@@ -387,7 +400,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   and enterprise namespace permissions (users often cannot create namespaces).
   Orchestration inside the cluster is 011.
 
-### 006 — Operator guide: repeat the pilot from zero  [status: planned]
+### 006 — Operator guide: repeat the pilot from zero  [status: verified]
 
 - **Description:** End-user documentation so someone new can repeat the governed
   pilot on their own machine.
@@ -562,4 +575,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.7.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-14
+**Version**: 1.7.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-14
