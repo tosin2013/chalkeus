@@ -223,10 +223,10 @@ These are the real failures from building the pilot. Each needs a troubleshootin
 
 ## Evidence
 
-### Validation run — 2026-11-14 (owner, fresh machine)
+### Validation run — 2026-11-14 (owner, fresh machine, guide only)
 
-- **Run id:** `20261114T213046Z`
-- **Evidence path:** `specs/006-operator-guide/evidence/20261114T213046Z/`
+- **Run id:** `20261114T160532Z`
+- **Evidence path:** `specs/006-operator-guide/evidence/20261114T160532Z/`
 - **Validation log:** `specs/006-operator-guide/evidence/validation-log.md`
 - **Machine:** Ubuntu 24.04.5 LTS, amd64, 8-core Intel Xeon (Cascadelake), 15 GiB RAM, 90 GiB free disk
 - **Fresh machine:** yes (no prior specfoundry, kind, or config)
@@ -235,14 +235,28 @@ These are the real failures from building the pilot. Each needs a troubleshootin
 
 **SC-002 — hands-on time under 60 min:** ~44 min total, excluding downloads and model work.
 
-**Run outcome:** succeeded — 10/10 audit checks (AU01–AU11, AU07 excluded: teardown run separately), 32/32 sandbox checks (P01–P10 across all attempts), 3/3 teardown checks (T01–T03).
+**Run outcome:** succeeded. Audit 11/11 (AU07 after `pilot down`), teardown 3/3 (T01–T03).
+Decisions were answered at the terminal (before approval channels were recorded).
 
 | Task | Attempts | Result |
 |---|---|---|
-| A | 2 (A/1 grade_fail by design — AU11 induction; A/2 pass) | verified, PR #8 merged |
-| B | 1 | published, PR #9 open |
+| A | 2 (A/1 grade_fail by design — AU11 induction; A/2 pass) | verified, fixture PR #5 merged |
+| B | 1 | published; fixture PR merged by the owner |
 
-**Approval channels (AU09, AU10):** all three human decisions (mode, retry, reconcile) confirmed via `harness` channel — agent explained each pause, human approved in conversation, harness permission prompt confirmed before `pilot approve` ran.
+Findings F1–F4 and their fixes are in `tasks.md` (Validation findings) and the log.
+
+### Second run — 2026-11-14 (agent-driven, harness approvals)
+
+- **Run id:** `20261114T213046Z`, on the same machine, driven by an agent with the `pilot`
+  skill (roadmap 012 first cut, PR #11).
+- **Outcome:** succeeded, audit 10/10 at the time (AU07 needs a teardown). A: 2 attempts
+  (A/1 by design), fixture PR #8 merged; B: 1 attempt, fixture PR #9 open.
+- **Approval channels (AU09, AU10):** mode, retry and reconcile all `harness`: the agent
+  explained each pause, the owner approved in conversation, and the harness permission
+  prompt asked the owner before `pilot approve` ran.
+- **Spot check 5** (`resume` before merge) was triggered during this run: exit 4 with the
+  documented message.
+- **Evidence:** not yet copied into the repo; it belongs to roadmap 012's validation.
 
 **SC-003 — troubleshooting spot checks (T030):** all five triggered and resolved on 2026-11-14 using only `docs/troubleshooting.md`:
 
@@ -254,7 +268,7 @@ These are the real failures from building the pilot. Each needs a troubleshootin
 | Pilot PR left open before `run` | Open pilot PR left over | yes |
 | `resume` before merging | Resume before merge | yes |
 
-**SC-006 — no secrets in evidence:** `pilot/pilot audit --run 20261114T213046Z` AU08 pass; `grep -rniF '<model host>' docs/ specs/006-operator-guide/` returns no output.
+**SC-006 — no secrets in evidence:** `pilot/pilot audit --run 20261114T160532Z` AU08 pass (also for `20261114T213046Z`); `grep -rniF '<model host>' docs/ specs/006-operator-guide/` returns no output.
 
 ## Assumptions
 

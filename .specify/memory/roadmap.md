@@ -1,6 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.7.0 → 1.7.1
+Bump rationale: PATCH — wording corrections and a spec dir link on 006 (issue #12).
+
+Changes this revision (006 debrief 2026-11-14, issue #12):
+  - 006 scope: stale "003 (Kelos)" wording struck through and corrected
+  - 006 notes: stale worked-example run id struck through; validation runs recorded
+  - 006: spec dir linked (specs/006-operator-guide)
+
+Specs affected: 006
+Open questions added/resolved: none
+
+Previous revision 1.7.0 (2026-11-14):
 Version change: 1.6.0 → 1.7.0
 Bump rationale: MINOR — a new planned spec (012) and a note on 004.
 
@@ -386,13 +398,20 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   directory, `{file:}` key reference); publisher token creation and
   `pilot publisher-token`; the command sequence with every prompt; the merge pause;
   reading the evidence and audit; teardown; troubleshooting from 002's real failures;
-  where 003 (Kelos) and 004 (GitHub App) will change the steps.
+  ~~where 003 (Kelos) and 004 (GitHub App) will change the steps~~ where 004 (GitHub App,
+  GitHub approvals) and later items will change the steps (003 delivered hardened images, not
+  Kelos; corrected 2026-11-14).
 - **Scope (out):** hosted docs site or UI; naming specific private model providers.
 - **Depends on:** 002
 - **Governed by:** C-07
 - **Addresses:** constitution VII ("one documented command sequence"), docs/prd.md N2, N3
-- **Notes:** Requested by the owner 2026-11-13. Use run 20261113T030655Z as the
-  worked example.
+- **Notes:** Requested by the owner 2026-11-13. ~~Use run 20261113T030655Z as the
+  worked example.~~ The guide's worked example is 003's validation run 20261113T180203Z; the
+  fresh-machine validation run is 20261114T160532Z (audit 11/11, teardown 3/3, 0 outside
+  lookups, ~44 min hands-on), and run 20261114T213046Z repeated it agent-driven with
+  harness approvals (012). Debrief: specs/006-operator-guide/roadmap-reviews/debrief-20261114.md
+  (corrected 2026-11-14).
+- **Spec dir:** specs/006-operator-guide
 
 ### 007 — Operator observability  [status: planned]
 
@@ -543,4 +562,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.7.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-14
+**Version**: 1.7.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-14

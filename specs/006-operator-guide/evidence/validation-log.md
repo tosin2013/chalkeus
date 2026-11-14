@@ -37,7 +37,7 @@ hostnames, IPs or personal data.
 | wrong CNI hash | [CNI hash mismatch](../../../docs/troubleshooting.md#cni-hash-mismatch) | yes |
 | `pilot run` without a terminal | [Prompts answer "no": no question appears](../../../docs/troubleshooting.md#prompts-answer-no) | yes |
 | pilot PR left open before `run` | [Open pilot PR left over](../../../docs/troubleshooting.md#open-pilot-pr) | yes |
-| `resume` before merging | [Resume before merge](../../../docs/troubleshooting.md#resume-not-merged) | pending: to be repeated by the owner in a real terminal (the first attempt ran in an agent's shell with no terminal) |
+| `resume` before merging | [Resume before merge](../../../docs/troubleshooting.md#resume-not-merged) | yes (repeated in run `20261114T213046Z`: exit 4 and the documented message) |
 
 **T030 run date:** 2026-11-14. All five triggered and resolved on this machine using only `docs/troubleshooting.md`.
 Spot check 5 (`resume` before merge) triggered mid-run `20261114T213046Z`: exit 4, message
