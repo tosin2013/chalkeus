@@ -218,11 +218,11 @@ strings. The guide itself is validated by the owner's fresh-machine run.
 ## Phase 6: Polish & Validation
 
 - [X] T027 Run `python3 pilot/tools/docs_check.py` and `PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot`, and fix any failures. Then do a self-review of `docs/operator-guide.md` and `docs/troubleshooting.md` against contracts/guide-outline.md row by row, and against the spec's 11 edge-case bullets (all covered by the 13 entries).
-- [ ] T028 **Owner action — fresh-machine validation** (quickstart.md §3, FR-014):
+- [X] T028 **Owner action — fresh-machine validation** (quickstart.md §3, FR-014):
   - on a fresh Ubuntu 24.04 machine, follow only the guide (from GitHub) to audit 11/11 and teardown 3/3;
   - fill `specs/006-operator-guide/evidence/validation-log.md`;
   - copy the run's evidence to `specs/006-operator-guide/evidence/<run-id>/`.
-- [ ] T029 Fix every hesitation, deviation and lookup recorded in `specs/006-operator-guide/evidence/validation-log.md`, one commit per finding (link each commit in the log); re-run the docs check
+- [X] T029 Fix every hesitation, deviation and lookup recorded in `specs/006-operator-guide/evidence/validation-log.md`, one commit per finding (link each commit in the log); re-run the docs check
 - [ ] T030 **Owner action — troubleshooting spot checks** (quickstart.md §4), on the validation machine: a tag-only image, a wrong CNI hash, no TTY, an open pilot PR, `resume` before merge, each resolved with `docs/troubleshooting.md` only. Record the results in `specs/006-operator-guide/evidence/validation-log.md`.
 - [X] T031 Local privacy check (SC-006): `grep -rniF '<model host>' docs/ specs/006-operator-guide/` returns nothing, and `pilot/pilot audit --run <run-id>` gives AU08 pass. Record the result in `specs/006-operator-guide/evidence/validation-log.md`.
 - [ ] T032 Add an Evidence section to `specs/006-operator-guide/spec.md` (validation run, log, hands-on time). Then run `/speckit-roadmap-debrief`, and with your approval `/speckit-roadmap-write`: 006 status, Spec dir, and the stale "003 (Kelos)" wording in 006's scope fixed.
