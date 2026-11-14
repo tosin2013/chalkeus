@@ -25,6 +25,9 @@ matching troubleshooting entry before suggesting any fix.
    GitHub token, or the model host.
 5. Don't run `reset-fixture`, `down` or `publisher-token` without the human asking; `reset-fixture`
    force-resets their fixture repo.
+6. **Run every command exactly as `pilot/pilot …` from the repository root.** Never use an
+   absolute path, `bash pilot/pilot`, `python3 -m …` or another wrapper: the harness rules that
+   make `approve` ask the human match that exact prefix.
 
 ## Commands
 

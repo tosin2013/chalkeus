@@ -19,15 +19,15 @@ validate.
 
 ## Phase 1: Setup
 
-- [ ] T001 Baseline: run `PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot` and `python3 pilot/tools/docs_check.py` on the branch; both must pass before any change (134 tests, 0 problems)
-- [ ] T002 [P] Create `specs/012-agent-approvals/evidence/README.md`: what goes here (the early agent-driven run `20261114T213046Z` and the validation run, each as `<run-id>/` copied from `pilot/runs/`); the rule "never paste secrets, hostnames or IPs"
+- [X] T001 Baseline: run `PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot` and `python3 pilot/tools/docs_check.py` on the branch; both must pass before any change (134 tests, 0 problems)
+- [X] T002 [P] Create `specs/012-agent-approvals/evidence/README.md`: what goes here (the early agent-driven run `20261114T213046Z` and the validation run, each as `<run-id>/` copied from `pilot/runs/`); the rule "never paste secrets, hostnames or IPs"
 
 ---
 
 ## Phase 2: Foundational (contracts)
 
-- [ ] T003 [P] Add one line under the title of `specs/002-m1-gated-pilot/contracts/cli.md`: "Amended by 012: `pilot approve`, pause-without-terminal and the mode pause; see `specs/012-agent-approvals/contracts/cli-approve.md`." Leave the rest of the 002 contract unchanged (historical record)
-- [ ] T004 [P] Add one line under the title of `specs/002-m1-gated-pilot/contracts/evidence-record.md`: "Amended by 012: `approval_channel` events and the AU09/AU10 channel detail; see `specs/012-agent-approvals/contracts/audit-channels.md`."
+- [X] T003 [P] Add one line under the title of `specs/002-m1-gated-pilot/contracts/cli.md`: "Amended by 012: `pilot approve`, pause-without-terminal and the mode pause; see `specs/012-agent-approvals/contracts/cli-approve.md`." Leave the rest of the 002 contract unchanged (historical record)
+- [X] T004 [P] Add one line under the title of `specs/002-m1-gated-pilot/contracts/evidence-record.md`: "Amended by 012: `approval_channel` events and the AU09/AU10 channel detail; see `specs/012-agent-approvals/contracts/audit-channels.md`."
 
 **Checkpoint**: the contracts point to the 012 amendments; docs check passes.
 
@@ -39,7 +39,7 @@ validate.
 
 **Independent test**: quickstart.md §3 in one harness.
 
-- [ ] T005 [US1] Review `.claude/skills/pilot/SKILL.md` against FR-011, item by item. It must cover:
+- [X] T005 [US1] Review `.claude/skills/pilot/SKILL.md` against FR-011, item by item. It must cover:
   - commands and exit codes;
   - explain each decision, then ask;
   - propose `approve` only after a clear yes;
@@ -50,8 +50,8 @@ validate.
   - mode pause, then A/1, then the retry pause;
   - A/2, publish, then the merge pause;
   - reconcile pause, then B, then the audit.
-- [ ] T006 [P] [US1] Review `AGENTS.md` against FR-011 (pointer to the skill plus the never-rules); keep it to a few lines
-- [ ] T007 [P] [US1] In `.claude/skills/pilot/SKILL.md`, state that commands must be run exactly as `pilot/pilot …` from the repo root, never by absolute path or another wrapper, because the harness ask rules match that prefix (research R3)
+- [X] T006 [P] [US1] Review `AGENTS.md` against FR-011 (pointer to the skill plus the never-rules); keep it to a few lines
+- [X] T007 [P] [US1] In `.claude/skills/pilot/SKILL.md`, state that commands must be run exactly as `pilot/pilot …` from the repo root, never by absolute path or another wrapper, because the harness ask rules match that prefix (research R3)
 
 **Checkpoint**: the skill and AGENTS.md cover every FR-011 point.
 
