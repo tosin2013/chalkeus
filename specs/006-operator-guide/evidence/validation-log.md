@@ -31,16 +31,17 @@ hostnames, IPs or personal data.
 
 ## Troubleshooting spot checks
 
-> **Status: not yet run.** Rows below are placeholders only. Run `pilot/pilot reset-fixture` first,
-> then trigger each failure on purpose and resolve it using only `docs/troubleshooting.md`.
-
 | Failure triggered | Entry used | Resolved with the doc only? |
 |---|---|---|
-| tag-only image reference | | |
-| wrong CNI hash | | |
-| `pilot run` without a terminal | | |
-| pilot PR left open before `run` | | |
-| `resume` before merging | | |
+| tag-only image reference | [Image pinned by tag](#tag-only-image) | yes |
+| wrong CNI hash | [CNI hash mismatch](#cni-hash-mismatch) | yes |
+| `pilot run` without a terminal | [Prompts answer "no": no question appears](#prompts-answer-no) | yes |
+| pilot PR left open before `run` | [Open pilot PR left over](#open-pilot-pr) | yes |
+| `resume` before merging | [Resume before merge](#resume-not-merged) | yes |
+
+**T030 run date:** 2026-11-14. All five triggered and resolved on this machine using only `docs/troubleshooting.md`.
+Spot check 5 (`resume` before merge) triggered mid-run `20261114T213046Z`: exit 4, message
+`A's PR is not merged yet. Merge it on GitHub, then run pilot resume again.`
 
 ## Privacy check
 
