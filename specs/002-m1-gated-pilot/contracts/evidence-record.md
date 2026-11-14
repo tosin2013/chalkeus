@@ -1,5 +1,7 @@
 # Contract: evidence record
 
+> Amended by 012: `approval_channel` events and the AU09/AU10 channel detail; see `specs/012-agent-approvals/contracts/audit-channels.md`.
+
 Root: `specs/002-m1-gated-pilot/evidence/<run-id>/`. `<run-id>` = `YYYYMMDDTHHMMSSZ`
 (UTC). Everything is committed. Nothing in it may contain a secret, and the redaction
 scan (R12) fails the run if anything does.

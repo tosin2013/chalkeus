@@ -1,6 +1,7 @@
 """Human decisions with or without a terminal.
 
-With a terminal, the pilot asks there, as before (channel `tty`).
+With a terminal, the pilot asks there, as before (channel `tty`), and any pending approval for
+the run is discarded: the terminal answer is the current decision.
 
 Without one (an agent's shell, CI), nothing is ever assumed: the run pauses at the decision
 and says so. A human then approves that one pending step with `pilot/pilot approve`, and the
@@ -110,7 +111,10 @@ def decide(run, step: str, question: str, task=None, n=None, ask_tty=None) -> tu
     from . import reconcile
     ask_tty = ask_tty or reconcile.ask_tty
     if has_tty():
-        return ask_tty(question).strip().lower() == "y", "tty"
+        try:
+            return ask_tty(question).strip().lower() == "y", "tty"
+        finally:
+            _file(run).unlink(missing_ok=True)  # a terminal answer overrides a pending approval (R5)
     if take(run, step, task, n):
         print(f"{question}y  (approved with `pilot/pilot approve`)")
         return True, "harness"

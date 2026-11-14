@@ -46,6 +46,12 @@ class TestRecord(Base):
         code, msg = approvals.record(r, "reconcile")
         self.assertEqual(code, 4)
         self.assertIn("GitHub", msg)
+        self.assertFalse((self.d / "approvals" / "pending.json").exists())
+
+    def test_cli_unknown_run_exits_2(self):
+        from specfoundry_pilot import cli, paths
+        with mock.patch.object(paths, "EVIDENCE_ROOT", Path(self.tmp.name)):
+            self.assertEqual(cli.main(["approve", "mode", "--run", "19990101T000000Z"]), 2)
 
     def test_reconcile_only_after_proposal_shown(self):
         r = make_run(self.d, "paused(awaiting-merge)", {"task": "A"})
@@ -88,12 +94,14 @@ class TestDecide(Base):
         approvals.record(r, "mode")
         self.assertEqual(approvals.decide(r, "mode", "Q? "), (True, "harness"))
 
-    def test_tty_asks_and_ignores_approval_file(self):
+    def test_terminal_answer_discards_pending_approval(self):
         r = make_run(self.d, "paused(awaiting-mode)")
         approvals.record(r, "mode")
         with mock.patch.object(approvals, "has_tty", return_value=True):
             self.assertEqual(approvals.decide(r, "mode", "Q? ", ask_tty=lambda q: "n"), (False, "tty"))
-        self.assertTrue((self.d / "approvals" / "pending.json").exists())
+        self.assertFalse((self.d / "approvals" / "pending.json").exists())
+        # a later headless decision must not use the overridden approval
+        self.assertEqual(approvals.decide(r, "mode", "Q? "), (False, "none"))
 
 
 class TestPipelineAndAudit(Base):
@@ -114,6 +122,12 @@ class TestPipelineAndAudit(Base):
               {"event": "approval_channel", "detail": "step=retry approved=false channel=none"},
               {"event": "approval_channel", "detail": "step=retry approved=true channel=tty"}]
         self.assertEqual(audit._channels(ev), {"mode": ["harness"], "retry": ["tty"]})
+
+    def test_audit_channels_keep_order(self):
+        ev = [{"event": "approval_channel", "detail": "step=retry approved=true channel=tty"},
+              {"event": "approval_channel", "detail": "step=retry approved=false channel=none"},
+              {"event": "approval_channel", "detail": "step=retry approved=true channel=harness"}]
+        self.assertEqual(audit._channels(ev)["retry"], ["tty", "harness"])
 
 
 if __name__ == "__main__":
