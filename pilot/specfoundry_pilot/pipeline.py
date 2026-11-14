@@ -1,7 +1,8 @@
 """`pilot run` / `pilot resume`: one governed cycle for fixture tasks A then B.
 
-Every human decision point fails closed: no TTY or anything but `y` means "no".
-  mode confirmation (FR-023)        -> exit 5, no worker staged
+Every human decision point fails closed: anything but `y` means "no". With no terminal, the run
+pauses at the decision instead, and `pilot approve` (see approvals.py) can approve that one step.
+  mode confirmation (FR-023)        -> exit 5, no worker staged (no terminal: paused(awaiting-mode))
   retry confirmation (FR-017)       -> paused(awaiting-retry), exit 6
   merge of A's PR (FR-018a)          -> paused(awaiting-merge), exit 0 / resume exit 4
   reconcile approval (FR-018)        -> exit 5, roadmap unchanged
@@ -13,7 +14,7 @@ import json
 import shutil
 import subprocess
 
-from . import evidence, fixture, gate, grader, images, paths, publisher, reconcile, worker
+from . import approvals, evidence, fixture, gate, grader, images, paths, publisher, reconcile, worker
 from .runner.jobs import JobsRunner
 
 try:
@@ -24,31 +25,42 @@ except ImportError:  # pragma: no cover
 EXIT_OK, EXIT_FAIL, EXIT_ERROR, EXIT_AWAIT_MERGE, EXIT_DECLINED, EXIT_AWAIT_RETRY = 0, 1, 2, 4, 5, 6
 
 
-def ask(question: str) -> bool:
-    return reconcile.ask_tty(question).strip().lower() == "y"
-
-
 def mode_of(cfg) -> dict:
     return {"name": "step-by-step", "retry_limit": cfg.retry_limit, "spend_cap_usd": float(cfg["PILOT_SPEND_CAP_USD"]),
             "token_cap": int(cfg["PILOT_TOKEN_CAP"]), "worker_deadline_s": worker.DEADLINE}
 
 
-def confirm_mode(run, cfg, ask_fn=ask) -> bool:
+def confirm_mode(run, cfg) -> tuple[bool, str]:
     mode = mode_of(cfg)
+    run.state["proposed_mode"] = mode
+    run.save()
     print(f"Run mode for this pilot: {json.dumps(mode, sort_keys=True)}\n"
           "  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.")
-    if not ask_fn("Confirm this mode and start staging workers? [y/N] "):
+    ok, ch = approvals.decide(run, "mode", "Confirm this mode and start staging workers? [y/N] ")
+    approvals.note(run, "mode", None, None, ok, ch)
+    if not ok:
         run.event("mode", None, None, "mode_declined", json.dumps(mode, sort_keys=True))
-        return False
+        return False, ch
     run.state["mode"] = mode
     run.event("mode", None, None, "mode_confirmed", json.dumps(mode, sort_keys=True))
-    return True
+    return True, ch
 
 
-def confirm_retry(run, task: str, n: int, total: int, ask_fn=ask) -> bool:
-    ok = ask_fn(f"Retry {task} (attempt {n} of {total})? [y/N] ")
+def confirm_retry(run, task: str, n: int, total: int) -> tuple[bool, str]:
+    ok, ch = approvals.decide(run, "retry", f"Retry {task} (attempt {n} of {total})? [y/N] ", task=task, n=n)
+    approvals.note(run, "retry", task, n, ok, ch)
     run.event("retry", task, n, "retry_confirmed" if ok else "retry_declined", "")
-    return ok
+    return ok, ch
+
+
+def mode_not_confirmed(run, ch: str) -> int:
+    if ch == "none":
+        _pause(run, "awaiting-mode")
+        print(f"paused: mode not confirmed. {approvals.hint(run, 'mode')}")
+        return EXIT_DECLINED
+    run.set_run_state("failed", "MODE_NOT_CONFIRMED")
+    evidence.write_summary(run)
+    return EXIT_DECLINED
 
 
 def gate_task(run, cfg, task: str) -> dict:
@@ -116,9 +128,11 @@ def run_task(run, cfg, imgs, runner, task: str, start_n: int = 1) -> int:
                 return _fail(run, "B_NOT_BLOCKED")
         if n >= total:
             return _fail(run, f"{task}_RETRIES_EXHAUSTED")
-        if not confirm_retry(run, task, n + 1, total):
+        ok, ch = confirm_retry(run, task, n + 1, total)
+        if not ok:
             _pause(run, "awaiting-retry", task=task, n=n + 1)
-            print(f"paused: retry of {task} not confirmed. `pilot resume` asks again.")
+            print(f"paused: retry of {task} not confirmed. "
+                  + (approvals.hint(run, "retry") if ch == "none" else "`pilot resume` asks again."))
             return EXIT_AWAIT_RETRY
         n += 1
     return publish_task(run, cfg, imgs, runner, task)
@@ -190,10 +204,9 @@ def run(cfg) -> int:
         return _fail(r, "A_REFUSED")
     if gate_task(r, cfg, "B")["decision"] != "refuse":
         return _fail(r, "B_NOT_BLOCKED")
-    if not confirm_mode(r, cfg):
-        r.set_run_state("failed", "MODE_NOT_CONFIRMED")
-        evidence.write_summary(r)
-        return EXIT_DECLINED
+    ok, ch = confirm_mode(r, cfg)
+    if not ok:
+        return mode_not_confirmed(r, ch)
     r.save()
     return run_task(r, cfg, imgs, runner, "A")
 
@@ -209,10 +222,19 @@ def resume(cfg, run_id: str | None) -> int:
     r.state["state"] = "in-progress"
     r.save()
     r.event("run", None, None, "run_resumed", st)
+    if st == "paused(awaiting-mode)":
+        ok, ch = confirm_mode(r, cfg)
+        if not ok:
+            return mode_not_confirmed(r, ch)
+        r.save()
+        return run_task(r, cfg, imgs, runner, "A")
     if st == "paused(awaiting-retry)":
         task, n = pend["task"], int(pend["n"])
-        if not confirm_retry(r, task, n, 1 + cfg.retry_limit):
+        ok, ch = confirm_retry(r, task, n, 1 + cfg.retry_limit)
+        if not ok:
             _pause(r, "awaiting-retry", task=task, n=n)
+            if ch == "none":
+                print(f"paused: retry of {task} not confirmed. {approvals.hint(r, 'retry')}")
             return EXIT_AWAIT_RETRY
         return run_task(r, cfg, imgs, runner, task, start_n=n)
     if st == "paused(awaiting-publish)":
@@ -224,7 +246,16 @@ def resume(cfg, run_id: str | None) -> int:
     paused_at = _dt.datetime.strptime(r.state.get("paused_at", evidence.now()), "%Y-%m-%dT%H:%M:%SZ")
     tA = r.task("A")
     n = tA["passing_attempt"]
-    rec_obj, cleanup = reconcile.for_fixture(cfg, r, "A", r.attempt_dir("A", n), tA["base_revision"])
+    channel = {}
+
+    def ask_reconcile(question: str) -> str:
+        ok, ch = approvals.decide(r, "reconcile", question, task="A")
+        approvals.note(r, "reconcile", "A", None, ok, ch)
+        channel["ch"] = ch
+        return "y" if ok else ""
+
+    rec_obj, cleanup = reconcile.for_fixture(cfg, r, "A", r.attempt_dir("A", n), tA["base_revision"],
+                                             ask=ask_reconcile)
     try:
         code, rec = rec_obj.run("A", paths.TASKS["A"], tA["pr"]["number"],
                                 next(a for a in tA["attempts"] if a["n"] == n).get("changed_paths") or [])
@@ -238,7 +269,10 @@ def resume(cfg, run_id: str | None) -> int:
         return EXIT_AWAIT_MERGE
     if code == EXIT_DECLINED:
         _pause(r, "awaiting-merge", task="A")
-        print("status change declined; roadmap unchanged; B stays blocked.")
+        if channel.get("ch") == "none":
+            print(f"waiting for your approval of the status change; roadmap unchanged. {approvals.hint(r, 'reconcile')}")
+        else:
+            print("status change declined; roadmap unchanged; B stays blocked.")
         return EXIT_DECLINED
     if code != 0:
         return _fail(r, f"RECONCILE_{rec.get('reason')}")

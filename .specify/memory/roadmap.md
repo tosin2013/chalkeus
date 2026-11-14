@@ -1,6 +1,19 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.6.0 → 1.7.0
+Bump rationale: MINOR — a new planned spec (012) and a note on 004.
+
+Changes this revision (owner decision 2026-11-14, 006 validation finding F4):
+  - New entry: 012 Working with an agent: pilot skill and harness approvals. A first cut
+    landed early (branch pilot-agent-approvals) so the 006 validation could continue with an
+    agent; status stays planned until a spec formalises the audit-contract change
+  - 004: GitHub approvals reuse 012's pending-step approval and channel record
+
+Specs affected: 004, 012 (new)
+Open questions added/resolved: none
+
+Previous revision 1.6.0 (2026-11-14):
 Version change: 1.5.0 → 1.6.0
 Bump rationale: MINOR — a new planned spec (011), a new constraint (C-11), a new open
 question (Q7), and material scope changes to 004 and 005.
@@ -334,7 +347,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   publisher Job opened every PR). Learned in 003: new repositories block GitHub Actions
   from opening PRs until *Allow GitHub Actions to create and approve pull requests* is
   enabled; on a public repository the `permissions` field of `GET /repos` reports the
-  account's rights, not a fine-grained token's (use a write probe instead).
+  account's rights, not a fine-grained token's (use a write probe instead). GitHub approvals
+  reuse 012's pending-step approval and channel record, adding a `github` channel
+  (2026-11-14).
 
 ### 005 — M4 in-cluster planning and OpenShift target  [status: planned]
 
@@ -460,6 +475,28 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   when users cannot create them. Depends on spec-status shipping a CLI container image for
   the in-cluster gate (PRD §8). The GitHub App is the recommended publisher credential here.
 
+### 012 — Working with an agent: pilot skill and harness approvals  [status: planned]
+
+- **Description:** Let a human and an LLM agent run the pilot together: the agent runs the
+  commands and explains each pause; the human makes every decision.
+- **Outcome:** With no terminal, every decision pauses instead of being assumed. The human
+  approves the one pending step through `pilot approve`, which the agent harness always asks
+  the human about. Each approval is bound to that step and used once. The audit (AU09, AU10)
+  records each approval's channel (`tty` or `harness`), and a project `pilot` skill teaches
+  agents the commands, exit codes and the rule never to approve for the human.
+- **Scope (in):** `pilot approve` (mode, retry, reconcile; never merge); paused-for-mode
+  state; channel recording in events and the audit; harness ask rules (`.claude/settings.json`,
+  `opencode.json`); the `pilot` skill and `AGENTS.md`; troubleshooting and README updates.
+- **Scope (out):** a `--yes` flag or any self-approval by an agent; approving merges outside
+  GitHub; GitHub approvals themselves (004).
+- **Governed by:** C-04, C-11
+- **Notes:** Owner decision 2026-11-14 (006 finding F4). A `--yes` flag that records a
+  confirmation was rejected: AU09 and AU10 attest a human decision. The `harness` channel is
+  only as strong as the harness permission rule and trusts the agent not to forge the
+  approval file (the harness denies edits to `approvals/`); GitHub approvals (004) are the
+  stronger channel. First cut implemented early to unblock the 006 validation; the spec
+  records the audit-contract change and validates it with an agent-driven run.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -506,4 +543,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.6.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-14
+**Version**: 1.7.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-14
