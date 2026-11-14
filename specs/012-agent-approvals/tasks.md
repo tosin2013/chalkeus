@@ -63,10 +63,10 @@ validate.
 
 **Independent test**: `pilot/tests/test_approvals.py` plus quickstart.md §2.
 
-- [ ] T008 [US2] Write the failing test first, in `pilot/tests/test_approvals.py` (`TestDecide`): with a terminal (patch `has_tty` → True) and a recorded approval, `decide(..., ask_tty=lambda q: "n")` returns `(False, "tty")` **and** `approvals/pending.json` no longer exists. Replace the existing `test_tty_asks_and_ignores_approval_file`, which asserts the opposite
-- [ ] T009 [US2] Implement G1 in `pilot/specfoundry_pilot/approvals.py` `decide()`: when a terminal is present, delete the run's `approvals/pending.json` (if any) after asking, whatever the answer, and record nothing else (research R5). Update the module docstring
-- [ ] T010 [P] [US2] Add a test in `pilot/tests/test_approvals.py` that a status-change approval recorded while the run waits for the merge (no `DECLINED` proposal in `reconcile/A.json`) is refused with exit 4 and creates no `approvals/pending.json` (refusal case 3)
-- [ ] T011 [P] [US2] Add a test in `pilot/tests/test_approvals.py` for the CLI: `cli.main(["approve", "mode", "--run", "<missing>"])` returns 2 (patch `paths.EVIDENCE_ROOT` to a temp dir)
+- [X] T008 [US2] Write the failing test first, in `pilot/tests/test_approvals.py` (`TestDecide`): with a terminal (patch `has_tty` → True) and a recorded approval, `decide(..., ask_tty=lambda q: "n")` returns `(False, "tty")` **and** `approvals/pending.json` no longer exists. Replace the existing `test_tty_asks_and_ignores_approval_file`, which asserts the opposite
+- [X] T009 [US2] Implement G1 in `pilot/specfoundry_pilot/approvals.py` `decide()`: when a terminal is present, delete the run's `approvals/pending.json` (if any) after asking, whatever the answer, and record nothing else (research R5). Update the module docstring
+- [X] T010 [P] [US2] Add a test in `pilot/tests/test_approvals.py` that a status-change approval recorded while the run waits for the merge (no `DECLINED` proposal in `reconcile/A.json`) is refused with exit 4 and creates no `approvals/pending.json` (refusal case 3)
+- [X] T011 [P] [US2] Add a test in `pilot/tests/test_approvals.py` for the CLI: `cli.main(["approve", "mode", "--run", "<missing>"])` returns 2 (patch `paths.EVIDENCE_ROOT` to a temp dir)
 
 **Checkpoint**: all refusal cases have a unit test; G1 is closed.
 
@@ -78,13 +78,13 @@ validate.
 
 **Independent test**: `pilot/tests/test_committed_evidence.py`.
 
-- [ ] T012 [US3] Create `pilot/tests/test_committed_evidence.py` (G4, research R6):
+- [X] T012 [US3] Create `pilot/tests/test_committed_evidence.py` (G4, research R6):
   - find every `specs/*/evidence/*/run.json` whose `state` is `succeeded`;
   - run `audit.audit_dir(<dir>, final=True)` on each, with no secret files;
   - assert every row has `result == "pass"`, and that AU09's and AU10's `detail` contains `channels=[]`;
   - use `subTest` per run;
   - fail if fewer than 3 records are found, so a broken glob can't pass vacuously.
-- [ ] T013 [P] [US3] Add a test in `pilot/tests/test_approvals.py` that `audit._channels` ignores `approved=false` events and keeps order for two approved retries (`["tty", "harness"]`)
+- [X] T013 [P] [US3] Add a test in `pilot/tests/test_approvals.py` that `audit._channels` ignores `approved=false` events and keeps order for two approved retries (`["tty", "harness"]`)
 
 **Checkpoint**: SC-004 is a standing regression test.
 
@@ -96,8 +96,8 @@ validate.
 
 **Independent test**: read `docs/operator-guide.md` §8 against contracts/cli-approve.md.
 
-- [ ] T014 [US4] In `docs/operator-guide.md` §8, replace "so if there's none (for example inside some IDE runners or CI), every answer counts as \"no\"" with: without a terminal (an agent's shell, some IDE runners, CI) the run **pauses** at each decision and nothing proceeds; link [Prompts answer "no"](troubleshooting.md#prompts-answer-no) and mention the `pilot` skill for working with an agent. Keep the rest of §8 unchanged
-- [ ] T015 [US4] Run `python3 pilot/tools/docs_check.py`; fix any problem T014 introduced
+- [X] T014 [US4] In `docs/operator-guide.md` §8, replace "so if there's none (for example inside some IDE runners or CI), every answer counts as \"no\"" with: without a terminal (an agent's shell, some IDE runners, CI) the run **pauses** at each decision and nothing proceeds; link [Prompts answer "no"](troubleshooting.md#prompts-answer-no) and mention the `pilot` skill for working with an agent. Keep the rest of §8 unchanged
+- [X] T015 [US4] Run `python3 pilot/tools/docs_check.py`; fix any problem T014 introduced
 
 **Checkpoint**: the guide matches the behaviour.
 
@@ -105,7 +105,7 @@ validate.
 
 ## Phase 7: Polish and validation
 
-- [ ] T016 Run the full test suite and docs check; all pass. Record the test count in this file's notes
+- [X] T016 Run the full test suite and docs check; all pass. Record the test count in this file's notes
 - [ ] T017 **Owner action**: copy the early run's record from the validation machine into `specs/012-agent-approvals/evidence/20261114T213046Z/` (G6). Then run `pilot/pilot audit --run 20261114T213046Z`, and record the AU09/AU10 lines in `specs/012-agent-approvals/evidence/README.md`
 - [ ] T018 **Owner action**: refusal cases on a set-up machine per quickstart.md §2 (SC-002); record each result in `specs/012-agent-approvals/evidence/README.md`
 - [ ] T019 **Owner action**: agent-driven run in **Claude Code** per quickstart.md §3 (SC-001, SC-005). Record whether the harness asked before each `approve`, and the audit's AU09/AU10 lines. Copy the record to `specs/012-agent-approvals/evidence/<run-id>/`
@@ -152,3 +152,9 @@ runs is that the owner does.
 
 - Commit after each phase; never commit secrets, hostnames or IPs.
 - `[P]` tasks touching the same file must still be applied one after another.
+- T016 (2026-11-14): 138 tests, all OK; docs_check 0 problems. `test_committed_evidence`
+  audited 002 `20261113T030655Z`, 003 `20261113T180203Z` and 006 `20261114T160532Z`: 11/11
+  each, AU09/AU10 `channels=[]`.
+- T022 partial (2026-11-14): no model-host matches in `specs/012-agent-approvals/`,
+  `.claude/`, `AGENTS.md`, `opencode.json` or `docs/`. AU08 for 012's runs waits for their
+  evidence (T017, T019–T021).
