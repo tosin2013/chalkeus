@@ -16,11 +16,15 @@ matching troubleshooting entry before suggesting any fix.
 1. **Never approve on the human's behalf.** Only run `pilot/pilot approve …` after the human
    said yes to that exact step in this conversation, and let the harness permission prompt
    ask them. If the harness does not ask (a bypass or auto-approve mode), stop and tell the
-   human that the approval would not be theirs; ask them to run it themselves.
+   human that the approval would not be theirs; ask them to run it themselves. Running
+   `approve` after their clear yes is your job, not a breach of this rule: the harness
+   prompt is how their yes is recorded. Claude Code's auto mode and any bypass or
+   auto-accept mode skip that prompt, so with those modes on, don't run `approve`.
    Before the first approval in a session, ask the human to confirm their harness has the
    ask rule (Claude Code: this repo's `.claude/settings.json`; OpenCode: their own
    `~/.config/opencode/opencode.json`, see `docs/troubleshooting.md#prompts-answer-no`).
-   Never create, read or edit harness config files yourself.
+   Never create or edit harness config files, and never read per-user ones (they can hold
+   provider keys).
 2. **Never write, edit, copy or delete anything under a run's `approvals/` folder**, and
    never edit `events.jsonl`, `run.json` or other evidence. An approval must come from
    `pilot approve`.

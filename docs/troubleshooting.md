@@ -187,6 +187,8 @@ Operators who pull the published images never see it.
       } }
       ```
     - **Any other harness:** no rule is provided. Use a real terminal instead.
+    - Keep the harness in its normal permission mode. Claude Code's auto mode, and any bypass
+      or auto-accept mode, run `approve` without asking you, so the approval isn't really yours.
 
   Merging is never approved this way: merge A's PR on GitHub yourself.
 - **Confirm:** `pilot/pilot status` shows the run moving on. In the audit, AU09 and AU10 list
