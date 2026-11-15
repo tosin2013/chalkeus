@@ -198,6 +198,8 @@ def run(run_obj, final: bool = False, cfg=None) -> bool:
         hf.write_text("\n".join(cfg.model_hosts) + "\n")
         key_files.append(hf)
     env_files = [cfg.publisher_env] if cfg and cfg.publisher_env.exists() else []
+    if cfg is not None and (cfg.config_dir / "app-token.env").exists():  # 004: the App token too
+        env_files.append(cfg.config_dir / "app-token.env")
     rows = audit_dir(run_obj.dir, key_files, env_files, final=final)
     out = run_obj.dir / "audit.jsonl"
     if out.exists():

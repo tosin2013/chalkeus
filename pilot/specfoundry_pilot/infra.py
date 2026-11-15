@@ -36,7 +36,8 @@ def apply_all(cfg, imgs: dict) -> None:
     print("== publisher namespace", flush=True)
     k8s.apply((paths.MANIFESTS / "publisher-ns.yaml.tmpl").read_text())
     k8s.kubectl("-n", "pilot-publish", "delete", "secret", "scm-token", "--ignore-not-found")
-    k8s.create_secret_from_env_file("pilot-publish", "scm-token", cfg.publisher_env)
+    from . import ghsync
+    k8s.create_secret_from_env_file("pilot-publish", "scm-token", ghsync.credential_env(cfg))  # token or App token (004)
 
     print("== check helpers", flush=True)
     k8s.apply(k8s.render(paths.MANIFESTS / "infra.yaml.tmpl", TOOLS_IMAGE=imgs["tools"]))

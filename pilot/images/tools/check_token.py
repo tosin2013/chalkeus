@@ -44,11 +44,14 @@ def get(path: str, token: str, method: str = "GET", body=None):
 
 def check(token: str, repo: str, canary: str | None, get=get, issues: bool = False) -> dict:
     problems = []
-    st, user, hdr = get("/user", token)
-    login = (user or {}).get("login")
-    if st != 200:
-        problems.append(f"token rejected by GitHub (HTTP {st})")
-    expires = hdr.get("github-authentication-token-expiration") or hdr.get("GitHub-Authentication-Token-Expiration")
+    if os.environ.get("PILOT_SCM_KIND") == "app":  # 004: App installation tokens cannot call GET /user
+        login, expires = os.environ.get("PILOT_SCM_LOGIN"), "1 hour (GitHub App installation token)"
+    else:
+        st, user, hdr = get("/user", token)
+        login = (user or {}).get("login")
+        if st != 200:
+            problems.append(f"token rejected by GitHub (HTTP {st})")
+        expires = hdr.get("github-authentication-token-expiration") or hdr.get("GitHub-Authentication-Token-Expiration")
     st, r, _ = get(f"/repos/{repo}", token)
     if st != 200:
         problems.append(f"cannot read {repo} (HTTP {st})")

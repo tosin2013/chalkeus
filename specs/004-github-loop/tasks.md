@@ -204,23 +204,23 @@ PR is refused.
 
 **Independent test:** quickstart §4.
 
-- [ ] T027 [P] [US4] Unit tests in `pilot/tests/test_ghapp.py` (a throwaway test key generated
+- [X] T027 [P] [US4] Unit tests in `pilot/tests/test_ghapp.py` (a throwaway test key generated
   with `openssl` in setUp):
   - JWT header and claims (iat −60 s, exp +9 min, iss = App id);
   - the token request body (`repositories: [<repo>]`, permissions
     `{contents: write, pull_requests: write, issues: write}`);
   - the key never read into Python (signed through a child process);
   - the token file has mode 600 and is deleted at teardown.
-- [ ] T028 [US4] Implement `pilot/specfoundry_pilot/ghapp.py`:
+- [X] T028 [US4] Implement `pilot/specfoundry_pilot/ghapp.py`:
   - `jwt(cfg)`, signing with `openssl dgst -sha256 -sign` in a child process;
   - `mint(cfg, run)`, which calls `POST /app/installations/{id}/access_tokens` in a child
     and writes the token to a mode-600 env file under the run's private temp dir, never into
     the evidence;
   - re-mint when the token has expired.
-- [ ] T029 [US4] Add `pilot app-key` (store the key from stdin as `github-app.pem`, mode 600,
+- [X] T029 [US4] Add `pilot app-key` (store the key from stdin as `github-app.pem`, mode 600,
   kept only if `app-token --check` passes; 006 F3 rule) and `pilot app-token --check` to
   `pilot/specfoundry_pilot/cli.py`.
-- [ ] T030 [US4] Make the credential selectable in `pilot/specfoundry_pilot/pipeline.py`,
+- [X] T030 [US4] Make the credential selectable in `pilot/specfoundry_pilot/pipeline.py`,
   `pilot/specfoundry_pilot/infra.py` (the `scm-token` Secret gets only the short-lived token)
   and `ghsync.run_ghops`, from `PILOT_PUBLISHER_CREDENTIAL`. If both are configured and there
   is no choice, refuse. Check that P09 is unchanged.

@@ -43,6 +43,9 @@ def _parser() -> argparse.ArgumentParser:
     ghd.add_argument("--run", help="also write github/drift.json into this run's evidence")
     ghw = ghs.add_parser("watch", help="poll GitHub; resume when a valid /approve or a merge appears (Ctrl-C to stop)")
     ghw.add_argument("--run", required=True)
+    sub.add_parser("app-key", help="store the GitHub App private key from stdin (kept only if its check passes)")
+    at = sub.add_parser("app-token", help="mint a GitHub App token and run the write probe")
+    at.add_argument("--check", action="store_true", required=True)
     g = sub.add_parser("gate", help="evaluate the gate for one task")
     g.add_argument("task", choices=["A", "B"])
     g.add_argument("--root", help="evaluate this directory instead of a fresh clone")
@@ -149,6 +152,10 @@ def main(argv=None) -> int:
             code, msg = approvals.record(run, args.step)
             print(msg, file=sys.stdout if code == 0 else sys.stderr)
             return code
+        if args.cmd in ("app-key", "app-token"):
+            from . import config, ghapp
+            cfg = config.load(require_secrets=False)
+            return ghapp.store_key(cfg) if args.cmd == "app-key" else ghapp.check(cfg)
         if args.cmd == "github":
             return cmd_github(args)
         if args.cmd == "audit":

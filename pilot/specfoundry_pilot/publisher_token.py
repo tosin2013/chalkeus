@@ -29,14 +29,14 @@ def write_from_prompt(path: Path) -> int:
     return 0
 
 
-def verify(cfg, env_file: Path | None = None) -> dict:
+def verify(cfg, env_file: Path | None = None, issues: bool | None = None) -> dict:
     """Run check_token.py with the token sourced from env_file (default publisher.env) in the child only."""
     env_file = env_file or cfg.publisher_env
     config.check_mode(env_file)
     canary = config.origin_repo()
     r = subprocess.run(["bash", "-c", 'set -a; . "$1"; set +a; exec python3 "$2" "${@:3}"',
                         "_", str(env_file), str(CHECK), cfg.repo, canary or "",
-                        *(["--issues"] if getattr(cfg, "github_issues", False) else [])],
+                        *(["--issues"] if (issues if issues is not None else getattr(cfg, "github_issues", False)) else [])],
                        capture_output=True, text=True, timeout=90)
     try:
         return json.loads(r.stdout.strip().splitlines()[-1])

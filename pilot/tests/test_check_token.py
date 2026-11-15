@@ -1,6 +1,7 @@
 """Publisher token scope check against a fake GitHub API."""
 import importlib.util
 import unittest
+from unittest import mock
 from pathlib import Path
 
 _spec = importlib.util.spec_from_file_location("check_token", Path(__file__).resolve().parents[1] / "images/tools/check_token.py")
@@ -89,3 +90,15 @@ class TestIssuesProbe(unittest.TestCase):
         r = ct.check("t", REPO, CANARY, get=fake(labels=403), issues=True)
         self.assertFalse(r["ok"])
         self.assertIn("Issues: read and write", " ".join(r["problems"]))
+
+
+class TestAppToken(unittest.TestCase):
+    """004: an App installation token is checked without GET /user."""
+    def test_app_kind_skips_user(self):
+        def get(path, token, method="GET", body=None):
+            assert path != "/user"
+            return fake()(path, token, method, body)
+        with mock.patch.dict(ct.os.environ, {"PILOT_SCM_KIND": "app", "PILOT_SCM_LOGIN": "pilot[bot]"}):
+            r = ct.check("t", REPO, CANARY, get=get, issues=True)
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(r["login"], "pilot[bot]")

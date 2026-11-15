@@ -55,7 +55,7 @@ def publish(run, cfg, imgs: dict, runner, task: str, n: int) -> dict:
             "title": f"pilot {run.id} task {task}", "body": _body(run, task, n, closes), "run_id": run.id, "task": task,
             **_login_hint(cfg)}
     run.event("publish", task, n, "publish_started", head)
-    res = _submit(run, imgs, runner, task.lower(), spec, adir / "change.bundle")
+    res = _submit(run, imgs, runner, task.lower(), spec, adir / "change.bundle", cfg)
     view = json.loads(fixture.gh("pr", "view", str(res["number"]), "-R", cfg.repo, "--json",
                                  "isDraft,author,headRefName,url").stdout)
     operator = fixture.gh("api", "user", "--jq", ".login").stdout.strip()
@@ -83,8 +83,20 @@ def _login_hint(cfg) -> dict:
     return {}
 
 
-def _submit(run, imgs: dict, runner, key: str, spec: dict, bundle: Path) -> dict:
+def refresh_secret(cfg) -> None:
+    """App mode: the 1-hour token may have expired since `pilot up`; put a fresh one in scm-token."""
+    if getattr(cfg, "credential", "token") != "app":
+        return
+    from . import ghapp
+    env = ghapp.current_env(cfg)
+    k8s.kubectl("-n", "pilot-publish", "delete", "secret", "scm-token", "--ignore-not-found")
+    k8s.create_secret_from_env_file("pilot-publish", "scm-token", env)
+
+
+def _submit(run, imgs: dict, runner, key: str, spec: dict, bundle: Path, cfg=None) -> dict:
     """Run the publisher Job for one PR spec + bundle; return its result.json (raises PublishError)."""
+    if cfg is not None:
+        refresh_secret(cfg)
     cm = f"pub-{key}"
     jobname = f"publish-{key}-{run.id.lower().replace('t', '').replace('z', '')[-8:]}"
     k8s.kubectl("-n", "pilot-publish", "delete", "configmap", cm, "--ignore-not-found", check=False)
@@ -133,7 +145,7 @@ def publish_status(run, cfg, imgs: dict, runner, task: str, base_rev: str, bundl
             "title": f"pilot {run.id}: {item} verified", "body": status_body(run, task, closes),
             "run_id": run.id, "task": task, **_login_hint(cfg)}
     run.event("publish", task, None, "status_pr_started", head)
-    res = _submit(run, imgs, runner, f"status-{task.lower()}", spec, bundle)
+    res = _submit(run, imgs, runner, f"status-{task.lower()}", spec, bundle, cfg)
     view = json.loads(fixture.gh("pr", "view", str(res["number"]), "-R", cfg.repo, "--json",
                                  "isDraft,author,headRefName,url").stdout)
     entry = {"task": task, "kind": "status", "number": res["number"], "url": view["url"], "head": view["headRefName"],
