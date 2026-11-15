@@ -1,6 +1,26 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.9.0 → 1.10.0
+Bump rationale: MINOR — a new constraint (C-13), a new planned spec (016), dependency
+rewiring (011, 013, 014), 013 moved from needs-info to planned, and notes on 004 and Q9.
+No existing constraint is reversed (the roadmap never mandated Python).
+
+Changes this revision (owner decision 2026-11-15, prompted by issue #25 and the Go operator):
+  - New C-13: one implementation language, Go, for the CLI and the operator, in one Go module;
+    the Python pilot is the reference implementation until the Go CLI reaches parity
+  - New entry: 016 Go pilot at parity
+  - 013: form decided (one Go binary per platform); status needs-info → planned; depends on 016
+  - 014 depends on 004 and 016; 011 depends on 004, 005 and 016
+  - 004: spec dir linked; note that the Python implementation is the reference, its validation
+    was stopped, and it is validated on the Go pilot in 016
+  - Q9: operator language decided (Go, same module); split question narrowed
+  - Cross-cutting: the CLI/operator split rule and the operator inventory (from issue #25)
+
+Specs affected: 004, 011, 013, 014, 016 (new)
+Open questions added/resolved: Q9 partly resolved (language)
+
+Previous revision 1.9.0 (2026-11-15):
 Version change: 1.8.0 → 1.9.0
 Bump rationale: MINOR — a new constraint (C-12) and two new planned specs (014, 015).
 
@@ -308,6 +328,17 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   through the status change a human approves. Every unblock passes through a human merge and an
   approved status change. In PRD F6 ("who launches workers"), the human launches for now
   (decided 2026-11-15).
+- **C-13 — One implementation language, Go:** the CLI and the operator are written in Go, in
+  one Go module in this repository (decided 2026-11-15). The Python pilot
+  (`pilot/specfoundry_pilot/`) is the reference implementation until the Go CLI reaches
+  parity, then it is retired. Parity means all of:
+  - the same commands and exit codes;
+  - the same evidence format;
+  - the same audit results on every committed evidence record (the golden data);
+  - a passing fixture run.
+
+  The in-cluster image scripts (grader, publisher, token check, GitHub writes) may stay in
+  Python behind their contracts until there is a reason to port them.
 
 ## Planned Specs
 
@@ -430,7 +461,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   enabled; on a public repository the `permissions` field of `GET /repos` reports the
   account's rights, not a fine-grained token's (use a write probe instead). GitHub approvals
   reuse 012's pending-step approval and channel record, adding a `github` channel
-  (2026-11-14).
+  (2026-11-14). **2026-11-15:** implemented in the Python pilot (PR #21), which is now the
+  reference implementation (C-13). Its owner validation was stopped (owner decision): 016 ports
+  the behaviour to Go, and 004's validation (quickstart §2–§5) runs against the Go pilot, which
+  also produces the golden evidence for the `github` channel. Status stays `planned` until then. Issue #25 (watching needs a terminal) is
+  solved in the Go design: a laptop daemon in 016, and the operator in 011.
+- **Spec dir:** specs/004-github-loop/
 
 ### 005 — M4 OpenShift target (laptop mode)  [status: planned]
 
@@ -562,7 +598,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   2026-11-15: the optional in-cluster planning Job and per-project planning setting (moved
   from 005).
 - **Scope (out):** a hosted SaaS or UI; multi-cluster; any weakening of a guarantee.
-- **Depends on:** 004, 005
+- **Depends on:** 004, 005, 016
 - **Governed by:** C-01, C-02, C-03, C-04, C-07, C-08, C-10, C-11
 - **Addresses:** docs/prd.md F2, N1, §9 M4
 - **Notes:** Owner decision 2026-11-14. 007 (observability), 009 (period budgets) and 010
@@ -605,20 +641,23 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   edit (see Q8).
 - **Spec dir:** specs/012-agent-approvals/
 
-### 013 — Installable pilot release  [status: needs-info]
+### 013 — Installable pilot release  [status: planned]
 
 - **Description:** Ship the pilot as an installable, versioned release, so operators can
   install it and run it against any project without cloning this repository.
-- **Outcome:** _to be defined_. Direction: a versioned release with published checksums,
-  installable without the source tree, that keeps every guarantee and the full audit.
-- **Scope (in):** _to be defined_. Candidates: the release form (single binary, zipapp, or a
-  Python package); a release workflow with checksums, like the pilot images; how the CLI
-  finds the target project and its config; the command name in harness rules.
-- **Scope (out):** _to be defined_.
-- **Depends on:** 012
+- **Outcome:** ~~_to be defined_.~~ A versioned release of the Go `pilot` binary for Linux and
+  macOS (amd64 and arm64), plus Windows where the pilot supports it, with published SHA-256
+  checksums. It installs without the source tree and keeps every guarantee and the full audit.
+- **Scope (in):** ~~_to be defined_. Candidates: the release form (single binary, zipapp, or a
+  Python package); …~~ A GitHub Actions release workflow (checksums, like the pilot images);
+  how the CLI finds the target project and its config; the command name used in harness rules
+  (Q8); install docs.
+- **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
+- **Depends on:** 016
 - **Notes:** Raised by the owner 2026-11-15 during the 012 debrief. Tied to Q7 (product name
   and CLI surface) and Q8 (multi-project use; harness rules today match the `pilot/pilot`
-  path). Decide the form and name before speccing.
+  path). Decide the form and name before speccing. **2026-11-15:** form decided by C-13 (one Go
+  binary); the name is still Q7. Dependency changed from 012 to 016 (2026-11-15).
 
 ### 014 — Any project, any item  [status: planned]
 
@@ -634,7 +673,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - a readiness check: a spec and tasks exist, dependencies are verified, no open questions;
   - per-item evidence, and an audit that no longer assumes exactly items A and B.
 - **Scope (out):** parallel runs (015); writing specs or plans; choosing items automatically.
-- **Depends on:** 004
+- **Depends on:** 004, 016
 - **Governed by:** C-01, C-02, C-04, C-12
 - **Addresses:** docs/prd.md §4 loop, F1, F8, F9
 - **Notes:** Owner decision 2026-11-15. The fixture stays the regression test. Pairs with 013
@@ -672,6 +711,42 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   Human review is the expected bottleneck: every PR still needs a human merge. Laptop waves are
   small (kind capacity); large waves run in cluster mode (011).
 
+### 016 — Go pilot at parity  [status: planned]
+
+- **Description:** Rewrite the pilot CLI in Go (C-13), reproducing the reference Python pilot's
+  behaviour exactly, before any new feature is built.
+- **Outcome:** `pilot` is one Go binary. It runs the fixture end to end with the audit at
+  11/11. Its audit gives the same results as the reference on every committed evidence record.
+  Then the Python pilot is retired.
+- **Scope (in):**
+  - every current command: `up`, `down`, `run`, `resume`, `approve`, `status`, `audit`,
+    `gate`, `publisher-token`, `import-opencode`, `reset-fixture`, `github sync|drift|watch`,
+    `app-key`, `app-token`;
+  - the same evidence format, exit codes and approval channels;
+  - the gate through spec-status as a Go library (spec-status needs a public package; its
+    logic is in `internal/` today);
+  - the Kubernetes client where it simplifies (client-go), with a minimal dependency surface;
+  - the watch design for issue #25: a laptop daemon mode started by the run, built so the
+    operator (011) can reuse it;
+  - conformance vectors (approval rules, status-PR check) and a golden-evidence audit suite;
+  - 004's owner validation (its quickstart §2–§5), run against the Go pilot;
+  - switching `pilot/pilot` to the Go binary, and retiring the Python pilot at parity.
+- **Scope (out):** new features (014, 015, 011 follow); porting the in-cluster image scripts;
+  release packaging (013).
+- **Depends on:** 012
+- **Governed by:** C-01, C-02, C-03, C-04, C-07, C-08, C-11, C-12, C-13
+- **Addresses:** docs/prd.md N3, F9, F10
+- **Notes:** Owner decision 2026-11-15, prompted by issue #25 and by the operator being Go:
+  - one codebase for the CLI and the operator;
+  - spec-status used as a library;
+  - static binaries across operating systems;
+  - the Kubernetes ecosystem is Go.
+
+  The committed evidence of 002, 003, 006 and 012 is the golden data (004 was never validated in
+  Python; its validation runs on the Go pilot).
+  Port order: audit and gate first (pure, proven on golden data), then run and resume on the
+  fixture, then the GitHub loop, then setup and teardown.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -707,7 +782,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   in `operator/` here. Split when it has its own toolchain and release cadence (for example
   a Go operator with an OLM bundle) **and** the evidence and audit contract is versioned
   and language-neutral, so the CLI and the operator can each check it independently. Name
-  per Q7.
+  per Q7. **Partly resolved 2026-11-15:** the operator is written in Go, in the same Go module
+  as the CLI (C-13). They share code, so the remaining question is only when `operator/`
+  needs its own release cadence or OLM bundle repository.
 - Q10 — Distribution channels and timing (raised 2026-11-15). Proposed, not yet decided:
   - CLI on GitHub Releases with checksums (013); images on GHCR or Quay by digest (C-09, 005);
   - after 011 is verified: a **Helm chart**, hosted as an OCI artifact on GHCR and listed on
@@ -738,7 +815,30 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Cluster mode (2026-11-14):** in cluster mode, 007 (observability), 009 (period budgets)
   and 010 (event proposals) run in the operator (011); in laptop mode they run in the CLI,
   where they apply at all. Both modes keep C-11's guarantees.
+- **CLI/operator split (2026-11-15, issue #25):** long-running, event-driven or
+  credential-holding work belongs to the operator in cluster mode; human-started actions stay
+  in the CLI.
+  - **Moves to the operator:**
+    - the run state machine;
+    - watching for approvals and merges, and resuming;
+    - decision posts and approval reading;
+    - the status-change PR;
+    - GitHub sync and drift on events;
+    - App token minting and `scm-token` refresh;
+    - publisher Jobs;
+    - the gate container;
+    - the P01–P10 checks;
+    - evidence storage;
+    - the wave scheduler (015), budgets (009), event intake (010) and telemetry (007).
+  - **Stays in the CLI:**
+    - `run` / `release`;
+    - `approve` (harness channel);
+    - `status` and `audit`;
+    - on-demand `github sync|drift`;
+    - `watch` (laptop mode);
+    - credential setup and `reset-fixture`;
+    - laptop `up` and `down`.
 
 ---
 
-**Version**: 1.9.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
+**Version**: 1.10.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
