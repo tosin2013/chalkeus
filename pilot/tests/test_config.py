@@ -128,3 +128,52 @@ class TestPublicRedactsHost(unittest.TestCase):
         self.assertEqual(pub["PILOT_MODEL_EGRESS_HOSTS"].split(",")[0],
                          "sha256:" + hashlib.sha256(b"api.example.com").hexdigest()[:16])
         self.assertEqual(pub["PILOT_MODEL"], "p/m")
+
+
+class TestGitHubLoopConfig(unittest.TestCase):
+    """004 config keys (data-model "Config additions")."""
+    BASE = {"PILOT_FIXTURE_REPO": "o/x-pilot-fixture", "PILOT_MODEL": "p/m", "PILOT_MODEL_EGRESS_HOSTS": "h"}
+
+    def v(self, **kw):
+        return config.validate_values({**self.BASE, **kw})
+
+    def cfg(self, d, **kw):
+        return config.Config(values=self.v(**kw), config_dir=Path(d), model_dir=Path(d) / "opencode",
+                             publisher_env=Path(d) / "publisher.env")
+
+    def test_defaults_off(self):
+        v = self.v()
+        self.assertEqual((v["PILOT_GITHUB_ISSUES"], v["PILOT_GITHUB_APPROVALS"]), ("off", "off"))
+
+    def test_on_off_only(self):
+        with self.assertRaises(ConfigError):
+            self.v(PILOT_GITHUB_ISSUES="yes")
+
+    def test_approvals_need_approvers(self):
+        with self.assertRaises(ConfigError):
+            self.v(PILOT_GITHUB_APPROVALS="on")
+        self.assertEqual(self.v(PILOT_GITHUB_APPROVALS="on", PILOT_APPROVERS="alice, @bob")["PILOT_APPROVERS"], "alice, @bob")
+
+    def test_approvals_imply_issues_and_parse_approvers(self):
+        with tempfile.TemporaryDirectory() as d:
+            c = self.cfg(d, PILOT_GITHUB_APPROVALS="on", PILOT_APPROVERS="alice, @bob")
+            self.assertTrue(c.github_issues)
+            self.assertEqual(c.approvers, ["alice", "bob"])
+
+    def test_credential_values(self):
+        with self.assertRaises(ConfigError):
+            self.v(PILOT_PUBLISHER_CREDENTIAL="pat")
+        with self.assertRaises(ConfigError):
+            self.v(PILOT_PUBLISHER_CREDENTIAL="app")
+        self.v(PILOT_PUBLISHER_CREDENTIAL="app", PILOT_APP_ID="1", PILOT_APP_INSTALLATION_ID="2")
+
+    def test_credential_refuses_to_guess(self):
+        with tempfile.TemporaryDirectory() as d:
+            c = self.cfg(d)
+            self.assertEqual(c.credential, "token")
+            c.publisher_env.write_text("x")
+            c.app_key.write_text("x")
+            with self.assertRaises(ConfigError):
+                _ = c.credential
+            c2 = self.cfg(d, PILOT_PUBLISHER_CREDENTIAL="token")
+            self.assertEqual(c2.credential, "token")

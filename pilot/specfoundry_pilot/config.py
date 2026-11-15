@@ -24,7 +24,11 @@ DEFAULTS = {
     "PILOT_TOKEN_CAP": "2000000",
     "PILOT_PROVIDER_CAP_DECLARED": "false",
     "RETRY_LIMIT": "2",
+    "PILOT_GITHUB_ISSUES": "off",
+    "PILOT_GITHUB_APPROVALS": "off",
 }
+ON_OFF = ("on", "off")
+CREDENTIALS = ("token", "app")
 REQUIRED = ["PILOT_FIXTURE_REPO", "PILOT_MODEL", "PILOT_MODEL_EGRESS_HOSTS"]
 
 
@@ -66,6 +70,34 @@ class Config:
     @property
     def model_files(self) -> list[Path]:
         return model_files(self.model_dir)
+
+    @property
+    def github_issues(self) -> bool:
+        """004: mirror the roadmap as item issues (also on when GitHub approvals are on)."""
+        return self.values.get("PILOT_GITHUB_ISSUES") == "on" or self.github_approvals
+
+    @property
+    def github_approvals(self) -> bool:
+        return self.values.get("PILOT_GITHUB_APPROVALS") == "on"
+
+    @property
+    def approvers(self) -> list[str]:
+        return [a.strip().lstrip("@") for a in self.values.get("PILOT_APPROVERS", "").split(",") if a.strip()]
+
+    @property
+    def app_key(self) -> Path:
+        return self.config_dir / "github-app.pem"
+
+    @property
+    def credential(self) -> str:
+        """`token` or `app` (004 FR-016). Refuses to guess when both exist and none is chosen."""
+        chosen = self.values.get("PILOT_PUBLISHER_CREDENTIAL", "")
+        if chosen:
+            return chosen
+        if self.app_key.exists() and self.publisher_env.exists():
+            raise ConfigError("both a publisher token and a GitHub App key exist: set "
+                              "PILOT_PUBLISHER_CREDENTIAL=token or =app in pilot.env")
+        return "app" if self.app_key.exists() else "token"
 
     def public(self) -> dict:
         """Values safe for the committed evidence (config.json). The model provider's host
@@ -197,6 +229,18 @@ def validate_values(values: dict) -> dict:
         float(v["PILOT_SPEND_CAP_USD"]); int(v["PILOT_TOKEN_CAP"])
     except ValueError:
         raise ConfigError("PILOT_SPEND_CAP_USD / PILOT_TOKEN_CAP must be numeric")
+    for k in ("PILOT_GITHUB_ISSUES", "PILOT_GITHUB_APPROVALS"):
+        if v[k] not in ON_OFF:
+            raise ConfigError(f"{k} must be on or off")
+    if v["PILOT_GITHUB_APPROVALS"] == "on" and not [a for a in v.get("PILOT_APPROVERS", "").split(",") if a.strip()]:
+        raise ConfigError("PILOT_GITHUB_APPROVALS=on needs PILOT_APPROVERS (comma-separated GitHub logins)")
+    cred = v.get("PILOT_PUBLISHER_CREDENTIAL", "")
+    if cred and cred not in CREDENTIALS:
+        raise ConfigError("PILOT_PUBLISHER_CREDENTIAL must be token or app")
+    if cred == "app":
+        for k in ("PILOT_APP_ID", "PILOT_APP_INSTALLATION_ID"):
+            if not str(v.get(k, "")).isdigit():
+                raise ConfigError(f"PILOT_PUBLISHER_CREDENTIAL=app needs a numeric {k}")
     return v
 
 

@@ -272,6 +272,9 @@ Never point it at a repository you care about.
    - **Permissions:** *Contents* read and write; *Pull requests* read and write. *Metadata*
      read-only is added automatically.
    - **Expiration:** short, for example 7–30 days.
+   - **Optional:** for the [GitHub loop](github-loop.md) (issues and approvals on GitHub),
+     also add *Issues* read and write. To publish as a bot instead of your account, use a
+     [GitHub App](github-app.md).
 3. **Store and check it.** The token goes through a hidden prompt straight into a 0600 file.
    It never appears on screen, in shell history or in logs.
 
@@ -584,7 +587,7 @@ This guide describes the pilot today. Planned
 
 | Item | Effect on this guide |
 |---|---|
-| **004:** GitHub loop | PRs will come from a GitHub App (a bot identity) instead of your token, and issues will be created per task |
+| **004:** GitHub loop | Available as an option: issues per roadmap item, approvals on GitHub, and a GitHub App as the publisher. See [the GitHub loop](github-loop.md) and [GitHub App](github-app.md). This walkthrough is unchanged with it off |
 | **005:** OpenShift | An enterprise install path (restricted SCC, possibly images on Quay), and per-run model keys |
 | **007:** Operator observability | Metrics, traces and events from each run to a collector you run |
 | **008:** More harnesses | Claude Code and Codex workers alongside OpenCode |

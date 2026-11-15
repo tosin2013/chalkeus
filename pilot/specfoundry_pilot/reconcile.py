@@ -36,8 +36,11 @@ class Reconciler:
     roadmap_text: Callable[[], str]
     push: Callable[[str], str]
     ask: Callable[[str], str]
+    status_bundle: Callable[[str], tuple[str, Path]] | None = None  # 004: (base_rev, bundle) for a status PR
 
-    def run(self, task: str, item_id: str, pr_number: int, changed_paths: list[str]) -> tuple[int, dict]:
+    def check(self, task: str, item_id: str, pr_number: int, changed_paths: list[str]) -> tuple[int, dict, str | None]:
+        """The reality checks only (merged, tasks 100%, tree matches graded). Returns
+        (0, rec, new_roadmap_text) when a proposal can be made, else (code, rec, None)."""
         rec = {"task": task, "item_id": item_id, "pr": pr_number, "pr_merged": False, "merge_commit": None,
                "tasks_percent": None, "tree_matches_graded": None, "mismatched_paths": [],
                "proposed": None, "approved": False, "applied_commit": None, "reason": None, "at": evidence.now()}
@@ -46,23 +49,29 @@ class Reconciler:
         rec["merge_commit"] = (pr.get("mergeCommit") or {}).get("oid")
         if not rec["pr_merged"]:
             rec["reason"] = "NOT_MERGED"
-            return 4, rec
+            return 4, rec, None
         rec["tasks_percent"] = self.tasks_percent(item_id)
         if rec["tasks_percent"] != 100:
             rec["reason"] = "TASKS_INCOMPLETE"
-            return 1, rec
+            return 1, rec, None
         mism = [p for p in changed_paths if self.default_file(p) != self.graded_file(p)]
         rec["tree_matches_graded"] = not mism
         rec["mismatched_paths"] = mism
         if mism:
             rec["reason"] = "TREE_MISMATCH"
-            return 1, rec
+            return 1, rec, None
         old = self.roadmap_text()
         new = status_edit(old, item_id)
         diff = [f"- {a}\n+ {b}" for a, b in zip(old.splitlines(), new.splitlines()) if a != b]
         rec["proposed"] = "planned→verified"
         print(f"Reconcile proposal for task {task} (item {item_id}), PR #{pr_number} merged "
               f"({rec['merge_commit']}), tasks 100%, graded tree matches:\n" + "\n".join(diff))
+        return 0, rec, new
+
+    def run(self, task: str, item_id: str, pr_number: int, changed_paths: list[str]) -> tuple[int, dict]:
+        code, rec, new = self.check(task, item_id, pr_number, changed_paths)
+        if code != 0:
+            return code, rec
         ans = (self.ask(f"Apply '{item_id}: planned → verified' to the fixture roadmap? [y/N] ") or "").strip().lower()
         if ans != "y":
             rec["reason"] = "DECLINED"
@@ -70,6 +79,23 @@ class Reconciler:
         rec["approved"] = True
         rec["applied_commit"] = self.push(new)
         return 0, rec
+
+
+def check_status_pr(view: dict, base_text: str, head_text: str | None, changed: list[str], item_id: str,
+                    approvers: list[str], publisher: str | None) -> tuple[bool, str | None]:
+    """004 R6: is a merged status-change PR exactly the proposed edit, merged by an allowed human?
+    `view` has state, mergedBy; `head_text` is the roadmap at the PR head; `changed` the files the
+    PR head changes against its base. Returns (ok, reason)."""
+    if view.get("state") != "MERGED":
+        return False, "NOT_MERGED"
+    if changed != [ROADMAP_REL] or head_text != status_edit(base_text, item_id):
+        return False, "STATUS_PR_EDITED"
+    merger = ((view.get("mergedBy") or {}).get("login") or "")
+    if publisher and merger.lower() == publisher.lower():
+        return False, "STATUS_PR_MERGED_BY_PUBLISHER"
+    if merger.lower() not in {a.lower() for a in approvers}:
+        return False, "STATUS_PR_NOT_APPROVER"
+    return True, None
 
 
 def ask_tty(question: str) -> str:
@@ -120,9 +146,19 @@ def for_fixture(cfg, run, task: str, attempt_dir: Path, base_rev: str, ask=ask_t
         fixture.git("push", "--quiet", fixture.url(cfg.repo), f"HEAD:refs/heads/{cfg.branch}", cwd=clone)
         return fixture.git("rev-parse", "HEAD", cwd=clone).stdout.strip()
 
+    def status_bundle(text):
+        """Commit exactly the status edit on top of the default branch and bundle it (004 R6)."""
+        base = fixture.git("rev-parse", "HEAD", cwd=clone).stdout.strip()
+        (clone / ROADMAP_REL).write_text(text)
+        fixture.git("add", ROADMAP_REL, cwd=clone)
+        fixture.git("commit", "--quiet", "-m", f"pilot: {paths.TASKS[task]} verified (run {run.id})", cwd=clone)
+        out = run.dir / f".status-{task}.bundle"
+        fixture.git("bundle", "create", "--quiet", str(out), f"{base}..HEAD", cwd=clone)
+        return base, out
+
     r = Reconciler(pr_view=pr_view, tasks_percent=tasks_percent, default_file=lambda p: read(clone, p),
                    graded_file=lambda p: read(graded, p), roadmap_text=lambda: (clone / ROADMAP_REL).read_text(),
-                   push=push, ask=ask)
+                   push=push, ask=ask, status_bundle=status_bundle)
 
     def cleanup():
         shutil.rmtree(clone, ignore_errors=True)

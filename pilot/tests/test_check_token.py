@@ -1,6 +1,7 @@
 """Publisher token scope check against a fake GitHub API."""
 import importlib.util
 import unittest
+from unittest import mock
 from pathlib import Path
 
 _spec = importlib.util.spec_from_file_location("check_token", Path(__file__).resolve().parents[1] / "images/tools/check_token.py")
@@ -11,8 +12,11 @@ REPO, CANARY = "o/x-pilot-fixture", "o/specfoundry"
 
 
 def fake(user=200, repo_push=True, pulls=200, canary=(200, False), expires="2026-11-20 00:00:00 UTC",
-         repo_write=201, canary_write=404):
+         repo_write=201, canary_write=404, labels=422):
     def get(path, token, method="GET", body=None):
+        if method == "POST" and path == f"/repos/{REPO}/labels":
+            assert body == ct.ISSUES_PROBE
+            return labels, None, {}
         if method == "POST" and path == f"/repos/{REPO}/git/blobs":
             return repo_write, None, {}
         if method == "POST" and path == f"/repos/{CANARY}/git/blobs":
@@ -68,3 +72,33 @@ class TestCheckToken(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestIssuesProbe(unittest.TestCase):
+    """004: Issues write is probed only when asked, side-effect free (422 = allowed)."""
+    def test_not_probed_by_default(self):
+        r = ct.check("t", REPO, CANARY, get=fake(labels=403))
+        self.assertTrue(r["ok"], r)
+        self.assertIsNone(r["issues_write"])
+
+    def test_issues_ok(self):
+        r = ct.check("t", REPO, CANARY, get=fake(), issues=True)
+        self.assertTrue(r["ok"], r)
+        self.assertTrue(r["issues_write"])
+
+    def test_issues_missing(self):
+        r = ct.check("t", REPO, CANARY, get=fake(labels=403), issues=True)
+        self.assertFalse(r["ok"])
+        self.assertIn("Issues: read and write", " ".join(r["problems"]))
+
+
+class TestAppToken(unittest.TestCase):
+    """004: an App installation token is checked without GET /user."""
+    def test_app_kind_skips_user(self):
+        def get(path, token, method="GET", body=None):
+            assert path != "/user"
+            return fake()(path, token, method, body)
+        with mock.patch.dict(ct.os.environ, {"PILOT_SCM_KIND": "app", "PILOT_SCM_LOGIN": "pilot[bot]"}):
+            r = ct.check("t", REPO, CANARY, get=get, issues=True)
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(r["login"], "pilot[bot]")

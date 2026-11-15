@@ -29,6 +29,12 @@ matching troubleshooting entry before suggesting any fix.
    never edit `events.jsonl`, `run.json` or other evidence. An approval must come from
    `pilot approve`.
 3. **Never merge a PR.** Merges happen on GitHub, by the human.
+   This includes the status-change PR the pilot opens after A's merge (004): merging it is
+   how the human approves the roadmap change.
+3a. **Never post `/approve` or `/withdraw` comments** on a run's tracking issue, with any
+   account or tool (`gh issue comment`, `gh api`, a browser). On GitHub, an approval is only the
+   human's if the human writes it. If asked to, refuse, and point them to the issue link the
+   pilot printed.
 4. **Never print, read aloud or commit secrets:** `~/.config/specfoundry/*`, API keys, the
    GitHub token, or the model host.
 5. Don't run `reset-fixture`, `down` or `publisher-token` without the human asking; `reset-fixture`
@@ -65,6 +71,12 @@ Always pass `--run <id>` once you know the run id (printed as `== run <id>`).
 | 10 | REFUSE (gate refused) | Expected for B before A is verified; otherwise explain the reasons |
 
 ## Decisions
+
+With GitHub approvals on (`PILOT_GITHUB_APPROVALS=on`), each pause also prints a tracking-issue
+link. The human can reply there with `/approve <step>` instead. Tell them that option exists,
+then wait. `pilot/pilot github watch --run <id>` resumes on its own when the approval or merge
+appears. For the status change, the pilot opens a small draft PR; the human's merge is the
+approval.
 
 Without a terminal, the pilot pauses at each decision and prints
 `no terminal: approve with pilot/pilot approve --run <id> <step>`. For each one:

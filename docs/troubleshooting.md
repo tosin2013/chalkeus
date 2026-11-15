@@ -26,6 +26,11 @@ instead.
 | An attempt fails with reason `deadline` or `spend_cap` | [Deadline or spend cap](#deadline-or-spend-cap) |
 | `GitHub Actions is not permitted to create or approve pull requests` | [Actions can't open PRs](#actions-cannot-open-prs) |
 | `T01`, `T02` or `T03` fails after `pilot/pilot down` | [Leftovers after teardown](#leftovers) |
+| `no issue write access to … (needs Issues: read and write)` | [No issue access](#github-issues-access) |
+| `github drift: N difference(s)` | [GitHub drift](#github-drift) |
+| A `/approve` reply on GitHub didn't resume the run | [GitHub approval rejected](#github-approval-rejected) |
+| The run fails with `STATUS_PR_EDITED`, `STATUS_PR_NOT_APPROVER` or `STATUS_PR_MERGED_BY_PUBLISHER` | [Status-change PR refused](#status-pr-refused) |
+| `GitHub App: NOT OK`, or `GitHub App token: …` | [GitHub App problems](#github-app) |
 
 ---
 
@@ -260,6 +265,109 @@ Operators who pull the published images never see it.
 - **Confirm:** `resume` shows the reconcile proposal and asks
   `Apply '001: planned → verified' to the fixture roadmap? [y/N]`.
 - **Source:** `pilot/specfoundry_pilot/pipeline.py` (resume check).
+
+---
+
+## GitHub loop
+
+These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVALS=on`. See
+[the GitHub loop](github-loop.md).
+
+<a id="github-issues-access"></a>
+### No issue access: "needs Issues: read and write"
+
+- **Symptom:** `pilot/pilot publisher-token --check-only` (or `app-token --check`) reports
+  `no issue write access to <repo>`, or `github sync` fails with HTTP 403.
+- **Cause:** the GitHub loop writes issues, labels and comments, and the publisher credential
+  lacks *Issues: read and write*.
+- **Fix:** edit the fine-grained token on GitHub (*Settings → Developer settings →
+  Fine-grained tokens*) and add *Issues: read and write*. For an App, add the permission on the
+  App's page, then accept the new permission on the installation.
+- **Confirm:** the check prints `OK`.
+- **Source:** `pilot/images/tools/check_token.py` (issues probe).
+
+<a id="github-drift"></a>
+### GitHub drift: "github drift: N difference(s)"
+
+- **Symptom:** `pilot/pilot github drift` exits 1, or a run's `github/drift.json` isn't empty.
+- **Cause:** something on GitHub disagrees with the roadmap:
+  - `missing_issue`: no issue for an item;
+  - `label_mismatch`: a status label was changed by hand;
+  - `open_but_verified` / `closed_but_not_verified`: an issue was closed or reopened by hand;
+  - `pr_without_closes`: a task PR lost its `Closes #N`;
+  - `orphan_issue` / `duplicate_issue`: issues for items no longer in the roadmap, or two
+    issues for one item.
+- **Fix:** run `pilot/pilot github sync`. It recreates missing issues and restores labels and
+  bodies. It never closes, reopens or deletes. Fix the rest on GitHub by hand: close an orphan
+  or duplicate, or reopen an issue whose item isn't verified.
+- **Confirm:** `pilot/pilot github drift` exits 0.
+- **Source:** `pilot/specfoundry_pilot/ghsync.py`.
+
+<a id="github-approval-rejected"></a>
+### GitHub approval rejected: the run stays paused
+
+- **Symptom:** you replied `/approve <step>` on the tracking issue, but `resume` (or `github
+  watch`) pauses again.
+- **Cause:** the reply broke a rule. The run's `github/approvals.jsonl` and the
+  `approval_rejected` events give the reason:
+
+  | Reason | Meaning |
+  |---|---|
+  | `wrong_step` | the reply names a different step than the one pending |
+  | `before_decision` | posted before the current decision post (for example, under an earlier attempt) |
+  | `not_an_approver` | your login isn't in `PILOT_APPROVERS` |
+  | `no_write_access` | your account no longer has write, maintain or admin on the fixture repo |
+  | `publisher_identity` | posted with the publisher's account (in token mode, that's your own account through the token) |
+  | `app_authored` | posted by a GitHub App or bot |
+  | `edited` | the comment was edited after posting |
+  | `withdrawn` | you posted `/withdraw <step>` afterwards |
+  | `duplicate` | an earlier valid approval was used instead |
+- **Fix:** post a new reply that is exactly `/approve <step>`, as yourself, below the latest
+  decision post. If `publisher_identity` comes up in token mode, approve from the GitHub web UI
+  rather than a tool using the token, or switch to a GitHub App.
+- **Confirm:** `pilot/pilot github watch --run <id>` resumes.
+- **Source:** `pilot/specfoundry_pilot/ghapprove.py`.
+
+<a id="status-pr-refused"></a>
+### Status-change PR refused
+
+- **Symptom:** after you merge the status-change PR, the run fails with one of these:
+  - `STATUS_PR_EDITED`;
+  - `STATUS_PR_NOT_APPROVER`;
+  - `STATUS_PR_MERGED_BY_PUBLISHER`;
+  - `STATUS_NOT_ON_DEFAULT`.
+- **Cause:** the merge doesn't count as an approval:
+  - **`STATUS_PR_EDITED`:** the PR changed more than the one status line;
+  - **`STATUS_PR_NOT_APPROVER`:** it was merged by someone not in `PILOT_APPROVERS`;
+  - **`STATUS_PR_MERGED_BY_PUBLISHER`:** it was merged with the publisher's account;
+  - **`STATUS_NOT_ON_DEFAULT`:** the default branch doesn't show the item `verified`.
+- **Fix:** the run can't continue, because the roadmap may now hold an unapproved change.
+  Run `pilot/pilot reset-fixture`, then start a new run. Next time, merge the status-change PR
+  unedited, from an approver's account.
+- **Confirm:** the new run's `reconcile/A-status.json` shows `"ok": true`.
+- **Source:** `pilot/specfoundry_pilot/reconcile.py` (`check_status_pr`).
+
+<a id="github-app"></a>
+### GitHub App problems
+
+- **Symptom:** `pilot/pilot app-token --check` prints `GitHub App: NOT OK`, or a run stops with
+  `GitHub App token: …`.
+- **Cause and fix:**
+  - **`cannot sign with the App key`:** the file isn't the App's private key. Generate a new
+    one on the App's page, and store it with `pilot/pilot app-key`.
+  - **`GitHub rejected the App JWT`:** `PILOT_APP_ID` is wrong, or the key belongs to another
+    App.
+  - **`cannot mint an installation token`:** `PILOT_APP_INSTALLATION_ID` is wrong, or the App
+    isn't installed on the fixture repo.
+  - **`the App lacks …: write`:** add the permission on the App's page, then accept it on the
+    installation.
+  - **`token covers […]`:** the installation includes more repositories. Limit it to the
+    fixture repo.
+  - **`both a publisher token and a GitHub App key exist`:** set `PILOT_PUBLISHER_CREDENTIAL`
+    to `token` or `app`.
+- **Confirm:** `pilot/pilot app-token --check` prints `OK`.
+- **Source:** `pilot/tools/app_token.py`, `pilot/specfoundry_pilot/ghapp.py`; see
+  [github-app.md](github-app.md).
 
 ---
 

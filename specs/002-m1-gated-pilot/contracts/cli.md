@@ -1,6 +1,8 @@
 # Contract: `pilot` CLI
 
 > Amended by 012: `pilot approve`, pause-without-terminal and the mode pause; see `specs/012-agent-approvals/contracts/cli-approve.md`.
+>
+> Amended by 004: `pilot github sync|drift|watch`, `app-key`, `app-token`, and GitHub approvals; see `specs/004-github-loop/contracts/cli-github.md`.
 
 Entry point: `pilot/pilot` (a bash shim that runs `python3 -m specfoundry_pilot`). All
 commands run from the specfoundry repo root. Configuration is in [config.md](config.md).

@@ -9,7 +9,7 @@ orphan blob is invisible and garbage-collected. The `permissions` field of GET /
 used to decide, because for a public repository it reflects the account's rights, not the
 fine-grained token's (found 2026-11-13 when the specfoundry repo became public).
 
-    check_token.py <fixture owner/name> <canary owner/name>
+    check_token.py <fixture owner/name> <canary owner/name> [--issues]
 
 The canary is a repository the token must NOT be able to write (specfoundry's own origin).
 """
@@ -25,6 +25,9 @@ API = "https://api.github.com"
 
 
 PROBE = {"content": "specfoundry publisher token scope probe (unreferenced blob)", "encoding": "utf-8"}
+# 004: issues-write probe. An invalid colour makes GitHub reject the label with 422 *after* the
+# permission check, so a 422 proves write access and nothing is created; 403/404 means no access.
+ISSUES_PROBE = {"name": "specfoundry-probe", "color": "not-a-color"}
 
 
 def get(path: str, token: str, method: str = "GET", body=None):
@@ -39,13 +42,16 @@ def get(path: str, token: str, method: str = "GET", body=None):
         return e.code, None, dict(e.headers or {})
 
 
-def check(token: str, repo: str, canary: str | None, get=get) -> dict:
+def check(token: str, repo: str, canary: str | None, get=get, issues: bool = False) -> dict:
     problems = []
-    st, user, hdr = get("/user", token)
-    login = (user or {}).get("login")
-    if st != 200:
-        problems.append(f"token rejected by GitHub (HTTP {st})")
-    expires = hdr.get("github-authentication-token-expiration") or hdr.get("GitHub-Authentication-Token-Expiration")
+    if os.environ.get("PILOT_SCM_KIND") == "app":  # 004: App installation tokens cannot call GET /user
+        login, expires = os.environ.get("PILOT_SCM_LOGIN"), "1 hour (GitHub App installation token)"
+    else:
+        st, user, hdr = get("/user", token)
+        login = (user or {}).get("login")
+        if st != 200:
+            problems.append(f"token rejected by GitHub (HTTP {st})")
+        expires = hdr.get("github-authentication-token-expiration") or hdr.get("GitHub-Authentication-Token-Expiration")
     st, r, _ = get(f"/repos/{repo}", token)
     if st != 200:
         problems.append(f"cannot read {repo} (HTTP {st})")
@@ -56,13 +62,19 @@ def check(token: str, repo: str, canary: str | None, get=get) -> dict:
     st, r, _ = get(f"/repos/{repo}/pulls?state=all&per_page=1", token)
     if st != 200:
         problems.append(f"cannot list pull requests on {repo} (needs Pull requests: read and write)")
+    issues_write = None
+    if issues:
+        st_i, _, _ = get(f"/repos/{repo}/labels", token, "POST", ISSUES_PROBE)
+        issues_write = st_i == 422
+        if not issues_write:
+            problems.append(f"no issue write access to {repo} (probe HTTP {st_i}; needs Issues: read and write)")
     canary_push = None
     if canary:
         st_c, _, _ = get(f"/repos/{canary}/git/blobs", token, "POST", PROBE)
         canary_push = st_c == 201
         if canary_push:
             problems.append(f"token can write {canary}: scope it to the fixture repo only")
-    return {"ok": not problems, "login": login, "repo": repo, "repo_push": repo_push,
+    return {"ok": not problems, "login": login, "repo": repo, "repo_push": repo_push, "issues_write": issues_write,
             "canary": canary, "canary_push": canary_push, "expires": expires, "problems": problems}
 
 
@@ -71,7 +83,7 @@ def main(argv) -> int:
     if not token:
         print(json.dumps({"ok": False, "problems": ["PILOT_SCM_TOKEN missing"]}))
         return 1
-    res = check(token, argv[1], argv[2] if len(argv) > 2 and argv[2] else None)
+    res = check(token, argv[1], argv[2] if len(argv) > 2 and argv[2] else None, issues="--issues" in argv[3:])
     print(json.dumps(res))
     return 0 if res["ok"] else 1
 

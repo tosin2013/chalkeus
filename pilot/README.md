@@ -51,9 +51,19 @@ pilot/pilot status          # current run state
 pilot/pilot approve --run <id> mode|retry|reconcile  # no terminal: approve the one pending step
 #   (your agent harness asks you first; OpenCode needs the rule in your own config,
 #    see docs/troubleshooting.md#prompts-answer-no)
+pilot/pilot github sync     # 004: mirror the roadmap as item issues + status labels (idempotent)
+pilot/pilot github drift [--run <id>]   # roadmap vs GitHub (exit 1 on drift)
+pilot/pilot github watch --run <id>     # resume when an /approve reply or a merge appears
+pilot/pilot app-key < key.pem           # store a GitHub App key (kept only if its check passes)
+pilot/pilot app-token --check           # mint an App token and probe its scope
 ```
 
-Every human decision is a typed `y`. Without a terminal, every prompt counts as **no**.
+GitHub loop settings in `pilot.env` (all optional; see `docs/github-loop.md`, `docs/github-app.md`):
+`PILOT_GITHUB_ISSUES=on|off`, `PILOT_GITHUB_APPROVALS=on|off`, `PILOT_APPROVERS=login,...`,
+`PILOT_PUBLISHER_CREDENTIAL=token|app`, `PILOT_APP_ID`, `PILOT_APP_INSTALLATION_ID`.
+
+Every human decision is a typed `y`. Without a terminal, the run pauses at each decision: approve it with
+`pilot approve` through your agent harness, or with `/approve <step>` on GitHub when the GitHub loop is on.
 
 ## Evidence
 
