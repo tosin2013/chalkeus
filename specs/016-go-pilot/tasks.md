@@ -180,7 +180,7 @@ the harness channel working.
 - [X] T025 [P] [US2] Port `internal/fixture` from `fixture.py`: the git binary wrapper, `gh`
   replaced by go-github reads (R6), `fresh_clone`, `reset` (same prompt "Type y to continue: "),
   `open_pilot_prs`, `url`. Wire `pilot reset-fixture [--yes]`.
-- [ ] T026 [P] [US2] Port `internal/images` from `images.py`: pins.env, digest references (tags
+- [X] T026 [P] [US2] Port `internal/images` from `images.py`: pins.env, digest references (tags
   rejected with the same messages), `--local-build`, `load()`. Port the cases from `test_pins.py`
   and `test_image_source.py`.
 - [ ] T027 [US2] Port `internal/cluster` from `cluster.py` and `infra.py`:
