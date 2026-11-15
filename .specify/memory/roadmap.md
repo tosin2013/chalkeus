@@ -2,8 +2,8 @@
 SYNC IMPACT REPORT
 ==================
 Version change: 1.7.2 → 1.8.0
-Bump rationale: MINOR — a new planned spec (013), a new open question (Q8), a status
-transition, and scope/notes corrections on 012.
+Bump rationale: MINOR — a new planned spec (013), new open questions (Q8–Q10), a status
+transition, scope/notes corrections on 012, and material scope changes to 005 and 011.
 
 Changes this revision (owner approval 2026-11-15, 012 debrief
 specs/012-agent-approvals/roadmap-reviews/debrief-20261115.md):
@@ -17,9 +17,15 @@ specs/012-agent-approvals/roadmap-reviews/debrief-20261115.md):
   - New entry: 013 Installable pilot release (needs-info)
   - New Q8: using the pilot across projects; harness rules per user; agents that run in a
     real terminal; deny rules beyond Claude Code
+  - 005 scope: in-cluster planning moves to 011; 005 is the OpenShift target in laptop mode
+    (old text struck through)
+  - 011: develop on kind, then OpenShift as the release check; lives in operator/ in this
+    repo until Q9's split trigger; takes in-cluster planning from 005
+  - New Q9: when the operator moves to its own repo
+  - New Q10: distribution channels and timing (CLI, images, operator catalog, mirrors)
 
-Specs affected: 012, 013 (new)
-Open questions added/resolved: Q8 added
+Specs affected: 005, 011, 012, 013 (new)
+Open questions added/resolved: Q8, Q9, Q10 added
 
 Previous revision 1.7.2 (2026-11-14):
 Version change: 1.7.1 → 1.7.2
@@ -399,12 +405,16 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ### 005 — M4 in-cluster planning and OpenShift target  [status: planned]
 
-- **Description:** Optional in-cluster planning Job, and OpenShift as a target
-  platform.
-- **Outcome:** Planning location is configurable per project (local or
-  in-cluster) with the same handoff, and the pilot runs on OpenShift.
-- **Scope (in):** planning Job, per-project planning setting, OpenShift runner
-  validation.
+- **Description:** ~~Optional in-cluster planning Job, and OpenShift as a target
+  platform.~~ OpenShift as a target platform, driven by the laptop CLI (C-11 laptop mode).
+  *(Amended 2026-11-15: in-cluster planning moved to 011.)*
+- **Outcome:** ~~Planning location is configurable per project (local or
+  in-cluster) with the same handoff, and the pilot runs on OpenShift.~~ The pilot runs on a
+  remote OpenShift cluster from the laptop CLI and passes the same full audit as on kind.
+- **Scope (in):** ~~planning Job, per-project planning setting, OpenShift runner
+  validation.~~ OpenShift runner validation; a configurable kube context; preflight checks
+  instead of creating a cluster; namespaces the user may not be able to create; image
+  variants or mirrors for OpenShift (Quay).
 - **Scope (out):** hosted SaaS or UI.
 - **Depends on:** 003
 - **Addresses:** docs/prd.md §9 M4, F2, N1
@@ -518,7 +528,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   cluster; run state and evidence stored in the cluster; model keys and the publisher
   credential (token or GitHub App key) from cluster secrets or an enterprise secret store,
   with the operator minting per-run App tokens; parallel runs; permissions through
-  Kubernetes RBAC; the CLI's operator on/off detection; GitHub approvals (from 004).
+  Kubernetes RBAC; the CLI's operator on/off detection; GitHub approvals (from 004). Added
+  2026-11-15: the optional in-cluster planning Job and per-project planning setting (moved
+  from 005).
 - **Scope (out):** a hosted SaaS or UI; multi-cluster; any weakening of a guarantee.
 - **Depends on:** 004, 005
 - **Governed by:** C-01, C-02, C-03, C-04, C-07, C-08, C-10, C-11
@@ -527,6 +539,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   (event-proposed runs) gain the most in cluster mode. Decide here how runs get namespaces
   when users cannot create them. Depends on spec-status shipping a CLI container image for
   the in-cluster gate (PRD §8). The GitHub App is the recommended publisher credential here.
+  **Owner decision 2026-11-15:** develop and test on kind first, then make the same full
+  audit on OpenShift the release check. 005 (OpenShift in laptop mode) comes first, so the
+  operator is designed around OpenShift's constraints (SCC, arbitrary UIDs, namespace
+  permissions, egress). The operator lives in `operator/` in this repo until Q9's split
+  trigger is met.
 
 ### 012 — Working with an agent: pilot skill and harness approvals  [status: verified]
 
@@ -604,6 +621,19 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - Do harnesses other than Claude Code get a deny rule for `approvals/`?
 
   Relevant to 008, 011 and 013.
+- Q9 — When does the operator move to its own repo (raised 2026-11-15)? Default: it stays
+  in `operator/` here. Split when it has its own toolchain and release cadence (for example
+  a Go operator with an OLM bundle) **and** the evidence and audit contract is versioned
+  and language-neutral, so the CLI and the operator can each check it independently. Name
+  per Q7.
+- Q10 — Distribution channels and timing (raised 2026-11-15). Proposed, not yet decided:
+  - we publish to public channels we control: CLI on GitHub Releases with checksums (013),
+    images on GHCR or Quay by digest (C-09, 005), the operator as an OLM bundle in the
+    community operator catalog plus a Helm chart (after 011 is verified);
+  - a certified catalog listing later, on enterprise demand (needs certified base images);
+  - companies mirror into their own Artifactory or internal registry. Everything stays
+    mirrorable: digest-only references, checksums, a configurable registry prefix, and no
+    runtime internet fetch during install.
 
 ## Cross-Cutting Notes
 
