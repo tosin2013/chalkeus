@@ -12,8 +12,8 @@ Changes this revision (owner decision 2026-11-15, prompted by issue #25 and the 
   - New entry: 016 Go pilot at parity
   - 013: form decided (one Go binary per platform); status needs-info → planned; depends on 016
   - 014 depends on 004 and 016; 011 depends on 004, 005 and 016
-  - 004: spec dir linked; note that the Python implementation is the reference and its
-    validation evidence becomes golden data for 016
+  - 004: spec dir linked; note that the Python implementation is the reference, its validation
+    was stopped, and it is validated on the Go pilot in 016
   - Q9: operator language decided (Go, same module); split question narrowed
   - Cross-cutting: the CLI/operator split rule and the operator inventory (from issue #25)
 
@@ -462,8 +462,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   account's rights, not a fine-grained token's (use a write probe instead). GitHub approvals
   reuse 012's pending-step approval and channel record, adding a `github` channel
   (2026-11-14). **2026-11-15:** implemented in the Python pilot (PR #21), which is now the
-  reference implementation (C-13). The owner's validation runs become golden evidence for the
-  `github` channel, and 016 ports the behaviour to Go. Issue #25 (watching needs a terminal) is
+  reference implementation (C-13). Its owner validation was stopped (owner decision): 016 ports
+  the behaviour to Go, and 004's validation (quickstart §2–§5) runs against the Go pilot, which
+  also produces the golden evidence for the `github` channel. Status stays `planned` until then. Issue #25 (watching needs a terminal) is
   solved in the Go design: a laptop daemon in 016, and the operator in 011.
 - **Spec dir:** specs/004-github-loop/
 
@@ -728,6 +729,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - the watch design for issue #25: a laptop daemon mode started by the run, built so the
     operator (011) can reuse it;
   - conformance vectors (approval rules, status-PR check) and a golden-evidence audit suite;
+  - 004's owner validation (its quickstart §2–§5), run against the Go pilot;
   - switching `pilot/pilot` to the Go binary, and retiring the Python pilot at parity.
 - **Scope (out):** new features (014, 015, 011 follow); porting the in-cluster image scripts;
   release packaging (013).
@@ -740,7 +742,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - static binaries across operating systems;
   - the Kubernetes ecosystem is Go.
 
-  The committed evidence of 002, 003, 006 and 012 (and 004, once validated) is the golden data.
+  The committed evidence of 002, 003, 006 and 012 is the golden data (004 was never validated in
+  Python; its validation runs on the Go pilot).
   Port order: audit and gate first (pure, proven on golden data), then run and resume on the
   fixture, then the GitHub loop, then setup and teardown.
 

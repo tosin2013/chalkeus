@@ -242,15 +242,15 @@ PR is refused.
   entries for each `approval_rejected` reason. Then run `pilot/tools/docs_check.py`.
 - [X] T033 Update `pilot/README.md` with the new commands and config keys.
 - [X] T034 Run the full unit suite and docs check; record the counts in this file's Notes.
-- [ ] T035 **Owner action:** quickstart §2–§3 on the fixture in token mode. Record results in
+- [ ] T035 *(superseded 2026-11-15, see Notes)* **Owner action:** quickstart §2–§3 on the fixture in token mode. Record results in
   `specs/004-github-loop/evidence/README.md` and copy the run record into `evidence/<run-id>/`.
-- [ ] T036 **Owner action:** quickstart §4 in App mode (SC-005), timing the App setup from the
+- [ ] T036 *(superseded 2026-11-15, see Notes)* **Owner action:** quickstart §4 in App mode (SC-005), timing the App setup from the
   docs only (SC-007).
-- [ ] T037 **Owner action:** quickstart §5, a terminal run with GitHub approvals off (no
+- [ ] T037 *(superseded 2026-11-15, see Notes)* **Owner action:** quickstart §5, a terminal run with GitHub approvals off (no
   change).
-- [ ] T038 Privacy check: AU08 passes for every 004 run, and no token, key or model host
+- [ ] T038 *(superseded 2026-11-15, see Notes)* Privacy check: AU08 passes for every 004 run, and no token, key or model host
   appears in `specs/004-github-loop/`.
-- [ ] T039 Add an Evidence section to `specs/004-github-loop/spec.md`, then
+- [ ] T039 *(superseded 2026-11-15, see Notes)* Add an Evidence section to `specs/004-github-loop/spec.md`, then
   `/speckit-roadmap-debrief`, and with the owner's approval `/speckit-roadmap-write`: 004
   spec dir and status; Q4 resolved ("per item").
 
@@ -310,3 +310,7 @@ comments or merge PRs on the owner's behalf.
     workflow, or `pilot up --local-build`, before T036.
   - **docs_check:** now understands nested subcommands (`github sync|drift|watch`).
   - **T034:** 208 unit tests OK; docs_check 0 problems in 9 files.
+- **Validation stopped (2026-11-15, owner decision):** the Go pivot (C-13, roadmap 016)
+  replaces it. 004 is ported to Go in 016 from this spec and the Python reference
+  implementation. T035–T037 run against the Go pilot as part of 016's validation, then T038 and
+  T039 follow. The boxes stay unticked, so `spec status` doesn't count work that never ran.
