@@ -22,7 +22,8 @@ specs/012-agent-approvals/roadmap-reviews/debrief-20261115.md):
   - 011: develop on kind, then OpenShift as the release check; lives in operator/ in this
     repo until Q9's split trigger; takes in-cluster planning from 005
   - New Q9: when the operator moves to its own repo
-  - New Q10: distribution channels and timing (CLI, images, operator catalog, mirrors)
+  - New Q10: distribution channels and timing (CLI releases, images, Helm chart on Artifact
+    Hub, operator on OperatorHub.io)
 
 Specs affected: 005, 011, 012, 013 (new)
 Open questions added/resolved: Q8, Q9, Q10 added
@@ -627,13 +628,15 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   and language-neutral, so the CLI and the operator can each check it independently. Name
   per Q7.
 - Q10 — Distribution channels and timing (raised 2026-11-15). Proposed, not yet decided:
-  - we publish to public channels we control: CLI on GitHub Releases with checksums (013),
-    images on GHCR or Quay by digest (C-09, 005), the operator as an OLM bundle in the
-    community operator catalog plus a Helm chart (after 011 is verified);
+  - CLI on GitHub Releases with checksums (013); images on GHCR or Quay by digest (C-09, 005);
+  - after 011 is verified: a **Helm chart**, hosted as an OCI artifact on GHCR and listed on
+    **Artifact Hub** (artifacthub.io, an index that links to where charts are hosted), and the
+    operator as an OLM bundle on **OperatorHub.io** (submitted by PR to the community
+    operators repository). Artifact Hub can index the operator too;
   - a certified catalog listing later, on enterprise demand (needs certified base images);
-  - companies mirror into their own Artifactory or internal registry. Everything stays
-    mirrorable: digest-only references, checksums, a configurable registry prefix, and no
-    runtime internet fetch during install.
+  - everything stays mirrorable for companies with internal registries: digest-only
+    references, checksums, a configurable registry prefix, and no runtime internet fetch
+    during install.
 
 ## Cross-Cutting Notes
 
