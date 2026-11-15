@@ -59,7 +59,7 @@ func approveCmd() *cobra.Command {
 		Short:     "approve the decision a paused run is waiting for (no-terminal use; your agent harness must ask you before this runs)",
 		ValidArgs: []string{"mode", "retry", "reconcile"},
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-		RunE:      func(*cobra.Command, []string) error { return notImplemented("approve") },
+		RunE:      runApprove,
 	}
 	c.Flags().String("run", "", "run id (see `pilot status`)")
 	_ = c.MarkFlagRequired("run")

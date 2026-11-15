@@ -1,0 +1,278 @@
+// Package decisions handles human decisions with or without a terminal
+// (reference: pilot/specfoundry_pilot/approvals.py; specs/012-agent-approvals, 004). It is not
+// called "approvals" because the project's harness rules deny edits under any approvals/ path.
+//
+// With a terminal, the pilot asks there (channel tty) and any pending approval for the run is
+// discarded: the terminal answer is the current decision. Without one, nothing is assumed: the
+// run pauses, and a human approves the one pending step with `pilot approve` (channel harness)
+// or on GitHub (channel github, 004). An approval is accepted only for the step the run is
+// paused at, after it was shown; it is bound to that step (task, attempt, merge commit) and
+// used at most once; every decision is recorded with its channel.
+package decisions
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"golang.org/x/term"
+
+	"github.com/tosin2013/specfoundry/internal/evidence"
+)
+
+func file(run *evidence.Run) string { return filepath.Join(run.Dir, "approvals", "pending.json") }
+
+// HasTTY reports whether a controlling terminal is available (replaced in tests).
+var HasTTY = func() bool {
+	f, err := os.Open("/dev/tty")
+	if err != nil {
+		return false
+	}
+	defer func() { _ = f.Close() }()
+	return term.IsTerminal(int(f.Fd()))
+}
+
+// AskTTY asks on the controlling terminal; no terminal or any error gives "" (no, fail closed).
+var AskTTY = func(question string) string {
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = tty.Close() }()
+	if _, err := tty.WriteString(question); err != nil {
+		return ""
+	}
+	line, _ := bufio.NewReader(tty).ReadString('\n')
+	return line
+}
+
+// Pending is the decision a run is paused at.
+type Pending struct {
+	Step        string // mode | retry | reconcile | merge
+	Task        any    // nil or "A"/"B"
+	N           any    // nil or the attempt number
+	Mode        any
+	MergeCommit string
+	Proposed    string
+	ItemID      any
+}
+
+func toInt(v any) (int, bool) {
+	switch x := v.(type) {
+	case float64:
+		return int(x), true
+	case int:
+		return x, true
+	case int64:
+		return int(x), true
+	case json.Number:
+		i, err := x.Int64()
+		return int(i), err == nil
+	case string:
+		var i int
+		_, err := fmt.Sscanf(x, "%d", &i)
+		return i, err == nil
+	}
+	return 0, false
+}
+
+func readJSON(path string) map[string]any {
+	var m map[string]any
+	if raw, err := os.ReadFile(path); err == nil {
+		_ = evidence.Decode(raw, &m)
+	}
+	return m
+}
+
+// PendingStep returns the decision the run is paused at, or nil.
+func PendingStep(run *evidence.Run) *Pending {
+	st, _ := run.State["state"].(string)
+	pend, _ := run.State["pending"].(map[string]any)
+	switch st {
+	case "paused(awaiting-mode)":
+		return &Pending{Step: "mode", Mode: run.State["proposed_mode"]}
+	case "paused(awaiting-retry)":
+		n, _ := toInt(pend["n"])
+		return &Pending{Step: "retry", Task: pend["task"], N: n}
+	case "paused(awaiting-merge)":
+		rec := readJSON(filepath.Join(run.Dir, "reconcile", "A.json"))
+		mc, _ := rec["merge_commit"].(string)
+		prop, _ := rec["proposed"].(string)
+		if rec["reason"] == "DECLINED" && prop != "" && mc != "" {
+			return &Pending{Step: "reconcile", Task: "A", MergeCommit: mc, Proposed: prop, ItemID: rec["item_id"]}
+		}
+		return &Pending{Step: "merge", Task: "A"}
+	}
+	return nil
+}
+
+// PyJSON converts compact JSON to Python's json.dumps spacing (", " and ": ").
+func PyJSON(raw string) string {
+	var b strings.Builder
+	inStr, esc := false, false
+	for _, c := range raw {
+		b.WriteRune(c)
+		if inStr {
+			switch {
+			case esc:
+				esc = false
+			case c == '\\':
+				esc = true
+			case c == '"':
+				inStr = false
+			}
+			continue
+		}
+		switch c {
+		case '"':
+			inStr = true
+		case ',', ':':
+			b.WriteByte(' ')
+		}
+	}
+	return b.String()
+}
+
+func pyNone(v any) string {
+	if v == nil {
+		return "None"
+	}
+	return fmt.Sprint(v)
+}
+
+// Describe is the decision in plain words.
+func Describe(p *Pending) string {
+	switch p.Step {
+	case "mode":
+		mode, _ := json.Marshal(p.Mode) // maps marshal with sorted keys
+		return "start the run in this mode: " + PyJSON(string(mode))
+	case "retry":
+		return fmt.Sprintf("retry task %v (attempt %v)", p.Task, p.N)
+	case "reconcile":
+		return fmt.Sprintf("apply '%s: %s' to the fixture roadmap (merge commit %s)", pyNone(p.ItemID), p.Proposed, p.MergeCommit)
+	}
+	return "merge"
+}
+
+// Record approves exactly the pending step (`pilot approve`: channel harness; 004: github with
+// the approver's login and comment id). It returns (exit code, message).
+func Record(run *evidence.Run, step, channel, approver string, commentID any) (int, string) {
+	p := PendingStep(run)
+	if p == nil {
+		return 2, fmt.Sprintf("run %s is not paused at a decision (state=%s)", run.ID, pyNone(run.State["state"]))
+	}
+	if p.Step == "merge" {
+		return 4, "the run is waiting for you to merge A's PR on GitHub; merging is never approved here. " +
+			"Merge it, run `pilot/pilot resume`, then approve the reconcile proposal it shows."
+	}
+	if p.Step != step {
+		return 2, fmt.Sprintf("run %s is waiting for '%s', not '%s': %s", run.ID, p.Step, step, Describe(p))
+	}
+	if channel == "" {
+		channel = "harness"
+	}
+	a := map[string]any{"step": p.Step, "task": p.Task, "n": p.N, "channel": channel, "at": evidence.Now()}
+	if p.Step == "reconcile" {
+		a["merge_commit"], a["proposed"], a["item_id"] = p.MergeCommit, p.Proposed, p.ItemID
+	}
+	extra := ""
+	if channel == "github" {
+		a["approver"], a["comment_id"] = approver, commentID
+		extra = fmt.Sprintf(" approver=%s comment=%v", approver, commentID)
+	}
+	if err := evidence.WriteJSON(file(run), a); err != nil {
+		return 2, err.Error()
+	}
+	_ = run.Event("approval", p.Task, p.N, "approval_recorded", fmt.Sprintf("step=%s channel=%s%s", step, channel, extra))
+	by := ""
+	if channel == "github" {
+		by = " by @" + approver + " on GitHub"
+	}
+	return 0, fmt.Sprintf("approved%s: %s. Now run: pilot/pilot resume --run %s", by, Describe(p), run.ID)
+}
+
+func eq(a, b any) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	ai, aok := toInt(a)
+	bi, bok := toInt(b)
+	if aok && bok {
+		return ai == bi
+	}
+	return fmt.Sprint(a) == fmt.Sprint(b)
+}
+
+// TakeRecord uses the recorded approval for this exact step, once (deleted either way).
+func TakeRecord(run *evidence.Run, step string, task, n any) map[string]any {
+	raw, err := os.ReadFile(file(run))
+	if err != nil {
+		return nil
+	}
+	_ = os.Remove(file(run))
+	var a map[string]any
+	if evidence.Decode(raw, &a) != nil {
+		return nil
+	}
+	if a["step"] != step || !eq(a["task"], task) || !eq(a["n"], n) {
+		return nil
+	}
+	if step == "reconcile" && readJSON(filepath.Join(run.Dir, "reconcile", "A.json"))["merge_commit"] != a["merge_commit"] {
+		return nil
+	}
+	return a
+}
+
+// Decide asks on the terminal if there is one (discarding any pending approval: the terminal
+// decides), otherwise uses a recorded approval for this step. It returns (approved, channel):
+// tty, harness, github or none. The used record is kept on run.LastApproval.
+func Decide(run *evidence.Run, step, question string, task, n any, say func(string)) (bool, string) {
+	run.LastApproval = nil
+	if HasTTY() {
+		defer func() { _ = os.Remove(file(run)) }()
+		return strings.ToLower(strings.TrimSpace(AskTTY(question))) == "y", "tty"
+	}
+	if a := TakeRecord(run, step, task, n); a != nil {
+		ch, _ := a["channel"].(string)
+		if ch == "" {
+			ch = "harness"
+		}
+		run.LastApproval = a
+		how := "approved with `pilot/pilot approve`"
+		if ch == "github" {
+			how = fmt.Sprintf("approved on GitHub by @%v", a["approver"])
+		}
+		say(fmt.Sprintf("%sy  (%s)", question, how))
+		return true, ch
+	}
+	return false, "none"
+}
+
+// Note records an approval_channel event; approver and extra apply to the github channel.
+func Note(run *evidence.Run, step string, task, n any, approved bool, channel, approver, extra string) {
+	detail := fmt.Sprintf("step=%s approved=%t channel=%s", step, approved, channel)
+	if channel == "github" {
+		var a map[string]any
+		if approver == "" {
+			a = run.LastApproval
+			approver, _ = a["approver"].(string)
+		}
+		detail += " approver=" + approver
+		if cid, ok := a["comment_id"]; ok && cid != nil {
+			detail += fmt.Sprintf(" comment=%v", cid)
+		}
+		if extra != "" {
+			detail += " " + extra
+		}
+	}
+	_ = run.Event("approval", task, n, "approval_channel", detail)
+}
+
+// Hint tells a no-terminal caller how to continue.
+func Hint(run *evidence.Run, step string) string {
+	return fmt.Sprintf("no terminal: approve with `pilot/pilot approve --run %s %s` (your agent harness asks you first), then `pilot/pilot resume --run %s`",
+		run.ID, step, run.ID)
+}

@@ -208,11 +208,11 @@ the harness channel working.
   Port `test_publisher_idempotency.py`.
 - [X] T031 [US2] Port `internal/checks` from `checks.py`: P01–P10 with the same descriptions,
   requirements and detail strings, and the gate matrix rows.
-- [ ] T032 [US2] Port `internal/approvals` from `approvals.py`: `has_tty` (`x/term`),
+- [X] T032 [US2] Port `internal/approvals` from `approvals.py`: `has_tty` (`x/term`),
   `pending_step`, `describe`, `record` (channel harness or github), `take`/`take_record`,
   `decide` (a terminal answer discards a pending approval), `note`, `hint`, and `ask_tty` from
   `/dev/tty` (R13). Port `test_approvals.py` and `test_ask_tty.py`. Wire `pilot approve`.
-- [ ] T033 [US2] Port `internal/reconcile` from `reconcile.py`: `status_edit`, the `Reconciler`
+- [X] T033 [US2] Port `internal/reconcile` from `reconcile.py`: `status_edit`, the `Reconciler`
   `check` and `run` methods, `for_fixture` (graded clone from the bundle), and the push path. Port
   `test_reconcile.py`.
 - [ ] T034 [US2] Port `internal/pipeline` from `pipeline.py`:
