@@ -84,7 +84,7 @@ func VerifyCalico(path, expected string) error {
 		return err
 	}
 	if got != expected {
-		return fmt.Errorf("Calico manifest hash mismatch: expected %s, got %s", expected, got)
+		return fmt.Errorf("Calico manifest hash mismatch: expected %s, got %s", expected, got) //nolint:staticcheck // verbatim: quoted in docs/troubleshooting.md
 	}
 	return nil
 }

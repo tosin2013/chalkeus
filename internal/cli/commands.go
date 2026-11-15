@@ -43,12 +43,12 @@ func resetFixtureCmd() *cobra.Command {
 
 func runCmd() *cobra.Command {
 	return &cobra.Command{Use: "run", Short: "start a new pilot run", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("run") }}
+		RunE: runRun}
 }
 
 func resumeCmd() *cobra.Command {
 	c := &cobra.Command{Use: "resume", Short: "resume a paused run", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("resume") }}
+		RunE: runResume}
 	c.Flags().String("run", "", "run id (default: the latest run)")
 	return c
 }

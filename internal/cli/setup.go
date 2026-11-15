@@ -155,7 +155,6 @@ func runPublisherToken(cmd *cobra.Command, _ []string) error {
 	if err := os.WriteFile(staging, []byte("PILOT_SCM_TOKEN="+tok+"\n"), 0o600); err != nil {
 		return Exit(ExitError, "%v", err)
 	}
-	tok = ""
 	if res := verifyPublisher(cmd, l, cfg, staging); !res.OK {
 		kept := "no token stored"
 		if _, err := os.Stat(cfg.PublisherEnv); err == nil {

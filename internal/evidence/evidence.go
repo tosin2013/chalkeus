@@ -11,8 +11,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -475,4 +477,102 @@ func (r *Run) Task(label string) map[string]any {
 		tasks[label] = t
 	}
 	return t
+}
+
+// PyFloat formats a float the way Python's json.dumps does (1.0 stays "1.0").
+func PyFloat(f float64) json.Number {
+	s := strconv.FormatFloat(f, 'f', -1, 64)
+	if !strings.ContainsAny(s, ".eE") {
+		s += ".0"
+	}
+	return json.Number(s)
+}
+
+// NewRun creates a run directory under root with a fresh state (the reference new_run); impl
+// "go" marks runs the Go pilot started (016 R16).
+func NewRun(root string) (*Run, error) {
+	id := time.Now().UTC().Format("20060102T150405Z")
+	d := filepath.Join(root, id)
+	for _, sub := range []string{"gate", "attempts", "reconcile", "checks"} {
+		if err := os.MkdirAll(filepath.Join(d, sub), 0o755); err != nil {
+			return nil, err
+		}
+	}
+	r := &Run{Dir: d, ID: id, State: map[string]any{"run_id": id, "state": "in-progress", "reason": nil, "created": Now(),
+		"tasks": map[string]any{}, "event_seq": 0, "gate_seq": 0, "impl": "go"}}
+	return r, r.Save()
+}
+
+// WriteConfigJSON records the public config values and the secret files' hashes (never values).
+func WriteConfigJSON(r *Run, public map[string]string, configDir string, secretFiles []string) error {
+	secrets := map[string]any{}
+	for _, p := range secretFiles {
+		rel, err := filepath.Rel(configDir, p)
+		if err != nil {
+			rel = filepath.Base(p)
+		}
+		var sha any
+		if s, err := SHA256File(p); err == nil {
+			sha = s
+		}
+		secrets[rel] = map[string]any{"sha256": sha}
+	}
+	return WriteJSON(filepath.Join(r.Dir, "config.json"), map[string]any{"pilot_env": public, "secret_files": secrets})
+}
+
+func firstLine(args ...string) string {
+	out, err := exec.Command(args[0], args[1:]...).CombinedOutput()
+	if err != nil && len(out) == 0 {
+		return fmt.Sprintf("unavailable (%T)", err)
+	}
+	s := strings.TrimSpace(string(out))
+	if s == "" {
+		return ""
+	}
+	return strings.Split(s, "\n")[0]
+}
+
+// WriteVersions records tool and image versions (versions.txt).
+func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster string, imgs map[string]string) error {
+	server := ""
+	if out, err := exec.Command("kubectl", "--context", kubeContext, "version", "-o", "json").Output(); err == nil {
+		var v struct {
+			ServerVersion struct {
+				GitVersion string `json:"gitVersion"`
+			} `json:"serverVersion"`
+		}
+		if json.Unmarshal(out, &v) == nil {
+			server = v.ServerVersion.GitVersion
+		}
+	}
+	calico := "unknown"
+	if b, err := os.ReadFile(filepath.Join(build, "calico.sha256")); err == nil {
+		calico = strings.TrimSpace(string(b))
+	}
+	src := "unknown"
+	if b, err := os.ReadFile(filepath.Join(build, "image-source.txt")); err == nil {
+		src = strings.TrimSpace(string(b))
+	}
+	lines := []string{
+		"run_id: " + r.ID,
+		"kind: " + firstLine("kind", "version"),
+		"kubectl: " + firstLine("kubectl", "version", "--client"),
+		"server: " + server,
+		"node_image: " + firstLine("docker", "inspect", "--format", "{{.Config.Image}}", cluster+"-control-plane"),
+		fmt.Sprintf("calico: %s sha256=%s", pins["CALICO_VERSION"], calico),
+		fmt.Sprintf("spec: %s sha256=%s", firstLine("spec", "--version"), pins["SPEC_SHA256"]),
+		fmt.Sprintf("opencode: %s sha256=%s", pins["OPENCODE_VERSION"], pins["OPENCODE_SHA256"]),
+		"registry_image: " + pins["REGISTRY_IMAGE"],
+		"image_source: " + src,
+	}
+	keys := make([]string, 0, len(imgs))
+	for k := range imgs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		lines = append(lines, fmt.Sprintf("image_%s: %s", k, imgs[k]))
+	}
+	lines = append(lines, "host: "+firstLine("uname", "-srm"))
+	return os.WriteFile(filepath.Join(r.Dir, "versions.txt"), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }

@@ -70,7 +70,7 @@ func RenderEgress(l paths.Layout, ns, role string, hosts []string, image string)
 // FailOnPull fails closed with the image reference when a pull failed (no local-build fallback).
 func FailOnPull(c *k8s.Client, ns, what string) error {
 	if errs := c.PullErrors(ns); len(errs) > 0 {
-		return fmt.Errorf("%s: image pull failed: %s. Check pilot/images.lock and registry access; no local-build fallback is attempted.",
+		return fmt.Errorf("%s: image pull failed: %s. Check pilot/images.lock and registry access; no local-build fallback is attempted.", //nolint:staticcheck // verbatim reference message
 			what, strings.Join(errs, "; "))
 	}
 	return fmt.Errorf("%s", what)

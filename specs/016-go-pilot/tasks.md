@@ -200,7 +200,7 @@ the harness channel working.
   `internal/grader` packages from `worker.py`, `prompt.py` and `grader.py`: the same manifests,
   deadline, caps and grade.json handling. Port `test_prompt.py`, `test_watchdog.py` and
   `test_grading_reference.py`.
-- [ ] T030 [US2] Port `internal/publisher` from `publisher.py`:
+- [X] T030 [US2] Port `internal/publisher` from `publisher.py`:
   - the task PR job (`_submit`) and the PR body, including `Closes #N` when issues are on;
   - `prs.json` with `kind` and `closes`;
   - idempotency; the status PR path is ported in US3.
@@ -215,7 +215,7 @@ the harness channel working.
 - [X] T033 [US2] Port `internal/reconcile` from `reconcile.py`: `status_edit`, the `Reconciler`
   `check` and `run` methods, `for_fixture` (graded clone from the bundle), and the push path. Port
   `test_reconcile.py`.
-- [ ] T034 [US2] Port `internal/pipeline` from `pipeline.py`:
+- [X] T034 [US2] Port `internal/pipeline` from `pipeline.py`:
   - `mode_of`, `confirm_mode`, `confirm_retry`, `mode_not_confirmed`, `gate_task`, `_pause`,
     `_fail`, `run_task`, `publish_task`, `finish`, `run`, `resume`, with every printed message
     verbatim;
