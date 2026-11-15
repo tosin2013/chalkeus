@@ -174,7 +174,20 @@ their rationale, and settles the rest.
   - the Python suite until US5;
   - `docs_check`.
 - **Supply chain:** `go.sum` is committed; module checksums are verified by the Go toolchain
-  (sum database); Dependabot or Renovate is a 013 concern.
+  (sum database).
+- **Dependabot (owner request, 2026-11-15),** enabled in 016 through `.github/dependabot.yml`:
+  - **`gomod`** (root), weekly. The `k8s.io/*` and `sigs.k8s.io/*` modules form one group,
+    because client-go, api and apimachinery must move in lockstep. Other Go modules are grouped
+    by minor and patch updates. Major versions come as separate PRs.
+  - **`github-actions`**, weekly. This keeps workflow action versions current, including the
+    existing `docs-check.yml` and `pilot-images.yml`.
+  - **Dependabot security updates** are switched on in the repository settings (an owner step,
+    listed in the quickstart).
+  - Every Dependabot PR runs the Go CI (vet, lint, `govulncheck`, tests, the golden audit and
+    the vectors). **A human merges it; nothing auto-merges (C-04).**
+  - **Not covered:** the image base images. They are passed as build arguments from
+    `pilot/pins.env` and pinned by digest, which Dependabot can't update. They stay with the
+    existing pilot-images workflow.
 
 ## R16 — Mixed runs and the old cluster
 

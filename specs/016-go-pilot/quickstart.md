@@ -5,6 +5,13 @@
 - A machine set up per `docs/operator-guide.md`.
 - The Go toolchain (version per `go.mod`); `go version` should print it.
 
+## 0b. Repository settings (owner, once)
+
+In the repository settings on GitHub, under *Code security*, turn on *Dependabot alerts* and
+*Dependabot security updates*. `.github/dependabot.yml` handles version updates. Check it with:
+- *Insights → Dependency graph → Dependabot*: lists `gomod` and `github-actions`;
+- the first Dependabot PRs run the Go CI and wait for a human merge.
+
 ## 1. Automated parity (US1, shared vectors)
 
 ```bash

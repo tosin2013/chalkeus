@@ -131,6 +131,7 @@ internal/
 specs/004-github-loop/contracts/vectors/   # shared vectors (approvals.json, status_pr.json)
 pilot/pilot                          # shim: builds and execs the Go binary (PILOT_IMPL switch during the port)
 .github/workflows/go.yml             # vet, lint, govulncheck, test, build matrix
+.github/dependabot.yml               # gomod (k8s modules grouped) + github-actions, weekly; human merge
 pilot/specfoundry_pilot/, pilot/tests/   # reference, removed in US5
 pilot/images/, pilot/manifests/, pilot/fixture/   # unchanged
 ```
@@ -141,7 +142,7 @@ pilot/images/, pilot/manifests/, pilot/fixture/   # unchanged
 ## Port order (maps to the user stories)
 
 1. **Foundation:** module, Cobra root with exit mapping, config, paths, evidence types,
-   `Secret` type, CI.
+   `Secret` type, CI, Dependabot.
 2. **US1:** generate the golden expectations from Python. Port `audit` (and the redaction scan)
    and `gate` (exec `spec status --json`). The golden test reaches 86/86 and the gate matrix
    matches.
