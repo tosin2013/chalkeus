@@ -223,3 +223,58 @@ with the operator guide.
   evidence; its record is copied into this spec's evidence folder, and SC-001 is validated by a
   fresh run on the finished feature.
 - Validation uses the same throwaway fixture repo and machine setup as the operator guide.
+
+## Evidence
+
+All records are in `specs/012-agent-approvals/evidence/`; per-check results are in
+`evidence/README.md`.
+
+| Run | Date | How decisions were made | Audit | AU09 / AU10 channels |
+|---|---|---|---|---|
+| `20261114T213046Z` | 2026-11-14 | agent (first cut, PR #11), harness approvals | 10/10 (copied before `pilot down`, so no AU07) | `['harness']` / `['harness']` |
+| `20261114T225256Z` | 2026-11-14 | agent in OpenCode, harness approvals (mode, retry A, retry B, status change) | 11/11 | `['harness','harness']` / `['harness']` |
+| `20261115T020750Z` | 2026-11-15 | agent in OpenCode, harness approvals | 11/11 | `['harness']` / `['harness']` |
+| `20261115T023426Z` | 2026-11-15 | operator at a terminal (SSH), no agent | 11/11 | `['tty','tty']` / `['tty']` |
+
+**Success criteria:**
+
+- **SC-001 (agent and operator complete a run):** met by `20261114T225256Z` and
+  `20261115T020750Z`. Every decision was approved through the harness, merges were done on
+  GitHub, and the audit was 11/11 after teardown.
+- **SC-002 (7 refusal cases, 0 decisions taken without a matching approval):** met. The cases
+  were wrong step (two variants), merge before reconcile, resume before merge, not paused, used
+  once, direct edit (refused) and terminal overrides. Terminal overrides is shown in
+  `20261115T023426Z` events seq 28 → 30 → 34 → 38: an approval was recorded, the terminal "N"
+  decided, the next headless resume paused, then the terminal "y" continued. No approval means
+  a pause: every decision in the agent runs logged `channel=none` (paused) before its approval.
+- **SC-003 (a channel for 100% of confirmed decisions after this feature):** met. Each confirmed
+  mode, retry and status change in the four runs has an `approval_channel` event.
+- **SC-004 (old evidence still passes):** met. `pilot/tests/test_committed_evidence.py` audits
+  every committed successful record (002, 003, 006 and 012) on each test run.
+- **SC-005 (the harness asks before every approval, both harnesses):** met, by two different
+  methods:
+  - **OpenCode:** in full runs, the owner confirmed a prompt before every `approve` (4 in
+    `20261114T225256Z`).
+  - **Claude Code:** a no-cost harness check on 2026-11-15. In default permission mode, Claude
+    Code asked ("Permission rule `Bash(pilot/pilot approve:*)` requires confirmation") before
+    the agent's `approve`. The deny rule blocked a direct write under `approvals/`.
+- **SC-006 (terminal behaviour unchanged):** met by `20261115T023426Z`. Prompts, pauses and exit
+  codes matched the operator guide.
+
+**Findings during validation:**
+
+1. Claude Code's auto mode ran `approve` with no prompt. A harness approval is only as strong
+   as the harness's permission mode: this is the documented limit, now stated in the skill and
+   troubleshooting.
+2. The first `AGENTS.md` wording ("never approve a step for them") led an agent in default
+   mode to refuse the intended flow, even after an explicit yes. Clarified in PR #19.
+3. In OpenCode, the direct edit was refused by the agent (skill rule 2), not by a setting.
+   There is no OpenCode deny rule for `approvals/`, so this is weaker than Claude Code's.
+4. The repo-root `opencode.json` was taken out of git (owner decision). FR-010 is amended: the
+   OpenCode ask rule lives in each operator's own config, so one setup covers every project.
+
+**Privacy (T022):**
+- AU08 passes for all four 012 records, both in the committed `audit.jsonl` and when re-run
+  against this machine's key file, model host and publisher token.
+- The model host and the provider name appear nowhere in `specs/012-agent-approvals/`,
+  `.claude/`, `AGENTS.md` or `docs/`.
