@@ -1,0 +1,66 @@
+{"at": "2026-11-15T02:34:26Z", "attempt": null, "detail": "tosin2013/craz3-pilot-fixture", "event": "run_started", "seq": 1, "stage": "run", "task": null}
+{"at": "2026-11-15T02:34:26Z", "attempt": null, "detail": "seq=1 OK", "event": "gate_allow", "seq": 2, "stage": "gate", "task": "A"}
+{"at": "2026-11-15T02:34:26Z", "attempt": null, "detail": "seq=2 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 3, "stage": "gate", "task": "B"}
+{"at": "2026-11-15T02:34:35Z", "attempt": null, "detail": "step=mode approved=true channel=tty", "event": "approval_channel", "seq": 4, "stage": "approval", "task": null}
+{"at": "2026-11-15T02:34:35Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_confirmed", "seq": 5, "stage": "mode", "task": null}
+{"at": "2026-11-15T02:34:35Z", "attempt": 1, "detail": "ns=pilot-w-a-1 induction=withheld-acceptance-section", "event": "attempt_created", "seq": 6, "stage": "attempt", "task": "A"}
+{"at": "2026-11-15T02:34:36Z", "attempt": 1, "detail": "ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:8656c77f8dcf5a29dab2012ccf1cc4f141456775081221de7c70ebcf5748efbc", "event": "attempt_running", "seq": 7, "stage": "attempt", "task": "A"}
+{"at": "2026-11-15T02:35:48Z", "attempt": 1, "detail": "", "event": "attempt_collected", "seq": 8, "stage": "attempt", "task": "A"}
+{"at": "2026-11-15T02:35:48Z", "attempt": 1, "detail": "pilot-g-a-1", "event": "grade_started", "seq": 9, "stage": "grade", "task": "A"}
+{"at": "2026-11-15T02:36:00Z", "attempt": 1, "detail": "G5_hidden_tests", "event": "grade_fail", "seq": 10, "stage": "grade", "task": "A"}
+{"at": "2026-11-15T02:36:01Z", "attempt": null, "detail": "seq=3 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 11, "stage": "gate", "task": "B"}
+{"at": "2026-11-15T02:36:06Z", "attempt": 2, "detail": "step=retry approved=false channel=tty", "event": "approval_channel", "seq": 12, "stage": "approval", "task": "A"}
+{"at": "2026-11-15T02:36:06Z", "attempt": 2, "detail": "", "event": "retry_declined", "seq": 13, "stage": "retry", "task": "A"}
+{"at": "2026-11-15T02:36:06Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-retry)", "seq": 14, "stage": "run", "task": null}
+{"at": "2026-11-15T02:37:59Z", "attempt": 2, "detail": "step=retry channel=harness", "event": "approval_recorded", "seq": 15, "stage": "approval", "task": "A"}
+{"at": "2026-11-15T02:38:08Z", "attempt": null, "detail": "paused(awaiting-retry)", "event": "run_resumed", "seq": 16, "stage": "run", "task": null}
+{"at": "2026-11-15T02:38:10Z", "attempt": 2, "detail": "step=retry approved=true channel=tty", "event": "approval_channel", "seq": 17, "stage": "approval", "task": "A"}
+{"at": "2026-11-15T02:38:10Z", "attempt": 2, "detail": "", "event": "retry_confirmed", "seq": 18, "stage": "retry", "task": "A"}
+{"at": "2026-11-15T02:38:10Z", "attempt": 2, "detail": "ns=pilot-w-a-2 induction=None", "event": "attempt_created", "seq": 19, "stage": "attempt", "task": "A"}
+{"at": "2026-11-15T02:38:11Z", "attempt": 2, "detail": "ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:8656c77f8dcf5a29dab2012ccf1cc4f141456775081221de7c70ebcf5748efbc", "event": "attempt_running", "seq": 20, "stage": "attempt", "task": "A"}
+{"at": "2026-11-15T02:39:35Z", "attempt": 2, "detail": "", "event": "attempt_collected", "seq": 21, "stage": "attempt", "task": "A"}
+{"at": "2026-11-15T02:39:35Z", "attempt": 2, "detail": "pilot-g-a-2", "event": "grade_started", "seq": 22, "stage": "grade", "task": "A"}
+{"at": "2026-11-15T02:39:47Z", "attempt": 2, "detail": "G4_visible_tests", "event": "grade_fail", "seq": 23, "stage": "grade", "task": "A"}
+{"at": "2026-11-15T02:39:47Z", "attempt": null, "detail": "seq=4 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 24, "stage": "gate", "task": "B"}
+{"at": "2026-11-15T02:40:34Z", "attempt": 3, "detail": "step=retry approved=false channel=tty", "event": "approval_channel", "seq": 25, "stage": "approval", "task": "A"}
+{"at": "2026-11-15T02:40:34Z", "attempt": 3, "detail": "", "event": "retry_declined", "seq": 26, "stage": "retry", "task": "A"}
+{"at": "2026-11-15T02:40:34Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-retry)", "seq": 27, "stage": "run", "task": null}
+{"at": "2026-11-15T02:40:42Z", "attempt": 3, "detail": "step=retry channel=harness", "event": "approval_recorded", "seq": 28, "stage": "approval", "task": "A"}
+{"at": "2026-11-15T02:40:57Z", "attempt": null, "detail": "paused(awaiting-retry)", "event": "run_resumed", "seq": 29, "stage": "run", "task": null}
+{"at": "2026-11-15T02:40:58Z", "attempt": 3, "detail": "step=retry approved=false channel=tty", "event": "approval_channel", "seq": 30, "stage": "approval", "task": "A"}
+{"at": "2026-11-15T02:40:58Z", "attempt": 3, "detail": "", "event": "retry_declined", "seq": 31, "stage": "retry", "task": "A"}
+{"at": "2026-11-15T02:40:58Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-retry)", "seq": 32, "stage": "run", "task": null}
+{"at": "2026-11-15T02:41:06Z", "attempt": null, "detail": "paused(awaiting-retry)", "event": "run_resumed", "seq": 33, "stage": "run", "task": null}
+{"at": "2026-11-15T02:41:06Z", "attempt": 3, "detail": "step=retry approved=false channel=none", "event": "approval_channel", "seq": 34, "stage": "approval", "task": "A"}
+{"at": "2026-11-15T02:41:06Z", "attempt": 3, "detail": "", "event": "retry_declined", "seq": 35, "stage": "retry", "task": "A"}
+{"at": "2026-11-15T02:41:06Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-retry)", "seq": 36, "stage": "run", "task": null}
+{"at": "2026-11-15T02:41:20Z", "attempt": null, "detail": "paused(awaiting-retry)", "event": "run_resumed", "seq": 37, "stage": "run", "task": null}
+{"at": "2026-11-15T02:41:32Z", "attempt": 3, "detail": "step=retry approved=true channel=tty", "event": "approval_channel", "seq": 38, "stage": "approval", "task": "A"}
+{"at": "2026-11-15T02:41:32Z", "attempt": 3, "detail": "", "event": "retry_confirmed", "seq": 39, "stage": "retry", "task": "A"}
+{"at": "2026-11-15T02:41:32Z", "attempt": 3, "detail": "ns=pilot-w-a-3 induction=None", "event": "attempt_created", "seq": 40, "stage": "attempt", "task": "A"}
+{"at": "2026-11-15T02:41:32Z", "attempt": 3, "detail": "ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:8656c77f8dcf5a29dab2012ccf1cc4f141456775081221de7c70ebcf5748efbc", "event": "attempt_running", "seq": 41, "stage": "attempt", "task": "A"}
+{"at": "2026-11-15T02:43:07Z", "attempt": 3, "detail": "", "event": "attempt_collected", "seq": 42, "stage": "attempt", "task": "A"}
+{"at": "2026-11-15T02:43:07Z", "attempt": 3, "detail": "pilot-g-a-3", "event": "grade_started", "seq": 43, "stage": "grade", "task": "A"}
+{"at": "2026-11-15T02:43:16Z", "attempt": 3, "detail": "", "event": "grade_pass", "seq": 44, "stage": "grade", "task": "A"}
+{"at": "2026-11-15T02:43:16Z", "attempt": 3, "detail": "pilot/20261115T023426Z/a", "event": "publish_started", "seq": 45, "stage": "publish", "task": "A"}
+{"at": "2026-11-15T02:43:26Z", "attempt": 3, "detail": "https://github.com/tosin2013/craz3-pilot-fixture/pull/16", "event": "pr_opened", "seq": 46, "stage": "publish", "task": "A"}
+{"at": "2026-11-15T02:43:27Z", "attempt": null, "detail": "seq=5 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 47, "stage": "gate", "task": "B"}
+{"at": "2026-11-15T02:43:27Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 48, "stage": "run", "task": null}
+{"at": "2026-11-15T02:44:55Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 49, "stage": "run", "task": null}
+{"at": "2026-11-15T02:44:57Z", "attempt": null, "detail": "step=reconcile approved=true channel=tty", "event": "approval_channel", "seq": 50, "stage": "approval", "task": "A"}
+{"at": "2026-11-15T02:44:58Z", "attempt": 3, "detail": "2449304c0c394bdbd4d38840d7475aed65a20ec1", "event": "reconcile_applied", "seq": 51, "stage": "reconcile", "task": "A"}
+{"at": "2026-11-15T02:44:58Z", "attempt": null, "detail": "91", "event": "merge_wait_seconds", "seq": 52, "stage": "reconcile", "task": "A"}
+{"at": "2026-11-15T02:44:58Z", "attempt": null, "detail": "2449304c0c394bdbd4d38840d7475aed65a20ec1", "event": "task_verified", "seq": 53, "stage": "status", "task": "A"}
+{"at": "2026-11-15T02:44:58Z", "attempt": null, "detail": "seq=6 OK", "event": "gate_allow", "seq": 54, "stage": "gate", "task": "B"}
+{"at": "2026-11-15T02:44:59Z", "attempt": 1, "detail": "ns=pilot-w-b-1 induction=None", "event": "attempt_created", "seq": 55, "stage": "attempt", "task": "B"}
+{"at": "2026-11-15T02:44:59Z", "attempt": 1, "detail": "ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:8656c77f8dcf5a29dab2012ccf1cc4f141456775081221de7c70ebcf5748efbc", "event": "attempt_running", "seq": 56, "stage": "attempt", "task": "B"}
+{"at": "2026-11-15T02:46:45Z", "attempt": 1, "detail": "", "event": "attempt_collected", "seq": 57, "stage": "attempt", "task": "B"}
+{"at": "2026-11-15T02:46:45Z", "attempt": 1, "detail": "pilot-g-b-1", "event": "grade_started", "seq": 58, "stage": "grade", "task": "B"}
+{"at": "2026-11-15T02:46:55Z", "attempt": 1, "detail": "", "event": "grade_pass", "seq": 59, "stage": "grade", "task": "B"}
+{"at": "2026-11-15T02:46:55Z", "attempt": 1, "detail": "pilot/20261115T023426Z/b", "event": "publish_started", "seq": 60, "stage": "publish", "task": "B"}
+{"at": "2026-11-15T02:47:05Z", "attempt": 1, "detail": "https://github.com/tosin2013/craz3-pilot-fixture/pull/17", "event": "pr_opened", "seq": 61, "stage": "publish", "task": "B"}
+{"at": "2026-11-15T02:47:05Z", "attempt": null, "detail": "10/10", "event": "audit_done", "seq": 62, "stage": "audit", "task": null}
+{"at": "2026-11-15T02:47:05Z", "attempt": null, "detail": "", "event": "run_succeeded", "seq": 63, "stage": "run", "task": null}
+{"at": "2026-11-15T02:47:29Z", "attempt": null, "detail": "teardown.jsonl", "event": "torn_down", "seq": 64, "stage": "teardown", "task": null}
+{"at": "2026-11-15T02:47:46Z", "attempt": null, "detail": "11/11", "event": "audit_done", "seq": 65, "stage": "audit", "task": null}
+{"at": "2026-11-15T02:50:04Z", "attempt": null, "detail": "11/11", "event": "audit_done", "seq": 66, "stage": "audit", "task": null}
