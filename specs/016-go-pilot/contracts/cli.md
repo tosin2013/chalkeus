@@ -25,6 +25,10 @@ pilot app-token --check
 pilot version            # new; prints the stamped version
 ```
 
+Global flag (new, FR-018): `-v`/`--verbose`, repeatable (`-v`, `-vv`, `-vvv`), or
+`PILOT_VERBOSE=N`. Diagnostics go to stderr with a `[HH:MM:SS]` prefix and are redacted. Stdout,
+exit codes and evidence are identical at every level. The reference pilot rejects the flag.
+
 ## Exit codes (identical)
 
 | Code | Meaning |

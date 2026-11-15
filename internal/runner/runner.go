@@ -3,9 +3,11 @@
 package runner
 
 import (
+	"context"
 	"time"
 
 	"github.com/tosin2013/specfoundry/internal/k8s"
+	"github.com/tosin2013/specfoundry/internal/verbose"
 )
 
 // Handle identifies a submitted unit.
@@ -31,7 +33,19 @@ func (j Jobs) Submit(kind, ns, name, manifest string, own bool) (Handle, error) 
 }
 
 func (j Jobs) Wait(h Handle, timeout time.Duration) string {
-	return j.C.WaitJob(h.Namespace, h.Name, timeout)
+	start := time.Now()
+	verbose.V(1, "%s job %s/%s started", h.Kind, h.Namespace, h.Name)
+	stop := func() {}
+	if verbose.Level() >= 2 {
+		ctx, cancel := context.WithCancel(context.Background())
+		done := make(chan struct{})
+		go func() { watch(ctx, j.C, h); close(done) }()
+		stop = func() { cancel(); <-done }
+	}
+	outcome := j.C.WaitJob(h.Namespace, h.Name, timeout)
+	stop()
+	verbose.V(1, "%s job %s/%s: %s after %s", h.Kind, h.Namespace, h.Name, outcome, time.Since(start).Round(time.Second))
+	return outcome
 }
 
 func (j Jobs) Collect(h Handle) string { return j.C.Logs(h.Namespace, h.Name, "") }

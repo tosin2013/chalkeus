@@ -699,3 +699,59 @@ func (c *Client) NodesReady(timeout time.Duration) bool {
 	}
 	return false
 }
+
+// ---------------------------------------------------------------- diagnostics (016 FR-018)
+
+// PodState summarises a pod for verbose output: its phase and each container's state.
+func (c *Client) PodState(ns, pod string) string {
+	ctx, cancel := ctxT(15 * time.Second)
+	defer cancel()
+	p, err := c.CS.CoreV1().Pods(ns).Get(ctx, pod, metav1.GetOptions{})
+	if err != nil {
+		return ""
+	}
+	parts := []string{string(p.Status.Phase)}
+	for _, cs := range append(p.Status.InitContainerStatuses, p.Status.ContainerStatuses...) {
+		switch {
+		case cs.State.Waiting != nil:
+			parts = append(parts, fmt.Sprintf("%s waiting (%s)", cs.Name, cs.State.Waiting.Reason))
+		case cs.State.Running != nil:
+			parts = append(parts, cs.Name+" running")
+		case cs.State.Terminated != nil:
+			parts = append(parts, fmt.Sprintf("%s exited %d (%s)", cs.Name, cs.State.Terminated.ExitCode, cs.State.Terminated.Reason))
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// PodEvent is one Kubernetes event about a pod.
+type PodEvent struct{ Key, Text string }
+
+// PodEvents lists the events whose involved object is the pod, oldest first.
+func (c *Client) PodEvents(ns, pod string) []PodEvent {
+	ctx, cancel := ctxT(15 * time.Second)
+	defer cancel()
+	evs, err := c.CS.CoreV1().Events(ns).List(ctx, metav1.ListOptions{FieldSelector: "involvedObject.name=" + pod})
+	if err != nil {
+		return nil
+	}
+	sort.SliceStable(evs.Items, func(i, j int) bool { return evs.Items[i].LastTimestamp.Before(&evs.Items[j].LastTimestamp) })
+	var out []PodEvent
+	for _, e := range evs.Items {
+		out = append(out, PodEvent{Key: fmt.Sprintf("%s/%d", e.UID, e.Count),
+			Text: fmt.Sprintf("%s %s: %s", e.Type, e.Reason, e.Message)})
+	}
+	return out
+}
+
+// ExecStream runs a command in a pod's first container and copies its stdout to w until the
+// command ends or ctx is cancelled.
+func (c *Client) ExecStream(ctx context.Context, ns, pod string, w io.Writer, cmd ...string) error {
+	req := c.CS.CoreV1().RESTClient().Post().Resource("pods").Name(pod).Namespace(ns).SubResource("exec").
+		VersionedParams(&corev1.PodExecOptions{Command: cmd, Stdout: true, Stderr: true}, scheme.ParameterCodec)
+	ex, err := remotecommand.NewSPDYExecutor(c.cfg, "POST", req.URL())
+	if err != nil {
+		return err
+	}
+	return ex.StreamWithContext(ctx, remotecommand.StreamOptions{Stdout: w, Stderr: io.Discard})
+}

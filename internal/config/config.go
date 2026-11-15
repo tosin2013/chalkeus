@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/specfoundry/internal/verbose"
 )
 
 // Error is a configuration problem; Code is the CLI exit code (2 error, 3 repo guard).
@@ -356,6 +357,7 @@ func Load(root string, requireSecrets, guard bool) (*Config, error) {
 		return nil, err
 	}
 	c := &Config{Values: values, ConfigDir: d, ModelDir: filepath.Join(d, "opencode"), PublisherEnv: filepath.Join(d, "publisher.env")}
+	verbose.AddRedaction(c.ModelHosts()...) // the model host is never printed, not even at -vvv
 	if requireSecrets {
 		if err := CheckModelDir(c.ModelDir); err != nil {
 			return nil, err

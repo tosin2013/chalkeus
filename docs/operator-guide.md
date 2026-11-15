@@ -577,6 +577,18 @@ Optional cleanup:
 Look up the message you see in [troubleshooting](troubleshooting.md). Each entry gives the
 cause, the fix and how to confirm it.
 
+To see what the pods are doing, add `-v`, `-vv` or `-vvv` after any command, for example
+`pilot/pilot run -vv`:
+- `-v` shows each step, each Job and how long it took, and the first failing grader check;
+- `-vv` adds pod phases, container states, Kubernetes events (scheduling, image pulls,
+  out-of-memory kills) and model-proxy refusals as they happen;
+- `-vvv` adds the agent's live activity in the worker pod: its messages and each tool call.
+
+This output goes to stderr only. It changes nothing in the evidence, and secret values and your
+provider's hostname are replaced with `***`. At `-vvv` your terminal shows the prompt's
+effect and the code the agent writes, so don't paste it anywhere public without reading it
+first. The verbose levels need the Go pilot (the default after T038, or `PILOT_IMPL=go`).
+
 If you're still stuck, open an issue at
 [github.com/tosin2013/specfoundry/issues](https://github.com/tosin2013/specfoundry/issues)
 with:

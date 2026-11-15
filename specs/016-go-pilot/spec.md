@@ -266,8 +266,14 @@ implementation, except history and evidence.
 
 **Scope**
 
-- **FR-017**: No new operator-visible capability other than FR-013 and FR-014. Items 014, 015,
-  011 and 013 stay out of scope.
+- **FR-017**: No new operator-visible capability other than FR-013, FR-014 and FR-018. Items
+  014, 015, 011 and 013 stay out of scope.
+- **FR-018**: The pilot MUST offer diagnostics on stderr at three levels (`-v` steps and
+  timings, `-vv` pod phases, container states, Kubernetes events and model-proxy refusals,
+  `-vvv` live agent activity from worker pods), also selectable with `PILOT_VERBOSE=N`.
+  Diagnostics MUST NOT change stdout, exit codes or evidence, so they are outside parity, and
+  every line MUST be redacted (secret values and the model hosts never appear). Added
+  2026-11-15 as a debugging aid for the Go runs (roadmap 1.11.0 note on 016).
 
 ### Key Entities
 

@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
+
+	"github.com/tosin2013/specfoundry/internal/verbose"
 )
 
 // notImplemented is returned by commands not yet ported; the reference pilot still serves them
@@ -23,6 +26,8 @@ func NewRoot(version string) *cobra.Command {
 		SilenceErrors: true,
 	}
 	root.CompletionOptions.DisableDefaultCmd = true
+	root.PersistentFlags().CountP("verbose", "v",
+		"diagnostics on stderr (Go pilot only): -v steps and timings, -vv pod phases and events, -vvv live agent activity; also PILOT_VERBOSE=N")
 	root.AddCommand(
 		versionCmd(version),
 		upCmd(), downCmd(), publisherTokenCmd(), importOpencodeCmd(), resetFixtureCmd(),
@@ -38,6 +43,13 @@ func Execute(args []string, version string, stdout, stderr io.Writer) int {
 	root.SetArgs(args)
 	root.SetOut(stdout)
 	root.SetErr(stderr)
+	root.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		n, _ := cmd.Flags().GetCount("verbose")
+		if n == 0 {
+			n, _ = strconv.Atoi(os.Getenv("PILOT_VERBOSE"))
+		}
+		verbose.Set(n, stderr)
+	}
 	return exitCode(root.Execute(), stderr)
 }
 
