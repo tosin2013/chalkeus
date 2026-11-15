@@ -106,13 +106,13 @@ validate.
 ## Phase 7: Polish and validation
 
 - [X] T016 Run the full test suite and docs check; all pass. Record the test count in this file's notes
-- [ ] T017 **Owner action**: copy the early run's record from the validation machine into `specs/012-agent-approvals/evidence/20261114T213046Z/` (G6). Then run `pilot/pilot audit --run 20261114T213046Z`, and record the AU09/AU10 lines in `specs/012-agent-approvals/evidence/README.md`
+- [X] T017 **Owner action**: copy the early run's record from the validation machine into `specs/012-agent-approvals/evidence/20261114T213046Z/` (G6). Then run `pilot/pilot audit --run 20261114T213046Z`, and record the AU09/AU10 lines in `specs/012-agent-approvals/evidence/README.md`
 - [X] T018 **Owner action**: refusal cases on a set-up machine per quickstart.md §2 (SC-002); record each result in `specs/012-agent-approvals/evidence/README.md`
 - [X] T019 **Owner action**: agent-driven run in **Claude Code** per quickstart.md §3 (SC-001, SC-005). Record whether the harness asked before each `approve`, and the audit's AU09/AU10 lines. Copy the record to `specs/012-agent-approvals/evidence/<run-id>/` — done as a harness check on 2026-11-15 (ask prompt in default mode, deny rule, auto-mode finding), see evidence README; SC-001 is covered by the OpenCode runs `20261114T225256Z` and `20261115T020750Z`.
 - [X] T020 **Owner action**: the same in **OpenCode** (SC-005). If either harness doesn't ask, fix `.claude/settings.json` or `opencode.json` (G5), record the working syntax in research.md R3, and repeat
 - [X] T021 **Owner action**: one terminal-driven run per quickstart.md §4 (SC-006); AU09/AU10 show `channels=['tty']`
 - [X] T022 Privacy check: `grep -rniF '<model host>' specs/012-agent-approvals/` returns nothing, and AU08 passes for every committed 012 run
-- [ ] T023 Add an Evidence section to `specs/012-agent-approvals/spec.md` (runs, harnesses, channels, refusal results). Then `/speckit-roadmap-debrief`, and with the owner's approval `/speckit-roadmap-write`: 012 spec dir and status
+- [X] T023 Add an Evidence section to `specs/012-agent-approvals/spec.md` (runs, harnesses, channels, refusal results). Then `/speckit-roadmap-debrief`, and with the owner's approval `/speckit-roadmap-write`: 012 spec dir and status
 
 ---
 

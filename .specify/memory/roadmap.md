@@ -1,6 +1,27 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.7.2 → 1.8.0
+Bump rationale: MINOR — a new planned spec (013), a new open question (Q8), a status
+transition, and scope/notes corrections on 012.
+
+Changes this revision (owner approval 2026-11-15, 012 debrief
+specs/012-agent-approvals/roadmap-reviews/debrief-20261115.md):
+  - Status: 012 planned → verified (runs 20261114T225256Z and 20261115T020750Z in OpenCode,
+    terminal run 20261115T023426Z, all audit 11/11; 7 refusal cases; Claude Code harness
+    check; T022 privacy check; no must-address findings); spec dir linked
+  - 012 scope: the OpenCode ask rule moves from a committed opencode.json to each operator's
+    own OpenCode config (owner decision 2026-11-15; old text struck through)
+  - 012 notes: the harness channel also depends on the permission mode (auto/bypass skip the
+    prompt); the approvals/ deny rule exists in Claude Code only
+  - New entry: 013 Installable pilot release (needs-info)
+  - New Q8: using the pilot across projects; harness rules per user; agents that run in a
+    real terminal; deny rules beyond Claude Code
+
+Specs affected: 012, 013 (new)
+Open questions added/resolved: Q8 added
+
+Previous revision 1.7.2 (2026-11-14):
 Version change: 1.7.1 → 1.7.2
 Bump rationale: PATCH — status transition.
 
@@ -507,7 +528,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   when users cannot create them. Depends on spec-status shipping a CLI container image for
   the in-cluster gate (PRD §8). The GitHub App is the recommended publisher credential here.
 
-### 012 — Working with an agent: pilot skill and harness approvals  [status: planned]
+### 012 — Working with an agent: pilot skill and harness approvals  [status: verified]
 
 - **Description:** Let a human and an LLM agent run the pilot together: the agent runs the
   commands and explains each pause; the human makes every decision.
@@ -517,8 +538,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   records each approval's channel (`tty` or `harness`), and a project `pilot` skill teaches
   agents the commands, exit codes and the rule never to approve for the human.
 - **Scope (in):** `pilot approve` (mode, retry, reconcile; never merge); paused-for-mode
-  state; channel recording in events and the audit; harness ask rules (`.claude/settings.json`,
-  `opencode.json`); the `pilot` skill and `AGENTS.md`; troubleshooting and README updates.
+  state; channel recording in events and the audit; harness ask rules ~~(`.claude/settings.json`,
+  `opencode.json`)~~ (`.claude/settings.json`, committed; for OpenCode, a rule each operator
+  adds once to `~/.config/opencode/opencode.json`, documented in the project; owner decision
+  2026-11-15); the `pilot` skill and `AGENTS.md`; troubleshooting and README updates.
 - **Scope (out):** a `--yes` flag or any self-approval by an agent; approving merges outside
   GitHub; GitHub approvals themselves (004).
 - **Governed by:** C-04, C-11
@@ -528,6 +551,27 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   approval file (the harness denies edits to `approvals/`); GitHub approvals (004) are the
   stronger channel. First cut implemented early to unblock the 006 validation; the spec
   records the audit-contract change and validates it with an agent-driven run.
+  **Validation 2026-11-15:** the harness channel also depends on the harness's permission
+  *mode*: Claude Code's auto mode (and any bypass or auto-accept mode) runs `approve` with no
+  prompt, so approvals through an agent need normal permission mode. The `approvals/` deny
+  rule exists in Claude Code only; in OpenCode the agent's skill rules are what stop a direct
+  edit (see Q8).
+- **Spec dir:** specs/012-agent-approvals/
+
+### 013 — Installable pilot release  [status: needs-info]
+
+- **Description:** Ship the pilot as an installable, versioned release, so operators can
+  install it and run it against any project without cloning this repository.
+- **Outcome:** _to be defined_. Direction: a versioned release with published checksums,
+  installable without the source tree, that keeps every guarantee and the full audit.
+- **Scope (in):** _to be defined_. Candidates: the release form (single binary, zipapp, or a
+  Python package); a release workflow with checksums, like the pilot images; how the CLI
+  finds the target project and its config; the command name in harness rules.
+- **Scope (out):** _to be defined_.
+- **Depends on:** 012
+- **Notes:** Raised by the owner 2026-11-15 during the 012 debrief. Tied to Q7 (product name
+  and CLI surface) and Q8 (multi-project use; harness rules today match the `pilot/pilot`
+  path). Decide the form and name before speccing.
 
 ## Open Questions
 
@@ -552,6 +596,14 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - Q7 — Product name and CLI interface: `pilot` is a prototype name, and the CLI becomes
   the interface for humans and LLM agents in both modes (C-11). Decide the name and the
   stable command surface before 011 (raised 2026-11-14).
+- Q8 — Using the pilot across projects and harnesses (raised 2026-11-15, 012 debrief).
+  - Do harness ask rules live per user, or does a `pilot` command install them?
+  - Today's rules match the `pilot/pilot` path; an installed CLI (013) changes the pattern.
+  - How are agents that run in a real terminal handled (Warp, for example)? Such an agent
+    could answer a `[y/N]` prompt that the audit records as `tty`.
+  - Do harnesses other than Claude Code get a deny rule for `approvals/`?
+
+  Relevant to 008, 011 and 013.
 
 ## Cross-Cutting Notes
 
@@ -575,4 +627,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.7.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-14
+**Version**: 1.8.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
