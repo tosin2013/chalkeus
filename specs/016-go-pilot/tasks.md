@@ -142,7 +142,7 @@ plus quickstart §2.
 
 ## Phase 4: Shared vectors (blocks US3; serves FR-011)
 
-- [ ] T021 Write the shared vectors, in the contracts/parity.md format:
+- [X] T021 Write the shared vectors, in the contracts/parity.md format:
   - `specs/004-github-loop/contracts/vectors/approvals.json`: one case per R3 rule (accept,
     `wrong_step`, `before_decision`, `not_an_approver`, `no_write_access`,
     `publisher_identity`, `app_authored`, `edited`, `withdrawn`, `duplicate`, a withdrawal by
@@ -150,7 +150,7 @@ plus quickstart §2.
   - `specs/004-github-loop/contracts/vectors/status_pr.json`: exact edit, `NOT_MERGED`,
     `STATUS_PR_EDITED` (extra file, extra line, wrong item), `STATUS_PR_MERGED_BY_PUBLISHER`,
     `STATUS_PR_NOT_APPROVER`.
-- [ ] T022 Refactor `pilot/tests/test_ghapprove.py` and `pilot/tests/test_status_pr.py` to load the
+- [X] T022 Refactor `pilot/tests/test_ghapprove.py` and `pilot/tests/test_status_pr.py` to load the
   vector files, and add `pilot/tests/test_vectors.py` running `ghapprove.evaluate` and
   `reconcile.check_status_pr` on every case. The Python suite stays green.
 

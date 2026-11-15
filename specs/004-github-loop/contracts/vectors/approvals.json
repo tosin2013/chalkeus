@@ -1,0 +1,605 @@
+{
+  "version": 1,
+  "rules": "specs/004-github-loop/research.md R3",
+  "cases": [
+    {
+      "name": "accept-valid",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry\nlooks fine",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": 101,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "wrong-step",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve mode",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "wrong_step"
+          }
+        ]
+      }
+    },
+    {
+      "name": "extra-words-rejected",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry please",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "wrong_step"
+          }
+        ]
+      }
+    },
+    {
+      "name": "not-an-approver",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "bob",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "not_an_approver"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no-write-access",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "no_write_access"
+          }
+        ]
+      }
+    },
+    {
+      "name": "publisher-identity",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice",
+          "pub-bot"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "pub-bot": "admin"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "pub-bot",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "publisher_identity"
+          }
+        ]
+      }
+    },
+    {
+      "name": "app-authored",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": true
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "app_authored"
+          }
+        ]
+      }
+    },
+    {
+      "name": "edited",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101e",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "edited"
+          }
+        ]
+      }
+    },
+    {
+      "name": "before-decision",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 99,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t99",
+            "updated_at": "t99",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 99,
+            "reason": "before_decision"
+          }
+        ]
+      }
+    },
+    {
+      "name": "withdrawn",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          },
+          {
+            "id": 102,
+            "body": "/withdraw retry",
+            "author": "alice",
+            "created_at": "t102",
+            "updated_at": "t102",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "withdrawn"
+          }
+        ]
+      }
+    },
+    {
+      "name": "withdraw-by-other-does-not-cancel",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          },
+          {
+            "id": 102,
+            "body": "/withdraw retry",
+            "author": "bob",
+            "created_at": "t102",
+            "updated_at": "t102",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": 101,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate-earliest-wins",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          },
+          {
+            "id": 102,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t102",
+            "updated_at": "t102",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": 101,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": null
+          },
+          {
+            "comment_id": 102,
+            "reason": "duplicate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "non-command-comments-ignored",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "thanks!",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          },
+          {
+            "id": 102,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t102",
+            "updated_at": "t102",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": 102,
+        "log": [
+          {
+            "comment_id": 102,
+            "reason": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "case-insensitive-author",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "Alice": "write"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "Alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": 101,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "maintain-counts",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "maintain"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve retry",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": 101,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": null
+          }
+        ]
+      }
+    }
+  ]
+}
