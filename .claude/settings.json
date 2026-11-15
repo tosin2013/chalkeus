@@ -3,7 +3,11 @@
     "ask": [
       "Bash(pilot/pilot approve:*)",
       "Bash(./pilot/pilot approve:*)",
-      "Bash(python3 -m specfoundry_pilot approve:*)"
+      "Bash(python3 -m specfoundry_pilot approve:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh api:*comments*)"
     ],
     "deny": [
       "Write(**/approvals/**)",

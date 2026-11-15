@@ -41,6 +41,8 @@ def _parser() -> argparse.ArgumentParser:
     ghs.add_parser("sync", help="create/update item issues and status labels from the roadmap (idempotent)")
     ghd = ghs.add_parser("drift", help="report differences between the roadmap and GitHub (exit 1 if any)")
     ghd.add_argument("--run", help="also write github/drift.json into this run's evidence")
+    ghw = ghs.add_parser("watch", help="poll GitHub; resume when a valid /approve or a merge appears (Ctrl-C to stop)")
+    ghw.add_argument("--run", required=True)
     g = sub.add_parser("gate", help="evaluate the gate for one task")
     g.add_argument("task", choices=["A", "B"])
     g.add_argument("--root", help="evaluate this directory instead of a fresh clone")
@@ -97,6 +99,10 @@ def cmd_github(args) -> int:
                 print(json.dumps(d, sort_keys=True))
             print(f"github drift: {len(rep)} difference(s)")
             return EXIT_OK if not rep else EXIT_FAIL
+        if args.gh_cmd == "watch":
+            from . import pipeline
+            require_up()
+            return pipeline.watch(config.load(), args.run)
     except ghsync.GitHubLoopError as e:
         print(f"pilot: github: {e}", file=sys.stderr)
         return EXIT_ERROR

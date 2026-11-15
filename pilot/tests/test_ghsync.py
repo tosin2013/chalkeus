@@ -85,7 +85,7 @@ class TestSync(unittest.TestCase):
 
     def test_github_error_raises(self):
         self.gh.fail = "read"
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ghsync.GitHubLoopError):
             ghsync.sync(Cfg())
 
     def test_records_evidence_with_run(self):

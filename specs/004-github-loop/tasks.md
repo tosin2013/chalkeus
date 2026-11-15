@@ -102,7 +102,7 @@ report.
 **Independent test:** quickstart §3 steps 1–2 (every refusal case), and AU09/AU10 showing
 `github` with the login.
 
-- [ ] T014 [P] [US2] Unit tests in `pilot/tests/test_ghapprove.py`, one per research R3 rule:
+- [X] T014 [P] [US2] Unit tests in `pilot/tests/test_ghapprove.py`, one per research R3 rule:
   - accept: an exact first line from a listed approver, posted after the decision post;
   - reject:
     - wrong step;
@@ -116,7 +116,7 @@ report.
     - withdrawn;
     - duplicate (only the earliest is used);
     - GitHub error (fail closed).
-- [ ] T015 [US2] Implement the tracking issue and decision posts in
+- [X] T015 [US2] Implement the tracking issue and decision posts in
   `pilot/specfoundry_pilot/ghapprove.py`:
   - `ensure_tracking(cfg, run)` (title `pilot run <run-id>`, marker
     `<!-- specfoundry:run=<run-id> -->`);
@@ -124,34 +124,34 @@ report.
     `<!-- specfoundry:decision run=<id> step=<s> task=<t> n=<n> -->`, text from
     `approvals.describe`, the exact reply command, the allowed approvers);
   - write `github/tracking.json` and a `decision_posted` event.
-- [ ] T016 [US2] Implement `find_approval(cfg, run, pending)` in
+- [X] T016 [US2] Implement `find_approval(cfg, run, pending)` in
   `pilot/specfoundry_pilot/ghapprove.py`:
   - read comments with the operator's `gh`;
   - apply the research R3 checks, including the collaborator permission read (`write`,
     `maintain` or `admin`);
   - log every candidate with accept or reject and its reason to `github/approvals.jsonl`, and
     an `approval_rejected` event for each rejection.
-- [ ] T017 [US2] In `pilot/specfoundry_pilot/approvals.py`:
+- [X] T017 [US2] In `pilot/specfoundry_pilot/approvals.py`:
   - allow `record(..., channel="github", approver=<login>, comment_id=<id>)`;
   - make `take()` return the channel stored in the record (`harness` or `github`);
   - make `note()` add `approver=` and `comment=` to the `approval_channel` detail for
     `github`.
 
   Keep the existing single-use and binding rules. Extend `pilot/tests/test_approvals.py`.
-- [ ] T018 [US2] Wire into `pilot/specfoundry_pilot/pipeline.py`, when
+- [X] T018 [US2] Wire into `pilot/specfoundry_pilot/pipeline.py`, when
   `PILOT_GITHUB_APPROVALS=on`:
   - on a pause at mode or retry, call `post_decision` and print the issue URL;
   - in `resume` with no terminal, call `find_approval` before `approvals.decide`, and record
     a found approval;
   - with a terminal, discard any GitHub approval (012 R5) and mark the post answered at the
     terminal.
-- [ ] T019 [US2] Add `pilot github watch --run <id>` to `pilot/specfoundry_pilot/cli.py`: poll
+- [X] T019 [US2] Add `pilot github watch --run <id>` to `pilot/specfoundry_pilot/cli.py`: poll
   every 15 s and call `resume` when `find_approval` succeeds or the status PR is merged.
   Ctrl-C leaves the run paused.
-- [ ] T020 [US2] In `pilot/specfoundry_pilot/audit.py`, add `approvers=[…]` to the AU09 and
+- [X] T020 [US2] In `pilot/specfoundry_pilot/audit.py`, add `approvers=[…]` to the AU09 and
   AU10 detail for `github` entries; the pass rules are unchanged. Make AU08 also scan
   `github/`. Add tests in `pilot/tests/test_audit_github.py`.
-- [ ] T021 [US2] In `.claude/skills/pilot/SKILL.md` and `AGENTS.md`: agents never post
+- [X] T021 [US2] In `.claude/skills/pilot/SKILL.md` and `AGENTS.md`: agents never post
   `/approve` or `/withdraw` comments, and explain the tracking issue. Add an `ask` rule for
   `Bash(gh issue comment:*)` and `Bash(gh api:*comments*)` in `.claude/settings.json`
   (research R4).
@@ -188,7 +188,7 @@ PR is refused.
 
   This path is used when GitHub approvals are on; today's terminal/harness push path stays
   otherwise.
-- [ ] T026 [US3] In `pilot/specfoundry_pilot/audit.py`, change AU03 per research R7 and
+- [X] T026 [US3] In `pilot/specfoundry_pilot/audit.py`, change AU03 per research R7 and
   `contracts/audit-github.md`: "exactly 2 `task` PRs (A, B), plus 0 or 1 `status` PR per
   verified item; all drafts by the publisher identity; a missing `kind` means `task`". Add
   tests to `pilot/tests/test_audit_github.py`, and confirm `test_committed_evidence.py` still

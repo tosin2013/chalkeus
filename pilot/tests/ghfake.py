@@ -8,6 +8,11 @@ from __future__ import annotations
 from unittest import mock
 
 
+def _err(msg):
+    from specfoundry_pilot.ghsync import GitHubLoopError
+    return GitHubLoopError(msg)
+
+
 class FakeGitHub:
     def __init__(self, publisher="pub-bot", permissions=None):
         self.issues: list[dict] = []
@@ -23,28 +28,28 @@ class FakeGitHub:
     # --- reads (operator's gh) ---
     def read_issues(self, cfg):
         if self.fail == "read":
-            raise RuntimeError("GitHub unreachable")
+            raise _err("GitHub unreachable")
         return [dict(i, labels=list(i["labels"])) for i in self.issues]
 
     def read_labels(self, cfg):
         if self.fail == "read":
-            raise RuntimeError("GitHub unreachable")
+            raise _err("GitHub unreachable")
         return set(self.labels)
 
     def read_comments(self, cfg, number):
         if self.fail == "read":
-            raise RuntimeError("GitHub unreachable")
+            raise _err("GitHub unreachable")
         return [dict(c) for c in self.comments.get(number, [])]
 
     def read_permission(self, cfg, login):
         if self.fail == "read":
-            raise RuntimeError("GitHub unreachable")
+            raise _err("GitHub unreachable")
         return self.permissions.get(login, "none")
 
     # --- writes (publisher credential via ghops) ---
     def run_ghops(self, cfg, op, payload):
         if self.fail in (op, "write"):
-            raise RuntimeError(f"ghops {op} failed")
+            raise _err(f"ghops {op} failed")
         self.ops.append((op, payload))
         if op == "whoami":
             return {"login": self.publisher}

@@ -38,6 +38,7 @@ def confirm_mode(run, cfg) -> tuple[bool, str]:
           "  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.")
     ok, ch = approvals.decide(run, "mode", "Confirm this mode and start staging workers? [y/N] ")
     approvals.note(run, "mode", None, None, ok, ch)
+    github_terminal(cfg, run, "mode", ok, ch)
     if not ok:
         run.event("mode", None, None, "mode_declined", json.dumps(mode, sort_keys=True))
         return False, ch
@@ -46,17 +47,46 @@ def confirm_mode(run, cfg) -> tuple[bool, str]:
     return True, ch
 
 
-def confirm_retry(run, task: str, n: int, total: int) -> tuple[bool, str]:
+def confirm_retry(run, task: str, n: int, total: int, cfg=None) -> tuple[bool, str]:
     ok, ch = approvals.decide(run, "retry", f"Retry {task} (attempt {n} of {total})? [y/N] ", task=task, n=n)
     approvals.note(run, "retry", task, n, ok, ch)
+    github_terminal(cfg, run, "retry", ok, ch)
     run.event("retry", task, n, "retry_confirmed" if ok else "retry_declined", "")
     return ok, ch
 
 
-def mode_not_confirmed(run, ch: str) -> int:
+def github_on(cfg) -> bool:
+    return bool(cfg is not None and getattr(cfg, "github_approvals", False))
+
+
+def github_post(cfg, run) -> None:
+    """004: with GitHub approvals on, post the pending decision on the run's tracking issue."""
+    if not github_on(cfg):
+        return
+    from . import ghapprove, ghsync
+    p = approvals.pending_step(run)
+    if not p or p["step"] not in ("mode", "retry"):
+        return
+    try:
+        ghapprove.post_decision(cfg, run, p)
+        issue = ghapprove._tracking(run)["issue"]
+        print(f"  or approve on GitHub: https://github.com/{cfg.repo}/issues/{issue} "
+              f"(reply `/approve {p['step']}`; allowed: {', '.join(cfg.approvers)})")
+    except ghsync.GitHubLoopError as e:
+        print(f"  (could not post the decision on GitHub: {e})")
+
+
+def github_terminal(cfg, run, step: str, ok: bool, ch: str) -> None:
+    if github_on(cfg) and ch == "tty":
+        from . import ghapprove
+        ghapprove.mark_answered(cfg, run, step, ok)
+
+
+def mode_not_confirmed(run, ch: str, cfg=None) -> int:
     if ch == "none":
         _pause(run, "awaiting-mode")
         print(f"paused: mode not confirmed. {approvals.hint(run, 'mode')}")
+        github_post(cfg, run)
         return EXIT_DECLINED
     run.set_run_state("failed", "MODE_NOT_CONFIRMED")
     evidence.write_summary(run)
@@ -128,11 +158,13 @@ def run_task(run, cfg, imgs, runner, task: str, start_n: int = 1) -> int:
                 return _fail(run, "B_NOT_BLOCKED")
         if n >= total:
             return _fail(run, f"{task}_RETRIES_EXHAUSTED")
-        ok, ch = confirm_retry(run, task, n + 1, total)
+        ok, ch = confirm_retry(run, task, n + 1, total, cfg)
         if not ok:
             _pause(run, "awaiting-retry", task=task, n=n + 1)
             print(f"paused: retry of {task} not confirmed. "
                   + (approvals.hint(run, "retry") if ch == "none" else "`pilot resume` asks again."))
+            if ch == "none":
+                github_post(cfg, run)
             return EXIT_AWAIT_RETRY
         n += 1
     return publish_task(run, cfg, imgs, runner, task)
@@ -232,7 +264,7 @@ def run(cfg) -> int:
         return _fail(r, "B_NOT_BLOCKED")
     ok, ch = confirm_mode(r, cfg)
     if not ok:
-        return mode_not_confirmed(r, ch)
+        return mode_not_confirmed(r, ch, cfg)
     r.save()
     return run_task(r, cfg, imgs, runner, "A")
 
@@ -244,6 +276,11 @@ def resume(cfg, run_id: str | None) -> int:
         return EXIT_ERROR
     imgs = images.load()
     runner = JobsRunner()
+    if github_on(cfg) and not approvals.has_tty():  # 004: a valid /approve on GitHub becomes the approval
+        from . import ghapprove
+        msg = ghapprove.collect(cfg, r)
+        if msg:
+            print(msg)
     st, pend = r.state["state"], r.state.get("pending") or {}
     r.state["state"] = "in-progress"
     r.save()
@@ -251,16 +288,17 @@ def resume(cfg, run_id: str | None) -> int:
     if st == "paused(awaiting-mode)":
         ok, ch = confirm_mode(r, cfg)
         if not ok:
-            return mode_not_confirmed(r, ch)
+            return mode_not_confirmed(r, ch, cfg)
         r.save()
         return run_task(r, cfg, imgs, runner, "A")
     if st == "paused(awaiting-retry)":
         task, n = pend["task"], int(pend["n"])
-        ok, ch = confirm_retry(r, task, n, 1 + cfg.retry_limit)
+        ok, ch = confirm_retry(r, task, n, 1 + cfg.retry_limit, cfg)
         if not ok:
             _pause(r, "awaiting-retry", task=task, n=n)
             if ch == "none":
                 print(f"paused: retry of {task} not confirmed. {approvals.hint(r, 'retry')}")
+                github_post(cfg, r)
             return EXIT_AWAIT_RETRY
         return run_task(r, cfg, imgs, runner, task, start_n=n)
     if st == "paused(awaiting-publish)":
@@ -311,3 +349,53 @@ def resume(cfg, run_id: str | None) -> int:
     if gate_task(r, cfg, "B")["decision"] != "allow":
         return _fail(r, "B_STILL_BLOCKED")
     return run_task(r, cfg, imgs, runner, "B")
+
+
+def _pr_merged(cfg, number) -> bool:
+    try:
+        v = json.loads(fixture.gh("pr", "view", str(number), "-R", cfg.repo, "--json", "state").stdout)
+    except subprocess.CalledProcessError:
+        return False
+    return v.get("state") == "MERGED"
+
+
+def ready_to_resume(cfg, r) -> bool:
+    """004 `github watch`: would `resume` make progress now? (approval found, or PR merged)."""
+    st = str(r.state.get("state", ""))
+    pend = r.state.get("pending") or {}
+    if st in ("paused(awaiting-mode)", "paused(awaiting-retry)"):
+        from . import ghapprove
+        msg = ghapprove.collect(cfg, r)
+        if msg:
+            print(msg)
+        return (r.dir / "approvals" / "pending.json").exists()
+    if st == "paused(awaiting-merge)":
+        spr = pend.get("status_pr")
+        if spr:
+            return _pr_merged(cfg, spr)
+        pr = (r.task("A").get("pr") or {}).get("number")
+        return bool(pr) and _pr_merged(cfg, pr)
+    return False
+
+
+def watch(cfg, run_id: str, interval: int = 15, sleep=None) -> int:
+    """Poll GitHub and resume when a valid approval or a merge appears. Ctrl-C leaves it paused."""
+    import time
+    sleep = sleep or time.sleep
+    code = EXIT_ERROR
+    while True:
+        r = evidence.load_run(run_id)
+        if r is None:
+            print(f"no run {run_id}")
+            return EXIT_ERROR
+        st = str(r.state.get("state", ""))
+        if not st.startswith("paused"):
+            print(f"run {run_id} is {st}; stopped watching")
+            return code if code != EXIT_ERROR else (EXIT_OK if st == "succeeded" else EXIT_ERROR)
+        if ready_to_resume(cfg, r):
+            code = resume(cfg, run_id)
+            after = evidence.load_run(run_id)
+            if after is not None and after.state.get("state") == st and after.state.get("pending") == r.state.get("pending"):
+                sleep(interval)  # no progress (e.g. declined): don't spin
+            continue
+        sleep(interval)

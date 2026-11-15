@@ -12,12 +12,12 @@ from pathlib import Path
 
 from . import evidence, prompt
 
-PATTERNS = r"github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{16,}|sk-[A-Za-z0-9_-]{16,}|Bearer [A-Za-z0-9._-]{16,}"
+PATTERNS = r"-----BEGIN [A-Z ]*PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{16,}|sk-[A-Za-z0-9_-]{16,}|Bearer [A-Za-z0-9._-]{16,}"
 
 
 def redaction_scan(root: Path, key_files: list[Path], env_files: list[Path]) -> list[str]:
     hits = set()
-    r = subprocess.run(["grep", "-rlE", PATTERNS, str(root)], capture_output=True, text=True)
+    r = subprocess.run(["grep", "-rlE", "-e", PATTERNS, str(root)], capture_output=True, text=True)
     hits.update(l for l in r.stdout.splitlines() if l)
     for kf in key_files:
         if kf.exists() and kf.stat().st_size > 0:
@@ -29,6 +29,21 @@ def redaction_scan(root: Path, key_files: list[Path], env_files: list[Path]) -> 
                                 "_", str(ef), str(root)], capture_output=True, text=True)
             hits.update(l for l in r.stdout.splitlines() if l)
     return sorted(str(Path(h).relative_to(root)) for h in hits)
+
+
+def _approvers(ev) -> dict:
+    """step -> GitHub logins of approvals given on GitHub (004), in order."""
+    out: dict = {}
+    for e in ev:
+        if e.get("event") == "approval_channel" and "approved=true" in (e.get("detail") or ""):
+            kv = dict(x.split("=", 1) for x in e["detail"].split() if "=" in x)
+            if kv.get("channel") == "github":
+                out.setdefault(kv.get("step"), []).append(kv.get("approver"))
+    return out
+
+
+def _gh(approvers: dict, step: str) -> str:
+    return f" approvers={approvers[step]}" if approvers.get(step) else ""
 
 
 def _channels(ev) -> dict:
@@ -83,12 +98,18 @@ def audit_dir(d: Path, secret_files: list[Path] | None = None, env_files: list[P
         ok2 = a_pass is not None and b_pass is not None and a_pass < b_pass
     rows.append(_row("AU02", ok2, "order A/1 fail -> A/2+ pass -> B pass (SC-002)", str(grades)))
 
-    # AU03: exactly 2 PRs, one per task, draft, authored by the publisher identity.
+    # AU03: exactly 2 task PRs (A, B), plus 0 or 1 status-change PR per item (004 R7); every PR a
+    # draft authored by the publisher identity. A missing `kind` means `task` (older records).
     prs = json.loads((d / "prs.json").read_text()) if (d / "prs.json").exists() else []
-    ok3 = (len(prs) == 2 and sorted(p.get("task") for p in prs) == ["A", "B"]
+    task_prs = [p for p in prs if p.get("kind", "task") == "task"]
+    status_prs = [p for p in prs if p.get("kind") == "status"]
+    per_item = [p.get("task") for p in status_prs]
+    ok3 = (len(task_prs) == 2 and sorted(p.get("task") for p in task_prs) == ["A", "B"]
+           and len(per_item) == len(set(per_item)) and all(per_item)
+           and len(task_prs) + len(status_prs) == len(prs)
            and all(p.get("draft") is True and p.get("author") and p.get("author") == p.get("publisher_identity") for p in prs))
-    rows.append(_row("AU03", ok3, "exactly 2 draft PRs, both by the publisher identity (SC-003)",
-                     json.dumps([{k: p.get(k) for k in ("task", "number", "draft", "author", "publisher_identity")} for p in prs])))
+    rows.append(_row("AU03", ok3, "exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
+                     json.dumps([{k: p.get(k) for k in ("task", "kind", "number", "draft", "author", "publisher_identity")} for p in prs])))
 
     # AU04: credential checks present and passing.
     cred = [r for r in checks if r["id"] in ("P04", "P09")]
@@ -129,14 +150,15 @@ def audit_dir(d: Path, secret_files: list[Path] | None = None, env_files: list[P
             if not any(x["event"] == "retry_confirmed" and x["task"] == e["task"] and x["attempt"] == e["attempt"] for x in ev[:i]):
                 bad9.append(f"{e['task']}-{e['attempt']}")
     channels = _channels(ev)
+    approvers = _approvers(ev)
     rows.append(_row("AU09", not bad9, "every retry confirmed by the operator (FR-017)",
-                     f"unconfirmed={bad9} channels={channels.get('retry', [])}"))
+                     f"unconfirmed={bad9} channels={channels.get('retry', [])}{_gh(approvers, 'retry')}"))
 
     # AU10: mode confirmed before the first attempt.
     m = idx(lambda e: e["event"] == "mode_confirmed")
     a = idx(lambda e: e["stage"] == "attempt")
     rows.append(_row("AU10", m is not None and (a is None or m < a), "mode confirmed before any worker staged (FR-023)",
-                     f"mode_seq={m} first_attempt={a} channels={channels.get('mode', [])}"))
+                     f"mode_seq={m} first_attempt={a} channels={channels.get('mode', [])}{_gh(approvers, 'mode')}"))
 
     # AU11: induction only on A/1, and it withheld exactly the acceptance section.
     bad11 = []
