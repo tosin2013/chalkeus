@@ -49,7 +49,8 @@ pilot/pilot audit           # re-check the committed evidence (AU01-AU11)
 pilot/pilot gate A|B [--root DIR]   # gate only (exit 0 allow, 10 refuse)
 pilot/pilot status          # current run state
 pilot/pilot approve --run <id> mode|retry|reconcile  # no terminal: approve the one pending step
-#   (your agent harness asks you first; see .claude/skills/pilot/SKILL.md)
+#   (your agent harness asks you first; OpenCode needs the rule in your own config,
+#    see docs/troubleshooting.md#prompts-answer-no)
 ```
 
 Every human decision is a typed `y`. Without a terminal, every prompt counts as **no**.

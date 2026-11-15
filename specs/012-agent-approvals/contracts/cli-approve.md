@@ -27,5 +27,6 @@
 - No command approves a merge.
 - An approval applies to exactly one pending step and is used at most once (data-model.md).
 - With a terminal, the terminal decides.
-- The project ships harness rules that make `pilot approve` ask the human
-  (`.claude/settings.json`, `opencode.json`) and deny direct edits to `approvals/`.
+- Harness rules make `pilot approve` ask the human: `.claude/settings.json` (committed; also
+  denies direct edits to `approvals/`) and, for OpenCode, a rule each operator adds once to
+  `~/.config/opencode/opencode.json` (documented in `docs/troubleshooting.md`).

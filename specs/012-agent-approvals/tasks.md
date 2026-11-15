@@ -107,10 +107,10 @@ validate.
 
 - [X] T016 Run the full test suite and docs check; all pass. Record the test count in this file's notes
 - [ ] T017 **Owner action**: copy the early run's record from the validation machine into `specs/012-agent-approvals/evidence/20261114T213046Z/` (G6). Then run `pilot/pilot audit --run 20261114T213046Z`, and record the AU09/AU10 lines in `specs/012-agent-approvals/evidence/README.md`
-- [ ] T018 **Owner action**: refusal cases on a set-up machine per quickstart.md §2 (SC-002); record each result in `specs/012-agent-approvals/evidence/README.md`
-- [ ] T019 **Owner action**: agent-driven run in **Claude Code** per quickstart.md §3 (SC-001, SC-005). Record whether the harness asked before each `approve`, and the audit's AU09/AU10 lines. Copy the record to `specs/012-agent-approvals/evidence/<run-id>/`
-- [ ] T020 **Owner action**: the same in **OpenCode** (SC-005). If either harness doesn't ask, fix `.claude/settings.json` or `opencode.json` (G5), record the working syntax in research.md R3, and repeat
-- [ ] T021 **Owner action**: one terminal-driven run per quickstart.md §4 (SC-006); AU09/AU10 show `channels=['tty']`
+- [X] T018 **Owner action**: refusal cases on a set-up machine per quickstart.md §2 (SC-002); record each result in `specs/012-agent-approvals/evidence/README.md`
+- [ ] T019 **Owner action**: agent-driven run in **Claude Code** per quickstart.md §3 (SC-001, SC-005). Record whether the harness asked before each `approve`, and the audit's AU09/AU10 lines. Copy the record to `specs/012-agent-approvals/evidence/<run-id>/` — **open:** the run recorded so far (`20261115T020750Z`) was performed in OpenCode, so it validates SC-001 again but not SC-005 for Claude Code. Still needed: in a Claude Code session, confirm the harness asks before `pilot/pilot approve` and denies a direct write under `approvals/` (no full run required).
+- [X] T020 **Owner action**: the same in **OpenCode** (SC-005). If either harness doesn't ask, fix `.claude/settings.json` or `opencode.json` (G5), record the working syntax in research.md R3, and repeat
+- [X] T021 **Owner action**: one terminal-driven run per quickstart.md §4 (SC-006); AU09/AU10 show `channels=['tty']`
 - [ ] T022 Privacy check: `grep -rniF '<model host>' specs/012-agent-approvals/` returns nothing, and AU08 passes for every committed 012 run
 - [ ] T023 Add an Evidence section to `specs/012-agent-approvals/spec.md` (runs, harnesses, channels, refusal results). Then `/speckit-roadmap-debrief`, and with the owner's approval `/speckit-roadmap-write`: 012 spec dir and status
 

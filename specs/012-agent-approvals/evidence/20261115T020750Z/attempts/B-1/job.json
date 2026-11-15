@@ -1,0 +1,39 @@
+{
+  "container_terminated": {
+    "containerID": "containerd://641e39b46f7b2be8e296914c284bd28657be20af399eedcbea2ff11cfcf12af0",
+    "exitCode": 0,
+    "finishedAt": "2026-11-15T02:17:50Z",
+    "reason": "Completed",
+    "startedAt": "2026-11-15T02:16:33Z"
+  },
+  "job_status": {
+    "completionTime": "2026-11-15T02:17:53Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-15T02:17:53Z",
+        "lastTransitionTime": "2026-11-15T02:17:53Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-11-15T02:17:53Z",
+        "lastTransitionTime": "2026-11-15T02:17:53Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-11-15T02:16:32Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "outcome": "Complete",
+  "pod": "worker-dsk64",
+  "pod_phase": "Succeeded",
+  "pod_reason": null
+}

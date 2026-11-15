@@ -41,7 +41,7 @@ harnesses. Most of the work is verification and documentation; the code changes 
 
 **Language/Version**: Python 3.12 (pilot, stdlib only), bash shim `pilot/pilot`
 
-**Primary Dependencies**: none new. Harness configuration files: `.claude/settings.json` (Claude Code), `opencode.json` (OpenCode)
+**Primary Dependencies**: none new. Harness configuration files: `.claude/settings.json` (Claude Code), the operator's `~/.config/opencode/opencode.json` (OpenCode; per-user since 2026-11-15)
 
 **Storage**: files in the run's evidence folder: `events.jsonl`, `run.json`, `approvals/pending.json` (deleted when used)
 

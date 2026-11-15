@@ -1,0 +1,39 @@
+{
+  "container_terminated": {
+    "containerID": "containerd://b142e6422c91ab538579a5471c3fe0f4a7c2d835959d9db5062f5409db3f2b5d",
+    "exitCode": 0,
+    "finishedAt": "2026-11-14T23:15:15Z",
+    "reason": "Completed",
+    "startedAt": "2026-11-14T23:13:26Z"
+  },
+  "job_status": {
+    "completionTime": "2026-11-14T23:15:17Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-14T23:15:17Z",
+        "lastTransitionTime": "2026-11-14T23:15:17Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-11-14T23:15:17Z",
+        "lastTransitionTime": "2026-11-14T23:15:17Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-11-14T23:13:26Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "outcome": "Complete",
+  "pod": "worker-hgqtx",
+  "pod_phase": "Succeeded",
+  "pod_reason": null
+}
