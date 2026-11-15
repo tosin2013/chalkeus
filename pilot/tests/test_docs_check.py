@@ -88,3 +88,17 @@ class TestMain(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestHelpParsing(unittest.TestCase):
+    """016: docs_check reads both argparse and Cobra help output."""
+    def test_argparse(self):
+        self.assertEqual(dc.parse_subcommands("usage: pilot [-h] {up,down,github} ..."), frozenset({"up", "down", "github"}))
+
+    def test_cobra(self):
+        text = ("Usage:\n  pilot [command]\n\nAvailable Commands:\n  app-key   store a key\n"
+                "  github    004 loop\n  help      Help about any command\n\nFlags:\n  -h, --help\n")
+        self.assertEqual(dc.parse_subcommands(text), frozenset({"app-key", "github"}))
+
+    def test_no_commands(self):
+        self.assertEqual(dc.parse_subcommands("Usage:\n  pilot audit [flags]\n\nFlags:\n  --run string\n"), frozenset())

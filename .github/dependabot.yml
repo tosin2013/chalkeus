@@ -1,0 +1,18 @@
+# Dependabot (spec 016, research R15). Every PR runs the Go CI and is merged by a human (C-04).
+# Image base images are pinned by digest in pilot/pins.env and are not managed here.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      kubernetes:
+        patterns: ["k8s.io/*", "sigs.k8s.io/*"]
+      go-minor-patch:
+        update-types: [minor, patch]
+        exclude-patterns: ["k8s.io/*", "sigs.k8s.io/*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

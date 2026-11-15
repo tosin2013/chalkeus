@@ -139,6 +139,19 @@ cd ~
 
 If `~/.local/bin` isn't on your `PATH` yet, log out and back in (Ubuntu adds it when it exists).
 
+**Go 1.27** (the pilot is being ported to Go; `pilot/pilot` builds the Go version on first use).
+Verify the checksum published on [go.dev/dl](https://go.dev/dl/) before installing:
+
+```sh
+cd /tmp && curl -fsSLO https://go.dev/dl/go1.27.4.linux-amd64.tar.gz
+echo "7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840  go1.27.4.linux-amd64.tar.gz" | sha256sum -c -
+rm -rf ~/.local/go && tar -C ~/.local -xzf go1.27.4.linux-amd64.tar.gz
+cd ~
+```
+
+`pilot/pilot` finds Go in `~/.local/go/bin`. Add it to your `PATH` only if you want to run `go`
+yourself.
+
 **The project:**
 
 ```sh

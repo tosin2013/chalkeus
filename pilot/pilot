@@ -1,8 +1,28 @@
 #!/usr/bin/env bash
-# specfoundry M1 pilot CLI. See specs/002-m1-gated-pilot/contracts/cli.md
+# specfoundry pilot CLI. See specs/002-m1-gated-pilot/contracts/cli.md and specs/016-go-pilot.
+#
+# During the Go port (016), PILOT_IMPL chooses the implementation:
+#   PILOT_IMPL=python (default)  the reference Python pilot
+#   PILOT_IMPL=go                the Go pilot, built on first use into pilot/.build/bin/pilot
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+export PATH="$HOME/.local/bin:$HOME/.local/go/bin:$PATH"
+
+if [ "${PILOT_IMPL:-python}" = "go" ]; then
+  BIN="$ROOT/pilot/.build/bin/pilot"
+  if ! command -v go >/dev/null 2>&1; then
+    echo "pilot: the Go toolchain is needed to build the Go pilot; see docs/operator-guide.md section 4" >&2
+    exit 2
+  fi
+  # Rebuild when the binary is missing or older than any Go source or module file.
+  if [ ! -x "$BIN" ] || [ -n "$(find cmd internal go.mod go.sum -newer "$BIN" -print -quit 2>/dev/null)" ]; then
+    mkdir -p "$(dirname "$BIN")"
+    VERSION="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
+    go build -trimpath -ldflags "-X main.version=$VERSION" -o "$BIN" ./cmd/pilot
+  fi
+  exec "$BIN" "$@"
+fi
+
 export PYTHONPATH="$ROOT/pilot${PYTHONPATH:+:$PYTHONPATH}"
-export PATH="$HOME/.local/bin:$PATH"
 exec python3 -m specfoundry_pilot "$@"

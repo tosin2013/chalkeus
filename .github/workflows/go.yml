@@ -1,0 +1,70 @@
+# Go pilot CI (spec 016, research R15): vet, lint, vulnerability check, tests (golden audit and
+# shared vectors included), cross-builds; the Python reference suite and the docs check run
+# here too until the Python pilot is retired (016 US5). Read-only; no secrets.
+name: go
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Install spec (pinned, checksum-verified; the gate's status tool)
+        run: |
+          set -euo pipefail
+          . <(grep -E '^SPEC_(VERSION|SHA256)=' pilot/pins.env)
+          cd "$(mktemp -d)"
+          base="https://github.com/tosin2013/spec-status/releases/download/v${SPEC_VERSION}"
+          curl -fsSLO "$base/spec_${SPEC_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLO "$base/spec_${SPEC_VERSION}_checksums.txt"
+          sha256sum -c --ignore-missing "spec_${SPEC_VERSION}_checksums.txt"
+          tar -xzf "spec_${SPEC_VERSION}_linux_amd64.tar.gz"
+          cp */spec ./spec && echo "${SPEC_SHA256}  spec" | sha256sum -c -
+          install -m 0755 spec "$HOME/.local/bin/spec" 2>/dev/null || { mkdir -p "$HOME/.local/bin"; install -m 0755 spec "$HOME/.local/bin/spec"; }
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Vet
+        run: go vet ./...
+      - name: Lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.15.0
+      - name: Vulnerability check
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+      - name: Test
+        run: go test ./...
+      - name: Python reference suite (until 016 US5)
+        run: PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot
+
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        goos: [linux, darwin]
+        goarch: [amd64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: go build -trimpath -o /dev/null ./cmd/pilot
