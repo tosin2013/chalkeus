@@ -43,6 +43,11 @@ Follow the operator guide §7–§11 with `PILOT_IMPL=go`, at a terminal. Expect
 
 Then repeat with an agent and harness approvals (012 quickstart §3). Expect `channels=['harness']`.
 
+Until T038 makes Go the default, put the prefix on every command, approvals included:
+`PILOT_IMPL=go pilot/pilot approve --run <id> <step>`. Without it, `approve` runs the Python
+pilot. Add `-vv` to `run` and `resume` to see pod phases, events and proxy refusals as they
+happen.
+
 ## 4. GitHub loop (US3)
 
 Run `specs/004-github-loop/quickstart.md` §2–§5 with `PILOT_IMPL=go`, in token mode and App
