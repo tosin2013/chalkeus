@@ -5,6 +5,7 @@ package pyrepr
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -203,4 +204,29 @@ func jsonStr(s string) string {
 	}
 	b.WriteByte('"')
 	return b.String()
+}
+
+// Dict is repr() of a dict whose keys arrive sorted (Kubernetes API JSON sorts map keys, so the
+// reference's dicts read from `kubectl -o json` are in key order).
+func Dict(m map[string]any) string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, len(keys))
+	for i, k := range keys {
+		parts[i] = Str(k) + ": " + Value(m[k])
+	}
+	return "{" + strings.Join(parts, ", ") + "}"
+}
+
+// SortedJSON is json.dumps(m, sort_keys=True).
+func SortedJSON(m map[string]any) string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return JSONDumps(OrderedMap{Keys: keys, Values: m})
 }

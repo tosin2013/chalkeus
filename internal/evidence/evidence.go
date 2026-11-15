@@ -446,3 +446,33 @@ func pyJSON(raw string) string {
 	}
 	return b.String()
 }
+
+// RecordCheck appends a check row to file (relative to the run dir) and prints it the way the
+// reference does: "  PASS P01   FR-005   description".
+func (r *Run) RecordCheck(out io.Writer, file, id, requirement, result, description, detail string) (CheckRow, error) {
+	row := NewCheckRow(id, requirement, result, description, detail)
+	if err := AppendJSONL(filepath.Join(r.Dir, file), row); err != nil {
+		return row, err
+	}
+	mark := "FAIL"
+	if result == "pass" {
+		mark = "PASS"
+	}
+	fmt.Fprintf(out, "  %s %-5s %-8s %s\n", mark, id, requirement, description)
+	return row, nil
+}
+
+// Task returns the run's state for a task label, creating it ({"state":"pending","attempts":[]}).
+func (r *Run) Task(label string) map[string]any {
+	tasks, _ := r.State["tasks"].(map[string]any)
+	if tasks == nil {
+		tasks = map[string]any{}
+		r.State["tasks"] = tasks
+	}
+	t, _ := tasks[label].(map[string]any)
+	if t == nil {
+		t = map[string]any{"state": "pending", "attempts": []any{}}
+		tasks[label] = t
+	}
+	return t
+}

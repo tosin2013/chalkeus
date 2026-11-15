@@ -194,9 +194,9 @@ the harness channel working.
 
   Wire `pilot up [--cluster-only] [--local-build]` and `pilot down`. Port
   `test_calico_hash.py` and `test_pull_errors.py`.
-- [ ] T028 [US2] Port `internal/runner` (the `base.py` interface and the `jobs.py` Jobs runner:
+- [X] T028 [US2] Port `internal/runner` (the `base.py` interface and the `jobs.py` Jobs runner:
   submit, wait, collect, status, delete) on top of `internal/k8s`.
-- [ ] T029 [US2] Port the `internal/worker` (with `prompt.py` induction and the spend watchdog) and
+- [X] T029 [US2] Port the `internal/worker` (with `prompt.py` induction and the spend watchdog) and
   `internal/grader` packages from `worker.py`, `prompt.py` and `grader.py`: the same manifests,
   deadline, caps and grade.json handling. Port `test_prompt.py`, `test_watchdog.py` and
   `test_grading_reference.py`.
@@ -206,7 +206,7 @@ the harness channel working.
   - idempotency; the status PR path is ported in US3.
 
   Port `test_publisher_idempotency.py`.
-- [ ] T031 [US2] Port `internal/checks` from `checks.py`: P01–P10 with the same descriptions,
+- [X] T031 [US2] Port `internal/checks` from `checks.py`: P01–P10 with the same descriptions,
   requirements and detail strings, and the gate matrix rows.
 - [ ] T032 [US2] Port `internal/approvals` from `approvals.py`: `has_tty` (`x/term`),
   `pending_step`, `describe`, `record` (channel harness or github), `take`/`take_record`,
