@@ -1,0 +1,569 @@
+{
+  "generated_by": "python reference 2cd2c6d",
+  "records": [
+    {
+      "path": "specs/002-m1-gated-pilot/evidence/20261113T030451Z",
+      "final": false,
+      "rows": [
+        {
+          "id": "AU01",
+          "result": "pass",
+          "description": "B refused (and never attempted) until A verified (SC-001)",
+          "detail": "refusals=1 attempts_before=0 allows_before=0"
+        },
+        {
+          "id": "AU02",
+          "result": "fail",
+          "description": "order A/1 fail -> A/2+ pass -> B pass (SC-002)",
+          "detail": "[]"
+        },
+        {
+          "id": "AU03",
+          "result": "fail",
+          "description": "exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
+          "detail": "[]"
+        },
+        {
+          "id": "AU04",
+          "result": "fail",
+          "description": "no worker/grader held an SCM credential (P04, P09) (SC-004)",
+          "detail": "rows=0"
+        },
+        {
+          "id": "AU05",
+          "result": "pass",
+          "description": "gate fail-closed matrix passed (SC-005)",
+          "detail": "rows=4"
+        },
+        {
+          "id": "AU06",
+          "result": "pass",
+          "description": "every attempt within its spend cap (SC-008)",
+          "detail": "over=[]"
+        },
+        {
+          "id": "AU08",
+          "result": "pass",
+          "description": "no secrets in the evidence record",
+          "detail": "hits=[]"
+        },
+        {
+          "id": "AU09",
+          "result": "pass",
+          "description": "every retry confirmed by the operator (FR-017)",
+          "detail": "unconfirmed=[] channels=[]"
+        },
+        {
+          "id": "AU10",
+          "result": "fail",
+          "description": "mode confirmed before any worker staged (FR-023)",
+          "detail": "mode_seq=None first_attempt=None channels=[]"
+        },
+        {
+          "id": "AU11",
+          "result": "pass",
+          "description": "induction applied to A/1 only, withholding exactly the acceptance section",
+          "detail": "[]"
+        }
+      ]
+    },
+    {
+      "path": "specs/002-m1-gated-pilot/evidence/20261113T030655Z",
+      "final": true,
+      "rows": [
+        {
+          "id": "AU01",
+          "result": "pass",
+          "description": "B refused (and never attempted) until A verified (SC-001)",
+          "detail": "refusals=3 attempts_before=0 allows_before=0"
+        },
+        {
+          "id": "AU02",
+          "result": "pass",
+          "description": "order A/1 fail -> A/2+ pass -> B pass (SC-002)",
+          "detail": "[('A', 1, 'grade_fail'), ('A', 2, 'grade_pass'), ('B', 1, 'grade_pass')]"
+        },
+        {
+          "id": "AU03",
+          "result": "pass",
+          "description": "exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
+          "detail": "[{\"task\": \"A\", \"kind\": null, \"number\": 1, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}, {\"task\": \"B\", \"kind\": null, \"number\": 2, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}]"
+        },
+        {
+          "id": "AU04",
+          "result": "pass",
+          "description": "no worker/grader held an SCM credential (P04, P09) (SC-004)",
+          "detail": "rows=5"
+        },
+        {
+          "id": "AU05",
+          "result": "pass",
+          "description": "gate fail-closed matrix passed (SC-005)",
+          "detail": "rows=4"
+        },
+        {
+          "id": "AU06",
+          "result": "pass",
+          "description": "every attempt within its spend cap (SC-008)",
+          "detail": "over=[]"
+        },
+        {
+          "id": "AU07",
+          "result": "pass",
+          "description": "teardown verified (SC-006)",
+          "detail": "rows=3"
+        },
+        {
+          "id": "AU08",
+          "result": "pass",
+          "description": "no secrets in the evidence record",
+          "detail": "hits=[]"
+        },
+        {
+          "id": "AU09",
+          "result": "pass",
+          "description": "every retry confirmed by the operator (FR-017)",
+          "detail": "unconfirmed=[] channels=[]"
+        },
+        {
+          "id": "AU10",
+          "result": "pass",
+          "description": "mode confirmed before any worker staged (FR-023)",
+          "detail": "mode_seq=3 first_attempt=4 channels=[]"
+        },
+        {
+          "id": "AU11",
+          "result": "pass",
+          "description": "induction applied to A/1 only, withholding exactly the acceptance section",
+          "detail": "[]"
+        }
+      ]
+    },
+    {
+      "path": "specs/003-m2-kelos-backend/evidence/20261113T180203Z",
+      "final": true,
+      "rows": [
+        {
+          "id": "AU01",
+          "result": "pass",
+          "description": "B refused (and never attempted) until A verified (SC-001)",
+          "detail": "refusals=3 attempts_before=0 allows_before=0"
+        },
+        {
+          "id": "AU02",
+          "result": "pass",
+          "description": "order A/1 fail -> A/2+ pass -> B pass (SC-002)",
+          "detail": "[('A', 1, 'grade_fail'), ('A', 2, 'grade_pass'), ('B', 1, 'grade_pass')]"
+        },
+        {
+          "id": "AU03",
+          "result": "pass",
+          "description": "exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
+          "detail": "[{\"task\": \"A\", \"kind\": null, \"number\": 3, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}, {\"task\": \"B\", \"kind\": null, \"number\": 4, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}]"
+        },
+        {
+          "id": "AU04",
+          "result": "pass",
+          "description": "no worker/grader held an SCM credential (P04, P09) (SC-004)",
+          "detail": "rows=5"
+        },
+        {
+          "id": "AU05",
+          "result": "pass",
+          "description": "gate fail-closed matrix passed (SC-005)",
+          "detail": "rows=4"
+        },
+        {
+          "id": "AU06",
+          "result": "pass",
+          "description": "every attempt within its spend cap (SC-008)",
+          "detail": "over=[]"
+        },
+        {
+          "id": "AU07",
+          "result": "pass",
+          "description": "teardown verified (SC-006)",
+          "detail": "rows=3"
+        },
+        {
+          "id": "AU08",
+          "result": "pass",
+          "description": "no secrets in the evidence record",
+          "detail": "hits=[]"
+        },
+        {
+          "id": "AU09",
+          "result": "pass",
+          "description": "every retry confirmed by the operator (FR-017)",
+          "detail": "unconfirmed=[] channels=[]"
+        },
+        {
+          "id": "AU10",
+          "result": "pass",
+          "description": "mode confirmed before any worker staged (FR-023)",
+          "detail": "mode_seq=3 first_attempt=4 channels=[]"
+        },
+        {
+          "id": "AU11",
+          "result": "pass",
+          "description": "induction applied to A/1 only, withholding exactly the acceptance section",
+          "detail": "[]"
+        }
+      ]
+    },
+    {
+      "path": "specs/006-operator-guide/evidence/20261114T160532Z",
+      "final": true,
+      "rows": [
+        {
+          "id": "AU01",
+          "result": "pass",
+          "description": "B refused (and never attempted) until A verified (SC-001)",
+          "detail": "refusals=3 attempts_before=0 allows_before=0"
+        },
+        {
+          "id": "AU02",
+          "result": "pass",
+          "description": "order A/1 fail -> A/2+ pass -> B pass (SC-002)",
+          "detail": "[('A', 1, 'grade_fail'), ('A', 2, 'grade_pass'), ('B', 1, 'grade_pass')]"
+        },
+        {
+          "id": "AU03",
+          "result": "pass",
+          "description": "exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
+          "detail": "[{\"task\": \"A\", \"kind\": null, \"number\": 5, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}, {\"task\": \"B\", \"kind\": null, \"number\": 6, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}]"
+        },
+        {
+          "id": "AU04",
+          "result": "pass",
+          "description": "no worker/grader held an SCM credential (P04, P09) (SC-004)",
+          "detail": "rows=5"
+        },
+        {
+          "id": "AU05",
+          "result": "pass",
+          "description": "gate fail-closed matrix passed (SC-005)",
+          "detail": "rows=4"
+        },
+        {
+          "id": "AU06",
+          "result": "pass",
+          "description": "every attempt within its spend cap (SC-008)",
+          "detail": "over=[]"
+        },
+        {
+          "id": "AU07",
+          "result": "pass",
+          "description": "teardown verified (SC-006)",
+          "detail": "rows=3"
+        },
+        {
+          "id": "AU08",
+          "result": "pass",
+          "description": "no secrets in the evidence record",
+          "detail": "hits=[]"
+        },
+        {
+          "id": "AU09",
+          "result": "pass",
+          "description": "every retry confirmed by the operator (FR-017)",
+          "detail": "unconfirmed=[] channels=[]"
+        },
+        {
+          "id": "AU10",
+          "result": "pass",
+          "description": "mode confirmed before any worker staged (FR-023)",
+          "detail": "mode_seq=3 first_attempt=4 channels=[]"
+        },
+        {
+          "id": "AU11",
+          "result": "pass",
+          "description": "induction applied to A/1 only, withholding exactly the acceptance section",
+          "detail": "[]"
+        }
+      ]
+    },
+    {
+      "path": "specs/012-agent-approvals/evidence/20261114T213046Z",
+      "final": false,
+      "rows": [
+        {
+          "id": "AU01",
+          "result": "pass",
+          "description": "B refused (and never attempted) until A verified (SC-001)",
+          "detail": "refusals=3 attempts_before=0 allows_before=0"
+        },
+        {
+          "id": "AU02",
+          "result": "pass",
+          "description": "order A/1 fail -> A/2+ pass -> B pass (SC-002)",
+          "detail": "[('A', 1, 'grade_fail'), ('A', 2, 'grade_pass'), ('B', 1, 'grade_pass')]"
+        },
+        {
+          "id": "AU03",
+          "result": "pass",
+          "description": "exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
+          "detail": "[{\"task\": \"A\", \"kind\": null, \"number\": 8, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}, {\"task\": \"B\", \"kind\": null, \"number\": 9, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}]"
+        },
+        {
+          "id": "AU04",
+          "result": "pass",
+          "description": "no worker/grader held an SCM credential (P04, P09) (SC-004)",
+          "detail": "rows=5"
+        },
+        {
+          "id": "AU05",
+          "result": "pass",
+          "description": "gate fail-closed matrix passed (SC-005)",
+          "detail": "rows=4"
+        },
+        {
+          "id": "AU06",
+          "result": "pass",
+          "description": "every attempt within its spend cap (SC-008)",
+          "detail": "over=[]"
+        },
+        {
+          "id": "AU08",
+          "result": "pass",
+          "description": "no secrets in the evidence record",
+          "detail": "hits=[]"
+        },
+        {
+          "id": "AU09",
+          "result": "pass",
+          "description": "every retry confirmed by the operator (FR-017)",
+          "detail": "unconfirmed=[] channels=['harness']"
+        },
+        {
+          "id": "AU10",
+          "result": "pass",
+          "description": "mode confirmed before any worker staged (FR-023)",
+          "detail": "mode_seq=9 first_attempt=10 channels=['harness']"
+        },
+        {
+          "id": "AU11",
+          "result": "pass",
+          "description": "induction applied to A/1 only, withholding exactly the acceptance section",
+          "detail": "[]"
+        }
+      ]
+    },
+    {
+      "path": "specs/012-agent-approvals/evidence/20261114T225256Z",
+      "final": true,
+      "rows": [
+        {
+          "id": "AU01",
+          "result": "pass",
+          "description": "B refused (and never attempted) until A verified (SC-001)",
+          "detail": "refusals=3 attempts_before=0 allows_before=0"
+        },
+        {
+          "id": "AU02",
+          "result": "pass",
+          "description": "order A/1 fail -> A/2+ pass -> B pass (SC-002)",
+          "detail": "[('A', 1, 'grade_fail'), ('A', 2, 'grade_pass'), ('B', 1, 'grade_fail'), ('B', 2, 'grade_pass')]"
+        },
+        {
+          "id": "AU03",
+          "result": "pass",
+          "description": "exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
+          "detail": "[{\"task\": \"A\", \"kind\": null, \"number\": 10, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}, {\"task\": \"B\", \"kind\": null, \"number\": 11, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}]"
+        },
+        {
+          "id": "AU04",
+          "result": "pass",
+          "description": "no worker/grader held an SCM credential (P04, P09) (SC-004)",
+          "detail": "rows=6"
+        },
+        {
+          "id": "AU05",
+          "result": "pass",
+          "description": "gate fail-closed matrix passed (SC-005)",
+          "detail": "rows=4"
+        },
+        {
+          "id": "AU06",
+          "result": "pass",
+          "description": "every attempt within its spend cap (SC-008)",
+          "detail": "over=[]"
+        },
+        {
+          "id": "AU07",
+          "result": "pass",
+          "description": "teardown verified (SC-006)",
+          "detail": "rows=3"
+        },
+        {
+          "id": "AU08",
+          "result": "pass",
+          "description": "no secrets in the evidence record",
+          "detail": "hits=[]"
+        },
+        {
+          "id": "AU09",
+          "result": "pass",
+          "description": "every retry confirmed by the operator (FR-017)",
+          "detail": "unconfirmed=[] channels=['harness', 'harness']"
+        },
+        {
+          "id": "AU10",
+          "result": "pass",
+          "description": "mode confirmed before any worker staged (FR-023)",
+          "detail": "mode_seq=9 first_attempt=10 channels=['harness']"
+        },
+        {
+          "id": "AU11",
+          "result": "pass",
+          "description": "induction applied to A/1 only, withholding exactly the acceptance section",
+          "detail": "[]"
+        }
+      ]
+    },
+    {
+      "path": "specs/012-agent-approvals/evidence/20261115T020750Z",
+      "final": true,
+      "rows": [
+        {
+          "id": "AU01",
+          "result": "pass",
+          "description": "B refused (and never attempted) until A verified (SC-001)",
+          "detail": "refusals=3 attempts_before=0 allows_before=0"
+        },
+        {
+          "id": "AU02",
+          "result": "pass",
+          "description": "order A/1 fail -> A/2+ pass -> B pass (SC-002)",
+          "detail": "[('A', 1, 'grade_fail'), ('A', 2, 'grade_pass'), ('B', 1, 'grade_pass')]"
+        },
+        {
+          "id": "AU03",
+          "result": "pass",
+          "description": "exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
+          "detail": "[{\"task\": \"A\", \"kind\": null, \"number\": 12, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}, {\"task\": \"B\", \"kind\": null, \"number\": 13, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}]"
+        },
+        {
+          "id": "AU04",
+          "result": "pass",
+          "description": "no worker/grader held an SCM credential (P04, P09) (SC-004)",
+          "detail": "rows=5"
+        },
+        {
+          "id": "AU05",
+          "result": "pass",
+          "description": "gate fail-closed matrix passed (SC-005)",
+          "detail": "rows=4"
+        },
+        {
+          "id": "AU06",
+          "result": "pass",
+          "description": "every attempt within its spend cap (SC-008)",
+          "detail": "over=[]"
+        },
+        {
+          "id": "AU07",
+          "result": "pass",
+          "description": "teardown verified (SC-006)",
+          "detail": "rows=3"
+        },
+        {
+          "id": "AU08",
+          "result": "pass",
+          "description": "no secrets in the evidence record",
+          "detail": "hits=[]"
+        },
+        {
+          "id": "AU09",
+          "result": "pass",
+          "description": "every retry confirmed by the operator (FR-017)",
+          "detail": "unconfirmed=[] channels=['harness']"
+        },
+        {
+          "id": "AU10",
+          "result": "pass",
+          "description": "mode confirmed before any worker staged (FR-023)",
+          "detail": "mode_seq=9 first_attempt=10 channels=['harness']"
+        },
+        {
+          "id": "AU11",
+          "result": "pass",
+          "description": "induction applied to A/1 only, withholding exactly the acceptance section",
+          "detail": "[]"
+        }
+      ]
+    },
+    {
+      "path": "specs/012-agent-approvals/evidence/20261115T023426Z",
+      "final": true,
+      "rows": [
+        {
+          "id": "AU01",
+          "result": "pass",
+          "description": "B refused (and never attempted) until A verified (SC-001)",
+          "detail": "refusals=4 attempts_before=0 allows_before=0"
+        },
+        {
+          "id": "AU02",
+          "result": "pass",
+          "description": "order A/1 fail -> A/2+ pass -> B pass (SC-002)",
+          "detail": "[('A', 1, 'grade_fail'), ('A', 2, 'grade_fail'), ('A', 3, 'grade_pass'), ('B', 1, 'grade_pass')]"
+        },
+        {
+          "id": "AU03",
+          "result": "pass",
+          "description": "exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
+          "detail": "[{\"task\": \"A\", \"kind\": null, \"number\": 16, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}, {\"task\": \"B\", \"kind\": null, \"number\": 17, \"draft\": true, \"author\": \"tosin2013\", \"publisher_identity\": \"tosin2013\"}]"
+        },
+        {
+          "id": "AU04",
+          "result": "pass",
+          "description": "no worker/grader held an SCM credential (P04, P09) (SC-004)",
+          "detail": "rows=6"
+        },
+        {
+          "id": "AU05",
+          "result": "pass",
+          "description": "gate fail-closed matrix passed (SC-005)",
+          "detail": "rows=4"
+        },
+        {
+          "id": "AU06",
+          "result": "pass",
+          "description": "every attempt within its spend cap (SC-008)",
+          "detail": "over=[]"
+        },
+        {
+          "id": "AU07",
+          "result": "pass",
+          "description": "teardown verified (SC-006)",
+          "detail": "rows=3"
+        },
+        {
+          "id": "AU08",
+          "result": "pass",
+          "description": "no secrets in the evidence record",
+          "detail": "hits=[]"
+        },
+        {
+          "id": "AU09",
+          "result": "pass",
+          "description": "every retry confirmed by the operator (FR-017)",
+          "detail": "unconfirmed=[] channels=['tty', 'tty']"
+        },
+        {
+          "id": "AU10",
+          "result": "pass",
+          "description": "mode confirmed before any worker staged (FR-023)",
+          "detail": "mode_seq=4 first_attempt=5 channels=['tty']"
+        },
+        {
+          "id": "AU11",
+          "result": "pass",
+          "description": "induction applied to A/1 only, withholding exactly the acceptance section",
+          "detail": "[]"
+        }
+      ]
+    }
+  ]
+}

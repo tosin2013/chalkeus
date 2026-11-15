@@ -53,10 +53,10 @@ data-model.md), and keep messages, event names and check ids verbatim.
   - unknown errors and usage errors give 2.
 
   Test the mapping in `cmd/pilot/main_test.go` (contracts/cli.md).
-- [ ] T008 [P] Implement `internal/secret`: a `Value` type whose `String`, `GoString`, `Format` and
+- [X] T008 [P] Implement `internal/secret`: a `Value` type whose `String`, `GoString`, `Format` and
   `MarshalJSON` all return `[redacted]`, and `Reveal()` is used only by the HTTP and Kubernetes
   callers. Test it in `internal/secret/secret_test.go` (R7).
-- [ ] T009 [P] Port `internal/paths` from `paths.py`: repo root, build dir, runs root, cluster name
+- [X] T009 [P] Port `internal/paths` from `paths.py`: repo root, build dir, runs root, cluster name
   `specfoundry-m1`, registry name, fixture `TASKS = {A: "001", B: "002"}`, images JSON, pins.env,
   manifests and the fixture template.
 - [ ] T010 Port `internal/config` from `config.py`:
@@ -102,13 +102,13 @@ verdicts match.
 **Independent test:** `go test ./internal/audit/... ./internal/gate/...` passes the golden check,
 plus quickstart §2.
 
-- [ ] T014 [US1] Write `pilot/tools/golden_audit.py`: it runs the Python reference audit over
+- [X] T014 [US1] Write `pilot/tools/golden_audit.py`: it runs the Python reference audit over
   every `specs/*/evidence/<run-id>/` that has a `run.json`, using the same mode as
   `test_committed_evidence.py` (final iff `teardown.jsonl` exists). It writes
   `specs/016-go-pilot/golden/audit-expected.json` in the contracts/parity.md format
   (`generated_by`, and per record: `path`, `final`, and `rows` of `{id, result, detail}`).
   Run it and commit the output (8 records, 86 rows).
-- [ ] T015 [P] [US1] Write the golden test `internal/audit/golden_test.go`: load
+- [X] T015 [P] [US1] Write the golden test `internal/audit/golden_test.go`: load
   `audit-expected.json`, audit each record with the Go audit, and require the same ids in the
   same order, with identical `result` and `detail`.
 - [ ] T016 [US1] Port `internal/audit` from `audit.py`:
@@ -121,7 +121,7 @@ plus quickstart §2.
   - `run()`, which writes `audit.jsonl`.
 
   Then wire `pilot audit [--run]` in `internal/cli/audit.go`. T015 must pass at 86/86.
-- [ ] T017 [P] [US1] Port the reference audit unit cases (`test_audit.py`, `test_audit_github.py`,
+- [X] T017 [P] [US1] Port the reference audit unit cases (`test_audit.py`, `test_audit_github.py`,
   `test_redaction.py`) into `internal/audit/audit_test.go`, using a Go evidence builder that
   mirrors `pilot/tests/evidence_builder.py`.
 - [ ] T018 [US1] Port `internal/gate` from `gate.py`, behind a `StatusSource` interface with the
