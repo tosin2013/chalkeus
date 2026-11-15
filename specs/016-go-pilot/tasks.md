@@ -59,7 +59,7 @@ data-model.md), and keep messages, event names and check ids verbatim.
 - [X] T009 [P] Port `internal/paths` from `paths.py`: repo root, build dir, runs root, cluster name
   `specfoundry-m1`, registry name, fixture `TASKS = {A: "001", B: "002"}`, images JSON, pins.env,
   manifests and the fixture template.
-- [ ] T010 Port `internal/config` from `config.py`:
+- [X] T010 Port `internal/config` from `config.py`:
   - `DEFAULTS`, `REQUIRED` and `validate_values` rules, including the 004 keys:
     - `PILOT_GITHUB_ISSUES` and `PILOT_GITHUB_APPROVALS`: on or off;
     - approvals need `PILOT_APPROVERS`;
@@ -69,7 +69,7 @@ data-model.md), and keep messages, event names and check ids verbatim.
   - `public()`, which hashes egress hosts.
 
   Port the cases from `pilot/tests/test_config.py` into `internal/config/config_test.go`.
-- [ ] T011 Port `internal/evidence` from `evidence.py`:
+- [X] T011 Port `internal/evidence` from `evidence.py`:
   - `Run` (`run.json` load and save, `event()` with seq and timestamp format
     `%Y-%m-%dT%H:%M:%SZ`), `check_row`, `read_jsonl`, `write_json`, `append_jsonl`;
   - `new_run`, `load_run`, `active_run`, `write_config_json`, `write_versions`, `write_summary`;
@@ -111,7 +111,7 @@ plus quickstart §2.
 - [X] T015 [P] [US1] Write the golden test `internal/audit/golden_test.go`: load
   `audit-expected.json`, audit each record with the Go audit, and require the same ids in the
   same order, with identical `result` and `detail`.
-- [ ] T016 [US1] Port `internal/audit` from `audit.py`:
+- [X] T016 [US1] Port `internal/audit` from `audit.py`:
   - AU01–AU11 exactly, including the detail strings (Python list reprs such as `['harness']`
     reproduced verbatim);
   - `_channels` and `_approvers`;

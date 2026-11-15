@@ -37,18 +37,50 @@ func SHA256File(path string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// marshal encodes like the reference's json.dumps(..., sort_keys=True): map keys sorted, no
+// HTML escaping, non-ASCII escaped as \uXXXX (ensure_ascii), ", " and ": " separators on one
+// line, or indent=2. The result ends with "\n".
 func marshal(v any, indent bool) ([]byte, error) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
-	enc.SetEscapeHTML(false) // Python's json.dumps does not escape <, > or &
+	enc.SetEscapeHTML(false)
 	if indent {
 		enc.SetIndent("", "  ")
 	}
 	if err := enc.Encode(v); err != nil {
 		return nil, err
 	}
-	return b.Bytes(), nil // Encode ends with "\n", like the reference's write_json
+	out := ensureASCII(b.String())
+	if !indent {
+		out = pyJSON(strings.TrimSuffix(out, "\n")) + "\n"
+	}
+	return []byte(out), nil
 }
+
+func ensureASCII(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r < 0x80:
+			b.WriteRune(r)
+		case r < 0x10000:
+			fmt.Fprintf(&b, `\u%04x`, r)
+		default:
+			r -= 0x10000
+			fmt.Fprintf(&b, `\u%04x\u%04x`, 0xd800+(r>>10), 0xdc00+(r&0x3ff))
+		}
+	}
+	return b.String()
+}
+
+func decode(raw []byte, v any) error {
+	d := json.NewDecoder(bytes.NewReader(raw))
+	d.UseNumber() // keep numbers as written (1.0 stays 1.0), as Python round-trips them
+	return d.Decode(v)
+}
+
+// Decode parses JSON keeping numbers as written (json.Number).
+func Decode(raw []byte, v any) error { return decode(raw, v) }
 
 // WriteJSON writes v as indented JSON with sorted object keys (maps sort; structs keep field order).
 func WriteJSON(path string, v any) error {
@@ -102,7 +134,7 @@ func ReadJSONL(path string) ([]Row, error) {
 			continue
 		}
 		var r Row
-		if err := json.Unmarshal([]byte(line), &r); err != nil {
+		if err := decode([]byte(line), &r); err != nil {
 			return nil, fmt.Errorf("%s: %w", path, err)
 		}
 		out = append(out, r)
@@ -152,7 +184,7 @@ func OpenRun(dir string) (*Run, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal(raw, &r.State); err != nil {
+	if err := decode(raw, &r.State); err != nil {
 		return nil, fmt.Errorf("%s/run.json: %w", dir, err)
 	}
 	return r, nil
@@ -241,13 +273,176 @@ func LoadRun(root, id string) (*Run, error) {
 
 func toInt(v any) int {
 	switch x := v.(type) {
+	case json.Number:
+		n, _ := x.Int64()
+		return int(n)
 	case float64:
 		return int(x)
 	case int:
 		return x
-	case json.Number:
-		n, _ := x.Int64()
-		return int(n)
 	}
 	return 0
+}
+
+// KnownLimits are listed at the end of every run summary (verbatim from the reference).
+var KnownLimits = []string{
+	"Gate runs on the host (no published spec-status CLI image yet, PRD §8 ask 3).",
+	"Grader uses `spec status --json`, not `verify-readiness` (report-only skill mode not shipped, PRD §8 ask 1).",
+	"Reconcile is a deterministic pilot equivalent of the spec-status reconcile skill.",
+	"Spend cap is enforced by the pilot watchdog and deadline unless a provider-side cap is declared (R2).",
+	"Single-node kind only; multi-node policy enforcement not covered.",
+}
+
+func pyStr(v any) string {
+	switch x := v.(type) {
+	case nil:
+		return "None"
+	case string:
+		return x
+	case bool:
+		if x {
+			return "True"
+		}
+		return "False"
+	case json.Number:
+		return x.String()
+	case float64:
+		if x == float64(int64(x)) {
+			return fmt.Sprintf("%d", int64(x))
+		}
+		return fmt.Sprint(x)
+	}
+	return fmt.Sprint(v)
+}
+
+func orDash(m map[string]any, k string) string {
+	v, ok := m[k]
+	if !ok || v == nil {
+		return "-"
+	}
+	if s, ok := v.(string); ok && s == "" {
+		return "-"
+	}
+	return pyStr(v)
+}
+
+// WriteSummary writes summary.md (the reference write_summary).
+func (r *Run) WriteSummary() (string, error) {
+	ev, err := r.Events()
+	if err != nil {
+		return "", err
+	}
+	st := r.State
+	state := pyStr(st["state"])
+	head := "**State:** " + state
+	if reason, ok := st["reason"].(string); ok && reason != "" {
+		head += " (" + reason + ")"
+	}
+	out := []string{"# M1 pilot run " + r.ID, "", head, ""}
+	if len(ev) > 0 {
+		t0, e0 := time.Parse(TimeFormat, pyStr(ev[0]["at"]))
+		t1, e1 := time.Parse(TimeFormat, pyStr(ev[len(ev)-1]["at"]))
+		if e0 == nil && e1 == nil {
+			wait := 0
+			for _, e := range ev {
+				if pyStr(e["event"]) == "merge_wait_seconds" {
+					n := 0
+					fmt.Sscanf(pyStr(e["detail"]), "%d", &n)
+					wait += n
+				}
+			}
+			total := int(t1.Sub(t0).Seconds())
+			out = append(out, fmt.Sprintf("**Elapsed:** %d s total, %d s excluding the human merge wait", total, total-wait), "")
+		}
+	}
+	if mode, ok := st["mode"]; ok && mode != nil {
+		raw, _ := marshal(mode, false) // sorted keys, Python spacing
+		out = append(out, "**Mode:** `"+strings.TrimSuffix(string(raw), "\n")+"`", "")
+	}
+	out = append(out, "## Attempts", "", "| Task | Attempt | Induction | Grade | Cost (USD) | Tokens |", "|---|---|---|---|---|---|")
+	tasks, _ := st["tasks"].(map[string]any)
+	for _, label := range []string{"A", "B"} {
+		t, _ := tasks[label].(map[string]any)
+		atts, _ := t["attempts"].([]any)
+		for _, x := range atts {
+			a, _ := x.(map[string]any)
+			sp, _ := a["spend"].(map[string]any)
+			if sp == nil {
+				sp = map[string]any{}
+			}
+			res := orDash(a, "result")
+			if reason, ok := a["reason"].(string); ok && reason != "" {
+				res += " (" + reason + ")"
+			}
+			out = append(out, fmt.Sprintf("| %s | %s | %s | %s | %s | %s |", label, pyStr(a["n"]), orDash(a, "induction"), res, orDash(sp, "cost_usd"), orDash(sp, "tokens")))
+		}
+	}
+	var prs []map[string]any
+	if raw, err := os.ReadFile(filepath.Join(r.Dir, "prs.json")); err == nil {
+		_ = decode(raw, &prs)
+	}
+	out = append(out, "", "## Draft PRs", "")
+	for _, p := range prs {
+		out = append(out, fmt.Sprintf("- Task %s: [%s](%s) (draft=%s, author=%s)", pyStr(p["task"]), pyStr(p["url"]), pyStr(p["url"]), pyStr(p["draft"]), pyStr(p["author"])))
+	}
+	for _, name := range []string{"checks/results.jsonl", "audit.jsonl", "teardown.jsonl"} {
+		rows, _ := ReadJSONL(filepath.Join(r.Dir, name))
+		if len(rows) > 0 {
+			pass := 0
+			for _, x := range rows {
+				if pyStr(x["result"]) == "pass" {
+					pass++
+				}
+			}
+			out = append(out, fmt.Sprintf("- `%s`: %d of %d pass", name, pass, len(rows)))
+		}
+	}
+	out = append(out, "", "## Events", "", "| Seq | Stage | Task | Attempt | Event | Detail |", "|---|---|---|---|---|---|")
+	for _, e := range ev {
+		d := strings.ReplaceAll(strings.ReplaceAll(pyStr(e["detail"]), "|", "\\|"), "\n", " ")
+		if rs := []rune(d); len(rs) > 120 {
+			d = string(rs[:120])
+		}
+		task, att := "", ""
+		if e["task"] != nil && pyStr(e["task"]) != "" {
+			task = pyStr(e["task"])
+		}
+		if e["attempt"] != nil && pyStr(e["attempt"]) != "0" {
+			att = pyStr(e["attempt"])
+		}
+		out = append(out, fmt.Sprintf("| %s | %s | %s | %s | %s | %s |", pyStr(e["seq"]), pyStr(e["stage"]), task, att, pyStr(e["event"]), d))
+	}
+	out = append(out, "", "## Known limits", "")
+	for _, l := range KnownLimits {
+		out = append(out, "- "+l)
+	}
+	p := filepath.Join(r.Dir, "summary.md")
+	return p, os.WriteFile(p, []byte(strings.Join(out, "\n")+"\n"), 0o644)
+}
+
+// pyJSON converts Go's compact JSON to Python's json.dumps spacing (", " and ": ").
+func pyJSON(raw string) string {
+	var b strings.Builder
+	inStr, esc := false, false
+	for _, c := range raw {
+		b.WriteRune(c)
+		if inStr {
+			switch {
+			case esc:
+				esc = false
+			case c == '\\':
+				esc = true
+			case c == '"':
+				inStr = false
+			}
+			continue
+		}
+		switch c {
+		case '"':
+			inStr = true
+		case ',', ':':
+			b.WriteByte(' ')
+		}
+	}
+	return b.String()
 }

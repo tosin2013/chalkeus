@@ -179,10 +179,19 @@ func readJSON(path string, v any) bool {
 	if err != nil {
 		return false
 	}
-	return json.Unmarshal(raw, v) == nil
+	return evidence.Decode(raw, v) == nil
 }
 
-func num(v any) (float64, bool) { f, ok := v.(float64); return f, ok }
+func num(v any) (float64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return x, true
+	case json.Number:
+		f, err := x.Float64()
+		return f, err == nil
+	}
+	return 0, false
+}
 
 func truthy(v any) bool {
 	switch x := v.(type) {
@@ -194,6 +203,9 @@ func truthy(v any) bool {
 		return x != ""
 	case float64:
 		return x != 0
+	case json.Number:
+		f, _ := x.Float64()
+		return f != 0
 	case []any:
 		return len(x) > 0
 	case map[string]any:

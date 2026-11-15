@@ -57,6 +57,11 @@ func exitCode(err error, stderr io.Writer) int {
 		}
 		return e.Code
 	}
+	var coder interface{ ExitCode() int } // e.g. config errors (2, or 3 for the repo guard)
+	if errors.As(err, &coder) {
+		fmt.Fprintf(stderr, "pilot: %s\n", err)
+		return coder.ExitCode()
+	}
 	fmt.Fprintf(stderr, "pilot: %s\n", err)
 	return ExitError
 }

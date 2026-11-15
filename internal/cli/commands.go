@@ -80,15 +80,13 @@ func gateCmd() *cobra.Command {
 }
 
 func auditCmd() *cobra.Command {
-	c := &cobra.Command{Use: "audit", Short: "evidence-only audit", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("audit") }}
+	c := &cobra.Command{Use: "audit", Short: "evidence-only audit", Args: cobra.NoArgs, RunE: runAudit}
 	c.Flags().String("run", "", "run id (default: the latest run)")
 	return c
 }
 
 func statusCmd() *cobra.Command {
-	c := &cobra.Command{Use: "status", Short: "print run state", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("status") }}
+	c := &cobra.Command{Use: "status", Short: "print run state", Args: cobra.NoArgs, RunE: runStatus}
 	c.Flags().String("run", "", "run id (default: the latest run)")
 	return c
 }

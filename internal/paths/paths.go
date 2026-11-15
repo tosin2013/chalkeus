@@ -91,6 +91,9 @@ func activeFeature(root string) (string, bool) {
 // $PILOT_EVIDENCE_FEATURE, else the active feature, else specs/002-m1-gated-pilot.
 func (l Layout) FeatureDir() string {
 	if o := os.Getenv(evidenceEnvVr); o != "" {
+		if filepath.IsAbs(o) { // as Python's ROOT / override with an absolute override
+			return filepath.Clean(o)
+		}
 		return filepath.Join(l.Root, o)
 	}
 	if d, ok := activeFeature(l.Root); ok {
