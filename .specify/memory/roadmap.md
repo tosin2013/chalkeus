@@ -17,7 +17,7 @@ specs/012-agent-approvals/roadmap-reviews/debrief-20261115.md):
   - New entry: 013 Installable pilot release (needs-info)
   - New Q8: using the pilot across projects; harness rules per user; agents that run in a
     real terminal; deny rules beyond Claude Code
-  - 005 scope: in-cluster planning moves to 011; 005 is the OpenShift target in laptop mode
+  - 005 scope and title: in-cluster planning moves to 011; 005 is the OpenShift target in laptop mode
     (old text struck through)
   - 011: develop on kind, then OpenShift as the release check; lives in operator/ in this
     repo until Q9's split trigger; takes in-cluster planning from 005
@@ -403,7 +403,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   reuse 012's pending-step approval and channel record, adding a `github` channel
   (2026-11-14).
 
-### 005 — M4 in-cluster planning and OpenShift target  [status: planned]
+### 005 — M4 OpenShift target (laptop mode)  [status: planned]
 
 - **Description:** ~~Optional in-cluster planning Job, and OpenShift as a target
   platform.~~ OpenShift as a target platform, driven by the laptop CLI (C-11 laptop mode).
