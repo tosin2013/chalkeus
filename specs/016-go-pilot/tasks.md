@@ -183,7 +183,7 @@ the harness channel working.
 - [X] T026 [P] [US2] Port `internal/images` from `images.py`: pins.env, digest references (tags
   rejected with the same messages), `--local-build`, `load()`. Port the cases from `test_pins.py`
   and `test_image_source.py`.
-- [ ] T027 [US2] Port `internal/cluster` from `cluster.py` and `infra.py`:
+- [X] T027 [US2] Port `internal/cluster` from `cluster.py` and `infra.py`:
   - kind's library: create with `pilot/kind-config.yaml`, delete, list;
   - the registry container and `docker network connect` via the docker CLI;
   - the Calico hash check;
@@ -252,7 +252,7 @@ the harness channel working.
   - read token resolution `GH_TOKEN` → `GITHUB_TOKEN` → `gh auth token`, with a fail-closed
     hint;
   - the write client from `publisher.env` or the App token (`secret.Value`).
-- [ ] T040 [US3] Port the write probe from `pilot/images/tools/check_token.py` into
+- [X] T040 [US3] Port the write probe from `pilot/images/tools/check_token.py` into
   `internal/ghloop/probe.go`:
   - blob POST for contents;
   - pulls list;

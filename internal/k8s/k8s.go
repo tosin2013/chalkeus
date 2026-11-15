@@ -654,3 +654,48 @@ func (c *Client) Exec(ns, pod string, timeout time.Duration, cmd ...string) Exec
 	}
 	return ExecResult{Code: code, Stdout: so.String(), Stderr: se.String()}
 }
+
+// DaemonSetReady waits until a daemonset has all pods updated and ready
+// (`kubectl rollout status ds/<name>`).
+func (c *Client) DaemonSetReady(ns, name string, timeout time.Duration) bool {
+	end := time.Now().Add(timeout)
+	for time.Now().Before(end) {
+		ctx, cancel := ctxT(30 * time.Second)
+		ds, err := c.CS.AppsV1().DaemonSets(ns).Get(ctx, name, metav1.GetOptions{})
+		cancel()
+		if err == nil && ds.Status.ObservedGeneration >= ds.Generation && ds.Status.DesiredNumberScheduled > 0 &&
+			ds.Status.UpdatedNumberScheduled == ds.Status.DesiredNumberScheduled &&
+			ds.Status.NumberReady == ds.Status.DesiredNumberScheduled {
+			return true
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
+}
+
+// NodesReady waits until every node reports Ready (`kubectl wait --for=condition=Ready node --all`).
+func (c *Client) NodesReady(timeout time.Duration) bool {
+	end := time.Now().Add(timeout)
+	for time.Now().Before(end) {
+		ctx, cancel := ctxT(30 * time.Second)
+		nodes, err := c.CS.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		cancel()
+		if err == nil && len(nodes.Items) > 0 {
+			all := true
+			for _, n := range nodes.Items {
+				ready := false
+				for _, cnd := range n.Status.Conditions {
+					if cnd.Type == corev1.NodeReady && cnd.Status == corev1.ConditionTrue {
+						ready = true
+					}
+				}
+				all = all && ready
+			}
+			if all {
+				return true
+			}
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return false
+}

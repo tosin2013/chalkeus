@@ -7,7 +7,7 @@ import "github.com/spf13/cobra"
 
 func upCmd() *cobra.Command {
 	c := &cobra.Command{Use: "up", Short: "stand up kind + Calico, registry, images, proxies, publisher", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("up") }}
+		RunE: runUp}
 	c.Flags().Bool("cluster-only", false, "only kind + Calico (no config needed)")
 	c.Flags().Bool("local-build", false, "build images locally into a kind-local registry instead of pulling pinned digests")
 	return c
@@ -15,12 +15,12 @@ func upCmd() *cobra.Command {
 
 func downCmd() *cobra.Command {
 	return &cobra.Command{Use: "down", Short: "tear down and verify", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("down") }}
+		RunE: runDown}
 }
 
 func publisherTokenCmd() *cobra.Command {
 	c := &cobra.Command{Use: "publisher-token", Short: "write publisher.env from a hidden prompt and verify its scope", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("publisher-token") }}
+		RunE: runPublisherToken}
 	c.Flags().Bool("check-only", false, "only verify the existing publisher.env")
 	return c
 }
