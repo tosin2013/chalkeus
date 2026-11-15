@@ -35,6 +35,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
 	"github.com/tosin2013/specfoundry/internal/reconcile"
 	"github.com/tosin2013/specfoundry/internal/runner"
+	"github.com/tosin2013/specfoundry/internal/verbose"
 	"github.com/tosin2013/specfoundry/internal/worker"
 )
 
@@ -121,6 +122,8 @@ func (p *P) modeNotConfirmed(run *evidence.Run, ch string) int {
 
 func (p *P) gateTask(run *evidence.Run, task string) gate.Decision {
 	seq, _ := run.NextGateSeq()
+	start := time.Now()
+	defer func() { verbose.V(1, "gate %s (seq %d) took %s", task, seq, time.Since(start).Round(time.Millisecond)) }()
 	d, _ := gate.EvaluateFresh(p.Status, p.Cfg.Repo(), p.Cfg.Branch(), task, paths.Tasks[task], seq, filepath.Join(run.Dir, "gate"),
 		func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) })
 	t := run.Task(task)
@@ -183,11 +186,16 @@ func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 		} else {
 			wd := worker.Deps{L: p.L, C: p.C, Runner: p.Runner,
 				Checks: func(task string, n int, ns string) { p.checks().RunWorkerChecks(run, p.Imgs, task, n, ns) }}
+			verbose.V(1, "attempt %s/%d: starting the worker", task, n)
+			started := time.Now()
 			att = worker.RunAttempt(wd, run, p.Cfg, p.Imgs, task, n, clone, base)
 			_ = os.RemoveAll(clone)
+			verbose.V(1, "attempt %s/%d: worker %v (%v) after %s", task, n, att["state"], att["reason"], time.Since(started).Round(time.Second))
 		}
 		if att["state"] == "collected" {
+			started := time.Now()
 			g := grader.Grade(p.L, p.C, p.Runner, run, p.Imgs, task, n)
+			logGrade(task, n, g, time.Since(started))
 			att["result"] = g["result"]
 			if g["result"] == "pass" {
 				att["state"] = "passed"
@@ -524,4 +532,21 @@ func (p *P) reconcileA(run *evidence.Run) int {
 		return p.fail(run, "B_STILL_BLOCKED")
 	}
 	return p.runTask(run, "B", 1)
+}
+
+// logGrade prints the grade and, at -v, the first check that did not pass.
+func logGrade(task string, n int, g map[string]any, took time.Duration) {
+	verbose.V(1, "attempt %s/%d: grade %v after %s", task, n, g["result"], took.Round(time.Second))
+	checks, _ := g["checks"].([]any)
+	for _, x := range checks {
+		c, _ := x.(map[string]any)
+		if c["result"] != "pass" {
+			d := fmt.Sprint(c["detail"])
+			if len(d) > 300 {
+				d = d[:300] + "…"
+			}
+			verbose.V(1, "  %v %v: %s", c["id"], c["result"], d)
+			return
+		}
+	}
 }

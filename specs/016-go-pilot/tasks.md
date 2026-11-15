@@ -361,6 +361,13 @@ GitHub.
 - [ ] T057 [US5] **Owner action:** one more guide walkthrough with the audit at 11/11 after
   retirement. Record it in `specs/016-go-pilot/evidence/README.md`.
 
+- [X] T060 [US2] Verbose levels (FR-018, owner request 2026-11-15): global `-v` count flag and
+  `PILOT_VERBOSE` in `internal/cli/root.go`; `internal/verbose` (levels, redaction of secret
+  values and model hosts, OpenCode event formatting); the runner's pod watcher
+  (`internal/runner/watch.go`: pod phases, events, model-proxy refusals at `-vv`; `tail -F
+  /tmp/harness.jsonl` by exec in worker pods at `-vvv`); step and grade timings in the
+  pipeline; host commands at `-v`. Docs: operator guide §12, troubleshooting, pilot skill.
+
 ---
 
 ## Phase 9: Polish and closeout

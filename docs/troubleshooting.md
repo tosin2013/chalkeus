@@ -4,6 +4,10 @@ Each entry starts with what you see, then explains the cause, the fix and how to
 fix. Entries are grouped by when they happen. The [operator guide](operator-guide.md) links
 here from each step.
 
+To watch a run while it happens, add `-vv` (pod phases and Kubernetes events) or `-vvv` (also
+the agent's live activity) to the command, for example `pilot/pilot resume --run <id> -vv`. See
+[section 12 of the guide](operator-guide.md#12-when-something-goes-wrong).
+
 When you ask for help, never share your API key, your token, anything under
 `~/.config/specfoundry/` or `~/.config/opencode/`, or your provider's hostname. See
 [section 12 of the guide](operator-guide.md#12-when-something-goes-wrong) for what to share

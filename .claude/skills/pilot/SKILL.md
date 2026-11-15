@@ -57,6 +57,10 @@ matching troubleshooting entry before suggesting any fix.
 
 Always pass `--run <id>` once you know the run id (printed as `== run <id>`).
 
+To diagnose a stuck or failing step, add `-vv` to the command (pod phases, Kubernetes events,
+model-proxy refusals, the first failing grader check; stderr only, redacted). Use `-vvv` (the
+agent's live activity) only when the human asks for it.
+
 ## Exit codes and what to do
 
 | Exit | Meaning | Your move |

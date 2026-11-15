@@ -21,6 +21,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/k8s"
 	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/specfoundry/internal/verbose"
 )
 
 // Env carries what up/down need; Say prints a step line.
@@ -44,7 +45,10 @@ func Sh(timeout time.Duration, check bool, stdin string, env []string, args ...s
 	}
 	var so, se strings.Builder
 	cmd.Stdout, cmd.Stderr = &so, &se
+	start := time.Now()
+	verbose.V(1, "$ %s", strings.Join(args, " "))
 	err := cmd.Run()
+	verbose.V(2, "  exit %v after %s", err, time.Since(start).Round(time.Millisecond))
 	if err != nil && check {
 		msg := strings.TrimSpace(se.String())
 		if msg == "" {

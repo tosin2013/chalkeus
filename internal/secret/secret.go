@@ -2,7 +2,11 @@
 // (specs/016-go-pilot/research.md R7).
 package secret
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/tosin2013/specfoundry/internal/verbose"
+)
 
 const redacted = "[redacted]"
 
@@ -10,8 +14,11 @@ const redacted = "[redacted]"
 // value, for the HTTP and Kubernetes clients that must send it.
 type Value struct{ v string }
 
-// New wraps a credential value.
-func New(v string) Value { return Value{v: v} }
+// New wraps a credential value, and registers it so verbose diagnostics never print it.
+func New(v string) Value {
+	verbose.AddRedaction(v)
+	return Value{v: v}
+}
 
 // Reveal returns the raw value. Never log or persist the result.
 func (s Value) Reveal() string { return s.v }
