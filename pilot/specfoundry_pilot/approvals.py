@@ -144,7 +144,7 @@ def note(run, step: str, task, n, approved: bool, channel: str, approver: str | 
          extra: str = "") -> None:
     detail = f"step={step} approved={str(approved).lower()} channel={channel}"
     if channel == "github":
-        a = getattr(run, "last_approval", None) or {}
+        a = {} if approver else (getattr(run, "last_approval", None) or {})
         approver = approver or a.get("approver")
         cid = a.get("comment_id")
         detail += f" approver={approver}" + (f" comment={cid}" if cid else "") + (f" {extra}" if extra else "")

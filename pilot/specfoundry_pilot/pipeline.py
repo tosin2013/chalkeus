@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import re
 import shutil
 import subprocess
 
@@ -306,6 +307,8 @@ def resume(cfg, run_id: str | None) -> int:
     if st != "paused(awaiting-merge)":
         print(f"cannot resume from {st}")
         return EXIT_ERROR
+    if github_on(cfg):  # 004 R6: the status change is approved by merging a status-change PR
+        return reconcile_github(cfg, r, imgs, runner)
     # Human merge happened (or not): reconcile A.
     paused_at = _dt.datetime.strptime(r.state.get("paused_at", evidence.now()), "%Y-%m-%dT%H:%M:%SZ")
     tA = r.task("A")
@@ -399,3 +402,90 @@ def watch(cfg, run_id: str, interval: int = 15, sleep=None) -> int:
                 sleep(interval)  # no progress (e.g. declined): don't spin
             continue
         sleep(interval)
+
+
+def reconcile_github(cfg, r, imgs, runner) -> int:
+    """004 US3. After A's merge: check reality, open a status-change PR, pause. After the human
+    merges it: check it is exactly the proposed edit, merged by an allowed approver, then verify A."""
+    pend = r.state.get("pending") or {}
+    tA = r.task("A")
+    n = tA["passing_attempt"]
+    if pend.get("status_pr"):
+        return status_pr_merged(cfg, r, imgs, runner, pend)
+    rec_obj, cleanup = reconcile.for_fixture(cfg, r, "A", r.attempt_dir("A", n), tA["base_revision"], ask=lambda q: "")
+    base = bundle = None
+    try:
+        code, rec, new = rec_obj.check("A", paths.TASKS["A"], tA["pr"]["number"],
+                                       next(a for a in tA["attempts"] if a["n"] == n).get("changed_paths") or [])
+        if code == 0:
+            base, bundle = rec_obj.status_bundle(new)
+    finally:
+        cleanup()
+    rec["channel"] = "github"
+    evidence.write_json(r.dir / "reconcile" / "A.json", rec)
+    r.event("reconcile", "A", n, f"reconcile_{rec.get('reason') or 'proposed'}", rec.get("merge_commit") or "")
+    if code == EXIT_AWAIT_MERGE:
+        _pause(r, "awaiting-merge", task="A")
+        print("A's PR is not merged yet. Merge it on GitHub, then run `pilot resume` (or `pilot github watch`).")
+        return EXIT_AWAIT_MERGE
+    if code != 0:
+        return _fail(r, f"RECONCILE_{rec.get('reason')}")
+    try:
+        pr = publisher.publish_status(r, cfg, imgs, runner, "A", base, bundle)
+    except Exception as e:  # noqa: BLE001 - resumable; never "verified"
+        r.event("publish", "A", None, "status_pr_failed", f"{e.__class__.__name__}: {str(e)[:300]}")
+        _pause(r, "awaiting-merge", task="A")
+        print(f"could not open the status-change PR: {e}\n`pilot resume` tries again.")
+        return EXIT_FAIL
+    _pause(r, "awaiting-merge", task="A", status_pr=pr["number"], status_base=base)
+    print(f"\nStatus-change PR: {pr['url']}\nIt changes only item {paths.TASKS['A']} to `verified`. "
+          "Merging it on GitHub approves the status change; then run `pilot resume` (or `pilot github watch`).")
+    return EXIT_AWAIT_MERGE
+
+
+def status_pr_merged(cfg, r, imgs, runner, pend) -> int:
+    from . import ghapprove
+    num, base, item = int(pend["status_pr"]), pend["status_base"], paths.TASKS["A"]
+    try:
+        view = json.loads(fixture.gh("pr", "view", str(num), "-R", cfg.repo, "--json",
+                                     "state,mergedBy,headRefOid,mergeCommit").stdout)
+    except subprocess.CalledProcessError as e:
+        _pause(r, "awaiting-merge", task="A", status_pr=num, status_base=base)
+        print(f"could not read status-change PR #{num}: {e}; the run stays paused")
+        return EXIT_ERROR
+    if view.get("state") != "MERGED":
+        _pause(r, "awaiting-merge", task="A", status_pr=num, status_base=base)
+        print(f"status-change PR #{num} is not merged yet. Merge it on GitHub to approve, then `pilot resume`.")
+        return EXIT_AWAIT_MERGE
+    clone, _ = fixture.fresh_clone(cfg.repo, cfg.branch, depth=None)
+    try:
+        head = view["headRefOid"]
+        fixture.git("fetch", "--quiet", "origin", f"pull/{num}/head", cwd=clone)
+        changed = fixture.git("diff", "--name-only", base, head, cwd=clone).stdout.split()
+        show = lambda rev: fixture.git("show", f"{rev}:{reconcile.ROADMAP_REL}", cwd=clone, check=False).stdout  # noqa: E731
+        base_text, head_text = show(base), show(head)
+        on_default = re.search(rf"^### {re.escape(item)} — .*\[status: verified\]", show("HEAD"), re.M) is not None
+    finally:
+        shutil.rmtree(clone, ignore_errors=True)
+    ok, reason = reconcile.check_status_pr(view, base_text, head_text, changed, item, cfg.approvers,
+                                           ghapprove.publisher_login(cfg, r))
+    if ok and not on_default:
+        ok, reason = False, "STATUS_NOT_ON_DEFAULT"
+    merger = (view.get("mergedBy") or {}).get("login")
+    evidence.write_json(r.dir / "reconcile" / "A-status.json",
+                        {"pr": num, "base": base, "head": view.get("headRefOid"),
+                         "merge_commit": (view.get("mergeCommit") or {}).get("oid"), "merged_by": merger,
+                         "changed": changed, "ok": ok, "reason": reason, "at": evidence.now()})
+    r.event("reconcile", "A", None, "status_pr_checked", f"pr={num} ok={str(ok).lower()} reason={reason}")
+    if not ok:
+        approvals.note(r, "reconcile", "A", None, False, "github", approver=merger, extra=f"pr={num} reason={reason}")
+        return _fail(r, reason)
+    approvals.note(r, "reconcile", "A", None, True, "github", approver=merger, extra=f"pr={num}")
+    tA = r.task("A")
+    tA["state"] = "verified"
+    r.save()
+    r.event("status", "A", None, "task_verified", (view.get("mergeCommit") or {}).get("oid") or "")
+    github_refresh(cfg, r)
+    if gate_task(r, cfg, "B")["decision"] != "allow":
+        return _fail(r, "B_STILL_BLOCKED")
+    return run_task(r, cfg, imgs, runner, "B")

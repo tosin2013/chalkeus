@@ -56,7 +56,7 @@ def publish(gh, push, spec: dict) -> dict:
     """Idempotent: an open PR for the head branch is recorded, never duplicated."""
     repo, head = spec["repo"], spec["head"]
     owner = repo.split("/")[0]
-    login = gh.user_login()
+    login = spec.get("publisher_login") or gh.user_login()  # App tokens cannot call GET /user (004)
     existing = gh.open_prs(repo, owner, head)
     if existing:
         return _summary(existing[0], False, login)

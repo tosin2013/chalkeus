@@ -41,7 +41,7 @@ def publish(run, cfg, imgs: dict, runner, task: str, n: int) -> dict:
     g = json.loads((adir / "grade.json").read_text())
     if g.get("result") != "pass":
         raise PublishError(f"attempt {task}/{n} did not pass grading (FR-012)")
-    existing = [p for p in prs(run) if p["task"] == task]
+    existing = [p for p in prs(run) if p["task"] == task and p.get("kind", "task") == "task"]
     if existing:
         return existing[0]
     closes = None
@@ -52,30 +52,10 @@ def publish(run, cfg, imgs: dict, runner, task: str, n: int) -> dict:
             closes = ghsync.sync(cfg, run)["issues"].get(paths.TASKS[task])
     head = f"pilot/{run.id}/{task.lower()}"
     spec = {"repo": cfg.repo, "head": head, "base": cfg.branch, "base_revision": g_base(adir),
-            "title": f"pilot {run.id} task {task}", "body": _body(run, task, n, closes), "run_id": run.id, "task": task}
-    cm = f"pub-{task.lower()}"
-    jobname = f"publish-{task.lower()}-{run.id.lower().replace('t', '').replace('z', '')[-8:]}"
+            "title": f"pilot {run.id} task {task}", "body": _body(run, task, n, closes), "run_id": run.id, "task": task,
+            **_login_hint(cfg)}
     run.event("publish", task, n, "publish_started", head)
-    k8s.kubectl("-n", "pilot-publish", "delete", "configmap", cm, "--ignore-not-found", check=False)
-    k8s.kubectl("-n", "pilot-publish", "delete", "job", jobname, "--ignore-not-found", "--wait=true", check=False)
-    with tempfile.TemporaryDirectory() as t:
-        Path(t, "pr.json").write_text(json.dumps(spec))
-        k8s.create_configmap("pilot-publish", cm, {"pr.json": Path(t, "pr.json"), "change.bundle": adir / "change.bundle"})
-    job = k8s.render(paths.MANIFESTS / "publisher-job.yaml.tmpl", JOB=jobname, CONFIGMAP=cm, TOOLS_IMAGE=imgs["tools"])
-    handle = runner.submit("publisher", "pilot-publish", jobname, job, own_namespace=False)
-    try:
-        outcome = runner.wait(handle, TIMEOUT + 60)
-        files, err = frame.decode(runner.collect(handle), required=("result.json",))
-        status = runner.status(handle)
-    finally:
-        runner.delete(handle)
-        k8s.kubectl("-n", "pilot-publish", "delete", "configmap", cm, "--ignore-not-found", check=False)
-    if err or outcome != "Complete":
-        detail = (json.loads(files["result.json"]).get("error") if files else None) or err or outcome
-        raise PublishError(f"publisher {outcome}: {detail} ({status.get('pod_reason')})")
-    res = json.loads(files["result.json"])
-    if res.get("error"):
-        raise PublishError(res["error"])
+    res = _submit(run, imgs, runner, task.lower(), spec, adir / "change.bundle")
     view = json.loads(fixture.gh("pr", "view", str(res["number"]), "-R", cfg.repo, "--json",
                                  "isDraft,author,headRefName,url").stdout)
     operator = fixture.gh("api", "user", "--jq", ".login").stdout.strip()
@@ -93,3 +73,74 @@ def publish(run, cfg, imgs: dict, runner, task: str, n: int) -> dict:
 
 def g_base(adir: Path) -> str:
     return json.loads((adir / "meta.json").read_text())["base_revision"]
+
+
+def _login_hint(cfg) -> dict:
+    """App installation tokens cannot call GET /user; the host passes the bot login (004 US4)."""
+    if getattr(cfg, "credential", "token") == "app":
+        from . import ghapp
+        return {"publisher_login": ghapp.bot_login(cfg)}
+    return {}
+
+
+def _submit(run, imgs: dict, runner, key: str, spec: dict, bundle: Path) -> dict:
+    """Run the publisher Job for one PR spec + bundle; return its result.json (raises PublishError)."""
+    cm = f"pub-{key}"
+    jobname = f"publish-{key}-{run.id.lower().replace('t', '').replace('z', '')[-8:]}"
+    k8s.kubectl("-n", "pilot-publish", "delete", "configmap", cm, "--ignore-not-found", check=False)
+    k8s.kubectl("-n", "pilot-publish", "delete", "job", jobname, "--ignore-not-found", "--wait=true", check=False)
+    with tempfile.TemporaryDirectory() as t:
+        Path(t, "pr.json").write_text(json.dumps(spec))
+        k8s.create_configmap("pilot-publish", cm, {"pr.json": Path(t, "pr.json"), "change.bundle": bundle})
+    job = k8s.render(paths.MANIFESTS / "publisher-job.yaml.tmpl", JOB=jobname, CONFIGMAP=cm, TOOLS_IMAGE=imgs["tools"])
+    handle = runner.submit("publisher", "pilot-publish", jobname, job, own_namespace=False)
+    try:
+        outcome = runner.wait(handle, TIMEOUT + 60)
+        files, err = frame.decode(runner.collect(handle), required=("result.json",))
+        status = runner.status(handle)
+    finally:
+        runner.delete(handle)
+        k8s.kubectl("-n", "pilot-publish", "delete", "configmap", cm, "--ignore-not-found", check=False)
+    if err or outcome != "Complete":
+        detail = (json.loads(files["result.json"]).get("error") if files else None) or err or outcome
+        raise PublishError(f"publisher {outcome}: {detail} ({status.get('pod_reason')})")
+    res = json.loads(files["result.json"])
+    if res.get("error"):
+        raise PublishError(res["error"])
+    return res
+
+
+def status_body(run, task: str, closes: int | None) -> str:
+    item = paths.TASKS[task]
+    return (f"Opened by the specfoundry pilot **publisher** (run `{run.id}`) after task {task}'s PR was merged "
+            f"and checked (merged, tasks 100%, merged tree matches the graded attempt).\n\n"
+            f"It changes exactly one line: item {item} `planned` → `verified` in `.specify/memory/roadmap.md`."
+            + (f" Item issue: #{closes}." if closes else "") + "\n\n"
+            "**Merging this PR approves the status change.** The pilot checks that the merged change is exactly "
+            "this edit, and that an allowed approver merged it. The pilot never merges.\n")
+
+
+def publish_status(run, cfg, imgs: dict, runner, task: str, base_rev: str, bundle: Path) -> dict:
+    """004 R6: open the status-change draft PR for `task`'s item. Idempotent like task PRs."""
+    existing = [p for p in prs(run) if p.get("kind") == "status" and p["task"] == task]
+    if existing:
+        return existing[0]
+    from . import ghsync
+    closes = ghsync.issue_for(run, task)
+    item = paths.TASKS[task]
+    head = f"pilot/{run.id}/status-{item}"
+    spec = {"repo": cfg.repo, "head": head, "base": cfg.branch, "base_revision": base_rev,
+            "title": f"pilot {run.id}: {item} verified", "body": status_body(run, task, closes),
+            "run_id": run.id, "task": task, **_login_hint(cfg)}
+    run.event("publish", task, None, "status_pr_started", head)
+    res = _submit(run, imgs, runner, f"status-{task.lower()}", spec, bundle)
+    view = json.loads(fixture.gh("pr", "view", str(res["number"]), "-R", cfg.repo, "--json",
+                                 "isDraft,author,headRefName,url").stdout)
+    entry = {"task": task, "kind": "status", "number": res["number"], "url": view["url"], "head": view["headRefName"],
+             "draft": bool(view["isDraft"]), "author": view["author"]["login"],
+             "publisher_identity": res.get("token_login"), "base_revision": base_rev, "created": bool(res.get("created"))}
+    if not entry["draft"] or entry["head"] != head:
+        raise PublishError(f"PR #{entry['number']} is not the expected draft for {head}")
+    evidence.write_json(run.dir / "prs.json", prs(run) + [entry])
+    run.event("publish", task, None, "status_pr_opened", entry["url"])
+    return entry

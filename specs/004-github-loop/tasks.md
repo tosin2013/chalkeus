@@ -168,19 +168,19 @@ PR is refused.
 
 **Independent test:** quickstart §3 step 3.
 
-- [ ] T022 [P] [US3] Unit tests in `pilot/tests/test_status_pr.py`:
+- [X] T022 [P] [US3] Unit tests in `pilot/tests/test_status_pr.py`:
   - the bundle contains exactly the one heading edit;
   - merge check: accept the exact diff, reject any extra change with `STATUS_PR_EDITED`;
   - not merged means exit 4;
   - the merger is recorded as the approver.
-- [ ] T023 [US3] In `pilot/specfoundry_pilot/reconcile.py`, add `status_pr_path`. After the
+- [X] T023 [US3] In `pilot/specfoundry_pilot/reconcile.py`, add `status_pr_path`. After the
   existing checks (merged, tasks 100%, tree matches graded), build a one-commit bundle with
   `status_edit` on top of the merge commit. Hand it to the publisher Job as kind `status`
   (head `pilot/<run-id>/status-<item>`, title `pilot <run-id>: <item> verified`, draft, body
   per `contracts/github-objects.md`).
-- [ ] T024 [US3] In `pilot/specfoundry_pilot/publisher.py` and `pilot/images/tools/publish.py`,
+- [X] T024 [US3] In `pilot/specfoundry_pilot/publisher.py` and `pilot/images/tools/publish.py`,
   accept kind `status`; record `kind: "status"` in `prs.json`. Still no merge code path.
-- [ ] T025 [US3] In `pilot/specfoundry_pilot/pipeline.py`, add the `awaiting-status-merge`
+- [X] T025 [US3] In `pilot/specfoundry_pilot/pipeline.py`, add the `awaiting-status-merge`
   sub-state (`run.json` `pending.status_pr`). On resume:
   - check the status PR (merged, diff equals the proposal, default branch shows `verified`);
   - then record `approval_channel step=reconcile approved=true channel=github approver=<merger> pr=<n>`
