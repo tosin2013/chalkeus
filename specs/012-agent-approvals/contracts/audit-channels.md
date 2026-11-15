@@ -1,5 +1,7 @@
 # Contract: approval channels in the evidence and audit (amends 002 `contracts/evidence-record.md`)
 
+> Amended by 004: the `github` channel, approver logins and the AU03 change; see `specs/004-github-loop/contracts/audit-github.md`.
+
 ## Events
 
 Every decision appends one `approval_channel` event (stage `approval`):

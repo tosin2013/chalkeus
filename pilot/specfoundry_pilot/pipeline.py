@@ -164,11 +164,30 @@ def publish_task(run, cfg, imgs, runner, task: str) -> int:
         _pause(run, "awaiting-merge", task="A")
         print(f"\nTask A draft PR: {pr['url']}\nReview and merge it on GitHub yourself, then run: pilot/pilot resume")
         return EXIT_OK
-    return finish(run)
+    return finish(run, cfg)
 
 
-def finish(run) -> int:
+def github_refresh(cfg, run, final: bool = False) -> None:
+    """004: re-sync labels/bodies after a status change; at the end, record the drift report.
+    Best effort here: a GitHub error is recorded, never treated as success, and the drift report
+    (SC-001) shows anything left over."""
+    if not getattr(cfg, "github_issues", False):
+        return
+    from . import ghsync
+    try:
+        ghsync.sync(cfg, run)
+        if final:
+            rep = ghsync.drift(cfg, run)
+            print(f"github drift: {len(rep)} difference(s)" + ("" if not rep else f": {rep}"))
+    except ghsync.GitHubLoopError as e:
+        run.event("github", None, None, "github_sync_failed", str(e)[:300])
+        print(f"warning: github sync failed: {e}")
+
+
+def finish(run, cfg=None) -> int:
     from . import audit
+    if cfg is not None:
+        github_refresh(cfg, run, final=True)
     ok = audit.run(run)
     if not ok:
         return _fail(run, "AUDIT")
@@ -195,6 +214,13 @@ def run(cfg) -> int:
     evidence.write_config_json(r, cfg)
     evidence.write_versions(r, imgs)
     r.event("run", None, None, "run_started", cfg.repo)
+    if cfg.github_issues:  # 004 US1: mirror the roadmap before anything is staged
+        from . import ghsync
+        try:
+            ghsync.sync(cfg, r)
+        except ghsync.GitHubLoopError as e:
+            print(f"github sync failed: {e}")
+            return _fail(r, "GITHUB_SYNC")
     if checks:
         checks.gate_matrix(r)
         if any(row["result"] != "pass" for row in evidence.read_jsonl(r.dir / "checks/results.jsonl")
@@ -281,6 +307,7 @@ def resume(cfg, run_id: str | None) -> int:
     tA["state"] = "verified"
     r.save()
     r.event("status", "A", None, "task_verified", rec.get("applied_commit") or "")
+    github_refresh(cfg, r)
     if gate_task(r, cfg, "B")["decision"] != "allow":
         return _fail(r, "B_STILL_BLOCKED")
     return run_task(r, cfg, imgs, runner, "B")

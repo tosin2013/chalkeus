@@ -1,6 +1,8 @@
 # Contract: evidence record
 
 > Amended by 012: `approval_channel` events and the AU09/AU10 channel detail; see `specs/012-agent-approvals/contracts/audit-channels.md`.
+>
+> Amended by 004: the `github/` evidence folder, `kind` in `prs.json`, and the AU03 rule; see `specs/004-github-loop/contracts/audit-github.md`.
 
 Root: `specs/002-m1-gated-pilot/evidence/<run-id>/`. `<run-id>` = `YYYYMMDDTHHMMSSZ`
 (UTC). Everything is committed. Nothing in it may contain a secret, and the redaction

@@ -36,6 +36,11 @@ def _parser() -> argparse.ArgumentParser:
                                          "your agent harness must ask you before this runs)")
     ap.add_argument("step", choices=["mode", "retry", "reconcile"])
     ap.add_argument("--run", required=True, help="run id (see `pilot status`)")
+    gh = sub.add_parser("github", help="004 GitHub loop: mirror the roadmap as issues; drift; watch for approvals")
+    ghs = gh.add_subparsers(dest="gh_cmd", required=True)
+    ghs.add_parser("sync", help="create/update item issues and status labels from the roadmap (idempotent)")
+    ghd = ghs.add_parser("drift", help="report differences between the roadmap and GitHub (exit 1 if any)")
+    ghd.add_argument("--run", help="also write github/drift.json into this run's evidence")
     g = sub.add_parser("gate", help="evaluate the gate for one task")
     g.add_argument("task", choices=["A", "B"])
     g.add_argument("--root", help="evaluate this directory instead of a fresh clone")
@@ -72,6 +77,30 @@ def cmd_gate(args) -> int:
         run.event("gate", args.task, None, f"gate_{decision['decision']}", ",".join(decision["reasons"]))
     print(json.dumps(decision, indent=2, sort_keys=True))
     return EXIT_OK if decision["decision"] == "allow" else EXIT_REFUSE
+
+
+def cmd_github(args) -> int:
+    from . import config, evidence, ghsync
+    cfg = config.load(require_secrets=False)
+    try:
+        if args.gh_cmd == "sync":
+            s = ghsync.sync(cfg)
+            print(f"github sync: {s['created']} created, {s['changed']} changed; issues {s['issues']}")
+            return EXIT_OK
+        if args.gh_cmd == "drift":
+            run = evidence.load_run(args.run) if args.run else None
+            if args.run and not run:
+                print(f"no run {args.run}", file=sys.stderr)
+                return EXIT_ERROR
+            rep = ghsync.drift(cfg, run)
+            for d in rep:
+                print(json.dumps(d, sort_keys=True))
+            print(f"github drift: {len(rep)} difference(s)")
+            return EXIT_OK if not rep else EXIT_FAIL
+    except ghsync.GitHubLoopError as e:
+        print(f"pilot: github: {e}", file=sys.stderr)
+        return EXIT_ERROR
+    return EXIT_ERROR
 
 
 def require_up() -> None:
@@ -114,6 +143,8 @@ def main(argv=None) -> int:
             code, msg = approvals.record(run, args.step)
             print(msg, file=sys.stdout if code == 0 else sys.stderr)
             return code
+        if args.cmd == "github":
+            return cmd_github(args)
         if args.cmd == "audit":
             from . import audit, evidence
             run = evidence.load_run(args.run)

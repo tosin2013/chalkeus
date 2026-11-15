@@ -34,8 +34,9 @@ def verify(cfg, env_file: Path | None = None) -> dict:
     env_file = env_file or cfg.publisher_env
     config.check_mode(env_file)
     canary = config.origin_repo()
-    r = subprocess.run(["bash", "-c", 'set -a; . "$1"; set +a; exec python3 "$2" "$3" "$4"',
-                        "_", str(env_file), str(CHECK), cfg.repo, canary or ""],
+    r = subprocess.run(["bash", "-c", 'set -a; . "$1"; set +a; exec python3 "$2" "${@:3}"',
+                        "_", str(env_file), str(CHECK), cfg.repo, canary or "",
+                        *(["--issues"] if getattr(cfg, "github_issues", False) else [])],
                        capture_output=True, text=True, timeout=90)
     try:
         return json.loads(r.stdout.strip().splitlines()[-1])

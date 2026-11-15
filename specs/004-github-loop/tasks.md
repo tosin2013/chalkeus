@@ -17,7 +17,7 @@ approval rule (no network), and SC-004 requires every refusal case to be proven.
 
 ## Phase 1: Setup
 
-- [ ] T001 Add config keys to `pilot/specfoundry_pilot/config.py` (data-model "Config additions"):
+- [X] T001 Add config keys to `pilot/specfoundry_pilot/config.py` (data-model "Config additions"):
   - `PILOT_GITHUB_APPROVALS` (`on`/`off`, default `off`);
   - `PILOT_APPROVERS` (comma-separated logins; "required when approvals are on");
   - `PILOT_PUBLISHER_CREDENTIAL` (`token` default or `app`; "both configured and no choice
@@ -26,28 +26,28 @@ approval rule (no network), and SC-004 requires every refusal case to be proven.
   - the `github-app.pem` path (mode 600, never read into Python).
 
   Validate in `validate_values`, and add unit tests in `pilot/tests/test_config.py`.
-- [ ] T002 [P] Add fake-GitHub test helpers (canned issues, comments, PRs and permission
+- [X] T002 [P] Add fake-GitHub test helpers (canned issues, comments, PRs and permission
   responses; no network) in `pilot/tests/ghfake.py`
 
 ---
 
 ## Phase 2: Foundational (blocking for all stories)
 
-- [ ] T003 Create `pilot/images/tools/ghops.py`: GitHub write operations run with the token
+- [X] T003 Create `pilot/images/tools/ghops.py`: GitHub write operations run with the token
   only in the child's environment (the `check_token.py` pattern):
   - `ensure-labels`, `create-issue`, `edit-issue` (body and labels), `comment`,
     `close-issue`;
   - input from a JSON file, output one JSON line;
   - never prints the token.
-- [ ] T004 Add a host-side runner `run_ghops(cfg, op, payload)` in
+- [X] T004 Add a host-side runner `run_ghops(cfg, op, payload)` in
   `pilot/specfoundry_pilot/ghsync.py`. It sources the publisher credential env file (the
   token's `publisher.env`, or the App token file from T030) into the child only, and uses the
   same pattern as `publisher_token.verify`.
-- [ ] T005 [P] Extend the write probe in `pilot/images/tools/check_token.py` to also test
+- [X] T005 [P] Extend the write probe in `pilot/images/tools/check_token.py` to also test
   `issues: write` on the fixture repo (side-effect-free: label lookup plus a dry-run label
   create on a name that already exists, so no write happens) and its absence on the canary.
   Update `pilot/tests/test_publisher_token.py`.
-- [ ] T006 [P] Write contract notes into the 002 and 012 contracts: one-line "Amended by 004"
+- [X] T006 [P] Write contract notes into the 002 and 012 contracts: one-line "Amended by 004"
   pointers in `specs/002-m1-gated-pilot/contracts/cli.md`,
   `specs/002-m1-gated-pilot/contracts/evidence-record.md` and
   `specs/012-agent-approvals/contracts/audit-channels.md`.
@@ -63,29 +63,29 @@ report is empty after reconcile.
 
 **Independent test:** quickstart §2 and the end of §3 (`github drift` empty).
 
-- [ ] T007 [P] [US1] Unit tests in `pilot/tests/test_ghsync.py`:
+- [X] T007 [P] [US1] Unit tests in `pilot/tests/test_ghsync.py`:
   - building an item issue body from roadmap and `spec status` data (marker
     `<!-- specfoundry:item=<id> -->`, checklist copied from `tasks.md`);
   - exactly one `status:<status>` label;
   - idempotence (a second sync produces 0 operations);
   - drift cases from research R8.
-- [ ] T008 [US1] Implement the pure planning functions `desired_state(roadmap, status_json)` and
+- [X] T008 [US1] Implement the pure planning functions `desired_state(roadmap, status_json)` and
   `plan_ops(desired, current)` in `pilot/specfoundry_pilot/ghsync.py`. Issues are matched by
   marker, never by title.
-- [ ] T009 [US1] Implement `sync(cfg, run=None)` in `pilot/specfoundry_pilot/ghsync.py`:
+- [X] T009 [US1] Implement `sync(cfg, run=None)` in `pilot/specfoundry_pilot/ghsync.py`:
   - read current issues with the operator's `gh`;
   - apply `plan_ops` through `run_ghops`;
   - never delete, close or reopen;
   - write `github/issues.json` and a `github_sync` event when a run is given.
-- [ ] T010 [US1] Implement `drift(cfg, run=None)` in `pilot/specfoundry_pilot/ghsync.py`: the
+- [X] T010 [US1] Implement `drift(cfg, run=None)` in `pilot/specfoundry_pilot/ghsync.py`: the
   research R8 report; with a run, write `github/drift.json`.
-- [ ] T011 [US1] Add `pilot github sync` and `pilot github drift [--run <id>]` to
+- [X] T011 [US1] Add `pilot github sync` and `pilot github drift [--run <id>]` to
   `pilot/specfoundry_pilot/cli.py`, with exit codes per `contracts/cli-github.md`.
-- [ ] T012 [US1] In `pilot/specfoundry_pilot/publisher.py`:
+- [X] T012 [US1] In `pilot/specfoundry_pilot/publisher.py`:
   - end the PR body with `Closes #<item issue>`, looked up from `github/issues.json`, or by
     syncing first if it's missing;
   - record `kind: "task"` in `prs.json`.
-- [ ] T013 [US1] Call `ghsync.sync` at run start and after reconcile, and `ghsync.drift` at the
+- [X] T013 [US1] Call `ghsync.sync` at run start and after reconcile, and `ghsync.drift` at the
   end of a successful run, in `pilot/specfoundry_pilot/pipeline.py`. Any GitHub error stops
   with exit 2 and leaves the state unchanged.
 

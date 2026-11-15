@@ -11,8 +11,11 @@ REPO, CANARY = "o/x-pilot-fixture", "o/specfoundry"
 
 
 def fake(user=200, repo_push=True, pulls=200, canary=(200, False), expires="2026-11-20 00:00:00 UTC",
-         repo_write=201, canary_write=404):
+         repo_write=201, canary_write=404, labels=422):
     def get(path, token, method="GET", body=None):
+        if method == "POST" and path == f"/repos/{REPO}/labels":
+            assert body == ct.ISSUES_PROBE
+            return labels, None, {}
         if method == "POST" and path == f"/repos/{REPO}/git/blobs":
             return repo_write, None, {}
         if method == "POST" and path == f"/repos/{CANARY}/git/blobs":
@@ -68,3 +71,21 @@ class TestCheckToken(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestIssuesProbe(unittest.TestCase):
+    """004: Issues write is probed only when asked, side-effect free (422 = allowed)."""
+    def test_not_probed_by_default(self):
+        r = ct.check("t", REPO, CANARY, get=fake(labels=403))
+        self.assertTrue(r["ok"], r)
+        self.assertIsNone(r["issues_write"])
+
+    def test_issues_ok(self):
+        r = ct.check("t", REPO, CANARY, get=fake(), issues=True)
+        self.assertTrue(r["ok"], r)
+        self.assertTrue(r["issues_write"])
+
+    def test_issues_missing(self):
+        r = ct.check("t", REPO, CANARY, get=fake(labels=403), issues=True)
+        self.assertFalse(r["ok"])
+        self.assertIn("Issues: read and write", " ".join(r["problems"]))

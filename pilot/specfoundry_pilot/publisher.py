@@ -19,7 +19,7 @@ def prs(run) -> list:
     return json.loads(p.read_text()) if p.exists() else []
 
 
-def _body(run, task: str, n: int) -> str:
+def _body(run, task: str, n: int, closes: int | None = None) -> str:
     st = run.task(task)
     rows = "\n".join(f"| {a['n']} | {a.get('induction') or '-'} | {a.get('result', '-')} | "
                      f"{(a.get('spend') or {}).get('cost_usd', '-')} | {(a.get('spend') or {}).get('tokens', '-')} |"
@@ -32,7 +32,8 @@ def _body(run, task: str, n: int) -> str:
             f"| Attempt | Induction | Grade | Cost (USD) | Tokens |\n|---|---|---|---|---|\n{rows}\n\n"
             f"Images: worker `{imgs['worker']}`, grader/publisher `{imgs['tools']}`.\n\n"
             f"Evidence: `specs/002-m1-gated-pilot/evidence/{run.id}/` in the specfoundry repository.\n\n"
-            f"This is a **draft**. A human reviews and merges it; the pilot never merges.\n")
+            f"This is a **draft**. A human reviews and merges it; the pilot never merges.\n"
+            + (f"\nCloses #{closes}\n" if closes else ""))
 
 
 def publish(run, cfg, imgs: dict, runner, task: str, n: int) -> dict:
@@ -43,9 +44,15 @@ def publish(run, cfg, imgs: dict, runner, task: str, n: int) -> dict:
     existing = [p for p in prs(run) if p["task"] == task]
     if existing:
         return existing[0]
+    closes = None
+    if getattr(cfg, "github_issues", False):  # 004 FR-003: the PR names the item issue it closes
+        from . import ghsync
+        closes = ghsync.issue_for(run, task)
+        if closes is None:
+            closes = ghsync.sync(cfg, run)["issues"].get(paths.TASKS[task])
     head = f"pilot/{run.id}/{task.lower()}"
     spec = {"repo": cfg.repo, "head": head, "base": cfg.branch, "base_revision": g_base(adir),
-            "title": f"pilot {run.id} task {task}", "body": _body(run, task, n), "run_id": run.id, "task": task}
+            "title": f"pilot {run.id} task {task}", "body": _body(run, task, n, closes), "run_id": run.id, "task": task}
     cm = f"pub-{task.lower()}"
     jobname = f"publish-{task.lower()}-{run.id.lower().replace('t', '').replace('z', '')[-8:]}"
     run.event("publish", task, n, "publish_started", head)
@@ -75,7 +82,7 @@ def publish(run, cfg, imgs: dict, runner, task: str, n: int) -> dict:
     entry = {"task": task, "number": res["number"], "url": view["url"], "head": view["headRefName"],
              "draft": bool(view["isDraft"]), "author": view["author"]["login"],
              "publisher_identity": res.get("token_login"), "operator_login": operator,
-             "attempt": n, "created": bool(res.get("created"))}
+             "attempt": n, "created": bool(res.get("created")), "kind": "task", "closes": closes}
     if not entry["draft"] or entry["head"] != head:
         raise PublishError(f"PR #{entry['number']} is not the expected draft for {head}")
     allp = prs(run) + [entry]
