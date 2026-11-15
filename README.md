@@ -21,7 +21,10 @@ Coding agents can write code. The hard part is trusting the process around them:
 - Who checked the result?
 - Can a security team audit what happened afterwards?
 
-specfoundry is built around those questions:
+specfoundry is built around those questions. [The approach](docs/approach.md) explains the
+process (humans plan and release, agents build in isolation) and the research behind it.
+
+The promises:
 
 | Promise | How |
 |---|---|
@@ -96,6 +99,7 @@ gated by `spec status`, and lands with evidence.
 | [`.specify/memory/constitution.md`](.specify/memory/constitution.md) | The project's non-negotiable principles |
 | [`.specify/memory/roadmap.md`](.specify/memory/roadmap.md) | The roadmap: the only scheduling input |
 | [`docs/prd.md`](docs/prd.md) | Product requirements |
+| [`docs/approach.md`](docs/approach.md) | The approach and the research behind it |
 | [`specs/`](specs/) | One folder per roadmap item: spec, plan, tasks, contracts, evidence |
 | [`pilot/`](pilot/) | The pilot orchestrator (Python stdlib), images, manifests, fixture, hidden grading tests |
 | [`test/isolation/`](test/isolation/) | The M0 isolation suite |
