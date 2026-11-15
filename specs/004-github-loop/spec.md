@@ -28,8 +28,9 @@ where there is no terminal or harness.
 
 ### User Story 1 - Follow a run on GitHub (Priority: P1)
 
-An operator starts a run. On the target repository, each roadmap task has an issue, and each
-issue carries a label that shows the item's current status. When the pilot publishes a task's
+An operator starts a run. On the target repository, each roadmap item has an issue. Each issue
+carries a label that shows the item's current status, and its body mirrors the item's task
+checklist. When the pilot publishes a task's
 draft PR, the PR says which issue it closes. After the human merges and the status change is
 approved, the issue is closed, the label shows the new status, and a reconcile check finds no
 difference between the roadmap, the issues and the PRs.
@@ -43,8 +44,9 @@ step, and that the post-merge reconcile reports no drift.
 
 **Acceptance Scenarios**:
 
-1. **Given** a target roadmap with tasks and no issues, **When** the operator syncs the roadmap
-   to GitHub, **Then** exactly one issue exists per task, each labelled with its item's status.
+1. **Given** a target roadmap with items and no issues, **When** the operator syncs the roadmap
+   to GitHub, **Then** exactly one issue exists per item. Each is labelled with the item's status,
+   and its body lists the item's tasks with their checkboxes.
 2. **Given** the sync already ran, **When** it runs again with no roadmap change, **Then** no
    issue or label is created, duplicated or changed.
 3. **Given** a task's draft PR is published, **When** a reviewer opens it, **Then** it names the
@@ -168,12 +170,13 @@ fails on a canary repository, and that P09 and the audit pass.
 
 **Issues, labels and links**
 
-- **FR-001**: The operator MUST be able to sync the target roadmap to GitHub, creating exactly
-  one issue per task, idempotently (a re-run with no change creates or changes nothing).
-- **FR-002**: Each task issue MUST carry one status label that mirrors the item's recorded
+- **FR-001**: The operator MUST be able to sync the target roadmap to GitHub, idempotently (a
+  re-run with no change creates or changes nothing). Sync creates exactly one issue per roadmap
+  item, whose body mirrors the item's task checklist with its checkboxes.
+- **FR-002**: Each item issue MUST carry one status label that mirrors the item's recorded
   status. Sync and reconcile MUST restore a label that differs from the roadmap, and report
   that they did so.
-- **FR-003**: Every draft PR the publisher opens MUST name the task issue it closes, so that
+- **FR-003**: Every draft PR the publisher opens MUST name the item issue it closes, so that
   merging the PR closes the issue.
 - **FR-004**: After a merge and an approved status change, reconcile MUST check the roadmap,
   issue state, labels and PR links against each other and report any drift. A complete run
@@ -228,7 +231,9 @@ fails on a canary repository, and that P09 and the audit pass.
 - **FR-016**: The operator MUST be able to choose, per install, between a fine-grained token (the
   default) and a GitHub App as the publisher credential.
 - **FR-017**: With the App, each run MUST use an installation token that expires within one
-  hour and is limited to the target repository, with only contents and pull-request write.
+  hour and is limited to the target repository, with only contents, pull-request and issue
+  write. Issue write is needed for item issues, labels and the tracking issue. The
+  fine-grained token needs the same three permissions.
 - **FR-018**: Both credentials MUST pass the same write probe (fixture writable, canary not)
   before a run publishes, and the same checks that only the publisher holds a credential (P09).
 - **FR-019**: In laptop mode the App's private key MUST stay on the host. Only the short-lived
@@ -243,10 +248,10 @@ fails on a canary repository, and that P09 and the audit pass.
 
 ### Key Entities
 
-- **Task issue**: the GitHub issue for one roadmap task. It links to its item and carries one
-  status label.
+- **Item issue**: the GitHub issue for one roadmap item (a pilot task). It carries one status
+  label, and its body mirrors the item's task checklist.
 - **Status label**: a label naming a roadmap status, mirrored from the roadmap.
-- **Linked PR**: a publisher draft PR that names the task issue it closes.
+- **Linked PR**: a publisher draft PR that names the item issue it closes.
 - **Drift report**: the differences between the roadmap, the issues, the labels and the PRs.
 - **Tracking issue**: one issue per run where the pilot posts each pending decision and
   approvers reply with approval commands.
@@ -265,7 +270,7 @@ fails on a canary repository, and that P09 and the audit pass.
 ### Measurable Outcomes
 
 - **SC-001**: A full run on the fixture repository ends with:
-  - one issue per task;
+  - one issue per roadmap item, with its task checklist;
   - labels matching the roadmap;
   - every published PR linked to its issue;
   - an empty drift report after reconcile.
@@ -296,6 +301,8 @@ fails on a canary repository, and that P09 and the audit pass.
 - The fine-grained token stays the default publisher credential (roadmap 1.6.0 decision); the
   App is optional and recommended for teams and cluster mode.
 - Owner decisions 2026-11-15:
+  - one issue per roadmap item, with the item's tasks as a checklist in its body. This settles
+    roadmap Q4 as "per item": no issue per checkbox, and no sub-issues;
   - approvals are command comments on a per-run tracking issue;
   - approvers are an explicit list in the operator's config;
   - a status change is approved by merging a status-change PR.
