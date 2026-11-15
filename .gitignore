@@ -1,5 +1,7 @@
 # Local Claude Code settings
 .claude/settings.local.json
+# Local OpenCode config (harness permissions — not a secret but repo-local)
+opencode.json
 # Secrets never belong here (constitution IV)
 .env
 *.pem
