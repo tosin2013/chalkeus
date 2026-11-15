@@ -36,8 +36,7 @@ func importOpencodeCmd() *cobra.Command {
 }
 
 func resetFixtureCmd() *cobra.Command {
-	c := &cobra.Command{Use: "reset-fixture", Short: "force-reset the throwaway fixture repo", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("reset-fixture") }}
+	c := &cobra.Command{Use: "reset-fixture", Short: "force-reset the throwaway fixture repo", Args: cobra.NoArgs, RunE: runResetFixture}
 	c.Flags().Bool("yes", false, "skip the confirmation prompt")
 	return c
 }

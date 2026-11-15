@@ -9,9 +9,10 @@ and updated through Dependabot PRs that a human reviews and merges.
 | `github.com/spf13/cobra` (with `github.com/spf13/pflag`) | the command line: subcommands, flags, help |
 | `k8s.io/client-go`, `k8s.io/api`, `k8s.io/apimachinery` | talking to the cluster through your kubeconfig: apply, jobs, logs, exec, secrets, access reviews (replaces `kubectl` subprocesses) |
 | `sigs.k8s.io/yaml` | reading the pilot's YAML manifests |
+| `github.com/google/go-github` | the GitHub API: reading PRs and comments, and the operator-approved fixture reset (no merge calls anywhere) |
+| `golang.org/x/term` | hidden prompts and terminal detection |
 
-More entries are added as the port reaches them (spec 016): kind's library, the GitHub API client and
-`golang.org/x/term`. Each one is listed here with its reason, in
+More entries are added as the port reaches them (spec 016): kind's library. Each one is listed here with its reason, in
 the same change that adds it.
 
 ## Programs the pilot runs

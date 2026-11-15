@@ -177,7 +177,7 @@ the harness channel working.
   Test it with the fake clientset in `internal/k8s/k8s_test.go`.
 - [X] T024 [P] [US2] Port `internal/frame` from `frame.py`, with the reference's
   `test_frame.py` cases in `internal/frame/frame_test.go`.
-- [ ] T025 [P] [US2] Port `internal/fixture` from `fixture.py`: the git binary wrapper, `gh`
+- [X] T025 [P] [US2] Port `internal/fixture` from `fixture.py`: the git binary wrapper, `gh`
   replaced by go-github reads (R6), `fresh_clone`, `reset` (same prompt "Type y to continue: "),
   `open_pilot_prs`, `url`. Wire `pilot reset-fixture [--yes]`.
 - [ ] T026 [P] [US2] Port `internal/images` from `images.py`: pins.env, digest references (tags
@@ -341,6 +341,10 @@ GitHub.
   (`pilot/tools/app_token.py`, `pilot/tools/golden_audit.py` once its output is committed), and
   the `PILOT_IMPL` Python branch in `pilot/pilot`. Keep `pilot/images/**` scripts, because
   in-image Python stays.
+  **Before removing:** move `pilot/specfoundry_pilot/frame.py` to `pilot/images/common/frame.py`, and
+  update `.github/workflows/pilot-images.yml` (its trigger paths and the `cp` into each build context)
+  and the Go `--local-build` context copy. Both the worker and tools images COPY `frame.py`.
+  `pilot/images/build_args.py` stays, because the image workflow runs it.
 - [ ] T054 [US5] Update `pilot/tools/docs_check.py` to drop the Python help parser, or port it
   into `go test` as `internal/cli/docs_test.go` and remove the Python script. Update
   `.github/workflows/go.yml` and `.github/workflows/docs-check.yml` to match.
