@@ -1,6 +1,23 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.8.0 → 1.9.0
+Bump rationale: MINOR — a new constraint (C-12) and two new planned specs (014, 015).
+
+Changes this revision (owner decisions 2026-11-15):
+  - New C-12: humans plan, agents build. Humans write, research, unblock and release roadmap
+    items; agents implement only items a human prepared (spec + tasks) and released; every
+    unblock passes through a human merge and an approved status change
+  - New entry: 014 Any project, any item (run a chosen, prepared item of a real repo)
+  - New entry: 015 Released waves (a human releases a set of ready items; the pilot runs them
+    in parallel in dependency order; blocked items wait until their dependencies are verified)
+  - 010 and 011 notes: proposals still need a human release; cluster mode reuses the wave
+    scheduler
+
+Specs affected: 010, 011, 014 (new), 015 (new)
+Open questions added/resolved: none (PRD F6 "who launches workers" answered for now: the human)
+
+Previous revision 1.8.0 (2026-11-15):
 Version change: 1.7.2 → 1.8.0
 Bump rationale: MINOR — a new planned spec (013), new open questions (Q8–Q10), a status
 transition, scope/notes corrections on 012, and material scope changes to 005 and 011.
@@ -280,6 +297,17 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   laptop mode. The publisher's SCM credential may be a fine-grained token or a GitHub App
   (per-run installation tokens) in either mode; the same checks apply to both (decided
   2026-11-14).
+- **C-12 — Humans plan, agents build:** humans write the roadmap, do the research, unblock
+  items and release them. Agents may assist a human with planning, but they implement only
+  items a human prepared and released:
+  - a spec and a task list exist;
+  - every dependency is verified, or is in the same release;
+  - no open questions remain.
+
+  The pilot never picks up an item by itself, never writes specs, and changes the roadmap only
+  through the status change a human approves. Every unblock passes through a human merge and an
+  approved status change. In PRD F6 ("who launches workers"), the human launches for now
+  (decided 2026-11-15).
 
 ## Planned Specs
 
@@ -486,7 +514,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Depends on:** 003
 - **Governed by:** C-03, C-07, C-09
 - **Addresses:** docs/prd.md §2 (harness-agnostic), N2
-- **Notes:** Proposed in the 003 Kelos review (owner decision 2026-11-13).
+- **Notes:** Proposed in the 003 Kelos review (owner decision 2026-11-13). Under C-12 an
+  event can only *propose*; a human still releases the item (015).
 
 ### 009 — Period spend budget at the gate  [status: planned]
 
@@ -544,7 +573,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   audit on OpenShift the release check. 005 (OpenShift in laptop mode) comes first, so the
   operator is designed around OpenShift's constraints (SCC, arbitrary UIDs, namespace
   permissions, egress). The operator lives in `operator/` in this repo until Q9's split
-  trigger is met.
+  trigger is met. It runs released waves (015) in the cluster, reusing the same wave scheduler.
 
 ### 012 — Working with an agent: pilot skill and harness approvals  [status: verified]
 
@@ -590,6 +619,58 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Notes:** Raised by the owner 2026-11-15 during the 012 debrief. Tied to Q7 (product name
   and CLI surface) and Q8 (multi-project use; harness rules today match the `pilot/pilot`
   path). Decide the form and name before speccing.
+
+### 014 — Any project, any item  [status: planned]
+
+- **Description:** Run one chosen, prepared roadmap item of a real repository, not just the
+  fixture's two items.
+- **Outcome:** `pilot run --item NNN` against a configured repository runs that item under
+  every existing guarantee: gate, isolation, grading, draft PR, human merge, status change and
+  the full audit. It refuses an item that is not prepared (C-12).
+- **Scope (in):**
+  - the item to run comes from the roadmap and `spec status`, replacing the hard-coded A/B
+    mapping;
+  - the worker prompt and the grading come from the item's spec, tasks and the repo's own tests;
+  - a readiness check: a spec and tasks exist, dependencies are verified, no open questions;
+  - per-item evidence, and an audit that no longer assumes exactly items A and B.
+- **Scope (out):** parallel runs (015); writing specs or plans; choosing items automatically.
+- **Depends on:** 004
+- **Governed by:** C-01, C-02, C-04, C-12
+- **Addresses:** docs/prd.md §4 loop, F1, F8, F9
+- **Notes:** Owner decision 2026-11-15. The fixture stays the regression test. Pairs with 013
+  (installable CLI). Grading a real repo needs the item's acceptance criteria to be runnable;
+  the spec decides how that is expressed.
+
+### 015 — Released waves  [status: planned]
+
+- **Description:** A human releases a set of prepared items, and the pilot builds them in
+  parallel in dependency order.
+- **Outcome:** One human release starts every released item whose dependencies are verified,
+  each in its own isolated unit with its own draft PR. Released items that are still blocked
+  wait, and start only when their dependencies become verified, which always passes through a
+  human merge and an approved status change. Each item passes the full audit, and the wave has
+  a summary.
+- **Scope (in):**
+  - a release command (and later a GitHub release action), refused unless every item is
+    prepared and every dependency is verified or released in the same set (C-12);
+  - one approval for the wave's mode and total budget, with per-item retries still approved
+    one by one;
+  - a concurrency limit, and running items with overlapping scopes one after the other;
+  - a queue for blocked items, released as their dependencies become verified;
+  - per-item evidence and a wave summary.
+- **Scope (out):**
+  - starting items nobody released;
+  - auto-merging, and unblocking without a human merge;
+  - releasing an item that depends on something not yet specced.
+- **Depends on:** 014, 009
+- **Governed by:** C-01, C-02, C-04, C-07, C-12
+- **Addresses:** docs/prd.md §4 step 8, F6, F7
+- **Notes:** Owner decisions 2026-11-15:
+  - humans plan, research and unblock, and agents build released items;
+  - blocked items in a release follow the dependency order (the pilot's A→B gate, scaled up).
+
+  Human review is the expected bottleneck: every PR still needs a human merge. Laptop waves are
+  small (kind capacity); large waves run in cluster mode (011).
 
 ## Open Questions
 
@@ -660,4 +741,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.8.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
+**Version**: 1.9.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
