@@ -1,6 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.11.0 → 1.12.0
+Bump rationale: MINOR — a new planned spec (017) and a material change to 014's validation.
+Q11 is resolved by 017.
+
+Changes this revision (owner decisions 2026-11-15, after the Go pilot's first fixture run):
+  - 014: validated on a real Quarkus (Java) brownfield repository, chosen when 014 is specified;
+    the fixture stays the regression test
+  - New entry: 017 Greenfield bootstrap, validated on a new Node.js repository whose first
+    roadmap item is a human-specified scaffold; depends on 014
+  - Q11 resolved: greenfield is supported through 017, after 014
+
+Specs affected: 014, 017 (new)
+Open questions added/resolved: Q11 resolved
+
+Previous revision 1.11.0 (2026-11-15):
 Version change: 1.10.0 → 1.11.0
 Bump rationale: MINOR — a material scope change to 014 and a new Open Question (Q11). 016 gets
 a note only; no constraint is reversed.
@@ -702,6 +717,13 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   the spec decides how that is expressed. 014 targets **brownfield** repos (existing code and
   tests); greenfield bootstrap is Q11 (owner decision 2026-11-15).
 
+  **Validation (owner decision 2026-11-15):** a real **Quarkus** (Java) brownfield repository,
+  chosen when 014 is specified, with a roadmap of a few items where one depends on another. The
+  owner prepares it (constitution, roadmap, specs, tasks, hidden JUnit/RestAssured acceptance
+  tests), and the pilot runs its items end to end. This exercises a JDK/Maven toolchain, Maven
+  Central egress, and build time and memory limits in kind. The fixture stays the fast,
+  deterministic regression test (its A/1 induction is the only reliable retry exercise).
+
 ### 015 — Released waves  [status: planned]
 
 - **Description:** A human releases a set of prepared items, and the pilot builds them in
@@ -773,6 +795,31 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   activity) are allowed as a debugging aid outside parity: they never change stdout, exit codes
   or evidence, and they are redacted (owner decision 2026-11-15).
 
+### 017 — Greenfield bootstrap  [status: planned]
+
+- **Description:** Start a project from an empty repository: the roadmap's first item is a
+  scaffold, and every later item grows the project like a brownfield one.
+- **Outcome:** On a new, empty **Node.js** repository whose constitution and roadmap a human
+  wrote, the pilot runs item 001 (a human-specified scaffold: layout, package manifest, test
+  runner, CI), grades it against acceptance tests the human wrote, and publishes a draft PR.
+  After the human merges it and approves `verified`, the next items run as in 014.
+- **Scope (in):**
+  - grading an item when the repository has no tests or build of its own yet (only the hidden
+    acceptance tests, and the scaffold's own tests once it exists);
+  - a Node.js toolchain for the worker and grader, and npm registry egress, through 014's
+    per-repo mechanisms;
+  - guidance for writing a scaffold item's spec and acceptance tests;
+  - the validation on a new Node.js repository with at least the scaffold and one dependent
+    item.
+- **Scope (out):** generating the constitution, roadmap or specs (humans plan, C-12); project
+  templates as a product; languages beyond the ones 014 and 017 validate.
+- **Depends on:** 014
+- **Governed by:** C-01, C-04, C-07, C-08, C-12
+- **Addresses:** docs/prd.md §4 loop, F1
+- **Notes:** Owner decision 2026-11-15; resolves Q11. The Node.js repository is chosen when 017
+  is specified. Planning still comes first: an empty repository gets its constitution, roadmap,
+  and the scaffold's spec, tasks and acceptance tests from a human before any agent runs.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -825,7 +872,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   code to grade against. Options: item 001 is a human-specified scaffold (project layout, test
   harness, CI) whose acceptance tests the human writes, graded like any other item; or
   greenfield stays out of scope until 014 is verified on brownfield repos. Planning still comes
-  first either way (constitution, roadmap, spec and tasks, C-12).
+  first either way (constitution, roadmap, spec and tasks, C-12). **Resolved 2026-11-15:**
+  entry 017, after 014; item 001 of a new project is a human-specified scaffold, validated on
+  a Node.js repository.
 
 ## Cross-Cutting Notes
 
@@ -872,4 +921,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.11.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
+**Version**: 1.12.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
