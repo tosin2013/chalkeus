@@ -56,7 +56,14 @@ def subcommands() -> frozenset:
 
 @functools.lru_cache(maxsize=None)
 def flags(sub: str) -> frozenset:
-    return frozenset(re.findall(r"(--[a-z][a-z-]*)", _help(sub))) | {"--help"}
+    return frozenset(re.findall(r"(--[a-z][a-z-]*)", _help(*sub.split()))) | {"--help"}
+
+
+@functools.lru_cache(maxsize=None)
+def nested(sub: str) -> frozenset:
+    """Sub-subcommands, e.g. `github {sync,drift,watch}`; empty for plain subcommands."""
+    m = re.search(r"\{([a-z,-]+)\}", _help(sub))
+    return frozenset(m.group(1).split(",")) if m else frozenset()
 
 
 def check_command(line: str) -> list[str]:
@@ -68,7 +75,13 @@ def check_command(line: str) -> list[str]:
         if sub not in subcommands():
             errs.append(f"unknown subcommand {sub!r}")
             continue
-        for tok in rest.split():
+        toks = rest.split()
+        if nested(sub) and toks and not toks[0].startswith(("-", "<")):
+            if toks[0] not in nested(sub):
+                errs.append(f"unknown subcommand {sub + ' ' + toks[0]!r}")
+                continue
+            sub, toks = f"{sub} {toks[0]}", toks[1:]
+        for tok in toks:
             if tok.startswith("--"):
                 flag = tok.split("=", 1)[0]
                 if flag not in flags(sub):

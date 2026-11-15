@@ -224,7 +224,7 @@ PR is refused.
   `pilot/specfoundry_pilot/infra.py` (the `scm-token` Secret gets only the short-lived token)
   and `ghsync.run_ghops`, from `PILOT_PUBLISHER_CREDENTIAL`. If both are configured and there
   is no choice, refuse. Check that P09 is unchanged.
-- [ ] T031 [P] [US4] Write a new `docs/github-app.md`: create the App (permissions contents,
+- [X] T031 [P] [US4] Write a new `docs/github-app.md`: create the App (permissions contents,
   pull requests and issues: write; no others), install it on the fixture repo only, store the
   key, check it, switch the credential. Link it from `docs/operator-guide.md` and
   `docs/providers.md` if relevant, and add troubleshooting entries in
@@ -237,11 +237,11 @@ PR is refused.
 
 ## Phase 7: Polish and validation
 
-- [ ] T032 [P] Add a "GitHub loop" section to `docs/operator-guide.md`: sync, approvals on
+- [X] T032 [P] Add a "GitHub loop" section to `docs/operator-guide.md`: sync, approvals on
   GitHub, the status-change PR, and the identity limit (spec FR-009a). Add troubleshooting
   entries for each `approval_rejected` reason. Then run `pilot/tools/docs_check.py`.
-- [ ] T033 Update `pilot/README.md` with the new commands and config keys.
-- [ ] T034 Run the full unit suite and docs check; record the counts in this file's Notes.
+- [X] T033 Update `pilot/README.md` with the new commands and config keys.
+- [X] T034 Run the full unit suite and docs check; record the counts in this file's Notes.
 - [ ] T035 **Owner action:** quickstart §2–§3 on the fixture in token mode. Record results in
   `specs/004-github-loop/evidence/README.md` and copy the run record into `evidence/<run-id>/`.
 - [ ] T036 **Owner action:** quickstart §4 in App mode (SC-005), timing the App setup from the
@@ -299,3 +299,14 @@ comments or merge PRs on the owner's behalf.
 - Never read a token or key into the orchestrator. Writes run in child processes or the
   publisher Job only.
 - Commit after each phase. Open a PR from `004-github-loop`; never push to `main`.
+- **Implementation notes (2026-11-15):**
+  - **Opt-in switch:** `PILOT_GITHUB_ISSUES` (default off) was added, so the verified guide
+    flow is unchanged and existing tokens without Issues access keep working.
+  - **Docs placement (T032):** the loop's documentation is in `docs/github-loop.md` and
+    `docs/github-app.md`. The operator guide links them from §6 and §13 rather than adding a
+    section, so the 006-validated walkthrough stays as it is.
+  - **Image rebuild:** `publish.py` now reads `publisher_login` from the PR spec (App tokens
+    can't call `GET /user`), so App mode needs a tools image rebuilt by the pilot-images
+    workflow, or `pilot up --local-build`, before T036.
+  - **docs_check:** now understands nested subcommands (`github sync|drift|watch`).
+  - **T034:** 208 unit tests OK; docs_check 0 problems in 9 files.

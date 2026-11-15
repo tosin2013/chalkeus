@@ -52,7 +52,8 @@
 
 | Key | Where | Rule |
 |---|---|---|
-| `PILOT_GITHUB_APPROVALS` | `pilot.env` | `on` / `off` (default `off`) |
+| `PILOT_GITHUB_ISSUES` | `pilot.env` | `on` / `off` (default `off`); item issues, labels and linked PRs. Added during implementation so the verified 006 walkthrough (whose token lacks Issues access) is unchanged with it off |
+| `PILOT_GITHUB_APPROVALS` | `pilot.env` | `on` / `off` (default `off`) |; `on` implies issues on
 | `PILOT_APPROVERS` | `pilot.env` | comma-separated logins; required when approvals are on; default is the operator's login when set up |
 | `PILOT_PUBLISHER_CREDENTIAL` | `pilot.env` | `token` (default) or `app`; both configured and no choice means refuse |
 | `PILOT_APP_ID`, `PILOT_APP_INSTALLATION_ID` | `pilot.env` | App mode only |
