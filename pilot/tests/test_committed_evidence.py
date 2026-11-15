@@ -1,7 +1,8 @@
 """Every committed successful run record still passes the audit (012 SC-004, research R6).
 
 Records made before 012 have no approval-channel events: they must pass unchanged and report
-no channel rather than a guessed one.
+no channel rather than a guessed one. A record copied before `pilot down` ran for it (012's early
+run 20261114T213046Z) has no teardown.jsonl; it is audited as non-final, so AU07 is not required.
 """
 import json
 import unittest
@@ -32,7 +33,7 @@ class TestCommittedEvidence(unittest.TestCase):
     def test_each_record_passes(self):
         for d in committed_successful_runs():
             with self.subTest(run=str(d.relative_to(ROOT))):
-                rows = audit.audit_dir(d, final=True)
+                rows = audit.audit_dir(d, final=(d / "teardown.jsonl").exists())
                 failed = [f"{r['id']}: {r['detail']}" for r in rows if r["result"] != "pass"]
                 self.assertEqual(failed, [])
                 if not has_channels(d):
