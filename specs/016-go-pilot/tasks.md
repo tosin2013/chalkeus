@@ -222,14 +222,17 @@ the harness channel working.
   - resume refuses runs without `impl: "go"` (R16).
 
   Wire `pilot run`, `pilot resume [--run]` and `pilot status [--run]`.
-- [ ] T035 [US2] Port the setup commands: `publisher-token [--check-only]` (hidden prompt through
+- [X] T035 [US2] Port the setup commands: `publisher-token [--check-only]` (hidden prompt through
   `x/term`, staging file, keep only on pass; 006 F3) using the Go write probe from T040, and
   `import-opencode` from `import_opencode.py` (port `test_import_opencode.py`). Until T040 lands,
   the probe calls a stub that refuses.
-- [ ] T036 [US2] Add the wording test `internal/cli/wording_test.go`: extract the backtick- and
+- [X] T036 [US2] Add the wording test `internal/cli/wording_test.go`: extract the backtick- and
   code-quoted operator messages from `docs/operator-guide.md`, `docs/troubleshooting.md` and
   `.claude/skills/pilot/SKILL.md`, and assert that each appears in the Go sources
   (contracts/cli.md).
+  Done as: literal chunks of quoted spans that the Python reference contains (frozen in
+  `internal/cli/testdata/wording.txt` for after US5); GitHub App messages are listed as pending
+  until US3.
 - [ ] T037 [US2] **Owner action:** quickstart §3 with `PILOT_IMPL=go`, the terminal run following
   the guide (11/11, the same prompts and exit codes). Then the agent run with harness approvals
   (`channels=['harness']`). Copy the records to `specs/016-go-pilot/evidence/<run-id>/` and

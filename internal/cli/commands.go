@@ -27,7 +27,7 @@ func publisherTokenCmd() *cobra.Command {
 
 func importOpencodeCmd() *cobra.Command {
 	c := &cobra.Command{Use: "import-opencode", Short: "reuse your existing OpenCode config (provider + key file) for the worker", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("import-opencode") }}
+		RunE: runImportOpenCode}
 	c.Flags().String("from", "~/.config/opencode", "OpenCode config dir")
 	c.Flags().String("model", "", "<provider>/<model> to use (default: the config's \"model\")")
 	c.Flags().String("fixture-repo", "", "owner/name of your -pilot-fixture repo, written to a new pilot.env")

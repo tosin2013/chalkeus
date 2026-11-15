@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -168,4 +169,20 @@ func runPublisherToken(cmd *cobra.Command, _ []string) error {
 	}
 	fmt.Fprintf(out, "  saved: %s\n", cfg.PublisherEnv)
 	return nil
+}
+
+func runImportOpenCode(cmd *cobra.Command, _ []string) error {
+	l, err := layout()
+	if err != nil {
+		return err
+	}
+	from, _ := cmd.Flags().GetString("from")
+	if from == "~" || strings.HasPrefix(from, "~/") {
+		home, _ := os.UserHomeDir()
+		from = filepath.Join(home, strings.TrimPrefix(from, "~"))
+	}
+	model, _ := cmd.Flags().GetString("model")
+	repo, _ := cmd.Flags().GetString("fixture-repo")
+	force, _ := cmd.Flags().GetBool("force")
+	return config.RunImport(from, model, repo, l.Root, force, cmd.OutOrStdout())
 }

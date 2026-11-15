@@ -1,0 +1,35 @@
+%, graded tree matches
+A's PR is not merged yet
+Calico manifest hash mismatch
+Calico manifest hash mismatch: expected
+Confirm this mode and start staging workers? [y/N]
+GitHub App token
+GitHub App: NOT OK
+Review and merge it on GitHub yourself, then run: pilot/pilot resume
+Run mode for this pilot
+SA and pod automount off; no token file
+app-token --check
+both a publisher token and a GitHub App key exist
+gate unit matrix (all refusal cases refuse
+images: pulled by digest from pilot/images.lock
+missing roadmap refuses
+needs opencode.json and at least one
+not a digest reference
+one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1
+only, withholding exactly the acceptance section
+open pilot PRs exist on
+pilot/pilot app-key
+pilot/pilot approve
+pilot/pilot approve --run
+pilot/pilot publisher-token
+pilot/pilot resume
+pilot/pilot resume --run
+planned → verified
+planned → verified' to the fixture roadmap? [y/N]
+publisher namespace
+status tool error refuses
+tagged reference not allowed
+truncated roadmap refuses B
+waiting for your approval of the status change
+worker SA cannot create/patch/exec in its grader namespace
+worker namespace has exactly
