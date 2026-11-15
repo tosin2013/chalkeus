@@ -70,7 +70,7 @@ func runGate(cmd *cobra.Command, args []string) error {
 	raw, _ := json.Marshal(d)
 	var out bytes.Buffer
 	_ = json.Indent(&out, raw, "", "  ")
-	fmt.Fprintln(cmd.OutOrStdout(), out.String())
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), out.String())
 	if d.Decision != "allow" {
 		return Code(ExitGateRefusal)
 	}

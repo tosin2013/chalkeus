@@ -148,10 +148,10 @@ func decide(itemID string, exit *int, stdout string) (string, []string) {
 	}
 	// Rule 4: startable status.
 	status := item["status"]
-	switch {
-	case status == "implemented":
+	switch status {
+	case "implemented":
 		reasons = append(reasons, "ALREADY_IMPLEMENTED")
-	case status == "verified":
+	case "verified":
 		reasons = append(reasons, "ALREADY_VERIFIED")
 	default:
 		s, isStr := status.(string)
@@ -320,6 +320,6 @@ func EvaluateFresh(src StatusSource, repo, branch, task, itemID string, seq int,
 		}
 		return d, nil
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 	return Evaluate(src, task, itemID, dir, seq, outDir, repo, &commit)
 }

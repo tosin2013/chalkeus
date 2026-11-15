@@ -329,7 +329,7 @@ func Dir(d string, keyFiles, envFiles []string, final bool) ([]evidence.CheckRow
 			}
 		}
 		draft, isBool := p["draft"].(bool)
-		if !(isBool && draft) || !truthy(p["author"]) || fmt.Sprint(p["author"]) != fmt.Sprint(p["publisher_identity"]) {
+		if !isBool || !draft || !truthy(p["author"]) || fmt.Sprint(p["author"]) != fmt.Sprint(p["publisher_identity"]) {
 			allOK = false
 		}
 		m := pyrepr.OrderedMap{Keys: keys, Values: map[string]any{}}
@@ -402,7 +402,7 @@ func Dir(d string, keyFiles, envFiles []string, final bool) ([]evidence.CheckRow
 			tc, _ := num(sp["token_cap"])
 			within = t <= tc
 		}
-		if !(within || truthy(sp["stopped_by_cap"])) {
+		if !within && !truthy(sp["stopped_by_cap"]) {
 			bad6 = append(bad6, fmt.Sprintf("%s-%d", a.task, a.n))
 		}
 	}

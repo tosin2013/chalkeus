@@ -52,7 +52,7 @@ func versionCmd(version string) *cobra.Command {
 		Short: "print the pilot version",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			fmt.Fprintf(cmd.OutOrStdout(), "pilot %s (go)\n", version)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "pilot %s (go)\n", version)
 			return nil
 		},
 	}

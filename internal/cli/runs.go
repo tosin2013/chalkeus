@@ -32,7 +32,7 @@ func runAudit(cmd *cobra.Command, _ []string) error {
 		return Exit(ExitError, "%v", err)
 	}
 	if r == nil {
-		fmt.Fprintln(cmd.ErrOrStderr(), "no run found")
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "no run found")
 		return Code(ExitError)
 	}
 	cfg, cerr := config.Load(l.Root, false, false)
@@ -60,7 +60,7 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 		return Exit(ExitError, "%v", err)
 	}
 	if r == nil {
-		fmt.Fprintln(cmd.OutOrStdout(), "no runs")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "no runs")
 		return nil
 	}
 	var b bytes.Buffer
@@ -70,6 +70,6 @@ func runStatus(cmd *cobra.Command, _ []string) error {
 	if err := enc.Encode(r.State); err != nil {
 		return Exit(ExitError, "%v", err)
 	}
-	fmt.Fprint(cmd.OutOrStdout(), b.String())
+	_, _ = fmt.Fprint(cmd.OutOrStdout(), b.String())
 	return nil
 }

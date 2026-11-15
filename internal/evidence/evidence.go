@@ -29,7 +29,7 @@ func SHA256File(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err
@@ -107,7 +107,7 @@ func AppendJSONL(path string, v any) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	_, err = f.Write(raw)
 	return err
 }
@@ -124,7 +124,7 @@ func ReadJSONL(path string) ([]Row, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	var out []Row
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 1<<20), 1<<26)
@@ -347,7 +347,7 @@ func (r *Run) WriteSummary() (string, error) {
 			for _, e := range ev {
 				if pyStr(e["event"]) == "merge_wait_seconds" {
 					n := 0
-					fmt.Sscanf(pyStr(e["detail"]), "%d", &n)
+					_, _ = fmt.Sscanf(pyStr(e["detail"]), "%d", &n)
 					wait += n
 				}
 			}

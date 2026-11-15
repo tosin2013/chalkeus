@@ -56,12 +56,12 @@ func FreshClone(repo, branch string, depth int) (string, string, error) {
 		args = append(args, "--depth", fmt.Sprint(depth))
 	}
 	if _, err := Git("", append(args, URL(repo), d)...); err != nil {
-		os.RemoveAll(d)
+		_ = os.RemoveAll(d)
 		return "", "", err
 	}
 	head, err := Git(d, "rev-parse", "HEAD")
 	if err != nil {
-		os.RemoveAll(d)
+		_ = os.RemoveAll(d)
 		return "", "", err
 	}
 	return d, strings.TrimSpace(head), nil

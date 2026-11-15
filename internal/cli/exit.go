@@ -53,15 +53,15 @@ func exitCode(err error, stderr io.Writer) int {
 	var e *ExitErr
 	if errors.As(err, &e) {
 		if e.Msg != "" {
-			fmt.Fprintf(stderr, "pilot: %s\n", e.Msg)
+			_, _ = fmt.Fprintf(stderr, "pilot: %s\n", e.Msg)
 		}
 		return e.Code
 	}
 	var coder interface{ ExitCode() int } // e.g. config errors (2, or 3 for the repo guard)
 	if errors.As(err, &coder) {
-		fmt.Fprintf(stderr, "pilot: %s\n", err)
+		_, _ = fmt.Fprintf(stderr, "pilot: %s\n", err)
 		return coder.ExitCode()
 	}
-	fmt.Fprintf(stderr, "pilot: %s\n", err)
+	_, _ = fmt.Fprintf(stderr, "pilot: %s\n", err)
 	return ExitError
 }

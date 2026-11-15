@@ -26,7 +26,7 @@ func Run(r *evidence.Run, final bool, cfg *config.Config, out io.Writer) (bool, 
 			if err == nil {
 				_, _ = f.WriteString(strings.Join(hosts, "\n") + "\n")
 				_ = f.Close()
-				defer os.Remove(f.Name())
+				defer func() { _ = os.Remove(f.Name()) }()
 				keyFiles = append(keyFiles, f.Name())
 			}
 		}
@@ -53,7 +53,7 @@ func Run(r *evidence.Run, final bool, cfg *config.Config, out io.Writer) (bool, 
 			mark = "PASS"
 			pass++
 		}
-		fmt.Fprintf(out, "  %s %s %s\n", mark, row.ID, row.Description)
+		_, _ = fmt.Fprintf(out, "  %s %s %s\n", mark, row.ID, row.Description)
 	}
 	if err := r.Event("audit", nil, nil, "audit_done", fmt.Sprintf("%d/%d", pass, len(rows))); err != nil {
 		return false, err
