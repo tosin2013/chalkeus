@@ -50,8 +50,11 @@ their rationale, and settles the rest.
 ## R4 — kind and the container runtime
 
 - **Decision:**
-  - **kind:** its Go library (`sigs.k8s.io/kind/pkg/cluster`: `Provider.Create` with the
-    same `kind-config.yaml`, `Delete`, `List`).
+  - **kind:** ~~its Go library (`sigs.k8s.io/kind/pkg/cluster`: `Provider.Create` with the
+    same `kind-config.yaml`, `Delete`, `List`).~~ **Amended during implementation (2026-11-15):** the pinned
+    `kind` binary installed by `test/isolation/tools.sh`, as the reference does. That keeps
+    `pilot/pins.env` the single source of the kind version and avoids a large dependency tree.
+    Cluster objects still go through client-go.
   - **Docker:** the `docker` CLI via `os/exec` for the registry container, `network connect`,
     image pull/build and teardown checks T02/T03. kind's library already requires the docker
     binary, and the Docker SDK would add a large dependency for a few calls.

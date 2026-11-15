@@ -1,0 +1,527 @@
+// Package pipeline is `pilot run` / `pilot resume`: one governed cycle for fixture tasks A then
+// B (reference: pilot/specfoundry_pilot/pipeline.py). Every human decision fails closed:
+// anything but "y" means no; without a terminal the run pauses at the decision instead.
+//
+//	mode confirmation (FR-023)   -> exit 5, no worker staged (no terminal: paused(awaiting-mode))
+//	retry confirmation (FR-017)  -> paused(awaiting-retry), exit 6
+//	merge of A's PR (FR-018a)    -> paused(awaiting-merge), exit 0 / resume exit 4
+//	reconcile approval (FR-018)  -> exit 5, roadmap unchanged
+package pipeline
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/tosin2013/specfoundry/internal/audit"
+	"github.com/tosin2013/specfoundry/internal/checks"
+	"github.com/tosin2013/specfoundry/internal/config"
+	"github.com/tosin2013/specfoundry/internal/decisions"
+	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/specfoundry/internal/fixture"
+	"github.com/tosin2013/specfoundry/internal/gate"
+	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/specfoundry/internal/grader"
+	"github.com/tosin2013/specfoundry/internal/images"
+	"github.com/tosin2013/specfoundry/internal/k8s"
+	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/specfoundry/internal/publisher"
+	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/specfoundry/internal/reconcile"
+	"github.com/tosin2013/specfoundry/internal/runner"
+	"github.com/tosin2013/specfoundry/internal/worker"
+)
+
+// Exit codes (identical to the reference).
+const (
+	ExitOK, ExitFail, ExitError, ExitAwaitMerge, ExitDeclined, ExitAwaitRetry = 0, 1, 2, 4, 5, 6
+)
+
+// P holds one invocation's collaborators.
+type P struct {
+	L      paths.Layout
+	Cfg    *config.Config
+	C      *k8s.Client
+	Runner runner.Runner
+	Imgs   map[string]string
+	Out    io.Writer
+	Status gate.StatusSource
+	// CredentialEnv is the env file with the publisher credential (token or App token).
+	CredentialEnv string
+}
+
+func (p *P) say(format string, a ...any) { fmt.Fprintf(p.Out, format+"\n", a...) }
+
+// New wires the real collaborators.
+func New(l paths.Layout, cfg *config.Config, out io.Writer, credentialEnv string) (*P, error) {
+	c, err := k8s.New(paths.Context)
+	if err != nil {
+		return nil, err
+	}
+	return &P{L: l, Cfg: cfg, C: c, Runner: runner.Jobs{C: c}, Out: out, Status: gate.ExecStatus{}, CredentialEnv: credentialEnv}, nil
+}
+
+func (p *P) githubOn() bool { return p.Cfg.GithubApprovals() || p.Cfg.GithubIssues() }
+
+// ModeOf is the run mode shown to the operator for confirmation.
+func (p *P) ModeOf() map[string]any {
+	cap, _ := strconv.ParseFloat(p.Cfg.Get("PILOT_SPEND_CAP_USD"), 64)
+	tok, _ := strconv.Atoi(p.Cfg.Get("PILOT_TOKEN_CAP"))
+	return map[string]any{"name": "step-by-step", "retry_limit": p.Cfg.RetryLimit(), "spend_cap_usd": evidence.PyFloat(cap),
+		"token_cap": tok, "worker_deadline_s": worker.Deadline}
+}
+
+func modeJSON(m map[string]any) string { return decisions.PyJSON(mustJSON(m)) }
+
+func mustJSON(v any) string { raw, _ := json.Marshal(v); return string(raw) }
+
+func (p *P) confirmMode(run *evidence.Run) (bool, string) {
+	mode := p.ModeOf()
+	run.State["proposed_mode"] = mode
+	_ = run.Save()
+	p.say("Run mode for this pilot: %s\n  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.", modeJSON(mode))
+	ok, ch := decisions.Decide(run, "mode", "Confirm this mode and start staging workers? [y/N] ", nil, nil, func(s string) { p.say("%s", s) })
+	decisions.Note(run, "mode", nil, nil, ok, ch, "", "")
+	if !ok {
+		_ = run.Event("mode", nil, nil, "mode_declined", modeJSON(mode))
+		return false, ch
+	}
+	run.State["mode"] = mode
+	_ = run.Event("mode", nil, nil, "mode_confirmed", modeJSON(mode))
+	return true, ch
+}
+
+func (p *P) confirmRetry(run *evidence.Run, task string, n, total int) (bool, string) {
+	ok, ch := decisions.Decide(run, "retry", fmt.Sprintf("Retry %s (attempt %d of %d)? [y/N] ", task, n, total), task, n, func(s string) { p.say("%s", s) })
+	decisions.Note(run, "retry", task, n, ok, ch, "", "")
+	ev := "retry_declined"
+	if ok {
+		ev = "retry_confirmed"
+	}
+	_ = run.Event("retry", task, n, ev, "")
+	return ok, ch
+}
+
+func (p *P) modeNotConfirmed(run *evidence.Run, ch string) int {
+	if ch == "none" {
+		p.pause(run, "awaiting-mode", nil)
+		p.say("paused: mode not confirmed. %s", decisions.Hint(run, "mode"))
+		return ExitDeclined
+	}
+	_ = run.SetRunState("failed", "MODE_NOT_CONFIRMED")
+	_, _ = run.WriteSummary()
+	return ExitDeclined
+}
+
+func (p *P) gateTask(run *evidence.Run, task string) gate.Decision {
+	seq, _ := run.NextGateSeq()
+	d, _ := gate.EvaluateFresh(p.Status, p.Cfg.Repo(), p.Cfg.Branch(), task, paths.Tasks[task], seq, filepath.Join(run.Dir, "gate"),
+		func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) })
+	t := run.Task(task)
+	t["gate_seqs"] = append(anyList(t["gate_seqs"]), seq)
+	if d.Decision == "allow" && d.Input.FixtureCommit != nil {
+		t["base_revision"] = *d.Input.FixtureCommit
+	}
+	_ = run.Save()
+	_ = run.Event("gate", task, nil, "gate_"+d.Decision, fmt.Sprintf("seq=%d %s", seq, strings.Join(d.Reasons, ",")))
+	p.say("  gate %s: %s %s", task, d.Decision, pyrepr.Strings(d.Reasons))
+	return d
+}
+
+func anyList(v any) []any { x, _ := v.([]any); return x }
+
+func (p *P) cloneAt(rev string) (string, error) {
+	dir, _, err := fixture.FreshClone(p.Cfg.Repo(), p.Cfg.Branch(), 0)
+	if err != nil {
+		return "", err
+	}
+	if _, err := fixture.Git(dir, "checkout", "--quiet", rev); err != nil {
+		_ = os.RemoveAll(dir)
+		return "", err
+	}
+	return dir, nil
+}
+
+func (p *P) pause(run *evidence.Run, state string, pending map[string]any) {
+	if pending == nil {
+		pending = map[string]any{}
+	}
+	run.State["pending"] = pending
+	run.State["paused_at"] = evidence.Now()
+	_ = run.SetRunState("paused("+state+")", nil)
+	_, _ = run.WriteSummary()
+}
+
+func (p *P) fail(run *evidence.Run, reason string) int {
+	_ = run.SetRunState("failed", reason)
+	_, _ = run.WriteSummary()
+	p.say("run %s FAILED: %s", run.ID, reason)
+	return ExitFail
+}
+
+func (p *P) checks() checks.Deps { return checks.Deps{L: p.L, C: p.C, Out: p.Out} }
+
+func (p *P) runTask(run *evidence.Run, task string, startN int) int {
+	t := run.Task(task)
+	total := 1 + p.Cfg.RetryLimit()
+	n := startN
+	for {
+		t["state"] = "attempting"
+		_ = run.Save()
+		base, _ := t["base_revision"].(string)
+		var att map[string]any
+		clone, err := p.cloneAt(base)
+		if err != nil {
+			att = map[string]any{"n": n, "state": "failed", "reason": "harness_error"}
+			_ = run.Event("attempt", task, n, "attempt_error", err.Error())
+		} else {
+			wd := worker.Deps{L: p.L, C: p.C, Runner: p.Runner,
+				Checks: func(task string, n int, ns string) { p.checks().RunWorkerChecks(run, p.Imgs, task, n, ns) }}
+			att = worker.RunAttempt(wd, run, p.Cfg, p.Imgs, task, n, clone, base)
+			_ = os.RemoveAll(clone)
+		}
+		if att["state"] == "collected" {
+			g := grader.Grade(p.L, p.C, p.Runner, run, p.Imgs, task, n)
+			att["result"] = g["result"]
+			if g["result"] == "pass" {
+				att["state"] = "passed"
+			} else {
+				att["state"] = "failed"
+				if f, ok := g["failure"].(string); ok && f != "" {
+					att["reason"] = f
+				} else {
+					att["reason"] = "grade_fail"
+				}
+			}
+		} else {
+			att["result"] = "fail"
+		}
+		var kept []any
+		for _, x := range anyList(t["attempts"]) {
+			if a, _ := x.(map[string]any); !numEq(a["n"], n) {
+				kept = append(kept, a)
+			}
+		}
+		t["attempts"] = append(kept, att)
+		_ = run.Save()
+		if att["state"] == "passed" {
+			t["passing_attempt"] = n
+			break
+		}
+		if task == "A" {
+			if d := p.gateTask(run, "B"); d.Decision != "refuse" {
+				return p.fail(run, "B_NOT_BLOCKED")
+			}
+		}
+		if n >= total {
+			return p.fail(run, task+"_RETRIES_EXHAUSTED")
+		}
+		ok, ch := p.confirmRetry(run, task, n+1, total)
+		if !ok {
+			p.pause(run, "awaiting-retry", map[string]any{"task": task, "n": n + 1})
+			msg := "`pilot resume` asks again."
+			if ch == "none" {
+				msg = decisions.Hint(run, "retry")
+			}
+			p.say("paused: retry of %s not confirmed. %s", task, msg)
+			return ExitAwaitRetry
+		}
+		n++
+	}
+	return p.publishTask(run, task)
+}
+
+func numEq(v any, n int) bool {
+	switch x := v.(type) {
+	case float64:
+		return int(x) == n
+	case int:
+		return x == n
+	case json.Number:
+		i, err := x.Int64()
+		return err == nil && int(i) == n
+	}
+	return false
+}
+
+func asInt(v any) int {
+	switch x := v.(type) {
+	case float64:
+		return int(x)
+	case int:
+		return x
+	case json.Number:
+		i, _ := x.Int64()
+		return int(i)
+	}
+	return 0
+}
+
+func (p *P) publisherDeps() publisher.Deps {
+	return publisher.Deps{L: p.L, C: p.C, Runner: p.Runner, Repo: p.Cfg.Repo(), Branch: p.Cfg.Branch()}
+}
+
+func (p *P) publishTask(run *evidence.Run, task string) int {
+	t := run.Task(task)
+	n := asInt(t["passing_attempt"])
+	t["state"] = "publishing"
+	_ = run.Save()
+	pr, err := p.publisherDeps().Publish(run, p.Imgs, task, n)
+	if err != nil {
+		t["state"] = "publish-failed"
+		msg := err.Error()
+		if len(msg) > 300 {
+			msg = msg[:300]
+		}
+		_ = run.Event("publish", task, n, "publish_failed", fmt.Sprintf("%s: %s", errName(err), msg))
+		p.pause(run, "awaiting-publish", map[string]any{"task": task, "n": n})
+		p.say("publisher failed for %s: %v\n`pilot resume` re-runs it (idempotent).", task, err)
+		return ExitFail
+	}
+	t["state"] = "published"
+	t["pr"] = pr
+	_ = run.Save()
+	p.checks().RunClusterChecks(run)
+	if task == "A" {
+		if d := p.gateTask(run, "B"); d.Decision != "refuse" {
+			return p.fail(run, "B_NOT_BLOCKED")
+		}
+		t["state"] = "awaiting-merge"
+		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
+		p.say("\nTask A draft PR: %v\nReview and merge it on GitHub yourself, then run: pilot/pilot resume", pr["url"])
+		return ExitOK
+	}
+	return p.finish(run)
+}
+
+func errName(err error) string {
+	if _, ok := err.(*publisher.Error); ok {
+		return "PublishError"
+	}
+	return "Error"
+}
+
+func (p *P) finish(run *evidence.Run) int {
+	ok, err := audit.Run(run, false, p.Cfg, p.Out)
+	if err != nil || !ok {
+		return p.fail(run, "AUDIT")
+	}
+	_ = run.SetRunState("succeeded", nil)
+	_, _ = run.WriteSummary()
+	rel, _ := filepath.Rel(p.L.Root, run.Dir)
+	p.say("run %s succeeded. Evidence: %s", run.ID, rel)
+	return ExitOK
+}
+
+func (p *P) notYet() int {
+	p.say("pilot: the GitHub loop (PILOT_GITHUB_ISSUES / PILOT_GITHUB_APPROVALS) is not implemented in the Go pilot yet; use PILOT_IMPL=python or turn it off")
+	return ExitError
+}
+
+// Run starts a new run.
+func (p *P) Run() int {
+	if p.githubOn() {
+		return p.notYet()
+	}
+	imgs, err := images.Load(p.L)
+	if err != nil {
+		p.say("pilot: %v", err)
+		return ExitError
+	}
+	p.Imgs = imgs
+	gh, err := ghloop.OperatorClient()
+	if err != nil {
+		p.say("pilot: %v", err)
+		return ExitError
+	}
+	open, err := ghloop.OpenPilotPRs(context.Background(), gh, p.Cfg.Repo())
+	if err != nil {
+		p.say("pilot: %v", err)
+		return ExitError
+	}
+	if len(open) > 0 {
+		var urls []string
+		for _, o := range open {
+			urls = append(urls, o.URL)
+		}
+		p.say("open pilot PRs exist on %s: %s\nrun `pilot reset-fixture` first", p.Cfg.Repo(), pyrepr.Strings(urls))
+		return ExitError
+	}
+	base, err := os.ReadFile(p.L.FixtureBase)
+	if err != nil {
+		p.say("no fixture base recorded; run `pilot reset-fixture` first")
+		return ExitError
+	}
+	run, err := evidence.NewRun(p.L.EvidenceRoot())
+	if err != nil {
+		p.say("pilot: %v", err)
+		return ExitError
+	}
+	p.say("== run %s", run.ID)
+	run.State["fixture_base"] = strings.TrimSpace(string(base))
+	if hosts := p.Cfg.ModelHosts(); len(hosts) > 0 { // for the P06 probe; never in evidence
+		_ = os.WriteFile(p.L.ModelHost, []byte(hosts[0]+"\n"), 0o644)
+	}
+	_ = evidence.WriteConfigJSON(run, p.Cfg.Public(), p.Cfg.ConfigDir, append(p.Cfg.ModelFiles(), p.Cfg.PublisherEnv))
+	pins, _ := paths.ReadEnv(p.L.Pins)
+	_ = evidence.WriteVersions(run, pins, p.L.Build, paths.Context, paths.Cluster, imgs)
+	_ = run.Event("run", nil, nil, "run_started", p.Cfg.Repo())
+	p.checks().GateMatrix(run, p.Status)
+	rows, _ := evidence.ReadJSONL(filepath.Join(run.Dir, "checks", "results.jsonl"))
+	for _, r := range rows {
+		if id, _ := r["id"].(string); strings.HasPrefix(id, "GM") && r["result"] != "pass" {
+			return p.fail(run, "GATE_MATRIX")
+		}
+	}
+	if d := p.gateTask(run, "A"); d.Decision != "allow" {
+		return p.fail(run, "A_REFUSED")
+	}
+	if d := p.gateTask(run, "B"); d.Decision != "refuse" {
+		return p.fail(run, "B_NOT_BLOCKED")
+	}
+	ok, ch := p.confirmMode(run)
+	if !ok {
+		return p.modeNotConfirmed(run, ch)
+	}
+	_ = run.Save()
+	return p.runTask(run, "A", 1)
+}
+
+// Resume continues a paused run.
+func (p *P) Resume(runID string) int {
+	if p.githubOn() {
+		return p.notYet()
+	}
+	run, err := evidence.LoadRun(p.L.EvidenceRoot(), runID)
+	state := "None"
+	if run != nil {
+		state = fmt.Sprint(run.State["state"])
+	}
+	if err != nil || run == nil || !strings.HasPrefix(state, "paused") {
+		suffix := ""
+		if runID != "" {
+			suffix = " " + runID
+		}
+		p.say("no paused run%s (state=%s)", suffix, state)
+		return ExitError
+	}
+	if run.State["impl"] != "go" {
+		p.say("this run was started by the Python pilot; resume it with PILOT_IMPL=python, or reset the fixture and start a new run")
+		return ExitError
+	}
+	imgs, err := images.Load(p.L)
+	if err != nil {
+		p.say("pilot: %v", err)
+		return ExitError
+	}
+	p.Imgs = imgs
+	pend, _ := run.State["pending"].(map[string]any)
+	run.State["state"] = "in-progress"
+	_ = run.Save()
+	_ = run.Event("run", nil, nil, "run_resumed", state)
+	switch state {
+	case "paused(awaiting-mode)":
+		ok, ch := p.confirmMode(run)
+		if !ok {
+			return p.modeNotConfirmed(run, ch)
+		}
+		_ = run.Save()
+		return p.runTask(run, "A", 1)
+	case "paused(awaiting-retry)":
+		task, _ := pend["task"].(string)
+		n := asInt(pend["n"])
+		ok, ch := p.confirmRetry(run, task, n, 1+p.Cfg.RetryLimit())
+		if !ok {
+			p.pause(run, "awaiting-retry", map[string]any{"task": task, "n": n})
+			if ch == "none" {
+				p.say("paused: retry of %s not confirmed. %s", task, decisions.Hint(run, "retry"))
+			}
+			return ExitAwaitRetry
+		}
+		return p.runTask(run, task, n)
+	case "paused(awaiting-publish)":
+		task, _ := pend["task"].(string)
+		return p.publishTask(run, task)
+	case "paused(awaiting-merge)":
+		return p.reconcileA(run)
+	}
+	p.say("cannot resume from %s", state)
+	return ExitError
+}
+
+func (p *P) reconcileA(run *evidence.Run) int {
+	pausedAt, err := time.Parse(evidence.TimeFormat, fmt.Sprint(run.State["paused_at"]))
+	if err != nil {
+		pausedAt = time.Now().UTC()
+	}
+	tA := run.Task("A")
+	n := asInt(tA["passing_attempt"])
+	channel := ""
+	ask := func(q string) string {
+		ok, ch := decisions.Decide(run, "reconcile", q, "A", nil, func(s string) { p.say("%s", s) })
+		decisions.Note(run, "reconcile", "A", nil, ok, ch, "", "")
+		channel = ch
+		if ok {
+			return "y"
+		}
+		return ""
+	}
+	adir, _ := run.AttemptDir("A", n)
+	base, _ := tA["base_revision"].(string)
+	rec, cleanup, err := reconcile.ForFixture(p.Cfg.Repo(), p.Cfg.Branch(), run.Dir, run.ID, "A", adir, base, ask, func(s string) { p.say("%s", s) })
+	if err != nil {
+		return p.fail(run, "RECONCILE_SETUP")
+	}
+	var changed []string
+	for _, x := range anyList(tA["attempts"]) {
+		a, _ := x.(map[string]any)
+		if numEq(a["n"], n) {
+			for _, c := range anyList(a["changed_paths"]) {
+				changed = append(changed, fmt.Sprint(c))
+			}
+		}
+	}
+	pr, _ := tA["pr"].(map[string]any)
+	code, r := rec.Run("A", paths.Tasks["A"], asInt(pr["number"]), changed)
+	cleanup()
+	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", "A.json"), r)
+	reason, _ := r["reason"].(string)
+	evName := "reconcile_applied"
+	if reason != "" {
+		evName = "reconcile_" + reason
+	}
+	applied, _ := r["applied_commit"].(string)
+	_ = run.Event("reconcile", "A", n, evName, applied)
+	switch code {
+	case ExitAwaitMerge:
+		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
+		p.say("A's PR is not merged yet. Merge it on GitHub, then run `pilot resume` again.")
+		return ExitAwaitMerge
+	case ExitDeclined:
+		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
+		if channel == "none" {
+			p.say("waiting for your approval of the status change; roadmap unchanged. %s", decisions.Hint(run, "reconcile"))
+		} else {
+			p.say("status change declined; roadmap unchanged; B stays blocked.")
+		}
+		return ExitDeclined
+	case 0:
+	default:
+		return p.fail(run, "RECONCILE_"+reason)
+	}
+	wait := int(time.Now().UTC().Sub(pausedAt).Seconds())
+	_ = run.Event("reconcile", "A", nil, "merge_wait_seconds", strconv.Itoa(wait))
+	tA["state"] = "verified"
+	_ = run.Save()
+	_ = run.Event("status", "A", nil, "task_verified", applied)
+	if d := p.gateTask(run, "B"); d.Decision != "allow" {
+		return p.fail(run, "B_STILL_BLOCKED")
+	}
+	return p.runTask(run, "B", 1)
+}

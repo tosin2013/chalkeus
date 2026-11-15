@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "rules": "specs/004-github-loop/research.md R6",
+  "cases": [
+    {
+      "name": "exact-edit-by-approver",
+      "input": {
+        "state": "MERGED",
+        "merged_by": "alice",
+        "base_text": "# r\n\n### 001 \u2014 Slug function  [status: planned]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "head_text": "# r\n\n### 001 \u2014 Slug function  [status: verified]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "changed": [
+          ".specify/memory/roadmap.md"
+        ],
+        "item": "001",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot"
+      },
+      "expect": {
+        "ok": true,
+        "reason": null
+      }
+    },
+    {
+      "name": "not-merged",
+      "input": {
+        "state": "OPEN",
+        "merged_by": null,
+        "base_text": "# r\n\n### 001 \u2014 Slug function  [status: planned]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "head_text": "# r\n\n### 001 \u2014 Slug function  [status: verified]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "changed": [
+          ".specify/memory/roadmap.md"
+        ],
+        "item": "001",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot"
+      },
+      "expect": {
+        "ok": false,
+        "reason": "NOT_MERGED"
+      }
+    },
+    {
+      "name": "extra-file",
+      "input": {
+        "state": "MERGED",
+        "merged_by": "alice",
+        "base_text": "# r\n\n### 001 \u2014 Slug function  [status: planned]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "head_text": "# r\n\n### 001 \u2014 Slug function  [status: verified]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "changed": [
+          ".specify/memory/roadmap.md",
+          "README.md"
+        ],
+        "item": "001",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot"
+      },
+      "expect": {
+        "ok": false,
+        "reason": "STATUS_PR_EDITED"
+      }
+    },
+    {
+      "name": "extra-line",
+      "input": {
+        "state": "MERGED",
+        "merged_by": "alice",
+        "base_text": "# r\n\n### 001 \u2014 Slug function  [status: planned]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "head_text": "# r\n\n### 001 \u2014 Slug function  [status: verified]\n\n- y\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "changed": [
+          ".specify/memory/roadmap.md"
+        ],
+        "item": "001",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot"
+      },
+      "expect": {
+        "ok": false,
+        "reason": "STATUS_PR_EDITED"
+      }
+    },
+    {
+      "name": "wrong-item",
+      "input": {
+        "state": "MERGED",
+        "merged_by": "alice",
+        "base_text": "# r\n\n### 001 \u2014 Slug function  [status: planned]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "head_text": "# r\n\n### 001 \u2014 Slug function  [status: planned]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: verified]\n",
+        "changed": [
+          ".specify/memory/roadmap.md"
+        ],
+        "item": "001",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot"
+      },
+      "expect": {
+        "ok": false,
+        "reason": "STATUS_PR_EDITED"
+      }
+    },
+    {
+      "name": "merged-by-publisher",
+      "input": {
+        "state": "MERGED",
+        "merged_by": "pub-bot",
+        "base_text": "# r\n\n### 001 \u2014 Slug function  [status: planned]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "head_text": "# r\n\n### 001 \u2014 Slug function  [status: verified]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "changed": [
+          ".specify/memory/roadmap.md"
+        ],
+        "item": "001",
+        "approvers": [
+          "alice",
+          "pub-bot"
+        ],
+        "publisher": "pub-bot"
+      },
+      "expect": {
+        "ok": false,
+        "reason": "STATUS_PR_MERGED_BY_PUBLISHER"
+      }
+    },
+    {
+      "name": "merged-by-non-approver",
+      "input": {
+        "state": "MERGED",
+        "merged_by": "bob",
+        "base_text": "# r\n\n### 001 \u2014 Slug function  [status: planned]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "head_text": "# r\n\n### 001 \u2014 Slug function  [status: verified]\n\n- x\n\n### 002 \u2014 Unique slugs  [status: planned]\n",
+        "changed": [
+          ".specify/memory/roadmap.md"
+        ],
+        "item": "001",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot"
+      },
+      "expect": {
+        "ok": false,
+        "reason": "STATUS_PR_NOT_APPROVER"
+      }
+    }
+  ]
+}

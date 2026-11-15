@@ -142,7 +142,7 @@ plus quickstart §2.
 
 ## Phase 4: Shared vectors (blocks US3; serves FR-011)
 
-- [ ] T021 Write the shared vectors, in the contracts/parity.md format:
+- [X] T021 Write the shared vectors, in the contracts/parity.md format:
   - `specs/004-github-loop/contracts/vectors/approvals.json`: one case per R3 rule (accept,
     `wrong_step`, `before_decision`, `not_an_approver`, `no_write_access`,
     `publisher_identity`, `app_authored`, `edited`, `withdrawn`, `duplicate`, a withdrawal by
@@ -150,7 +150,7 @@ plus quickstart §2.
   - `specs/004-github-loop/contracts/vectors/status_pr.json`: exact edit, `NOT_MERGED`,
     `STATUS_PR_EDITED` (extra file, extra line, wrong item), `STATUS_PR_MERGED_BY_PUBLISHER`,
     `STATUS_PR_NOT_APPROVER`.
-- [ ] T022 Refactor `pilot/tests/test_ghapprove.py` and `pilot/tests/test_status_pr.py` to load the
+- [X] T022 Refactor `pilot/tests/test_ghapprove.py` and `pilot/tests/test_status_pr.py` to load the
   vector files, and add `pilot/tests/test_vectors.py` running `ghapprove.evaluate` and
   `reconcile.check_status_pr` on every case. The Python suite stays green.
 
@@ -163,7 +163,7 @@ the harness channel working.
 
 **Independent test:** quickstart §3, at a terminal and through an agent.
 
-- [ ] T023 [P] [US2] Port `internal/k8s` (R3) using client-go with the kubeconfig and context
+- [X] T023 [P] [US2] Port `internal/k8s` (R3) using client-go with the kubeconfig and context
   `kind-specfoundry-m1`:
   - `Apply` (server-side apply of multi-document YAML; field manager `specfoundry-pilot`),
     `Render` (the same `${VAR}` template substitution as `k8s.render`);
@@ -175,15 +175,15 @@ the harness channel working.
   - `PullErrors`, `WaitPodReady` (same timeouts).
 
   Test it with the fake clientset in `internal/k8s/k8s_test.go`.
-- [ ] T024 [P] [US2] Port `internal/frame` from `frame.py`, with the reference's
+- [X] T024 [P] [US2] Port `internal/frame` from `frame.py`, with the reference's
   `test_frame.py` cases in `internal/frame/frame_test.go`.
-- [ ] T025 [P] [US2] Port `internal/fixture` from `fixture.py`: the git binary wrapper, `gh`
+- [X] T025 [P] [US2] Port `internal/fixture` from `fixture.py`: the git binary wrapper, `gh`
   replaced by go-github reads (R6), `fresh_clone`, `reset` (same prompt "Type y to continue: "),
   `open_pilot_prs`, `url`. Wire `pilot reset-fixture [--yes]`.
-- [ ] T026 [P] [US2] Port `internal/images` from `images.py`: pins.env, digest references (tags
+- [X] T026 [P] [US2] Port `internal/images` from `images.py`: pins.env, digest references (tags
   rejected with the same messages), `--local-build`, `load()`. Port the cases from `test_pins.py`
   and `test_image_source.py`.
-- [ ] T027 [US2] Port `internal/cluster` from `cluster.py` and `infra.py`:
+- [X] T027 [US2] Port `internal/cluster` from `cluster.py` and `infra.py`:
   - kind's library: create with `pilot/kind-config.yaml`, delete, list;
   - the registry container and `docker network connect` via the docker CLI;
   - the Calico hash check;
@@ -194,42 +194,45 @@ the harness channel working.
 
   Wire `pilot up [--cluster-only] [--local-build]` and `pilot down`. Port
   `test_calico_hash.py` and `test_pull_errors.py`.
-- [ ] T028 [US2] Port `internal/runner` (the `base.py` interface and the `jobs.py` Jobs runner:
+- [X] T028 [US2] Port `internal/runner` (the `base.py` interface and the `jobs.py` Jobs runner:
   submit, wait, collect, status, delete) on top of `internal/k8s`.
-- [ ] T029 [US2] Port the `internal/worker` (with `prompt.py` induction and the spend watchdog) and
+- [X] T029 [US2] Port the `internal/worker` (with `prompt.py` induction and the spend watchdog) and
   `internal/grader` packages from `worker.py`, `prompt.py` and `grader.py`: the same manifests,
   deadline, caps and grade.json handling. Port `test_prompt.py`, `test_watchdog.py` and
   `test_grading_reference.py`.
-- [ ] T030 [US2] Port `internal/publisher` from `publisher.py`:
+- [X] T030 [US2] Port `internal/publisher` from `publisher.py`:
   - the task PR job (`_submit`) and the PR body, including `Closes #N` when issues are on;
   - `prs.json` with `kind` and `closes`;
   - idempotency; the status PR path is ported in US3.
 
   Port `test_publisher_idempotency.py`.
-- [ ] T031 [US2] Port `internal/checks` from `checks.py`: P01–P10 with the same descriptions,
+- [X] T031 [US2] Port `internal/checks` from `checks.py`: P01–P10 with the same descriptions,
   requirements and detail strings, and the gate matrix rows.
-- [ ] T032 [US2] Port `internal/approvals` from `approvals.py`: `has_tty` (`x/term`),
+- [X] T032 [US2] Port `internal/approvals` from `approvals.py`: `has_tty` (`x/term`),
   `pending_step`, `describe`, `record` (channel harness or github), `take`/`take_record`,
   `decide` (a terminal answer discards a pending approval), `note`, `hint`, and `ask_tty` from
   `/dev/tty` (R13). Port `test_approvals.py` and `test_ask_tty.py`. Wire `pilot approve`.
-- [ ] T033 [US2] Port `internal/reconcile` from `reconcile.py`: `status_edit`, the `Reconciler`
+- [X] T033 [US2] Port `internal/reconcile` from `reconcile.py`: `status_edit`, the `Reconciler`
   `check` and `run` methods, `for_fixture` (graded clone from the bundle), and the push path. Port
   `test_reconcile.py`.
-- [ ] T034 [US2] Port `internal/pipeline` from `pipeline.py`:
+- [X] T034 [US2] Port `internal/pipeline` from `pipeline.py`:
   - `mode_of`, `confirm_mode`, `confirm_retry`, `mode_not_confirmed`, `gate_task`, `_pause`,
     `_fail`, `run_task`, `publish_task`, `finish`, `run`, `resume`, with every printed message
     verbatim;
   - resume refuses runs without `impl: "go"` (R16).
 
   Wire `pilot run`, `pilot resume [--run]` and `pilot status [--run]`.
-- [ ] T035 [US2] Port the setup commands: `publisher-token [--check-only]` (hidden prompt through
+- [X] T035 [US2] Port the setup commands: `publisher-token [--check-only]` (hidden prompt through
   `x/term`, staging file, keep only on pass; 006 F3) using the Go write probe from T040, and
   `import-opencode` from `import_opencode.py` (port `test_import_opencode.py`). Until T040 lands,
   the probe calls a stub that refuses.
-- [ ] T036 [US2] Add the wording test `internal/cli/wording_test.go`: extract the backtick- and
+- [X] T036 [US2] Add the wording test `internal/cli/wording_test.go`: extract the backtick- and
   code-quoted operator messages from `docs/operator-guide.md`, `docs/troubleshooting.md` and
   `.claude/skills/pilot/SKILL.md`, and assert that each appears in the Go sources
   (contracts/cli.md).
+  Done as: literal chunks of quoted spans that the Python reference contains (frozen in
+  `internal/cli/testdata/wording.txt` for after US5); GitHub App messages are listed as pending
+  until US3.
 - [ ] T037 [US2] **Owner action:** quickstart §3 with `PILOT_IMPL=go`, the terminal run following
   the guide (11/11, the same prompts and exit codes). Then the agent run with harness approvals
   (`channels=['harness']`). Copy the records to `specs/016-go-pilot/evidence/<run-id>/` and
@@ -252,7 +255,7 @@ the harness channel working.
   - read token resolution `GH_TOKEN` → `GITHUB_TOKEN` → `gh auth token`, with a fail-closed
     hint;
   - the write client from `publisher.env` or the App token (`secret.Value`).
-- [ ] T040 [US3] Port the write probe from `pilot/images/tools/check_token.py` into
+- [X] T040 [US3] Port the write probe from `pilot/images/tools/check_token.py` into
   `internal/ghloop/probe.go`:
   - blob POST for contents;
   - pulls list;
@@ -341,6 +344,10 @@ GitHub.
   (`pilot/tools/app_token.py`, `pilot/tools/golden_audit.py` once its output is committed), and
   the `PILOT_IMPL` Python branch in `pilot/pilot`. Keep `pilot/images/**` scripts, because
   in-image Python stays.
+  **Before removing:** move `pilot/specfoundry_pilot/frame.py` to `pilot/images/common/frame.py`, and
+  update `.github/workflows/pilot-images.yml` (its trigger paths and the `cp` into each build context)
+  and the Go `--local-build` context copy. Both the worker and tools images COPY `frame.py`.
+  `pilot/images/build_args.py` stays, because the image workflow runs it.
 - [ ] T054 [US5] Update `pilot/tools/docs_check.py` to drop the Python help parser, or port it
   into `go test` as `internal/cli/docs_test.go` and remove the Python script. Update
   `.github/workflows/go.yml` and `.github/workflows/docs-check.yml` to match.

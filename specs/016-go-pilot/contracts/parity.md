@@ -49,7 +49,8 @@ There is one case per rule from 004 research R3:
 - `wrong_step`, `before_decision`, `not_an_approver`, `no_write_access`,
   `publisher_identity`, `app_authored`, `edited`, `withdrawn`, `duplicate`;
 - a withdrawal by another user doesn't cancel the approval;
-- extra words on the first line mean the comment is ignored.
+- extra words on the first line are rejected as `wrong_step`;
+- non-command comments are skipped; author matching ignores case; `maintain` counts as write access.
 
 ### `status_pr.json`
 

@@ -1,0 +1,9 @@
+# golangci-lint v2 (spec 016 CI). Output writes to the terminal are best effort, as in most CLIs.
+version: "2"
+linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln

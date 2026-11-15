@@ -14,11 +14,17 @@ import (
 // Port of pilot/tests/test_gate.py (the fail-closed matrix, GM01's unit part).
 
 func fx(t *testing.T, name string) string {
-	raw, err := os.ReadFile(filepath.Join("testdata", "status", name))
+	raw, err := Fixture(name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return string(raw)
+	return raw
+}
+
+func TestRunMatrix(t *testing.T) {
+	if ok, detail := RunMatrix(); !ok || detail != "OK" {
+		t.Fatal(detail)
+	}
 }
 
 func ip(i int) *int { return &i }

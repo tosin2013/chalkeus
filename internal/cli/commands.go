@@ -7,7 +7,7 @@ import "github.com/spf13/cobra"
 
 func upCmd() *cobra.Command {
 	c := &cobra.Command{Use: "up", Short: "stand up kind + Calico, registry, images, proxies, publisher", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("up") }}
+		RunE: runUp}
 	c.Flags().Bool("cluster-only", false, "only kind + Calico (no config needed)")
 	c.Flags().Bool("local-build", false, "build images locally into a kind-local registry instead of pulling pinned digests")
 	return c
@@ -15,19 +15,19 @@ func upCmd() *cobra.Command {
 
 func downCmd() *cobra.Command {
 	return &cobra.Command{Use: "down", Short: "tear down and verify", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("down") }}
+		RunE: runDown}
 }
 
 func publisherTokenCmd() *cobra.Command {
 	c := &cobra.Command{Use: "publisher-token", Short: "write publisher.env from a hidden prompt and verify its scope", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("publisher-token") }}
+		RunE: runPublisherToken}
 	c.Flags().Bool("check-only", false, "only verify the existing publisher.env")
 	return c
 }
 
 func importOpencodeCmd() *cobra.Command {
 	c := &cobra.Command{Use: "import-opencode", Short: "reuse your existing OpenCode config (provider + key file) for the worker", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("import-opencode") }}
+		RunE: runImportOpenCode}
 	c.Flags().String("from", "~/.config/opencode", "OpenCode config dir")
 	c.Flags().String("model", "", "<provider>/<model> to use (default: the config's \"model\")")
 	c.Flags().String("fixture-repo", "", "owner/name of your -pilot-fixture repo, written to a new pilot.env")
@@ -36,20 +36,19 @@ func importOpencodeCmd() *cobra.Command {
 }
 
 func resetFixtureCmd() *cobra.Command {
-	c := &cobra.Command{Use: "reset-fixture", Short: "force-reset the throwaway fixture repo", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("reset-fixture") }}
+	c := &cobra.Command{Use: "reset-fixture", Short: "force-reset the throwaway fixture repo", Args: cobra.NoArgs, RunE: runResetFixture}
 	c.Flags().Bool("yes", false, "skip the confirmation prompt")
 	return c
 }
 
 func runCmd() *cobra.Command {
 	return &cobra.Command{Use: "run", Short: "start a new pilot run", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("run") }}
+		RunE: runRun}
 }
 
 func resumeCmd() *cobra.Command {
 	c := &cobra.Command{Use: "resume", Short: "resume a paused run", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("resume") }}
+		RunE: runResume}
 	c.Flags().String("run", "", "run id (default: the latest run)")
 	return c
 }
@@ -60,7 +59,7 @@ func approveCmd() *cobra.Command {
 		Short:     "approve the decision a paused run is waiting for (no-terminal use; your agent harness must ask you before this runs)",
 		ValidArgs: []string{"mode", "retry", "reconcile"},
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-		RunE:      func(*cobra.Command, []string) error { return notImplemented("approve") },
+		RunE:      runApprove,
 	}
 	c.Flags().String("run", "", "run id (see `pilot status`)")
 	_ = c.MarkFlagRequired("run")
