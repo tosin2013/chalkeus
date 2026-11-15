@@ -12,9 +12,10 @@ behind each part of it. It also says where the evidence is thin.
 4. [Principle 2: agents build in isolation, with least privilege](#4-principle-2-agents-build-in-isolation-with-least-privilege)
 5. [Principle 3: humans approve and merge; evidence decides "done"](#5-principle-3-humans-approve-and-merge-evidence-decides-done)
 6. [Principle 4: parallel waves, in dependency order, within review capacity](#6-principle-4-parallel-waves-in-dependency-order-within-review-capacity)
-7. [Where each principle lives in the project](#7-where-each-principle-lives-in-the-project)
-8. [Limits and open questions](#8-limits-and-open-questions)
-9. [Sources](#9-sources)
+7. [Existing and new projects](#7-existing-and-new-projects)
+8. [Where each principle lives in the project](#8-where-each-principle-lives-in-the-project)
+9. [Limits and open questions](#9-limits-and-open-questions)
+10. [Sources](#10-sources)
 
 ---
 
@@ -211,6 +212,43 @@ sequenceDiagram
     end
 ```
 
+### How a build is scored
+
+There is no partial score. An attempt passes or fails, and a failure is safe because nothing
+leaves the grader. The grader runs five checks in order and stops at the first failure:
+
+| Check | Passes when |
+|---|---|
+| G1 bundle applies | the worker's change bundle is valid and builds on the exact revision the worker started from |
+| G2 allowed paths | the change touches only the paths the task allows, and is not empty |
+| G3 tasks checked | `spec status` reports the item's tasks at 100% |
+| G4 visible tests | the repository's own tests pass |
+| G5 hidden tests | acceptance tests the worker never saw pass |
+
+A failed attempt needs a human approval before it is retried. Every attempt also runs under a
+spend cap and a token cap. After the run, an offline audit (AU01–AU11) checks the whole
+evidence record. For example, it checks that:
+- the gate refused dependents until their dependency was verified;
+- every retry and the run mode were approved, and through which channel;
+- each PR was a draft opened by the publisher;
+- spend stayed under the cap;
+- the isolation checks passed for every unit;
+- the redaction scan found no secrets;
+- teardown left nothing behind.
+
+Only a run that passes the audit can lead to `verified`, and a human still approves that.
+
+### Watching a run
+
+People can see what the agents are doing without that activity becoming evidence. The CLI's
+verbose levels print to the operator's terminal only:
+- step timings;
+- pod phases and Kubernetes events;
+- at the highest level, the agent's live activity, with the model host and secrets redacted.
+
+The evidence record keeps what was decided and checked, never prompts, code or secrets.
+Metrics and traces for an operator-run collector are planned as roadmap item 007.
+
 ---
 
 ## 6. Principle 4: parallel waves, in dependency order, within review capacity
@@ -250,21 +288,48 @@ for each one, while people keep the decisions.
 
 ---
 
-## 7. Where each principle lives in the project
+## 7. Existing and new projects
+
+The planning comes first either way. The project gets a constitution and a roadmap, and each
+item gets a spec, a plan and tasks before any agent runs (C-12).
+
+- **Existing projects (brownfield).** This is the case specfoundry targets first (roadmap item
+  014). Items are specified against the code that already exists. The repository's own test
+  suite is the visible check (G4), and a human writes the item's acceptance tests, which the
+  worker never sees (G5). Real repositories bring needs the fixture does not have:
+  - a language toolchain in the worker and grader images;
+  - access to package registries to install dependencies.
+
+  Both are declared per repository and shown at the mode approval, so the allowlist stays
+  explicit.
+- **New projects (greenfield).** An empty repository has no build, tests or code to grade
+  against. The likely path is that the first item is a human-specified scaffold (layout, test
+  harness, CI), and humans write its acceptance tests. After that, the project is grown item
+  by item like any existing one. Whether the pilot supports this before 014 is proven on
+  existing repositories is open question Q11 in the roadmap.
+- **Today.** The pilot runs its built-in fixture: two items, hand-written hidden tests and a
+  Python toolchain. The fixture stays as the regression test when real repositories are
+  supported.
+
+---
+
+## 8. Where each principle lives in the project
 
 | Principle | Constitution / roadmap constraint | Delivered by | Status |
 |---|---|---|---|
 | Humans plan, research and release | Constitution I; C-01, C-12 | Spec Kit + `spec status` gate (002); any item (014); released waves (015) | gate verified; 014 and 015 planned |
 | Isolation and least privilege | Constitution II, IV; C-03, C-07, C-08 | isolation (001), gated pilot (002), hardened images (003) | verified |
-| Humans approve and merge; evidence decides | Constitution III, V; C-04, C-11 | terminal and harness approvals (012), GitHub approvals and status-change PR (004) | 012 verified; 004 in review |
+| Humans approve and merge; evidence decides | Constitution III, V; C-04, C-11 | terminal and harness approvals (012), GitHub approvals and status-change PR (004) | 012 verified; 004 implemented in the reference pilot, validated on the Go pilot (016) |
 | Parallel waves within capacity | C-12; C-07 (spend caps) | spend budget (009), released waves (015), cluster mode (011) | planned |
+| People can watch and audit runs | C-10 | evidence and audit (002), CLI verbose levels (016), operator telemetry (007) | audit verified; 016 in progress; 007 planned |
+| One implementation for the CLI and the operator | C-13 | Go pilot at parity (016); the operator (011) reuses its code | 016 in progress |
 
 See [the roadmap](../.specify/memory/roadmap.md) and the
 [product requirements](prd.md).
 
 ---
 
-## 8. Limits and open questions
+## 9. Limits and open questions
 
 - **The evidence on AI productivity is young and mixed.** METR's trial is small and covers
   early-2025 tools. DORA's figures are survey associations, not causal effects. Faros is a
@@ -276,6 +341,10 @@ See [the roadmap](../.specify/memory/roadmap.md) and the
 - **Grading a real project is harder than grading a fixture.** The pilot's hidden tests work
   for its fixture. Roadmap item 014 must define how a real item's acceptance criteria become
   runnable.
+- **Real repositories widen the isolation surface.** Each language toolchain is more image
+  to harden, and each package registry is another host the worker can reach. Dependency
+  installs are also a supply-chain risk. Keeping these per repository, explicit and approved is
+  the mitigation, not a guarantee.
 - **Approval channels differ in strength.** An approval through an agent harness depends on
   its permission mode. A GitHub approval proves an *account*, and in token mode that account
   is also the publisher's. The audit records the channel and the approver, so a reviewer can
@@ -285,7 +354,7 @@ See [the roadmap](../.specify/memory/roadmap.md) and the
 
 ---
 
-## 9. Sources
+## 10. Sources
 
 1. METR, *Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer
    Productivity* (July 2025), summarised by

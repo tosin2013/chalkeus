@@ -1,6 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.10.0 → 1.11.0
+Bump rationale: MINOR — a material scope change to 014 and a new Open Question (Q11). 016 gets
+a note only; no constraint is reversed.
+
+Changes this revision (owner decisions 2026-11-15, after the 016 US2 merge):
+  - 014 scope (in): per-repo worker and grader toolchains; an egress allowlist for the repo's
+    package registries; hidden acceptance tests written by a human, with the repo's own test
+    suite as a visible check. Note: 014 targets brownfield repos (existing code and tests)
+  - New Q11: greenfield bootstrap (an empty repo has nothing to grade against yet)
+  - 016 note: stderr diagnostics (-v, -vv, -vvv) are allowed as a debugging aid outside parity
+
+Specs affected: 014, 016
+Open questions added/resolved: Q11 added
+
+Previous revision 1.10.0 (2026-11-15):
 Version change: 1.9.0 → 1.10.0
 Bump rationale: MINOR — a new constraint (C-13), a new planned spec (016), dependency
 rewiring (011, 013, 014), 013 moved from needs-info to planned, and notes on 004 and Q9.
@@ -671,14 +686,21 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     mapping;
   - the worker prompt and the grading come from the item's spec, tasks and the repo's own tests;
   - a readiness check: a spec and tasks exist, dependencies are verified, no open questions;
-  - per-item evidence, and an audit that no longer assumes exactly items A and B.
+  - per-item evidence, and an audit that no longer assumes exactly items A and B;
+  - per-repo toolchains for the worker and the grader (an image per language, or declared in
+    the repo's configuration), still digest-pinned and hardened (C-08, C-09);
+  - an egress allowlist for the repo's package registries, so dependencies can be installed,
+    declared per repo and shown at the mode approval;
+  - hidden acceptance tests written by a human and kept out of the worker's view, with the
+    repo's own test suite run as a visible check.
 - **Scope (out):** parallel runs (015); writing specs or plans; choosing items automatically.
 - **Depends on:** 004, 016
 - **Governed by:** C-01, C-02, C-04, C-12
 - **Addresses:** docs/prd.md §4 loop, F1, F8, F9
 - **Notes:** Owner decision 2026-11-15. The fixture stays the regression test. Pairs with 013
   (installable CLI). Grading a real repo needs the item's acceptance criteria to be runnable;
-  the spec decides how that is expressed.
+  the spec decides how that is expressed. 014 targets **brownfield** repos (existing code and
+  tests); greenfield bootstrap is Q11 (owner decision 2026-11-15).
 
 ### 015 — Released waves  [status: planned]
 
@@ -747,6 +769,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   Port order: audit and gate first (pure, proven on golden data), then run and resume on the
   fixture, then the GitHub loop, then setup and teardown.
 
+  Stderr diagnostics (`-v` step timings, `-vv` pod phases and events, `-vvv` live agent
+  activity) are allowed as a debugging aid outside parity: they never change stdout, exit codes
+  or evidence, and they are redacted (owner decision 2026-11-15).
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -795,6 +821,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - everything stays mirrorable for companies with internal registries: digest-only
     references, checksums, a configurable registry prefix, and no runtime internet fetch
     during install.
+- Q11 — Greenfield bootstrap (raised 2026-11-15). An empty repository has no build, tests or
+  code to grade against. Options: item 001 is a human-specified scaffold (project layout, test
+  harness, CI) whose acceptance tests the human writes, graded like any other item; or
+  greenfield stays out of scope until 014 is verified on brownfield repos. Planning still comes
+  first either way (constitution, roadmap, spec and tasks, C-12).
 
 ## Cross-Cutting Notes
 
@@ -841,4 +872,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.10.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
+**Version**: 1.11.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
