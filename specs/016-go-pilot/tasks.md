@@ -20,23 +20,23 @@ data-model.md), and keep messages, event names and check ids verbatim.
 
 ## Phase 1: Setup
 
-- [ ] T001 Install Go on the dev machine (version per R1) and record it in
+- [X] T001 Install Go on the dev machine (version per R1) and record it in
   `docs/operator-guide.md` §4 as a new "Go toolchain" install step. Run `docs_check`.
-- [ ] T002 Create `go.mod` (module `github.com/tosin2013/specfoundry`, `go 1.26`, pinned
+- [X] T002 Create `go.mod` (module `github.com/tosin2013/specfoundry`, `go 1.26`, pinned
   `toolchain`), plus `cmd/pilot/main.go` with a Cobra root command and `pilot version`, with
   the version stamped through `-ldflags "-X main.version=…"` (R1, R2).
-- [ ] T003 [P] Add `.github/workflows/go.yml`:
+- [X] T003 [P] Add `.github/workflows/go.yml`:
   - `go vet`, pinned `golangci-lint`, `govulncheck`, `go test ./...`;
   - builds for linux/darwin × amd64/arm64;
   - the Python suite and `docs_check` until US5 (R15).
-- [ ] T004 [P] Add `.github/dependabot.yml`:
+- [X] T004 [P] Add `.github/dependabot.yml`:
   - **`gomod`** (root), weekly, with group `kubernetes` (`k8s.io/*`, `sigs.k8s.io/*`) and group
     `go-minor-patch` (other modules, minor and patch updates);
   - **`github-actions`**, weekly;
   - no auto-merge (R15).
-- [ ] T005 [P] Write `docs/dependencies.md`: every direct Go dependency, why it's needed, and the
+- [X] T005 [P] Write `docs/dependencies.md`: every direct Go dependency, why it's needed, and the
   rule that everything else is the standard library (R15).
-- [ ] T006 Update the shim `pilot/pilot`:
+- [X] T006 Update the shim `pilot/pilot`:
   - build `pilot/.build/bin/pilot` with `go build -trimpath` when it's missing or older than any
     `*.go`, `go.mod` or `go.sum`;
   - `PILOT_IMPL=python|go` chooses the implementation, with Python the default;
@@ -46,7 +46,7 @@ data-model.md), and keep messages, event names and check ids verbatim.
 
 ## Phase 2: Foundational (blocks all stories)
 
-- [ ] T007 Implement `ExitError{Code, Msg}` and the exit mapping in `cmd/pilot/main.go`:
+- [X] T007 Implement `ExitError{Code, Msg}` and the exit mapping in `cmd/pilot/main.go`:
   - codes 0 ok, 1 fail, 2 error, 3 repo guard, 4 awaiting merge, 5 declined, 6 awaiting retry,
     10 gate refusal;
   - `pilot: <msg>` on stderr;
@@ -77,7 +77,7 @@ data-model.md), and keep messages, event names and check ids verbatim.
   - sorted keys wherever the reference sorts them (R9).
 
   Test it in `internal/evidence/evidence_test.go`.
-- [ ] T012 [P] Add the Cobra command skeletons with the reference's flags and positional validation
+- [X] T012 [P] Add the Cobra command skeletons with the reference's flags and positional validation
   (stub bodies return `ExitError{2,"not implemented"}`), in
   `internal/cli/{setup,run,approve,gate,audit,status,github,app}.go`. Commands: `up`
   (`--cluster-only`, `--local-build`), `down`, `publisher-token` (`--check-only`),

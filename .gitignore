@@ -17,3 +17,8 @@ pilot/.build/
 .DS_Store
 *.swp
 pilot/runs/
+
+# Go
+*.test
+*.out
+/vendor/
