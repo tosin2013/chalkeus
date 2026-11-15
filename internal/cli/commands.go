@@ -73,7 +73,7 @@ func gateCmd() *cobra.Command {
 		Short:     "evaluate the gate for one task",
 		ValidArgs: []string{"A", "B"},
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-		RunE:      func(*cobra.Command, []string) error { return notImplemented("gate") },
+		RunE:      runGate,
 	}
 	c.Flags().String("root", "", "evaluate this directory instead of a fresh clone")
 	return c

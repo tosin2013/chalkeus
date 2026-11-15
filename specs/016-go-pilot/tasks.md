@@ -124,12 +124,12 @@ plus quickstart §2.
 - [X] T017 [P] [US1] Port the reference audit unit cases (`test_audit.py`, `test_audit_github.py`,
   `test_redaction.py`) into `internal/audit/audit_test.go`, using a Go evidence builder that
   mirrors `pilot/tests/evidence_builder.py`.
-- [ ] T018 [US1] Port `internal/gate` from `gate.py`, behind a `StatusSource` interface with the
+- [X] T018 [US1] Port `internal/gate` from `gate.py`, behind a `StatusSource` interface with the
   `ExecStatus` implementation (`spec status --json --root <dir>`). Schema 1.0 is required:
   an unknown schema, a missing binary or a parse error all refuse (R8). Keep
   `evaluate`/`evaluate_fresh` semantics, reasons and `out_dir` records. Wire `pilot gate {A|B}
   [--root]` (exit 0 allow, 10 refuse).
-- [ ] T019 [P] [US1] Port the gate fail-closed matrix (`checks.gate_matrix`, GM rows) and the
+- [X] T019 [P] [US1] Port the gate fail-closed matrix (`checks.gate_matrix`, GM rows) and the
   `test_gate.py` cases into `internal/gate/gate_test.go`, plus the fixture-verdict check.
 - [ ] T020 [P] [US1] Open an issue in tosin2013/spec-status proposing the public package
   `pkg/status` with `Load(root, opts) (Report, error)`, returning the schema 1.0 structs and a

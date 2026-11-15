@@ -22,6 +22,19 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+      - name: Install spec (pinned, checksum-verified; the gate's status tool)
+        run: |
+          set -euo pipefail
+          . <(grep -E '^SPEC_(VERSION|SHA256)=' pilot/pins.env)
+          cd "$(mktemp -d)"
+          base="https://github.com/tosin2013/spec-status/releases/download/v${SPEC_VERSION}"
+          curl -fsSLO "$base/spec_${SPEC_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLO "$base/spec_${SPEC_VERSION}_checksums.txt"
+          sha256sum -c --ignore-missing "spec_${SPEC_VERSION}_checksums.txt"
+          tar -xzf "spec_${SPEC_VERSION}_linux_amd64.tar.gz"
+          cp */spec ./spec && echo "${SPEC_SHA256}  spec" | sha256sum -c -
+          install -m 0755 spec "$HOME/.local/bin/spec" 2>/dev/null || { mkdir -p "$HOME/.local/bin"; install -m 0755 spec "$HOME/.local/bin/spec"; }
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Vet
         run: go vet ./...
       - name: Lint
