@@ -48,10 +48,28 @@ def _help(*args) -> str:
     return r.stdout + r.stderr
 
 
+def parse_subcommands(text: str) -> frozenset:
+    """Subcommand names from help output: argparse's `{a,b,c}` (Python pilot) or Cobra's
+    "Available Commands:" section (Go pilot, spec 016)."""
+    m = re.search(r"\{([a-z,-]+)\}", text)
+    if m:
+        return frozenset(m.group(1).split(","))
+    names, inside = set(), False
+    for line in text.splitlines():
+        if line.strip() == "Available Commands:":
+            inside = True
+            continue
+        if inside:
+            if not line.strip():
+                break
+            names.add(line.split()[0])
+    names.discard("help")
+    return frozenset(names)
+
+
 @functools.lru_cache(maxsize=None)
 def subcommands() -> frozenset:
-    m = re.search(r"\{([a-z,-]+)\}", _help())
-    return frozenset(m.group(1).split(",")) if m else frozenset()
+    return parse_subcommands(_help())
 
 
 @functools.lru_cache(maxsize=None)
@@ -62,8 +80,7 @@ def flags(sub: str) -> frozenset:
 @functools.lru_cache(maxsize=None)
 def nested(sub: str) -> frozenset:
     """Sub-subcommands, e.g. `github {sync,drift,watch}`; empty for plain subcommands."""
-    m = re.search(r"\{([a-z,-]+)\}", _help(sub))
-    return frozenset(m.group(1).split(",")) if m else frozenset()
+    return parse_subcommands(_help(sub))
 
 
 def check_command(line: str) -> list[str]:

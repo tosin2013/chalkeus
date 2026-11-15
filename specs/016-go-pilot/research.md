@@ -105,8 +105,8 @@ their rationale, and settles the rest.
   would return the schema 1.0 structs that `--json` emits today, and a version constant. The
   gate's adapter interface (`StatusSource`) has two implementations (exec, library), and a test
   asserts they give identical reports on the fixture.
-- **Cross-repo task:** open an issue in tosin2013/spec-status with this API proposal. 016 doesn't
-  block on it.
+- **Cross-repo task:** tosin2013/spec-status#65 carries this API proposal (opened 2026-11-15). 016
+  doesn't block on it.
 
 ## R9 — Evidence format
 

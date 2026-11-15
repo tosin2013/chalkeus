@@ -85,7 +85,7 @@ data-model.md), and keep messages, event names and check ids verbatim.
   `run`, `resume` (`--run`), `approve {mode|retry|reconcile} --run`, `gate {A|B} [--root]`,
   `audit [--run]`, `status [--run]`, `github sync|drift [--run]|watch --run [--detach|--stop]`,
   `app-key`, `app-token --check`.
-- [ ] T013 Teach `pilot/tools/docs_check.py` Cobra's help format ("Available Commands:" and
+- [X] T013 Teach `pilot/tools/docs_check.py` Cobra's help format ("Available Commands:" and
   "Flags:"), keeping the Python parser while `PILOT_IMPL` allows both. Run it against both
   implementations, and extend `pilot/tests/test_docs_check.py`.
 
@@ -131,7 +131,7 @@ plus quickstart §2.
   [--root]` (exit 0 allow, 10 refuse).
 - [X] T019 [P] [US1] Port the gate fail-closed matrix (`checks.gate_matrix`, GM rows) and the
   `test_gate.py` cases into `internal/gate/gate_test.go`, plus the fixture-verdict check.
-- [ ] T020 [P] [US1] Open an issue in tosin2013/spec-status proposing the public package
+- [X] T020 [P] [US1] Open an issue in tosin2013/spec-status proposing the public package
   `pkg/status` with `Load(root, opts) (Report, error)`, returning the schema 1.0 structs and a
   version constant (R8). Link it from `specs/016-go-pilot/research.md` R8.
 
