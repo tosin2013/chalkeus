@@ -163,7 +163,7 @@ the harness channel working.
 
 **Independent test:** quickstart §3, at a terminal and through an agent.
 
-- [ ] T023 [P] [US2] Port `internal/k8s` (R3) using client-go with the kubeconfig and context
+- [X] T023 [P] [US2] Port `internal/k8s` (R3) using client-go with the kubeconfig and context
   `kind-specfoundry-m1`:
   - `Apply` (server-side apply of multi-document YAML; field manager `specfoundry-pilot`),
     `Render` (the same `${VAR}` template substitution as `k8s.render`);
@@ -175,7 +175,7 @@ the harness channel working.
   - `PullErrors`, `WaitPodReady` (same timeouts).
 
   Test it with the fake clientset in `internal/k8s/k8s_test.go`.
-- [ ] T024 [P] [US2] Port `internal/frame` from `frame.py`, with the reference's
+- [X] T024 [P] [US2] Port `internal/frame` from `frame.py`, with the reference's
   `test_frame.py` cases in `internal/frame/frame_test.go`.
 - [ ] T025 [P] [US2] Port `internal/fixture` from `fixture.py`: the git binary wrapper, `gh`
   replaced by go-github reads (R6), `fresh_clone`, `reset` (same prompt "Type y to continue: "),
