@@ -171,7 +171,10 @@ with the operator guide.
   channel.
 - **FR-010**: The project MUST ship harness settings for Claude Code and OpenCode that make the
   approval command always ask the human, and settings that deny an agent direct edits to
-  approval records.
+  approval records. *(Amended 2026-11-15, owner decision: OpenCode's rule lives in each
+  operator's own OpenCode config, documented in the project, not in a committed project file,
+  so one setup covers every project; the repo-root `opencode.json` is gitignored. Claude
+  Code's rule stays committed in `.claude/settings.json`.)*
 - **FR-011**: The project MUST ship a `pilot` skill and an `AGENTS.md` pointer that teach an
   agent: the commands and exit codes; to explain each decision and ask the human; to propose
   the approval only after a clear yes; never to approve for the human, edit approvals or

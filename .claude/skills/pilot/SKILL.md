@@ -17,6 +17,10 @@ matching troubleshooting entry before suggesting any fix.
    said yes to that exact step in this conversation, and let the harness permission prompt
    ask them. If the harness does not ask (a bypass or auto-approve mode), stop and tell the
    human that the approval would not be theirs; ask them to run it themselves.
+   Before the first approval in a session, ask the human to confirm their harness has the
+   ask rule (Claude Code: this repo's `.claude/settings.json`; OpenCode: their own
+   `~/.config/opencode/opencode.json`, see `docs/troubleshooting.md#prompts-answer-no`).
+   Never create, read or edit harness config files yourself.
 2. **Never write, edit, copy or delete anything under a run's `approvals/` folder**, and
    never edit `events.jsonl`, `run.json` or other evidence. An approval must come from
    `pilot approve`.

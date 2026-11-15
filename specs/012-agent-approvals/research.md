@@ -45,7 +45,9 @@ first cut (PR #11) is shaped as it is, and what this plan changes.
     `Bash(pilot/pilot approve:*)`, `Bash(./pilot/pilot approve:*)` and
     `Bash(python3 -m specfoundry_pilot approve:*)`. `permissions.deny` blocks file edits under
     `**/approvals/**`.
-  - **OpenCode**, in `opencode.json`: `permission.bash` patterns
+  - **OpenCode**, in the operator's own `~/.config/opencode/opencode.json` (amended
+    2026-11-15: the repo-root file is gitignored, and a per-user rule covers every project):
+    `permission.bash` patterns
     `pilot/pilot approve*`, `./pilot/pilot approve*` and
     `python3 -m specfoundry_pilot approve*`, each set to `ask`.
 - **Rationale:** both harnesses support per-command "ask" rules that the project can commit.

@@ -171,10 +171,22 @@ Operators who pull the published images never see it.
   - run `pilot/pilot resume --run <run-id>` in a real interactive terminal, for example a plain
     SSH session, and answer there; or
   - when you work with an agent, approve the one pending step with
-    `pilot/pilot approve --run <run-id> mode|retry|reconcile`. The project's harness settings
-    make your agent harness ask **you** before that command runs; say yes only if you agree.
-    Then run `pilot/pilot resume --run <run-id>`. See the `pilot` skill
+    `pilot/pilot approve --run <run-id> mode|retry|reconcile`. Your agent harness must ask
+    **you** before that command runs; say yes only if you agree. Then run
+    `pilot/pilot resume --run <run-id>`. See the `pilot` skill
     (`.claude/skills/pilot/SKILL.md`).
+    - **Claude Code:** this repo's `.claude/settings.json` already has the ask rule.
+    - **OpenCode:** add the rule once to your own config, `~/.config/opencode/opencode.json`,
+      so it covers every project (the repo-root `opencode.json` is gitignored):
+
+      ```json
+      "permission": { "bash": {
+        "pilot/pilot approve*": "ask",
+        "./pilot/pilot approve*": "ask",
+        "python3 -m specfoundry_pilot approve*": "ask"
+      } }
+      ```
+    - **Any other harness:** no rule is provided. Use a real terminal instead.
 
   Merging is never approved this way: merge A's PR on GitHub yourself.
 - **Confirm:** `pilot/pilot status` shows the run moving on. In the audit, AU09 and AU10 list
