@@ -15,6 +15,10 @@ Changes this revision (owner direction 2026-11-16, proposed):
   - 015 note: unblocked tasks inside an item may run in parallel; the pilot owns the schedule
   - New Q12: parallel tasks inside an item
   - New Q13: how planning scales
+  - Delivery order (owner direction 2026-11-16): laptop first, end to end (016, 014 on kind,
+    017, 013 release), then OpenShift (005, then 014's EAP validation); see Cross-Cutting Notes
+  - 014 note: kind and plain-Kubernetes users can ask for a new language toolchain image by
+    opening a GitHub issue
 
 Specs affected: 014, 015, 017
 Open questions added/resolved: Q12, Q13 added
@@ -769,6 +773,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   images are built on Red Hat UBI images (JDK, Node.js). Elsewhere (kind, minikube, plain
   Kubernetes), toolchain images are built on demand, one per language a project needs, still by
   GitHub Actions and pinned by digest (C-09).
+  On kind, minikube and plain Kubernetes, a user who needs a language toolchain that has no
+  image yet asks for one by opening a GitHub issue on the specfoundry repository (the issue
+  form and the image build are defined when 014 is specified).
 
 ### 015 — Released waves  [status: planned]
 
@@ -947,6 +954,16 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ## Cross-Cutting Notes
 
+- **Delivery order (owner direction 2026-11-16):** laptop first, then OpenShift, in stages, so
+  someone on a laptop can trust that the whole loop works end to end before the enterprise case.
+  Dependencies are unchanged; this is the order of work among items that are ready.
+  1. 016 Go pilot at parity (its T047 owner run also closes 004's superseded validation).
+  2. 014 Any project, on kind with the fixture and a real repository; the EAP validation waits.
+  3. 017 Greenfield bootstrap, end to end on a laptop (kind or minikube).
+  4. 013 Installable pilot release, if needed at that point.
+  5. 005 OpenShift target (laptop mode).
+  6. 014's EAP validation on OpenShift with an in-cluster model.
+  7. 009 and 015 (released waves), then 007, 008, 010 and 011.
 - spec-status asks drafted in PRD §8 (report-only skills, per-item readiness exit
   code, CLI container image) gate 002 and 003 in practice; track them as upstream
   issues. **002 workarounds in place:** the gate runs on the host (no CLI image); the
