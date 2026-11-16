@@ -237,6 +237,10 @@ the harness channel working.
   the guide (11/11, the same prompts and exit codes). Then the agent run with harness approvals
   (`channels=['harness']`). Copy the records to `specs/016-go-pilot/evidence/<run-id>/` and
   record the results in `specs/016-go-pilot/evidence/README.md`.
+  Done as: two fixture runs, both with harness approvals (`20261115T162029Z` on the development
+  machine, `20261116T021112Z` on the validation machine), each 11/11 with the documented
+  commands and exit codes. Owner decision (2026-11-16): no separate terminal run; the `tty`
+  prompt code is unchanged from US2 and covered by its tests.
 - [X] T038 [US2] After T037 passes, flip the default in `pilot/pilot` to `PILOT_IMPL=go`.
 
 **Checkpoint:** the Go pilot runs the fixture end to end. Python is still available through
