@@ -233,11 +233,11 @@ the harness channel working.
   Done as: literal chunks of quoted spans that the Python reference contains (frozen in
   `internal/cli/testdata/wording.txt` for after US5); GitHub App messages are listed as pending
   until US3.
-- [ ] T037 [US2] **Owner action:** quickstart §3 with `PILOT_IMPL=go`, the terminal run following
+- [X] T037 [US2] **Owner action:** quickstart §3 with `PILOT_IMPL=go`, the terminal run following
   the guide (11/11, the same prompts and exit codes). Then the agent run with harness approvals
   (`channels=['harness']`). Copy the records to `specs/016-go-pilot/evidence/<run-id>/` and
   record the results in `specs/016-go-pilot/evidence/README.md`.
-- [ ] T038 [US2] After T037 passes, flip the default in `pilot/pilot` to `PILOT_IMPL=go`.
+- [X] T038 [US2] After T037 passes, flip the default in `pilot/pilot` to `PILOT_IMPL=go`.
 
 **Checkpoint:** the Go pilot runs the fixture end to end. Python is still available through
 `PILOT_IMPL=python`.
