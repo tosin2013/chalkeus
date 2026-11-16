@@ -78,8 +78,9 @@ agent's live activity) only when the human asks for it.
 
 With GitHub approvals on (`PILOT_GITHUB_APPROVALS=on`), each pause also prints a tracking-issue
 link. The human can reply there with `/approve <step>` instead. Tell them that option exists,
-then wait. `pilot/pilot github watch --run <id>` resumes on its own when the approval or merge
-appears. For the status change, the pilot opens a small draft PR; the human's merge is the
+then wait. The run starts a background watcher at its first pause (`watcher started (pid N)`),
+which resumes on its own when the approval or merge appears; `pilot/pilot status` shows it.
+`resume` refuses while it watches; don't stop it unless the human asks. For the status change, the pilot opens a small draft PR; the human's merge is the
 approval.
 
 Without a terminal, the pilot pauses at each decision and prints

@@ -22,9 +22,9 @@ import (
 var (
 	wordingDocs = []string{"docs/operator-guide.md", "docs/troubleshooting.md", "docs/github-loop.md", "docs/github-app.md",
 		".claude/skills/pilot/SKILL.md"}
-	fenceRE     = regexp.MustCompile("(?s)```[^\\n]*\\n(.*?)```")
-	spanRE      = regexp.MustCompile("`([^`\\n]+)`")
-	holeRE      = regexp.MustCompile(`<[^>]+>|\{[^}]+\}|\.\.\.|…|\d{8}T\d{6}Z|#\d+|\b\d+\b`)
+	fenceRE = regexp.MustCompile("(?s)```[^\\n]*\\n(.*?)```")
+	spanRE  = regexp.MustCompile("`([^`\\n]+)`")
+	holeRE  = regexp.MustCompile(`<[^>]+>|\{[^}]+\}|\.\.\.|…|\d{8}T\d{6}Z|#\d+|\b\d+\b`)
 	// Messages of commands not ported yet; each must leave this list when its command lands.
 	wordingPending = map[string]string{}
 )

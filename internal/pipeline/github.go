@@ -16,6 +16,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
 	"github.com/tosin2013/specfoundry/internal/reconcile"
+	"github.com/tosin2013/specfoundry/internal/watcher"
 )
 
 // The 004 GitHub loop inside a run (reference: the github_* functions, reconcile_github,
@@ -71,6 +72,36 @@ func (p *P) githubPost(run *evidence.Run) {
 	}
 	p.say("  or approve on GitHub: https://github.com/%s/issues/%d (reply `/approve %s`; allowed: %s)",
 		p.Cfg.Repo(), ghloop.TrackingIssue(run), pend.Step, strings.Join(p.Cfg.Approvers(), ", "))
+	p.ensureWatcher(run)
+}
+
+// ensureWatcher starts the run's detached watcher at a GitHub-approval pause (issue #25), so
+// the operator can close the terminal. Inside the watcher itself it finds itself alive.
+func (p *P) ensureWatcher(run *evidence.Run) {
+	if !p.approvalsOn() {
+		return
+	}
+	ensure := p.EnsureWatcher
+	if ensure == nil {
+		ensure = func(run *evidence.Run) (int, bool, error) {
+			return watcher.Ensure(p.L.Root, run.Dir, run.ID, nil)
+		}
+	}
+	pid, started, err := ensure(run)
+	if err != nil {
+		p.say("  (could not start the watcher: %v; run `pilot/pilot github watch --run %s` instead)", err, run.ID)
+		return
+	}
+	if started {
+		p.say("watcher started (pid %d); you can close this terminal. Log: %s", pid, p.rel(watcher.LogFile(run.Dir)))
+	}
+}
+
+func (p *P) rel(path string) string {
+	if r, err := filepath.Rel(p.L.Root, path); err == nil && !strings.HasPrefix(r, "..") {
+		return r
+	}
+	return path
 }
 
 // githubTerminal notes under the tracking issue that the terminal answered.
@@ -210,6 +241,7 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 	if code == ExitAwaitMerge {
 		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
 		p.say("A's PR is not merged yet. Merge it on GitHub, then run `pilot resume` (or `pilot github watch`).")
+		p.ensureWatcher(run)
 		return ExitAwaitMerge
 	}
 	if code != 0 {
@@ -224,11 +256,13 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 		_ = run.Event("publish", "A", nil, "status_pr_failed", fmt.Sprintf("%s: %s", errName(err), clip(err.Error(), 300)))
 		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
 		p.say("could not open the status-change PR: %v\n`pilot resume` tries again.", err)
+		p.ensureWatcher(run)
 		return ExitFail
 	}
 	p.pause(run, "awaiting-merge", statusPending(asInt(spr["number"]), base))
 	p.say("\nStatus-change PR: %v\nIt changes only item %s to `verified`. "+
 		"Merging it on GitHub approves the status change; then run `pilot resume` (or `pilot github watch`).", spr["url"], paths.Tasks["A"])
+	p.ensureWatcher(run)
 	return ExitAwaitMerge
 }
 
@@ -262,6 +296,7 @@ func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
 	if view.State != "MERGED" {
 		p.pause(run, "awaiting-merge", statusPending(num, base))
 		p.say("status-change PR #%d is not merged yet. Merge it on GitHub to approve, then `pilot resume`.", num)
+		p.ensureWatcher(run)
 		return ExitAwaitMerge
 	}
 	clone, _, err := fixture.FreshClone(p.Cfg.Repo(), p.Cfg.Branch(), 0)
@@ -392,6 +427,7 @@ func (p *P) Watch(runID string, interval time.Duration, sleep func(time.Duration
 		}
 		st := fmt.Sprint(run.State["state"])
 		if !strings.HasPrefix(st, "paused") {
+			watcher.Release(run.Dir, os.Getpid()) // a detached watcher removes its own pidfile
 			p.say("run %s is %s; stopped watching", runID, st)
 			if code != ExitError {
 				return code

@@ -329,26 +329,36 @@ GitHub.
 
 **Independent test:** quickstart §5.
 
-- [ ] T048 [US4] Implement `internal/watcher` per contracts/watcher.md:
+- [X] T048 [US4] Implement `internal/watcher` per contracts/watcher.md:
   - `Ensure(run)`: the pidfile `pilot/runs/<id>/github/watch.pid` with a liveness check; start
     `os.Executable()` `github watch --run <id>`, with Unix `SysProcAttr{Setsid:true}`, stdin
     from `/dev/null`, and output appended to `github/watch.log`;
   - a Windows build-tagged `DETACHED_PROCESS` variant;
   - `Stop(run)` (SIGTERM, remove the pidfile);
   - `Status(run)`.
-- [ ] T049 [US4] Port the watch loop (`ready_to_resume` and `watch`, with no-progress backoff) into
+  Done as: `internal/watcher` (`proc_unix.go` with `Setsid`, `proc_windows.go` compiled only).
+  Liveness also checks `/proc/<pid>/cmdline` where available, so a reused pid doesn't count.
+- [X] T049 [US4] Port the watch loop (`ready_to_resume` and `watch`, with no-progress backoff) into
   `internal/pipeline/watch.go`, as a goroutine with a context. Wire `pilot github watch --run`
   (foreground), `--detach` and `--stop`. On exit, remove the pidfile when the run is no longer
   paused.
-- [ ] T050 [US4] Call `watcher.Ensure` from every pause when `PILOT_GITHUB_APPROVALS=on`: mode,
+  Done as: the loop stayed in `internal/pipeline/github.go` (`ReadyToResume`, `Watch`; ported in
+  US3); `--detach`/`--stop` in `internal/cli/github.go`. Added (contracts/watcher.md "One
+  resumer"): `resume` refuses while another process is the run's live watcher.
+- [X] T050 [US4] Call `watcher.Ensure` from every pause when `PILOT_GITHUB_APPROVALS=on`: mode,
   retry, A's merge, and the status PR. Print "watcher started (pid N); you can close this
   terminal. Log: <path>". Add `watcher` to `pilot status` output.
-- [ ] T051 [P] [US4] Write `internal/watcher/watcher_test.go`:
+  Done as: `ensureWatcher` at the decision post (mode, retry), A's merge pause and the
+  status-change PR pauses; `pilot status` adds `watcher` while one runs (never saved in run.json).
+- [X] T051 [P] [US4] Write `internal/watcher/watcher_test.go`:
   - `Ensure` is idempotent;
   - a stale pidfile is replaced;
   - the loop exits when the run succeeds or fails;
   - no watcher when approvals are off;
   - the spawn arguments use a new session.
+  Done as: `internal/watcher/watcher_test.go` (idempotent, stale pidfile, new session, a real
+  detached process and pid reuse) and `internal/pipeline/github_test.go` (approvals off, loop exit
+  removes its pidfile, resume refused while a watcher runs).
 - [ ] T052 [US4] **Owner action:** quickstart §5. Start a run, close the terminal, approve and merge
   on GitHub only, then check the run completes and no watcher remains. Record it in
   `specs/016-go-pilot/evidence/README.md`. Comment on issue #25 with the result.

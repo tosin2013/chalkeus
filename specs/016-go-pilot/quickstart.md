@@ -50,7 +50,7 @@ happen.
 
 ## 4. GitHub loop (US3)
 
-Run `specs/004-github-loop/quickstart.md` §2–§5 with `PILOT_IMPL=go`, in token mode and App
+Run `specs/004-github-loop/quickstart.md` §2–§5 on the Go pilot (the default), in token mode and App
 mode. Record the results in `specs/004-github-loop/evidence/README.md`.
 
 ## 5. Walk away (US4)

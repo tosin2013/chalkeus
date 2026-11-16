@@ -1,7 +1,10 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -11,6 +14,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/ghapp"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/specfoundry/internal/watcher"
 )
 
 // `pilot github sync|drift|watch` and `pilot app-key|app-token` (reference: cmd_github and the
@@ -104,11 +108,10 @@ func runGithubDrift(cmd *cobra.Command) error {
 }
 
 func runGithubWatch(cmd *cobra.Command) error {
-	if d, _ := cmd.Flags().GetBool("detach"); d {
-		return notImplemented("github watch --detach")
-	}
-	if s, _ := cmd.Flags().GetBool("stop"); s {
-		return notImplemented("github watch --stop")
+	detach, _ := cmd.Flags().GetBool("detach")
+	stop, _ := cmd.Flags().GetBool("stop")
+	if detach || stop {
+		return watchControl(cmd, detach)
 	}
 	p, err := pipelineFor(cmd)
 	if err != nil {
@@ -144,4 +147,52 @@ func runAppToken(cmd *cobra.Command) error {
 		return err
 	}
 	return Code(a.Check(cmd.OutOrStdout(), "", canary))
+}
+
+// watchControl is `github watch --run <id> --detach | --stop` (contracts/watcher.md).
+func watchControl(cmd *cobra.Command, detach bool) error {
+	l, err := layout()
+	if err != nil {
+		return err
+	}
+	id, _ := cmd.Flags().GetString("run")
+	run, _ := evidence.LoadRun(l.EvidenceRoot(), id)
+	if run == nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "no run %s\n", id)
+		return Code(ExitError)
+	}
+	out := cmd.OutOrStdout()
+	logPath := watcher.LogFile(run.Dir)
+	if r, err := filepath.Rel(l.Root, logPath); err == nil {
+		logPath = r
+	}
+	if !detach {
+		pid, err := watcher.Stop(run.Dir, run.ID)
+		if errors.Is(err, watcher.ErrNotRunning) {
+			fmt.Fprintf(out, "no watcher running for run %s\n", run.ID)
+			return nil
+		}
+		if err != nil {
+			return Exit(ExitError, "could not stop the watcher (pid %d): %v", pid, err)
+		}
+		fmt.Fprintf(out, "watcher stopped (pid %d)\n", pid)
+		return nil
+	}
+	if _, err := pipelineFor(cmd); err != nil { // the watcher needs `pilot up` and a valid config
+		return err
+	}
+	if st, _ := run.State["state"].(string); !strings.HasPrefix(st, "paused") {
+		fmt.Fprintf(cmd.ErrOrStderr(), "run %s is %s; nothing to watch\n", run.ID, st)
+		return Code(ExitError)
+	}
+	pid, started, err := watcher.Ensure(l.Root, run.Dir, run.ID, nil)
+	if err != nil {
+		return Exit(ExitError, "could not start the watcher: %v", err)
+	}
+	if !started {
+		fmt.Fprintf(out, "watcher already running (pid %d). Log: %s\n", pid, logPath)
+		return nil
+	}
+	fmt.Fprintf(out, "watcher started (pid %d); you can close this terminal. Log: %s\n", pid, logPath)
+	return nil
 }

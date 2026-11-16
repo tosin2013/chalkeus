@@ -11,12 +11,6 @@ import (
 	"github.com/tosin2013/specfoundry/internal/verbose"
 )
 
-// notImplemented is returned by commands not yet ported; the reference pilot still serves them
-// through `PILOT_IMPL=python` (specs/016-go-pilot/research.md R14).
-func notImplemented(name string) error {
-	return Exit(ExitError, "%s: not implemented in the Go pilot yet (use PILOT_IMPL=python)", name)
-}
-
 // NewRoot builds the command tree with the reference pilot's commands, flags and arguments.
 func NewRoot(version string) *cobra.Command {
 	root := &cobra.Command{
