@@ -297,6 +297,8 @@ implementation, except history and evidence.
 - **SC-002**: A fixture run, from stand-up to teardown, with the new pilot ends with the audit at
   11/11, following the operator guide with 0 deviations from the documented commands, prompts
   and exit codes.
+  *Met by the two harness-approved runs recorded in `evidence/README.md`; the owner accepted
+  these in place of a terminal (`tty`) run (2026-11-16).*
 - **SC-003**: An agent-driven fixture run with harness approvals completes with the audit at
   11/11, with the `harness` channel recorded for every decision.
 - **SC-004**: In 004's validation on the new pilot:
