@@ -571,16 +571,31 @@ func (c *Client) CreateSecretFromFiles(ns, name string, files []string) error {
 	return c.createSecret(ns, name, data)
 }
 
+// quotaWait bounds how long a create waits for a namespace's ResourceQuota to be computed.
+var quotaWait, quotaPoll = 30 * time.Second, time.Second
+
+// quotaPending reports a create refused only because the namespace's quota usage is not yet
+// known or is still counting an object just deleted (admission returns Forbidden for both).
+func quotaPending(err error) bool {
+	return apierrors.IsForbidden(err) && strings.Contains(err.Error(), "quota")
+}
+
 func (c *Client) createSecret(ns, name string, data map[string][]byte) error {
-	ctx, cancel := ctxT(30 * time.Second)
-	defer cancel()
-	_, err := c.CS.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Type: corev1.SecretTypeOpaque, Data: data},
-		metav1.CreateOptions{FieldManager: FieldManager})
-	if err != nil {
-		return fmt.Errorf("create secret %s/%s: %s", ns, name, apiReason(err)) // never echo values
+	deadline := time.Now().Add(quotaWait)
+	for {
+		ctx, cancel := ctxT(30 * time.Second)
+		_, err := c.CS.CoreV1().Secrets(ns).Create(ctx, &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns}, Type: corev1.SecretTypeOpaque, Data: data},
+			metav1.CreateOptions{FieldManager: FieldManager})
+		cancel()
+		if err == nil {
+			return nil
+		}
+		if !quotaPending(err) || time.Now().After(deadline) {
+			return fmt.Errorf("create secret %s/%s: %s", ns, name, apiReason(err)) // never echo values
+		}
+		time.Sleep(quotaPoll)
 	}
-	return nil
 }
 
 // CreateConfigMap creates a configmap from files (key → path); non-UTF-8 content goes to

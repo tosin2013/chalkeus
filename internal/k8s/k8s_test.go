@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,8 +12,10 @@ import (
 	authv1 "k8s.io/api/authorization/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 )
@@ -170,5 +173,34 @@ func TestReplaceSecretFromEnvFileUpdatesInPlace(t *testing.T) {
 	s, _ := cs.CoreV1().Secrets("pilot-publish").Get(context.Background(), "scm-token", metav1.GetOptions{})
 	if string(s.Data["PILOT_SCM_TOKEN"]) != "two" {
 		t.Fatal(string(s.Data["PILOT_SCM_TOKEN"]))
+	}
+}
+
+func TestCreateSecretWaitsForQuota(t *testing.T) {
+	cs := fake.NewSimpleClientset()
+	refusals := 2
+	cs.PrependReactor("create", "secrets", func(k8stesting.Action) (bool, runtime.Object, error) {
+		if refusals > 0 {
+			refusals--
+			return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "secrets"}, "scm-token",
+				errors.New("status unknown for quota: publisher-quota, resources: count/secrets"))
+		}
+		return false, nil, nil
+	})
+	defer func(w, p time.Duration) { quotaWait, quotaPoll = w, p }(quotaWait, quotaPoll)
+	quotaWait, quotaPoll = time.Second, time.Millisecond
+	c := &Client{CS: cs}
+	if err := c.createSecret("pilot-publish", "scm-token", map[string][]byte{"K": []byte("v")}); err != nil {
+		t.Fatal(err)
+	}
+	if refusals != 0 {
+		t.Fatal("did not retry")
+	}
+	// Other Forbidden errors fail at once.
+	cs.PrependReactor("create", "secrets", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "secrets"}, "x", errors.New("RBAC: denied"))
+	})
+	if err := c.createSecret("pilot-publish", "x", nil); err == nil || !strings.Contains(err.Error(), "Forbidden") {
+		t.Fatal(err)
 	}
 }

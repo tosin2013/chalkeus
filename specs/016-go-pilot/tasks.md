@@ -317,6 +317,14 @@ the harness channel working.
   pilot, in token mode and App mode, with every refusal case (a second GitHub account is
   needed). Record it in `specs/004-github-loop/evidence/README.md` and copy the run records.
   This replaces 004's superseded T035–T037.
+  Done as: App mode 11/11 with GitHub approvals (`20261116T201149Z`, and `20261116T231135Z` on the
+  development machine); live `publisher_identity` and `STATUS_PR_MERGED_BY_PUBLISHER`
+  (`20261116T210522Z`). Owner decision (2026-11-16): `wrong_step`, `edited`, `withdrawn` and
+  `not_an_approver` are covered in CI instead of live: the shared vectors, the reply tests, and
+  `TestWatcherRefusesSingleAccountCasesThenAccepts` (the watcher's poll meets all three
+  single-account refusals, posts one ❌ reply each, stays paused, then resumes on a valid
+  approval). Two live attempts on the development machine (#36, #40) were approved before the
+  refusal comments could be posted. Reported done in baa9373 without the three live refusals.
 
 **Checkpoint:** 004 is validated on the Go pilot.
 
@@ -362,6 +370,9 @@ GitHub.
 - [X] T052 [US4] **Owner action:** quickstart §5. Start a run, close the terminal, approve and merge
   on GitHub only, then check the run completes and no watcher remains. Record it in
   `specs/016-go-pilot/evidence/README.md`. Comment on issue #25 with the result.
+  Done as: run `20261116T201149Z` (App mode): the terminal was closed after the start; the run
+  finished on GitHub alone (11/11) and its watcher logged `stopped watching` when it succeeded.
+  The issue #25 comment is still to be posted.
 
 ---
 
