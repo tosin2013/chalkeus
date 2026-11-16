@@ -170,3 +170,19 @@ func TestResumeRefusesWhileAnotherWatcherRuns(t *testing.T) {
 		t.Fatalf("%d %q", code, out.String())
 	}
 }
+
+func TestWatcherHandsBackAPublishFailure(t *testing.T) {
+	p, r, out := newP(t)
+	p.L = paths.At(t.TempDir())
+	runDir := filepath.Join(p.L.EvidenceRoot(), r.ID)
+	_ = os.MkdirAll(filepath.Join(runDir, "github"), 0o755)
+	raw, _ := json.Marshal(map[string]any{"run_id": r.ID, "state": "paused(awaiting-publish)", "pending": map[string]any{"task": "A", "n": 2}})
+	_ = os.WriteFile(filepath.Join(runDir, "run.json"), raw, 0o644)
+	_ = os.WriteFile(watcher.PidFile(runDir), []byte(strconv.Itoa(os.Getpid())), 0o644)
+	if code := p.Watch(r.ID, time.Millisecond, func(time.Duration) { t.Fatal("kept waiting") }); code != ExitError {
+		t.Fatal(code)
+	}
+	if _, err := os.Stat(watcher.PidFile(runDir)); err == nil || !strings.Contains(out.String(), "only `pilot/pilot resume --run "+r.ID+"` retries") {
+		t.Fatalf("%v %q", err, out.String())
+	}
+}

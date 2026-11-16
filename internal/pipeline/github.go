@@ -191,10 +191,7 @@ func (p *P) refreshSecret() error {
 	if err != nil {
 		return err
 	}
-	if err := p.C.DeleteSecret("pilot-publish", "scm-token"); err != nil {
-		return err
-	}
-	return p.C.CreateSecretFromEnvFile("pilot-publish", "scm-token", env)
+	return p.C.ReplaceSecretFromEnvFile("pilot-publish", "scm-token", env)
 }
 
 // statusPending is the awaiting-merge pending record while a status-change PR is open.
@@ -426,6 +423,11 @@ func (p *P) Watch(runID string, interval time.Duration, sleep func(time.Duration
 			return ExitError
 		}
 		st := fmt.Sprint(run.State["state"])
+		if st == "paused(awaiting-publish)" { // nothing on GitHub resumes this: hand it back
+			watcher.Release(run.Dir, os.Getpid())
+			p.say("run %s is paused at the publish step, which only `pilot/pilot resume --run %s` retries; stopped watching", runID, runID)
+			return ExitError
+		}
 		if !strings.HasPrefix(st, "paused") {
 			watcher.Release(run.Dir, os.Getpid()) // a detached watcher removes its own pidfile
 			p.say("run %s is %s; stopped watching", runID, st)

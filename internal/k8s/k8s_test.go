@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -145,5 +146,29 @@ func TestPullErrorsAndJobs(t *testing.T) {
 	}
 	if err := c.DeleteJob("ns", "absent", true); err != nil {
 		t.Error("deleting a missing job is not an error")
+	}
+}
+
+func TestReplaceSecretFromEnvFileUpdatesInPlace(t *testing.T) {
+	cs := fake.NewSimpleClientset()
+	c := &Client{CS: cs}
+	env := filepath.Join(t.TempDir(), "a.env")
+	_ = os.WriteFile(env, []byte("PILOT_SCM_TOKEN=one\n"), 0o600)
+	if err := c.ReplaceSecretFromEnvFile("pilot-publish", "scm-token", env); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(env, []byte("PILOT_SCM_TOKEN=two\n"), 0o600)
+	cs.ClearActions()
+	if err := c.ReplaceSecretFromEnvFile("pilot-publish", "scm-token", env); err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range cs.Actions() {
+		if a.GetVerb() == "delete" || a.GetVerb() == "create" {
+			t.Fatalf("unexpected %s: replace must update in place", a.GetVerb())
+		}
+	}
+	s, _ := cs.CoreV1().Secrets("pilot-publish").Get(context.Background(), "scm-token", metav1.GetOptions{})
+	if string(s.Data["PILOT_SCM_TOKEN"]) != "two" {
+		t.Fatal(string(s.Data["PILOT_SCM_TOKEN"]))
 	}
 }

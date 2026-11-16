@@ -23,9 +23,9 @@ def redaction_scan(root: Path, key_files: list[Path], env_files: list[Path]) -> 
         if kf.exists() and kf.stat().st_size > 0:
             r = subprocess.run(["grep", "-rlF", "-f", str(kf), str(root)], capture_output=True, text=True)
             hits.update(l for l in r.stdout.splitlines() if l)
-    for ef in env_files:
+    for ef in env_files:  # every value is a secret, except the App token file's kind and bot login
         if ef.exists():
-            r = subprocess.run(["bash", "-c", 'grep -rlF -f <(grep -v "^[[:space:]]*#" "$1" | grep "=" | cut -d= -f2- | grep -v "^$") "$2"',
+            r = subprocess.run(["bash", "-c", 'grep -rlF -f <(grep -v "^[[:space:]]*#" "$1" | grep "=" | grep -Ev "^[[:space:]]*PILOT_SCM_(KIND|LOGIN)=" | cut -d= -f2- | grep -v "^$") "$2"',
                                 "_", str(ef), str(root)], capture_output=True, text=True)
             hits.update(l for l in r.stdout.splitlines() if l)
     return sorted(str(Path(h).relative_to(root)) for h in hits)

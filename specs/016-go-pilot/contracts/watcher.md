@@ -20,6 +20,9 @@
   - then resume.
 - When the run is no longer paused (succeeded, failed or torn down), it removes the pidfile and
   exits 0.
+- When the run is paused at the publish step (`awaiting-publish`, after a publisher failure),
+  nothing on GitHub can resume it: the watcher says so, removes the pidfile and exits, so the
+  operator's `pilot resume` is not refused.
 - **On a GitHub error:** it logs the error and keeps waiting. It never treats an error as an
   approval.
 

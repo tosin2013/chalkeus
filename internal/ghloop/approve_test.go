@@ -240,3 +240,69 @@ func TestMarkAnswered(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+// FR-019: the bot answers each /approve once: accepted, or refused with the reason.
+func TestRepliesToApprovals(t *testing.T) {
+	a := setupApprove(t)
+	a.say("/approve mode", "alice")
+	a.say("/approve retry", "bob")
+	a.find(t)
+	a.find(t) // a second poll must not reply again
+	bodies := func() []string {
+		var out []string
+		for _, c := range a.f.comments[a.issue][1:] {
+			if c.Author == "pub-bot" {
+				out = append(out, c.Body)
+			}
+		}
+		return out
+	}
+	want := []string{
+		"❌ `/approve mode` from @alice not accepted (`wrong_step`): the pending step is `retry`; reply exactly `/approve retry`. The run stays paused.",
+		"❌ `/approve retry` from @bob not accepted (`not_an_approver`): @bob is not in PILOT_APPROVERS. The run stays paused.",
+	}
+	if got := bodies(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("replies\n%q", got)
+	}
+	cid := a.say("/approve retry", "alice")
+	if msg := a.l.Collect(a.run); msg == "" {
+		t.Fatal("not collected")
+	}
+	got := bodies()
+	if last := got[len(got)-1]; last != fmt.Sprintf("✅ `/approve retry` from @alice accepted (comment %d); the run is resuming.", cid) {
+		t.Fatal(last)
+	}
+}
+
+// The watcher collects an approval, then resume collects again: recorded once, one reply.
+func TestCollectTwiceRecordsOnce(t *testing.T) {
+	a := setupApprove(t)
+	a.say("/approve retry", "alice")
+	if a.l.Collect(a.run) == "" {
+		t.Fatal("not collected")
+	}
+	n := len(a.f.comments[a.issue])
+	if msg := a.l.Collect(a.run); msg != "" {
+		t.Fatalf("second collect: %q", msg)
+	}
+	ev, _ := a.run.Events()
+	rec := 0
+	for _, e := range ev {
+		if e["event"] == "approval_recorded" {
+			rec++
+		}
+	}
+	if rec != 1 || len(a.f.comments[a.issue]) != n {
+		t.Fatalf("recorded %d times, comments %d -> %d", rec, n, len(a.f.comments[a.issue]))
+	}
+}
+
+func TestEveryRefusalReasonHasAnExplanation(t *testing.T) {
+	for _, r := range []string{"before_decision", "wrong_step", "app_authored", "publisher_identity", "edited",
+		"not_an_approver", "withdrawn", "no_write_access", "duplicate"} {
+		got := RefusalReply(LogEntry{Author: "x", Reason: r}, "/approve retry", "retry")
+		if strings.Contains(got, "%!") || strings.Contains(got, "{") || !strings.Contains(got, "(`"+r+"`)") {
+			t.Errorf("%s: %q", r, got)
+		}
+	}
+}

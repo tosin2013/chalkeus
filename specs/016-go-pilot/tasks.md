@@ -398,6 +398,10 @@ GitHub.
   (`internal/runner/watch.go`: pod phases, events, model-proxy refusals at `-vv`; `tail -F
   /tmp/harness.jsonl` by exec in worker pods at `-vvv`); step and grade timings in the
   pipeline; host commands at `-v`. Docs: operator guide §12, troubleshooting, pilot skill.
+- [X] T061 [US3] Approval replies (FR-019, owner request 2026-11-16): `ghloop.AcceptReply` after
+  `decisions.Record`, `ghloop.RefusalReply` for each newly logged refusal (one per comment), and
+  `decisions.Recorded` so a second collect neither records nor replies again. Tests in
+  `internal/ghloop/approve_test.go`. Docs: `docs/github-loop.md` §3.
 
 ---
 
