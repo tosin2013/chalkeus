@@ -23,6 +23,11 @@
 - **On a GitHub error:** it logs the error and keeps waiting. It never treats an error as an
   approval.
 
+## One resumer
+
+While a live watcher runs for a run, `pilot resume` in any other process refuses (exit 2) and
+says to stop the watcher first (`--stop`), so two resumes never race.
+
 ## Stop and status
 
 - `pilot github watch --run <id> --stop` sends SIGTERM and removes the pidfile.

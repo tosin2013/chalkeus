@@ -42,12 +42,27 @@ whenever it drifts.
 
 ## 3. Approve on GitHub
 
-Start the run from any shell. Then let `github watch` resume it whenever you approve:
+Start the run from any shell:
 
 ```sh
 pilot/pilot run
-pilot/pilot github watch --run <run-id>     # Ctrl-C stops watching; the run stays paused
 ```
+
+At its first pause, the run starts a **watcher** in the background and prints
+`watcher started (pid N); you can close this terminal. Log: <path>`. The watcher checks GitHub
+every 15 seconds and resumes the run when your approval or the merge appears, under exactly the
+same rules as `pilot/pilot resume`. You can close the terminal. There is one watcher per run,
+and it exits when the run ends; `pilot/pilot status` shows it while it runs. While it runs,
+`pilot/pilot resume` refuses; stop the watcher first to resume by hand.
+
+```sh
+pilot/pilot github watch --run <run-id> --stop     # stop the watcher; the run stays paused
+pilot/pilot github watch --run <run-id> --detach   # start it again
+pilot/pilot github watch --run <run-id>            # or watch in the foreground (Ctrl-C stops)
+```
+
+The watcher doesn't survive a reboot. The run stays paused; `pilot/pilot resume` or a new
+`github watch` picks it up.
 
 At each decision, the run prints a link to its tracking issue. The decision post there says
 what is being decided, and gives the exact reply:

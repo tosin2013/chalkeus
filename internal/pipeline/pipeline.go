@@ -36,6 +36,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/reconcile"
 	"github.com/tosin2013/specfoundry/internal/runner"
 	"github.com/tosin2013/specfoundry/internal/verbose"
+	"github.com/tosin2013/specfoundry/internal/watcher"
 	"github.com/tosin2013/specfoundry/internal/worker"
 )
 
@@ -57,6 +58,8 @@ type P struct {
 	Creds Creds
 	// GH is the 004 GitHub loop (built on first use).
 	GH *ghloop.Loop
+	// EnsureWatcher starts the run's detached watcher (nil: watcher.Ensure; replaced in tests).
+	EnsureWatcher func(run *evidence.Run) (pid int, started bool, err error)
 }
 
 func (p *P) say(format string, a ...any) { fmt.Fprintf(p.Out, format+"\n", a...) }
@@ -321,6 +324,7 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 		t["state"] = "awaiting-merge"
 		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
 		p.say("\nTask A draft PR: %v\nReview and merge it on GitHub yourself, then run: pilot/pilot resume", pr["url"])
+		p.ensureWatcher(run)
 		return ExitOK
 	}
 	return p.finish(run)
@@ -436,6 +440,13 @@ func (p *P) Resume(runID string) int {
 		}
 		p.say("no paused run%s (state=%s)", suffix, state)
 		return ExitError
+	}
+	if p.approvalsOn() { // one resumer at a time: the run's watcher, or the operator after --stop
+		if w := watcher.Status(run.Dir, run.ID); w.Running && w.Pid != os.Getpid() {
+			p.say("a watcher is resuming run %s on its own (pid %d). To resume it yourself, first run: pilot/pilot github watch --run %s --stop",
+				run.ID, w.Pid, run.ID)
+			return ExitError
+		}
 	}
 	if run.State["impl"] != "go" {
 		p.say("this run was started by the Python pilot; resume it with PILOT_IMPL=python, or reset the fixture and start a new run")

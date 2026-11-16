@@ -3,7 +3,6 @@ package cli
 import "github.com/spf13/cobra"
 
 // Command definitions mirror the reference pilot's argparse tree (pilot/specfoundry_pilot/cli.py).
-// Bodies are filled in as each part is ported; until then they return notImplemented.
 
 func upCmd() *cobra.Command {
 	c := &cobra.Command{Use: "up", Short: "stand up kind + Calico, registry, images, proxies, publisher", Args: cobra.NoArgs,

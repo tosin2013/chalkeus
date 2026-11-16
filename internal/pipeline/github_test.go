@@ -2,12 +2,20 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/tosin2013/specfoundry/internal/config"
+	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/specfoundry/internal/watcher"
 )
 
 // A minimal in-memory GitHub for the pipeline's 004 hooks.
@@ -58,7 +66,7 @@ func withGitHub(t *testing.T, p *P) *miniGH {
 	p.Cfg = &config.Config{Values: v}
 	m := &miniGH{comments: map[int][]ghloop.Comment{}}
 	p.GH = &ghloop.Loop{Repo: "o/x-pilot-fixture", Approvers: []string{"alice"}, R: m,
-		W: func() (ghloop.Writer, error) { return m, nil },
+		W:        func() (ghloop.Writer, error) { return m, nil },
 		Snapshot: func() (map[string]any, map[string]*string, error) { return map[string]any{}, nil, m.err() }}
 	return m
 }
@@ -105,5 +113,60 @@ func TestGitHubRefreshFailureIsRecorded(t *testing.T) {
 	ev, _ := r.Events()
 	if ev[len(ev)-1]["event"] != "github_sync_failed" {
 		t.Fatal(ev)
+	}
+}
+
+func TestWatcherStartsOnlyWithGitHubApprovals(t *testing.T) {
+	p, r, out := newP(t)
+	calls := 0
+	p.EnsureWatcher = func(*evidence.Run) (int, bool, error) { calls++; return 4242, true, nil }
+	p.ensureWatcher(r) // approvals off
+	if calls != 0 {
+		t.Fatal("watcher started with GitHub approvals off")
+	}
+	withGitHub(t, p)
+	p.modeNotConfirmed(r, "none")
+	if calls != 1 || !strings.Contains(out.String(), "watcher started (pid 4242); you can close this terminal. Log: ") {
+		t.Fatalf("%d %q", calls, out.String())
+	}
+	out.Reset()
+	p.EnsureWatcher = func(*evidence.Run) (int, bool, error) { return 4242, false, nil }
+	p.ensureWatcher(r)
+	if out.Len() != 0 {
+		t.Fatalf("message for an already-running watcher: %q", out.String())
+	}
+}
+
+func TestWatchLoopRemovesItsOwnPidfile(t *testing.T) {
+	p, r, _ := newP(t)
+	p.L = paths.At(t.TempDir())
+	runDir := filepath.Join(p.L.EvidenceRoot(), r.ID)
+	_ = os.MkdirAll(filepath.Join(runDir, "github"), 0o755)
+	raw, _ := json.Marshal(map[string]any{"run_id": r.ID, "state": "failed"})
+	_ = os.WriteFile(filepath.Join(runDir, "run.json"), raw, 0o644)
+	pidfile := watcher.PidFile(runDir)
+	_ = os.WriteFile(pidfile, []byte(strconv.Itoa(os.Getpid())), 0o644)
+	if code := p.Watch(r.ID, time.Millisecond, func(time.Duration) {}); code != ExitError {
+		t.Fatal(code)
+	}
+	if _, err := os.Stat(pidfile); err == nil {
+		t.Fatal("pidfile kept after the run ended")
+	}
+}
+
+func TestResumeRefusesWhileAnotherWatcherRuns(t *testing.T) {
+	p, r, out := newP(t)
+	withGitHub(t, p)
+	p.L = paths.At(t.TempDir())
+	runDir := filepath.Join(p.L.EvidenceRoot(), r.ID)
+	_ = os.MkdirAll(filepath.Join(runDir, "github"), 0o755)
+	raw, _ := json.Marshal(map[string]any{"run_id": r.ID, "state": "paused(awaiting-mode)", "impl": "go"})
+	_ = os.WriteFile(filepath.Join(runDir, "run.json"), raw, 0o644)
+	_ = os.WriteFile(watcher.PidFile(runDir), []byte("4242"), 0o644)
+	old := watcher.Alive
+	watcher.Alive = func(pid int, _ string) bool { return pid == 4242 }
+	defer func() { watcher.Alive = old }()
+	if code := p.Resume(r.ID); code != ExitError || !strings.Contains(out.String(), "a watcher is resuming run "+r.ID+" on its own (pid 4242)") {
+		t.Fatalf("%d %q", code, out.String())
 	}
 }
