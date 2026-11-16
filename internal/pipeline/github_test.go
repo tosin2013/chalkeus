@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -184,5 +185,64 @@ func TestWatcherHandsBackAPublishFailure(t *testing.T) {
 	}
 	if _, err := os.Stat(watcher.PidFile(runDir)); err == nil || !strings.Contains(out.String(), "only `pilot/pilot resume --run "+r.ID+"` retries") {
 		t.Fatalf("%v %q", err, out.String())
+	}
+}
+
+// T047 in CI: the three single-account refusals the watcher meets on a tracking issue
+// (wrong step, an edited comment, a withdrawn approval) each get one ❌ reply, leave the run
+// paused, and are not replied to twice; a valid approval then resumes it with one ✅ reply.
+func TestWatcherRefusesSingleAccountCasesThenAccepts(t *testing.T) {
+	p, r, _ := newP(t)
+	m := withGitHub(t, p)
+	p.modeNotConfirmed(r, "none") // posts the decision (comment 1) on tracking issue 1
+	m.cid = 1000
+	say := func(id int64, body, created, updated string) {
+		m.comments[1] = append(m.comments[1], ghloop.Comment{ID: id, Body: body, Author: "alice", CreatedAt: created, UpdatedAt: updated})
+	}
+	say(100, "/approve retry", "t1", "t1") // wrong_step
+	say(101, "/approve mode", "t2", "t3")  // edited after posting
+	say(102, "/approve mode", "t4", "t4")  // withdrawn by the next comment
+	say(103, "/withdraw mode", "t5", "t5")
+	replies := func() []string {
+		var out []string
+		for _, c := range m.comments[1] {
+			if c.Author == "pub-bot" && c.ID > 1000 {
+				out = append(out, c.Body)
+			}
+		}
+		return out
+	}
+	for tick := 0; tick < 2; tick++ { // the watcher polls repeatedly; each refusal is answered once
+		if p.ReadyToResume(r) {
+			t.Fatalf("tick %d: refused approvals resumed the run", tick)
+		}
+	}
+	got := replies()
+	want := []string{"`wrong_step`", "`edited`", "`withdrawn`"}
+	if len(got) != len(want) {
+		t.Fatalf("replies %q", got)
+	}
+	for i, w := range want {
+		if !strings.HasPrefix(got[i], "❌ ") || !strings.Contains(got[i], w) || !strings.Contains(got[i], "The run stays paused.") {
+			t.Fatalf("reply %d = %q, want %s", i, got[i], w)
+		}
+	}
+	say(104, "/approve mode", "t6", "t6")
+	if !p.ReadyToResume(r) {
+		t.Fatal("a valid approval did not make the run ready to resume")
+	}
+	got = replies()
+	if len(got) != 4 || !strings.HasPrefix(got[3], "✅ `/approve mode` from @alice accepted (comment 104)") {
+		t.Fatalf("replies %q", got)
+	}
+	var reasons []string
+	raw, _ := os.ReadFile(filepath.Join(r.Dir, "github", "approvals.jsonl"))
+	for _, l := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
+		var e map[string]any
+		_ = json.Unmarshal([]byte(l), &e)
+		reasons = append(reasons, fmt.Sprint(e["reason"]))
+	}
+	if strings.Join(reasons, ",") != "wrong_step,edited,withdrawn,<nil>" {
+		t.Fatalf("approvals.jsonl reasons %v", reasons)
 	}
 }

@@ -313,14 +313,18 @@ the harness channel working.
   go-github merge or review-approve method (R6).
   Done as: an AST scan of every non-test Go file for merge and review-approve calls and
   hand-built merge or review URLs (mutation-checked).
-- [ ] T047 [US3] **Owner action:** run `specs/004-github-loop/quickstart.md` §2–§5 on the Go
+- [X] T047 [US3] **Owner action:** run `specs/004-github-loop/quickstart.md` §2–§5 on the Go
   pilot, in token mode and App mode, with every refusal case (a second GitHub account is
   needed). Record it in `specs/004-github-loop/evidence/README.md` and copy the run records.
   This replaces 004's superseded T035–T037.
-  Done so far: App mode 11/11 (`20261116T201149Z`); live `publisher_identity` and
-  `STATUS_PR_MERGED_BY_PUBLISHER` (`20261116T210522Z`). Pending (owner decision 2026-11-16): live
-  `wrong_step`, `edited` and `withdrawn` on the development machine; they were reported done in
-  baa9373 but were never attempted on #29.
+  Done as: App mode 11/11 with GitHub approvals (`20261116T201149Z`, and `20261116T231135Z` on the
+  development machine); live `publisher_identity` and `STATUS_PR_MERGED_BY_PUBLISHER`
+  (`20261116T210522Z`). Owner decision (2026-11-16): `wrong_step`, `edited`, `withdrawn` and
+  `not_an_approver` are covered in CI instead of live: the shared vectors, the reply tests, and
+  `TestWatcherRefusesSingleAccountCasesThenAccepts` (the watcher's poll meets all three
+  single-account refusals, posts one ❌ reply each, stays paused, then resumes on a valid
+  approval). Two live attempts on the development machine (#36, #40) were approved before the
+  refusal comments could be posted. Reported done in baa9373 without the three live refusals.
 
 **Checkpoint:** 004 is validated on the Go pilot.
 
