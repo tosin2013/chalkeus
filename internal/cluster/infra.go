@@ -105,10 +105,9 @@ func ApplyAll(e Env, c *k8s.Client, modelHosts []string, imgs map[string]string,
 	if err := c.Apply(string(nsYAML)); err != nil {
 		return err
 	}
-	if err := c.DeleteSecret("pilot-publish", "scm-token"); err != nil {
-		return err
-	}
-	if err := c.CreateSecretFromEnvFile("pilot-publish", "scm-token", credentialEnv); err != nil {
+	// Replace, not delete+create: the namespace's quota allows one Secret, and a fresh
+	// namespace's quota may not be computed yet (the create waits for it).
+	if err := c.ReplaceSecretFromEnvFile("pilot-publish", "scm-token", credentialEnv); err != nil {
 		return err
 	}
 	e.say("check helpers")

@@ -43,8 +43,23 @@ jobs:
           version: v2.15.0
       - name: Vulnerability check
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
-      - name: Test
-        run: go test ./...
+      - name: Test (with coverage)
+        run: |
+          set -o pipefail
+          go test -coverprofile=coverage.out ./... | tee test.out
+      - name: Coverage summary
+        if: always()
+        run: |
+          [ -f coverage.out ] && [ -f test.out ] || exit 0
+          {
+            echo "### Go test coverage"
+            echo
+            echo "Total: $(go tool cover -func=coverage.out | awk '/^total:/ {print $NF}') of statements"
+            echo
+            echo '| Package | Coverage |'
+            echo '|---|---|'
+            awk '/coverage: [0-9.]+% of statements/ {for (i = 1; i <= NF; i++) { if ($i ~ /^github.com\//) p = $i; if ($i == "coverage:") c = $(i + 1) }; sub(/^github.com\/tosin2013\/specfoundry\//, "", p); print "| " p " | " c " |"}' test.out | sort
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Build the pilot binary (the shim's default since T038; docs_check runs its --help)
         run: pilot/pilot version
       - name: Python reference suite (until 016 US5)

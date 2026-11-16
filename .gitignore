@@ -22,3 +22,5 @@ pilot/runs/
 *.test
 *.out
 /vendor/
+coverage.out
+test.out
