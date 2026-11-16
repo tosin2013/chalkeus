@@ -313,10 +313,14 @@ the harness channel working.
   go-github merge or review-approve method (R6).
   Done as: an AST scan of every non-test Go file for merge and review-approve calls and
   hand-built merge or review URLs (mutation-checked).
-- [X] T047 [US3] **Owner action:** run `specs/004-github-loop/quickstart.md` §2–§5 on the Go
+- [ ] T047 [US3] **Owner action:** run `specs/004-github-loop/quickstart.md` §2–§5 on the Go
   pilot, in token mode and App mode, with every refusal case (a second GitHub account is
   needed). Record it in `specs/004-github-loop/evidence/README.md` and copy the run records.
   This replaces 004's superseded T035–T037.
+  Done so far: App mode 11/11 (`20261116T201149Z`); live `publisher_identity` and
+  `STATUS_PR_MERGED_BY_PUBLISHER` (`20261116T210522Z`). Pending (owner decision 2026-11-16): live
+  `wrong_step`, `edited` and `withdrawn` on the development machine; they were reported done in
+  baa9373 but were never attempted on #29.
 
 **Checkpoint:** 004 is validated on the Go pilot.
 
@@ -362,6 +366,9 @@ GitHub.
 - [X] T052 [US4] **Owner action:** quickstart §5. Start a run, close the terminal, approve and merge
   on GitHub only, then check the run completes and no watcher remains. Record it in
   `specs/016-go-pilot/evidence/README.md`. Comment on issue #25 with the result.
+  Done as: run `20261116T201149Z` (App mode): the terminal was closed after the start; the run
+  finished on GitHub alone (11/11) and its watcher logged `stopped watching` when it succeeded.
+  The issue #25 comment is still to be posted.
 
 ---
 

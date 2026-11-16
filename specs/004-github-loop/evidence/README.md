@@ -9,9 +9,10 @@ every run.
 | Check (quickstart) | Result |
 |---|---|
 | §2 sync: 2 issues, one `status:planned` label each, task checklists; second sync 0/0; hand-edited label restored | covered by unit tests (`test_ghsync.py`, `vectors_test.go`); not run as a live step (single-maintainer) |
-| §3 token mode: `/approve mode` and `/approve retry` resume the run | ✅ run `20261116T210522Z` — harness approvals (GitHub approvals rejected as `publisher_identity` in token mode, which is correct) |
-| §3 refusals: `wrong_step` · `edited` · `withdrawn` | ✅ run `20261116T201149Z` (App mode, issue #29) |
-| §3 refusals: `not_an_approver` · `publisher_identity` (approval) | unit-tested only (`approvals.json` vectors, `vectors_test.go`); single-maintainer, no second account |
+| §3 token mode: `/approve mode` and `/approve retry` resume the run | not shown: in run `20261116T210522Z` the owner's `/approve mode` on #33 was refused as `publisher_identity` (correct: the token is the owner's), and the run was resumed with harness approvals. A GitHub approval in token mode needs a second account's publisher token. |
+| §3 refusals: `wrong_step` · `edited` · `withdrawn` | pending: not attempted in run `20261116T201149Z` (issue #29 has only the two accepted approvals; `github/approvals.jsonl` has no refusal rows). To be run live on the development machine. |
+| §3 refusals: `publisher_identity` (approval) | ✅ run `20261116T210522Z` — two `/approve mode` comments on #33 refused, each with a ❌ reply |
+| §3 refusals: `not_an_approver` | unit-tested only (`approvals.json` vectors, `vectors_test.go`); single-maintainer, no second account |
 | §3 status PR: `STATUS_PR_MERGED_BY_PUBLISHER` refused | ✅ run `20261116T210522Z` — publisher (`tosin2013`) merged status PR #35; run failed with `STATUS_PR_MERGED_BY_PUBLISHER` |
 | §3 status PR: unedited merge accepted | ✅ run `20261116T201149Z` — status PR #31 merged unedited by owner; B proceeded, 11/11 |
 | §3 audit: 11/11, AU09/AU10 `channels=['github']` with login; `github drift` empty | ✅ run `20261116T201149Z` — 11/11, all approvals `channel=github approver=tosin2013` |
@@ -23,14 +24,14 @@ every run.
 
 | Run | Mode | Publisher | Outcome | Notes |
 |---|---|---|---|---|
-| `20261116T201149Z` | App | `tosins-specfoundry-pilot[bot]` | ✅ 11/11 | T047 App mode + T052 walk-away. GitHub approvals: `wrong_step`, `edited`, `withdrawn` tested live. Status PR #31 merged unedited. Watcher ran detached. |
+| `20261116T201149Z` | App | `tosins-specfoundry-pilot[bot]` | ✅ 11/11 | T047 App mode + T052 walk-away. GitHub approvals `mode` and `retry` accepted on #29; no refusal cases attempted. Status PR #31 merged unedited. Watcher ran detached. |
 | `20261116T210522Z` | Token | `tosin2013` | ❌ failed (expected) | T047 token mode refusal cases. GitHub `/approve` rejected as `publisher_identity`. Status PR #35 merged by publisher → `STATUS_PR_MERGED_BY_PUBLISHER`. Run intentionally failed; AU08 passes. |
 
 ## Note for contributors
 
-Two refusal cases require a second GitHub account and were not tested live:
+Two cases require a second GitHub account and were not tested live:
 - **`not_an_approver`**: an account not in `PILOT_APPROVERS` replies `/approve`.
-- **`publisher_identity`** (approval path): the publisher account replies `/approve` when it differs from the operator (App mode separates these).
+- **A GitHub approval in token mode**: the publisher token must belong to an account other than the approver's.
 
 Both are covered by shared vectors in `specs/004-github-loop/contracts/vectors/approvals.json`
 and exercised on every CI run by `internal/ghloop/vectors_test.go` and `pilot/tests/test_vectors.py`.
