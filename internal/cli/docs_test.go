@@ -165,7 +165,7 @@ func (d *docsChecker) checkFile(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	rel := path
 	if r, err := filepath.Rel(d.root, path); err == nil && !strings.HasPrefix(r, "..") {
 		rel = r
