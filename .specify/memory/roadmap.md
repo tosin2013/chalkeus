@@ -16,7 +16,10 @@ Changes this revision (owner direction 2026-11-16, proposed):
   - New Q12: parallel tasks inside an item
   - New Q13: how planning scales
   - Delivery order (owner direction 2026-11-16): laptop first, end to end (016, 014 on kind,
-    017, 013 release), then OpenShift (005, then 014's EAP validation); see Cross-Cutting Notes
+    017, 009, 015, then the 013 release), then OpenShift (005, then 014's EAP validation); see
+    Cross-Cutting Notes
+  - 015 note: scaling is in the first release, with a small default concurrency limit on
+    laptops (for example 2)
   - 014 note: kind and plain-Kubernetes users can ask for a new language toolchain image by
     opening a GitHub issue
 
@@ -812,6 +815,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   on kind, OpenShift and plain Kubernetes. Only capacity differs: the concurrency limit is set
   per cluster, and the guarantees, evidence and audit are the same everywhere (C-11).
 
+  **In the first release (owner direction 2026-11-16):** scaling ships in the first release
+  (013), even if a laptop runs only a few items at once. The default concurrency limit on a
+  laptop is small (for example 2), and the value is set when 015 is specified.
+
   **Parallel tasks inside an item (owner direction 2026-11-16, proposed):** blockers still block,
   and that is fine. Where tasks have no blockers between them (Spec Kit's `[P]` marker in
   tasks.md, checked against spec-status), they may run at the same time, each in its own
@@ -960,10 +967,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   1. 016 Go pilot at parity (its T047 owner run also closes 004's superseded validation).
   2. 014 Any project, on kind with the fixture and a real repository; the EAP validation waits.
   3. 017 Greenfield bootstrap, end to end on a laptop (kind or minikube).
-  4. 013 Installable pilot release, if needed at that point.
-  5. 005 OpenShift target (laptop mode).
-  6. 014's EAP validation on OpenShift with an in-cluster model.
-  7. 009 and 015 (released waves), then 007, 008, 010 and 011.
+  4. 009 Period spend budget (015 depends on it).
+  5. 015 Released waves, with a small laptop concurrency limit (for example 2).
+  6. 013 Installable pilot release: the first release includes scaling.
+  7. 005 OpenShift target (laptop mode).
+  8. 014's EAP validation on OpenShift with an in-cluster model.
+  9. Then 007, 008, 010 and 011.
 - spec-status asks drafted in PRD §8 (report-only skills, per-item readiness exit
   code, CLI container image) gate 002 and 003 in practice; track them as upstream
   issues. **002 workarounds in place:** the gate runs on the host (no CLI image); the
