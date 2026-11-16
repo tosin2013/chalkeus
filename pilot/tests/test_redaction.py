@@ -50,3 +50,18 @@ class TestRedaction(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAppTokenFile(unittest.TestCase):
+    """004 App mode: app-token.env's kind and bot login are public; only the token is secret."""
+    def test_kind_and_login_are_not_secrets(self):
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            ev = root / "ev"
+            ev.mkdir()
+            env = root / "app-token.env"
+            env.write_text("PILOT_SCM_TOKEN=Tok3n-value-xyz-987\nPILOT_SCM_KIND=app\nPILOT_SCM_LOGIN=demo-pilot[bot]\n")
+            (ev / "events.jsonl").write_text("approved by app; PR by demo-pilot[bot]\n")
+            self.assertEqual(audit.redaction_scan(ev, [], [env]), [])
+            (ev / "leak.txt").write_text("x Tok3n-value-xyz-987 y\n")
+            self.assertEqual(audit.redaction_scan(ev, [], [env]), ["leak.txt"])

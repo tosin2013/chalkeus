@@ -24,6 +24,10 @@ import (
 // Patterns are the token-like strings that must never appear in evidence.
 var Patterns = regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{16,}|sk-[A-Za-z0-9_-]{16,}|Bearer [A-Za-z0-9._-]{16,}`)
 
+// nonSecretEnvKeys are the App token file's metadata (app-token.env): its kind ("app") and the
+// bot login are public, and "app" would match nearly every file. Every other value is a secret.
+var nonSecretEnvKeys = map[string]bool{"PILOT_SCM_KIND": true, "PILOT_SCM_LOGIN": true}
+
 // RedactionScan returns the files under root (relative, sorted) that contain a token-like
 // pattern, any line of a key file, or any value from an env file (KEY=VALUE, non-comment).
 func RedactionScan(root string, keyFiles, envFiles []string) ([]string, error) {
@@ -46,7 +50,11 @@ func RedactionScan(root string, keyFiles, envFiles []string) ([]string, error) {
 			if strings.HasPrefix(strings.TrimLeft(line, " \t"), "#") || !strings.Contains(line, "=") {
 				continue
 			}
-			if _, v, _ := strings.Cut(line, "="); v != "" {
+			k, v, _ := strings.Cut(line, "=")
+			if nonSecretEnvKeys[strings.TrimSpace(k)] {
+				continue
+			}
+			if v != "" {
 				fixed = append(fixed, []byte(v))
 			}
 		}

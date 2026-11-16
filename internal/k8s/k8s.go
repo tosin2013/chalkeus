@@ -530,6 +530,34 @@ func (c *Client) CreateSecretFromEnvFile(ns, name, path string) error {
 	return c.createSecret(ns, name, data)
 }
 
+// ReplaceSecretFromEnvFile sets a generic secret's data from an env file: updated in place when
+// it exists, created otherwise. Unlike delete-then-create, it never briefly needs a second
+// Secret against a `count/secrets: 1` quota (the publisher namespace's).
+func (c *Client) ReplaceSecretFromEnvFile(ns, name, path string) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	data, err := ParseEnvFile(raw)
+	if err != nil {
+		return fmt.Errorf("%s: %w", filepath.Base(path), err)
+	}
+	ctx, cancel := ctxT(30 * time.Second)
+	defer cancel()
+	cur, err := c.CS.CoreV1().Secrets(ns).Get(ctx, name, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return c.createSecret(ns, name, data)
+	}
+	if err != nil {
+		return fmt.Errorf("read secret %s/%s: %s", ns, name, apiReason(err))
+	}
+	cur.Data, cur.StringData = data, nil
+	if _, err := c.CS.CoreV1().Secrets(ns).Update(ctx, cur, metav1.UpdateOptions{FieldManager: FieldManager}); err != nil {
+		return fmt.Errorf("update secret %s/%s: %s", ns, name, apiReason(err)) // never echo values
+	}
+	return nil
+}
+
 // CreateSecretFromFiles creates a generic secret with one key per file (key = base name).
 func (c *Client) CreateSecretFromFiles(ns, name string, files []string) error {
 	data := map[string][]byte{}

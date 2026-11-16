@@ -360,3 +360,18 @@ func TestRedactionScan(t *testing.T) {
 		t.Fatalf("hits %v, want %v", hits, want)
 	}
 }
+
+// 004 App mode: app-token.env's kind ("app") and bot login are public; only the token is secret.
+func TestRedactionScanAppTokenFile(t *testing.T) {
+	d := t.TempDir()
+	env := filepath.Join(t.TempDir(), "app-token.env")
+	_ = os.WriteFile(env, []byte("PILOT_SCM_TOKEN=Tok3n-value-xyz-987\nPILOT_SCM_KIND=app\nPILOT_SCM_LOGIN=demo-pilot[bot]\n"), 0o600)
+	_ = os.WriteFile(filepath.Join(d, "events.jsonl"), []byte("approved by app; PR by demo-pilot[bot]\n"), 0o644)
+	if hits, _ := RedactionScan(d, nil, []string{env}); len(hits) != 0 {
+		t.Fatalf("public values counted as secrets: %v", hits)
+	}
+	_ = os.WriteFile(filepath.Join(d, "leak.txt"), []byte("x Tok3n-value-xyz-987 y\n"), 0o644)
+	if hits, _ := RedactionScan(d, nil, []string{env}); strings.Join(hits, ",") != "leak.txt" {
+		t.Fatalf("token not found: %v", hits)
+	}
+}
