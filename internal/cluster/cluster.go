@@ -1,5 +1,5 @@
 // Package cluster is `pilot up` / `pilot down`: kind + Calico + local registry + the pilot's
-// long-lived infrastructure (reference: pilot/specfoundry_pilot/cluster.py and infra.py).
+// long-lived infrastructure (reference: the former Python pilot's cluster.py and infra.py).
 //
 // kind and kubectl are the pinned binaries installed by test/isolation/tools.sh (versions from
 // pilot/pins.env), so pins.env stays the single source of tool versions (016 research R4, as

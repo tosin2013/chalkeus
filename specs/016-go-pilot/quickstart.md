@@ -64,6 +64,6 @@ mode. Record the results in `specs/004-github-loop/evidence/README.md`.
 ## 6. Retirement (US5)
 
 After the Python pilot is removed:
-- `go test ./...` and `docs_check` both pass;
+- `go test ./...` passes (it includes the docs check, `internal/cli/docs_test.go`);
 - `grep -rn specfoundry_pilot --exclude-dir=evidence .` finds only history notes;
 - one more guide walkthrough completes with the audit at 11/11.

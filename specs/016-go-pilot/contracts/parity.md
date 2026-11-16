@@ -14,10 +14,10 @@
 
 - **Records:** every directory `specs/*/evidence/<run-id>/` that contains a `run.json`, whatever
   its state. The failed 002 run is included.
-- **Audit mode:** final when `teardown.jsonl` exists, as in `pilot/tests/test_committed_evidence.py`.
+- **Audit mode:** final when `teardown.jsonl` exists, as the former `pilot/tests/test_committed_evidence.py` did.
 - **Pass rule for the Go audit:** the same row ids in the same order, with an identical `result`
   and an identical `detail` string.
-- **Generation:** by `pilot/tools/golden_audit.py` from the Python reference, run by hand and
+- **Generation:** by `pilot/tools/golden_audit.py` (removed in US5) from the Python reference, run by hand and
   committed. Tests never write it.
 
 ## Shared vectors (`specs/004-github-loop/contracts/vectors/`)

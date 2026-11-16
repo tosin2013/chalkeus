@@ -13,7 +13,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/evidence"
 )
 
-// Cases ported from pilot/tests/test_ghapprove.py (004 US2): every rejection rule, posting,
+// Cases ported from the former Python pilot's tests/test_ghapprove.py (004 US2): every rejection rule, posting,
 // recording with the github channel, and the terminal overriding a GitHub approval.
 
 type approveFixture struct {

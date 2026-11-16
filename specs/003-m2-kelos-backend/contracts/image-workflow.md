@@ -2,7 +2,7 @@
 
 ## Triggers
 
-- `push` to `main` touching `pilot/images/**`, `pilot/specfoundry_pilot/frame.py` or the
+- `push` to `main` touching `pilot/images/**`, `pilot/images/common/frame.py` (until 016 US5: `pilot/specfoundry_pilot/frame.py`) or the
   input pins in `pilot/pins.env`; `pilot/images.lock` is excluded with a negated path filter
   (`!pilot/images.lock`), because GitHub forbids `paths` and `paths-ignore` on one event
 - `workflow_dispatch` (manual)

@@ -10,7 +10,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/prompt"
 )
 
-// Port of pilot/tests/evidence_builder.py + test_audit.py + test_audit_github.py + test_redaction.py.
+// Port of the former Python pilot's tests/evidence_builder.py + test_audit.py + test_audit_github.py + test_redaction.py.
 
 type ev = map[string]any
 

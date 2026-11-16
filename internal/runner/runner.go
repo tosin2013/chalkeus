@@ -1,5 +1,5 @@
 // Package runner runs pilot units (worker, grader, publisher) as plain Kubernetes Jobs
-// (reference: pilot/specfoundry_pilot/runner/base.py and jobs.py).
+// (reference: the former Python pilot's runner/base.py and jobs.py).
 package runner
 
 import (

@@ -1,5 +1,5 @@
 // Package ghapp is the GitHub App as the publisher credential (reference: ghapp.py and
-// pilot/tools/app_token.py; 004 research R5). The App's private key
+// the former pilot/tools/app_token.py; 004 research R5). The App's private key
 // (~/.config/specfoundry/github-app.pem, mode 600) never leaves this host and is never copied
 // to the cluster. A 1-hour installation token is minted, limited to the target repository with
 // contents, pull requests and issues write, and written to app-token.env (mode 600, next to the

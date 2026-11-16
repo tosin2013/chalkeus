@@ -10,7 +10,7 @@ import (
 var matrixFS embed.FS
 
 // MatrixCase is one fail-closed matrix case: a recorded `spec status --json` output and the
-// decision the gate must reach (reference: pilot/tests/test_gate.py CASES).
+// decision the gate must reach (reference: the former Python pilot's tests/test_gate.py CASES).
 type MatrixCase struct {
 	File, Item, Want string
 	Reasons          []string

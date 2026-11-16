@@ -1,4 +1,4 @@
-// Package paths holds the pilot's well-known paths (reference: pilot/specfoundry_pilot/paths.py).
+// Package paths holds the pilot's well-known paths (reference: the former Python pilot's paths.py).
 package paths
 
 import (

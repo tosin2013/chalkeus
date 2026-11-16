@@ -7,6 +7,9 @@ on:
     paths:
       - "docs/**"
       - "README.md"
+      - "CONTRIBUTING.md"
+      - "AGENTS.md"
+      - ".claude/skills/**"
       - "pilot/**"
       - "cmd/**"
       - "internal/**"
@@ -26,9 +29,5 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      - name: Build the pilot binary (the docs are checked against its --help)
-        run: pilot/pilot version
-      - name: Unit tests for the docs check
-        run: PYTHONPATH=pilot python3 -m unittest pilot.tests.test_docs_check -v
-      - name: Check the docs
-        run: python3 pilot/tools/docs_check.py
+      - name: Check the docs (D1–D4, internal/cli/docs_test.go)
+        run: go test -count=1 -run 'TestDocsCheck' -v ./internal/cli

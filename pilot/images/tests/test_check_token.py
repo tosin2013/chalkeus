@@ -4,7 +4,7 @@ import unittest
 from unittest import mock
 from pathlib import Path
 
-_spec = importlib.util.spec_from_file_location("check_token", Path(__file__).resolve().parents[1] / "images/tools/check_token.py")
+_spec = importlib.util.spec_from_file_location("check_token", Path(__file__).resolve().parents[1] / "tools/check_token.py")
 ct = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ct)
 

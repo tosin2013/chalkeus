@@ -1,4 +1,4 @@
-// Package config is the operator configuration (reference: pilot/specfoundry_pilot/config.py;
+// Package config is the operator configuration (reference: the former Python pilot's config.py;
 // specs/002-m1-gated-pilot/contracts/config.md, amended by 004).
 package config
 

@@ -2,7 +2,7 @@
 
 Language-neutral test cases for the GitHub approval rules (research R3) and the status-change PR
 check (research R6). Every implementation must pass every case: the Python reference
-(`pilot/tests/test_vectors.py`), the Go pilot (`internal/ghloop/vectors_test.go`), and later the
+(`pilot/tests/test_vectors.py`, removed in 016 US5), the Go pilot (`internal/ghloop/vectors_test.go`), and later the
 operator (roadmap 011). A new rule needs a new case first.
 
 ## `approvals.json`

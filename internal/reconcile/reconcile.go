@@ -1,5 +1,5 @@
 // Package reconcile runs after a human merge: check reality, propose `planned -> verified`, ask,
-// apply (reference: pilot/specfoundry_pilot/reconcile.py). The status edit is pushed with the
+// apply (reference: the former Python pilot's reconcile.py). The status edit is pushed with the
 // operator's own git credentials (a human action under constitution V), never with a worker,
 // grader or publisher credential; or, with GitHub approvals, it becomes a status-change PR whose
 // human merge is the approval (004 R6).

@@ -10,7 +10,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/secret"
 )
 
-// Port of pilot/tests/test_check_token.py against a fake GitHub API.
+// Port of the former Python pilot's tests/test_check_token.py against a fake GitHub API.
 
 const repo, canary = "o/x-pilot-fixture", "o/specfoundry"
 

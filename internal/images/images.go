@@ -1,6 +1,6 @@
 // Package images resolves the pilot's container images: digest-only references from
 // pilot/images.lock (C-09), or a local build into the kind registry (`up --local-build`)
-// (reference: pilot/specfoundry_pilot/images.py and pilot/images/build_args.py).
+// (reference: the former Python pilot's images.py and pilot/images/build_args.py).
 package images
 
 import (
@@ -108,14 +108,8 @@ func BuildArgs(image string, pins map[string]string) (map[string]string, error) 
 }
 
 // FramePy is where the image build finds frame.py (both images COPY it).
-func FramePy(l paths.Layout) string {
-	if p := filepath.Join(l.Images, "common", "frame.py"); exists(p) {
-		return p
-	}
-	return filepath.Join(l.Pilot, "specfoundry_pilot", "frame.py")
-}
+func FramePy(l paths.Layout) string { return filepath.Join(l.Images, "common", "frame.py") }
 
-func exists(p string) bool { _, err := os.Stat(p); return err == nil }
 
 func copyDir(src, dst string) error {
 	return filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {

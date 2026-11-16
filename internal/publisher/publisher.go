@@ -1,5 +1,5 @@
 // Package publisher publishes a passing attempt as one draft PR through the publisher Job
-// (reference: pilot/specfoundry_pilot/publisher.py; FR-012–FR-016). There is no merge path.
+// (reference: the former Python pilot's publisher.py; FR-012–FR-016). There is no merge path.
 package publisher
 
 import (

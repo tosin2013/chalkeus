@@ -1,5 +1,5 @@
 // Package prompt builds the worker task prompt and the declared induction
-// (reference: pilot/specfoundry_pilot/prompt.py).
+// (reference: the former Python pilot's prompt.py).
 package prompt
 
 import (

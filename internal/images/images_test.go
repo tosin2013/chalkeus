@@ -10,7 +10,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/paths"
 )
 
-// Port of pilot/tests/test_pins.py, plus BuildArgs against the Python build_args.py.
+// Ported from the former Python pilot's test_pins.py, plus BuildArgs against pilot/images/build_args.py.
 
 var d = strings.Repeat("a", 64)
 
@@ -103,24 +103,14 @@ func TestHashDirStable(t *testing.T) {
 	}
 }
 
-func TestHashDirMatchesPython(t *testing.T) {
-	if _, err := exec.LookPath("python3"); err != nil {
-		t.Skip("python3 not installed")
-	}
+// The hash the former Python pilot computed for the same tree (frozen when it was removed, 016 US5).
+func TestHashDirIsStable(t *testing.T) {
 	dir := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(dir, "sub"), 0o755)
 	_ = os.WriteFile(filepath.Join(dir, "Dockerfile"), []byte("FROM x\n"), 0o644)
 	_ = os.WriteFile(filepath.Join(dir, "sub", "f.py"), []byte("print(1)\n"), 0o644)
 	_ = os.WriteFile(filepath.Join(dir, "sub-b"), []byte("z"), 0o644) // "sub/f.py" vs "sub-b": component order
-	args := map[string]string{"B": "2", "A": "1"}
-	got, _ := hashDir(dir, args)
-	cmd := exec.Command("python3", "-c", "import sys,json;sys.path.insert(0,'../../pilot');from pathlib import Path;"+
-		"from specfoundry_pilot import images;print(images._hash_dir(Path(sys.argv[1]), json.loads(sys.argv[2])))", dir, `{"B":"2","A":"1"}`)
-	out, err := cmd.Output()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := strings.TrimSpace(string(out)); got != want {
-		t.Fatalf("go %s != python %s", got, want)
+	if got, _ := hashDir(dir, map[string]string{"B": "2", "A": "1"}); got != "a0ed6c99954d" {
+		t.Fatalf("hash %s", got)
 	}
 }

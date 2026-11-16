@@ -8,3 +8,7 @@
   PR), and never post `/approve` or `/withdraw` comments on GitHub.
 - Never print or commit secrets from `~/.config/specfoundry/`, API keys, tokens or the model host.
 - Spec Kit workflow skills live in `.claude/skills/speckit-*`.
+- The pilot is Go (`cmd/pilot`, `internal/`); `pilot/pilot` builds it. Check changes with
+  `go vet ./... && go test ./...` (this includes the docs check, `internal/cli/docs_test.go`).
+  Scripts that run inside the images (`pilot/images/**`, `pilot/grading/`) are Python; their
+  tests are in `pilot/images/tests/`.

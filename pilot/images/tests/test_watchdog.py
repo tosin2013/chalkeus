@@ -4,7 +4,7 @@ import json
 import unittest
 from pathlib import Path
 
-_spec = importlib.util.spec_from_file_location("watchdog", Path(__file__).resolve().parents[1] / "images/worker/watchdog.py")
+_spec = importlib.util.spec_from_file_location("watchdog", Path(__file__).resolve().parents[1] / "worker/watchdog.py")
 wd = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(wd)
 

@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-// Port of pilot/tests/test_gate.py (the fail-closed matrix, GM01's unit part).
+// Port of the former Python pilot's tests/test_gate.py (the fail-closed matrix, GM01's unit part).
 
 func fx(t *testing.T, name string) string {
 	raw, err := Fixture(name)

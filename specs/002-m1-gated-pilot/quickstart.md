@@ -21,7 +21,7 @@ covers commands and expected outcomes only. Design details live in
 ## 1. Unit check: the gate fails closed (no cluster needed)
 
 ```sh
-python3 -m unittest discover -s pilot/tests -v
+go test ./...
 ```
 
 Expected: every case in the fail-closed matrix refuses, and only the fully ready case

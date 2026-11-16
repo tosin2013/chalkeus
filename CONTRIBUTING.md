@@ -52,8 +52,9 @@ roadmap cleanly at every step.
 ### Local checks
 
 ```sh
-PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot   # unit tests (stdlib only)
-spec status                                                             # roadmap parses, gates hold
+go vet ./... && go test ./...                     # unit tests, golden audit, docs check
+python3 -m unittest discover -s pilot/images/tests -t pilot/images/tests   # in-image scripts
+spec status                                       # roadmap parses, gates hold
 ```
 
 For image changes (`pilot/images/**`), also run the arbitrary-UID smoke test against local
@@ -66,8 +67,9 @@ WORKER=<ref> TOOLS=<ref> EGRESS=<ref> pilot/images/smoke.sh
 
 ### Style
 
-- **Orchestrator (`pilot/specfoundry_pilot/`):** Python 3.12, standard library only; external
-  tools are called as subprocesses.
+- **Pilot (`cmd/pilot`, `internal/`):** Go (the version in `go.mod`); `gofmt`, `go vet` and
+  golangci-lint clean. Scripts that run inside the images (`pilot/images/**`, `pilot/grading/`)
+  stay Python 3.12, standard library only; their tests are in `pilot/images/tests/`.
 - **Images:** thin, non-root, no sudo, upstream inputs verified by checksum, runnable as any
   UID with a read-only root filesystem. Pins live in `pilot/pins.env`; image digests in
   `pilot/images.lock` are updated only by the `pilot-images` workflow's PR.

@@ -1,5 +1,5 @@
 // Package frame decodes the stdout result frame printed by worker, grader and publisher pods
-// (reference: pilot/specfoundry_pilot/frame.py; specs/002-m1-gated-pilot/contracts/worker-io.md):
+// (reference: the former Python pilot's frame.py; specs/002-m1-gated-pilot/contracts/worker-io.md):
 //
 //	PILOT-RESULT-BEGIN v1
 //	<base64 of a tar of named files>

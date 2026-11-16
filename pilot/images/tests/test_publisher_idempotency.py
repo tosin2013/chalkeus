@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 _spec = importlib.util.spec_from_file_location(
-    "pilot_publish", Path(__file__).resolve().parents[1] / "images/tools/publish.py")
+    "pilot_publish", Path(__file__).resolve().parents[1] / "tools/publish.py")
 publish_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(publish_mod)
 
@@ -58,7 +58,7 @@ class TestIdempotency(unittest.TestCase):
         self.assertEqual((r["created"], gh.created, len(gh.prs)), (False, 1, 1))
 
     def test_no_merge_code_path(self):
-        src = (Path(__file__).resolve().parents[1] / "images/tools/publish.py").read_text()
+        src = (Path(__file__).resolve().parents[1] / "tools/publish.py").read_text()
         self.assertNotIn("/merge", src)
         self.assertNotIn("merge_method", src)
 

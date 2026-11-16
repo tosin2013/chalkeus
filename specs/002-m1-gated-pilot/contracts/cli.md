@@ -4,7 +4,7 @@
 >
 > Amended by 004: `pilot github sync|drift|watch`, `app-key`, `app-token`, and GitHub approvals; see `specs/004-github-loop/contracts/cli-github.md`.
 
-Entry point: `pilot/pilot` (a bash shim that runs `python3 -m specfoundry_pilot`). All
+Entry point: `pilot/pilot` (a bash shim that builds and runs the Go pilot; until 016 US5 it ran `python3 -m specfoundry_pilot`). All
 commands run from the specfoundry repo root. Configuration is in [config.md](config.md).
 
 | Command | Does | Exit codes |

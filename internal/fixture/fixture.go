@@ -1,4 +1,4 @@
-// Package fixture handles the throwaway fixture repo (reference: pilot/specfoundry_pilot/fixture.py).
+// Package fixture handles the throwaway fixture repo (reference: the former Python pilot's fixture.py).
 //
 // Host-side git uses the operator's own `gh` login through a one-off credential helper
 // (`-c credential.helper=!gh auth git-credential`); no git config is changed and the publisher

@@ -23,7 +23,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 )
 
-// Cases ported from pilot/tests/test_ghapp.py (004 US4), with a throwaway key; no network.
+// Cases ported from the former Python pilot's tests/test_ghapp.py (004 US4), with a throwaway key; no network.
 
 const repo = "o/x-pilot-fixture"
 

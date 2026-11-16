@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-GRADING = HERE.parent / "grading"
+GRADING = HERE.parents[1] / "grading"
 
 
 def _load(name):

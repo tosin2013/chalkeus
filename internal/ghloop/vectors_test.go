@@ -12,7 +12,7 @@ import (
 )
 
 // T043 / FR-011: the Go pilot passes every shared vector in specs/004-github-loop/contracts/vectors/
-// (contracts/parity.md). The Python reference runs the same files in pilot/tests/test_vectors.py.
+// (contracts/parity.md).
 
 var vectors = filepath.Join("..", "..", "specs", "004-github-loop", "contracts", "vectors")
 

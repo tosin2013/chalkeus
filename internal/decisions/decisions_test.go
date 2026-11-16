@@ -9,7 +9,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/evidence"
 )
 
-// Port of the record/take/decide parts of pilot/tests/test_approvals.py.
+// Port of the record/take/decide parts of the former Python pilot's tests/test_approvals.py.
 
 func makeRun(t *testing.T, state string, pending map[string]any) *evidence.Run {
 	t.Helper()

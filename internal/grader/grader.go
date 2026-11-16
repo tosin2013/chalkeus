@@ -1,5 +1,5 @@
 // Package grader grades one attempt in a fresh grader namespace
-// (reference: pilot/specfoundry_pilot/grader.py; FR-010–FR-012).
+// (reference: the former Python pilot's grader.py; FR-010–FR-012).
 package grader
 
 import (

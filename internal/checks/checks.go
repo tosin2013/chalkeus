@@ -1,5 +1,5 @@
 // Package checks runs the live isolation and credential checks P01–P10 and the gate
-// fail-closed matrix GM01–GM04 (reference: pilot/specfoundry_pilot/checks.py;
+// fail-closed matrix GM01–GM04 (reference: the former Python pilot's checks.py;
 // specs/002-m1-gated-pilot/contracts/evidence-record.md). Detail strings match the reference.
 //
 // Network probes run from a probe twin: a namespace rendered from the same worker template

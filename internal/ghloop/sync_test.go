@@ -13,7 +13,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
 )
 
-// Cases ported from pilot/tests/test_ghsync.py (004 US1: roadmap -> item issues, labels,
+// Cases ported from the former Python pilot's tests/test_ghsync.py (004 US1: roadmap -> item issues, labels,
 // checklists; idempotent sync; drift).
 
 const docJSON = `{"items": [
