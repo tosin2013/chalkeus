@@ -45,6 +45,8 @@ jobs:
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
       - name: Test
         run: go test ./...
+      - name: Build the pilot binary (the shim's default since T038; docs_check runs its --help)
+        run: pilot/pilot version
       - name: Python reference suite (until 016 US5)
         run: PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot
 

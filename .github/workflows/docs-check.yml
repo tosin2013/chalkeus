@@ -8,6 +8,8 @@ on:
       - "docs/**"
       - "README.md"
       - "pilot/**"
+      - "cmd/**"
+      - "internal/**"
       - ".github/workflows/docs-check.yml"
 
 permissions:
@@ -20,6 +22,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Build the pilot binary (the docs are checked against its --help)
+        run: pilot/pilot version
       - name: Unit tests for the docs check
         run: PYTHONPATH=pilot python3 -m unittest pilot.tests.test_docs_check -v
       - name: Check the docs
