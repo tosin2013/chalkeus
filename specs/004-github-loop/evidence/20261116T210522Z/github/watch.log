@@ -1,0 +1,8 @@
+Reconcile proposal for task A (item 001), PR #34 merged (f7d4187f64edc286cc2a7508e5dedbf87bd1d4a7), tasks 100%, graded tree matches:
+- ### 001 — Slug function  [status: planned]
++ ### 001 — Slug function  [status: verified]
+
+Status-change PR: https://github.com/tosin2013/craz3-pilot-fixture/pull/35
+It changes only item 001 to `verified`. Merging it on GitHub approves the status change; then run `pilot resume` (or `pilot github watch`).
+run 20261116T210522Z FAILED: STATUS_PR_MERGED_BY_PUBLISHER
+run 20261116T210522Z is failed; stopped watching

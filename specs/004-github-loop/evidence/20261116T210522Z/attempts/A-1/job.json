@@ -1,0 +1,39 @@
+{
+  "container_terminated": {
+    "containerID": "containerd://39b4751f66e85dda955f7aa273fd4cff95419711e8806f045083dc63e8195f2c",
+    "exitCode": 0,
+    "finishedAt": "2026-11-16T22:24:29Z",
+    "reason": "Completed",
+    "startedAt": "2026-11-16T22:23:22Z"
+  },
+  "job_status": {
+    "completionTime": "2026-11-16T22:24:32Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-16T22:24:32Z",
+        "lastTransitionTime": "2026-11-16T22:24:32Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-11-16T22:24:32Z",
+        "lastTransitionTime": "2026-11-16T22:24:32Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-11-16T22:23:16Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "outcome": "Complete",
+  "pod": "worker-sjv2f",
+  "pod_phase": "Succeeded",
+  "pod_reason": null
+}

@@ -313,7 +313,7 @@ the harness channel working.
   go-github merge or review-approve method (R6).
   Done as: an AST scan of every non-test Go file for merge and review-approve calls and
   hand-built merge or review URLs (mutation-checked).
-- [ ] T047 [US3] **Owner action:** run `specs/004-github-loop/quickstart.md` §2–§5 on the Go
+- [X] T047 [US3] **Owner action:** run `specs/004-github-loop/quickstart.md` §2–§5 on the Go
   pilot, in token mode and App mode, with every refusal case (a second GitHub account is
   needed). Record it in `specs/004-github-loop/evidence/README.md` and copy the run records.
   This replaces 004's superseded T035–T037.
@@ -359,7 +359,7 @@ GitHub.
   Done as: `internal/watcher/watcher_test.go` (idempotent, stale pidfile, new session, a real
   detached process and pid reuse) and `internal/pipeline/github_test.go` (approvals off, loop exit
   removes its pidfile, resume refused while a watcher runs).
-- [ ] T052 [US4] **Owner action:** quickstart §5. Start a run, close the terminal, approve and merge
+- [X] T052 [US4] **Owner action:** quickstart §5. Start a run, close the terminal, approve and merge
   on GitHub only, then check the run completes and no watcher remains. Record it in
   `specs/016-go-pilot/evidence/README.md`. Comment on issue #25 with the result.
 
