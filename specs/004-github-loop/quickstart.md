@@ -22,8 +22,9 @@ reason, status-PR diff check, AU03 rules, App JWT shape (with a test key).
 
 ## 3. GitHub approvals, token mode (US2, US3, SC-003, SC-004)
 
-Set `PILOT_GITHUB_APPROVALS=on` and `PILOT_APPROVERS=<your login>`. Start the run with no
-terminal:
+Set `PILOT_GITHUB_APPROVALS=on` and `PILOT_APPROVERS=<your login>`. The publisher token must
+come from a second account, not yours: your own token makes your approvals `publisher_identity`
+(docs/github-loop.md §2). Start the run with no terminal:
 
 ```bash
 setsid pilot/pilot run </dev/null

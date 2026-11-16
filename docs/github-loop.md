@@ -40,6 +40,13 @@ whenever it drifts.
    ```
 3. **Sync once** to see the issues: `pilot/pilot github sync`. Running it again changes nothing.
 
+> **The publisher can't approve.** Comments and merges made with the publisher's identity never
+> count, so an agent holding the credential can't approve its own work. If your fine-grained
+> token is from your own account, your `/approve` is refused as `publisher_identity` and your
+> merge of the status-change PR as `STATUS_PR_MERGED_BY_PUBLISHER`. For approvals on GitHub,
+> publish with a GitHub App ([github-app.md](github-app.md)), or with a token from a second
+> account that isn't in `PILOT_APPROVERS`.
+
 ## 3. Approve on GitHub
 
 Start the run from any shell:
