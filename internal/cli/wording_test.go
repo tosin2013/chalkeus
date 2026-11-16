@@ -20,16 +20,13 @@ import (
 // retired (US5), the frozen list in testdata/wording.txt is used instead.
 
 var (
-	wordingDocs = []string{"docs/operator-guide.md", "docs/troubleshooting.md", ".claude/skills/pilot/SKILL.md"}
+	wordingDocs = []string{"docs/operator-guide.md", "docs/troubleshooting.md", "docs/github-loop.md", "docs/github-app.md",
+		".claude/skills/pilot/SKILL.md"}
 	fenceRE     = regexp.MustCompile("(?s)```[^\\n]*\\n(.*?)```")
 	spanRE      = regexp.MustCompile("`([^`\\n]+)`")
 	holeRE      = regexp.MustCompile(`<[^>]+>|\{[^}]+\}|\.\.\.|…|\d{8}T\d{6}Z|#\d+|\b\d+\b`)
 	// Messages of commands not ported yet; each must leave this list when its command lands.
-	wordingPending = map[string]string{
-		"GitHub App: NOT OK":  "US3 app-token",
-		"app-token --check":   "US3 app-token",
-		"pilot/pilot app-key": "US3 app-key",
-	}
+	wordingPending = map[string]string{}
 )
 
 func readTree(t *testing.T, dir, ext string, skip func(string) bool) string {

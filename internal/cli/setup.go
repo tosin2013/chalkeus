@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,22 +12,42 @@ import (
 
 	"github.com/tosin2013/specfoundry/internal/cluster"
 	"github.com/tosin2013/specfoundry/internal/config"
+	"github.com/tosin2013/specfoundry/internal/ghapp"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/images"
 	"github.com/tosin2013/specfoundry/internal/k8s"
 	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/specfoundry/internal/pipeline"
 )
 
-// credentialEnv is the env file holding the publisher credential (token or App token).
+// credentialEnv is the env file holding the publisher credential (token, or a fresh App token).
 func credentialEnv(cfg *config.Config) (string, error) {
-	cred, err := cfg.Credential()
+	creds, err := credsFor(cfg)
 	if err != nil {
 		return "", err
 	}
-	if cred == "app" {
-		return "", Exit(ExitError, "GitHub App credential: not implemented in the Go pilot yet (use PILOT_IMPL=python)")
+	env, err := creds.Env()
+	if err != nil {
+		var ce *config.Error
+		if errors.As(err, &ce) {
+			return "", err
+		}
+		return "", Exit(ExitError, "%v", err)
 	}
-	return cfg.PublisherEnv, nil
+	return env, nil
+}
+
+// credsFor resolves the publisher credential kind (004 FR-016): publisher.env, or the GitHub App.
+func credsFor(cfg *config.Config) (pipeline.Creds, error) {
+	cred, err := cfg.Credential()
+	if err != nil {
+		return pipeline.Creds{}, err
+	}
+	if cred == "app" {
+		a := ghapp.App{Cfg: cfg}
+		return pipeline.Creds{Env: a.CurrentEnv, App: true, BotLogin: a.BotLogin}, nil
+	}
+	return pipeline.Creds{Env: func() (string, error) { return cfg.PublisherEnv, nil }}, nil
 }
 
 func verifyPublisher(cmd *cobra.Command, l paths.Layout, cfg *config.Config, envFile string) ghloop.ProbeResult {

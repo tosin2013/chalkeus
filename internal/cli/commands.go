@@ -93,12 +93,12 @@ func statusCmd() *cobra.Command {
 func githubCmd() *cobra.Command {
 	g := &cobra.Command{Use: "github", Short: "004 GitHub loop: mirror the roadmap as issues; drift; watch for approvals"}
 	sync := &cobra.Command{Use: "sync", Short: "create/update item issues and status labels from the roadmap (idempotent)", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("github sync") }}
+		RunE: func(c *cobra.Command, _ []string) error { return runGithubSync(c) }}
 	drift := &cobra.Command{Use: "drift", Short: "report differences between the roadmap and GitHub (exit 1 if any)", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("github drift") }}
+		RunE: func(c *cobra.Command, _ []string) error { return runGithubDrift(c) }}
 	drift.Flags().String("run", "", "also write github/drift.json into this run's evidence")
 	watch := &cobra.Command{Use: "watch", Short: "poll GitHub; resume when a valid /approve or a merge appears (Ctrl-C to stop)", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("github watch") }}
+		RunE: func(c *cobra.Command, _ []string) error { return runGithubWatch(c) }}
 	watch.Flags().String("run", "", "run id")
 	watch.Flags().Bool("detach", false, "run the watcher in the background; it survives the terminal closing")
 	watch.Flags().Bool("stop", false, "stop this run's background watcher")
@@ -110,12 +110,12 @@ func githubCmd() *cobra.Command {
 
 func appKeyCmd() *cobra.Command {
 	return &cobra.Command{Use: "app-key", Short: "store the GitHub App private key from stdin (kept only if its check passes)", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("app-key") }}
+		RunE: func(c *cobra.Command, _ []string) error { return runAppKey(c) }}
 }
 
 func appTokenCmd() *cobra.Command {
 	c := &cobra.Command{Use: "app-token", Short: "mint a GitHub App token and run the write probe", Args: cobra.NoArgs,
-		RunE: func(*cobra.Command, []string) error { return notImplemented("app-token") }}
+		RunE: func(c *cobra.Command, _ []string) error { return runAppToken(c) }}
 	c.Flags().Bool("check", false, "mint, probe and discard a token")
 	_ = c.MarkFlagRequired("check")
 	return c

@@ -1,0 +1,242 @@
+package ghloop
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/tosin2013/specfoundry/internal/decisions"
+	"github.com/tosin2013/specfoundry/internal/evidence"
+)
+
+// Cases ported from pilot/tests/test_ghapprove.py (004 US2): every rejection rule, posting,
+// recording with the github channel, and the terminal overriding a GitHub approval.
+
+type approveFixture struct {
+	f     *fakeGH
+	l     *Loop
+	run   *evidence.Run
+	p     *decisions.Pending
+	d     map[string]any
+	issue int
+}
+
+func setupApprove(t *testing.T) *approveFixture {
+	t.Helper()
+	f := newFake("pub-bot", map[string]string{"alice": "write", "bob": "write", "carol": "read"})
+	l := f.loop("alice")
+	run := testRun(t, "20261116T101500Z", map[string]any{"state": "paused(awaiting-retry)",
+		"pending": map[string]any{"task": "A", "n": 2}, "tasks": map[string]any{}})
+	p := decisions.PendingStep(run)
+	d, err := l.PostDecision(run, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &approveFixture{f: f, l: l, run: run, p: p, d: d, issue: TrackingIssue(run)}
+}
+
+func (a *approveFixture) say(body, author string) int64 {
+	return a.f.addComment(a.issue, body, author, false, false)
+}
+
+func (a *approveFixture) find(t *testing.T) *Found {
+	t.Helper()
+	got, err := a.l.FindApproval(a.run, a.p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return got
+}
+
+func (a *approveFixture) reasons(t *testing.T) []any {
+	t.Helper()
+	rows, _ := evidence.ReadJSONL(filepath.Join(a.run.Dir, "github", "approvals.jsonl"))
+	var out []any
+	for _, r := range rows {
+		out = append(out, r["reason"])
+	}
+	return out
+}
+
+func TestTrackingIssueAndPostAreIdempotent(t *testing.T) {
+	a := setupApprove(t)
+	again, err := a.l.PostDecision(a.run, a.p)
+	if err != nil || fmt.Sprint(again["comment_id"]) != fmt.Sprint(a.d["comment_id"]) {
+		t.Fatalf("%v %v", again, err)
+	}
+	if a.f.count("create-issue") != 1 || a.f.count("comment") != 1 {
+		t.Fatal(a.f.ops)
+	}
+	body := a.f.comments[a.issue][0].Body
+	for _, want := range []string{"<!-- specfoundry:decision run=20261116T101500Z step=retry task=A n=2 -->", "/approve retry", "@alice"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("post lacks %q", want)
+		}
+	}
+	want := "<!-- specfoundry:decision run=20261116T101500Z step=retry task=A n=2 -->\n**Decision pending: retry task A (attempt 2).**\n\n" +
+		"To approve, reply with exactly:\n\n    /approve retry\n\nAllowed approvers: @alice. To cancel your approval before the run resumes: `/withdraw retry`.\n"
+	if body != want {
+		t.Fatalf("post body\n%q", body)
+	}
+	ev, _ := a.run.Events()
+	if ev[len(ev)-1]["event"] != "decision_posted" || ev[len(ev)-1]["detail"] != "step=retry issue=1 comment=1001" {
+		t.Fatal(ev)
+	}
+}
+
+func TestRules(t *testing.T) {
+	cases := []struct {
+		name    string
+		do      func(a *approveFixture)
+		accept  bool
+		reasons []any
+	}{
+		{"accept", func(a *approveFixture) { a.say("/approve retry\nlooks fine", "alice") }, true, []any{nil}},
+		{"wrong step", func(a *approveFixture) { a.say("/approve mode", "alice") }, false, []any{"wrong_step"}},
+		{"extra words", func(a *approveFixture) { a.say("/approve retry please", "alice") }, false, []any{"wrong_step"}},
+		{"not listed", func(a *approveFixture) { a.say("/approve retry", "bob") }, false, []any{"not_an_approver"}},
+		{"no write access now", func(a *approveFixture) { a.f.permissions["alice"] = "read"; a.say("/approve retry", "alice") }, false, []any{"no_write_access"}},
+		{"publisher identity", func(a *approveFixture) {
+			a.l.Approvers = []string{"alice", "pub-bot"}
+			a.f.permissions["pub-bot"] = "admin"
+			a.say("/approve retry", "pub-bot")
+		}, false, []any{"publisher_identity"}},
+		{"app authored", func(a *approveFixture) { a.f.addComment(a.issue, "/approve retry", "alice", false, true) }, false, []any{"app_authored"}},
+		{"edited", func(a *approveFixture) { a.f.addComment(a.issue, "/approve retry", "alice", true, false) }, false, []any{"edited"}},
+		{"before decision", func(a *approveFixture) {
+			a.f.comments[a.issue] = append([]Comment{{ID: 1, Body: "/approve retry", Author: "alice", CreatedAt: "t", UpdatedAt: "t"}}, a.f.comments[a.issue]...)
+		}, false, []any{"before_decision"}},
+		{"withdrawn", func(a *approveFixture) { a.say("/approve retry", "alice"); a.say("/withdraw retry", "alice") }, false, []any{"withdrawn"}},
+		{"withdraw by someone else", func(a *approveFixture) { a.say("/approve retry", "alice"); a.say("/withdraw retry", "bob") }, true, []any{nil}},
+		{"duplicate earliest wins", func(a *approveFixture) { a.say("/approve retry", "alice"); a.say("/approve retry", "alice") }, true, []any{nil, "duplicate"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			a := setupApprove(t)
+			c.do(a)
+			got := a.find(t)
+			if (got != nil) != c.accept {
+				t.Fatalf("accepted=%v", got)
+			}
+			if c.accept && (got.Approver != "alice" || got.CommentID != a.f.comments[a.issue][1].ID) {
+				t.Fatalf("accepted %+v", got)
+			}
+			if r := a.reasons(t); !reflect.DeepEqual(r, c.reasons) {
+				t.Fatalf("reasons %v", r)
+			}
+		})
+	}
+}
+
+func TestOtherAttemptPostDoesNotCount(t *testing.T) {
+	a := setupApprove(t)
+	a.say("/approve retry", "alice")
+	a.run.State["pending"] = map[string]any{"task": "A", "n": 3}
+	p3 := decisions.PendingStep(a.run)
+	if _, err := a.l.PostDecision(a.run, p3); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := a.l.FindApproval(a.run, p3); got != nil {
+		t.Fatal(got)
+	}
+}
+
+func TestGitHubErrorFailsClosed(t *testing.T) {
+	a := setupApprove(t)
+	a.say("/approve retry", "alice")
+	a.f.fail = "read"
+	if msg := a.l.Collect(a.run); !strings.Contains(msg, "the run stays paused") {
+		t.Fatal(msg)
+	}
+	if _, err := os.Stat(filepath.Join(a.run.Dir, "approvals", "pending.json")); err == nil {
+		t.Fatal("approval recorded despite a GitHub error")
+	}
+}
+
+func TestLogNotDuplicatedAcrossResumes(t *testing.T) {
+	a := setupApprove(t)
+	a.say("/approve mode", "alice")
+	a.find(t)
+	a.find(t)
+	if r := a.reasons(t); !reflect.DeepEqual(r, []any{"wrong_step"}) {
+		t.Fatal(r)
+	}
+	ev, _ := a.run.Events()
+	last := ev[len(ev)-1]
+	if last["event"] != "approval_rejected" || last["detail"] != "step=retry comment=1002 author=alice reason=wrong_step" {
+		t.Fatal(last)
+	}
+}
+
+func TestCollectRecordsGitHubChannelUsedOnce(t *testing.T) {
+	a := setupApprove(t)
+	cid := a.say("/approve retry", "alice")
+	msg := a.l.Collect(a.run)
+	if !strings.Contains(msg, "@alice") {
+		t.Fatal(msg)
+	}
+	raw, _ := os.ReadFile(filepath.Join(a.run.Dir, "approvals", "pending.json"))
+	var rec map[string]any
+	_ = json.Unmarshal(raw, &rec)
+	if rec["channel"] != "github" || rec["approver"] != "alice" || rec["comment_id"] != float64(cid) {
+		t.Fatal(rec)
+	}
+	old := decisions.HasTTY
+	decisions.HasTTY = func() bool { return false }
+	defer func() { decisions.HasTTY = old }()
+	ok, ch := decisions.Decide(a.run, "retry", "Retry? ", "A", 2, func(string) {})
+	if !ok || ch != "github" {
+		t.Fatal(ok, ch)
+	}
+	decisions.Note(a.run, "retry", "A", 2, ok, ch, "", "")
+	if ok, ch := decisions.Decide(a.run, "retry", "Retry? ", "A", 2, func(string) {}); ok || ch != "none" {
+		t.Fatal("approval used twice")
+	}
+	ev, _ := a.run.Events()
+	var last map[string]any
+	for _, e := range ev {
+		if e["event"] == "approval_channel" {
+			last = e
+		}
+	}
+	if want := fmt.Sprintf("step=retry approved=true channel=github approver=alice comment=%d", cid); last["detail"] != want {
+		t.Fatal(last["detail"])
+	}
+}
+
+func TestTerminalOverridesGitHubApproval(t *testing.T) {
+	a := setupApprove(t)
+	a.say("/approve retry", "alice")
+	a.l.Collect(a.run)
+	oh, oa := decisions.HasTTY, decisions.AskTTY
+	decisions.HasTTY = func() bool { return true }
+	decisions.AskTTY = func(string) string { return "n" }
+	defer func() { decisions.HasTTY, decisions.AskTTY = oh, oa }()
+	if ok, ch := decisions.Decide(a.run, "retry", "Retry? ", "A", 2, func(string) {}); ok || ch != "tty" {
+		t.Fatal(ok, ch)
+	}
+	if _, err := os.Stat(filepath.Join(a.run.Dir, "approvals", "pending.json")); err == nil {
+		t.Fatal("pending approval kept after the terminal answered")
+	}
+}
+
+func TestReconcileAndMergeNotCollected(t *testing.T) {
+	f := newFake("pub-bot", nil)
+	r := testRun(t, "20261116T111111Z", map[string]any{"state": "paused(awaiting-merge)", "pending": map[string]any{"task": "A"}})
+	if msg := f.loop("alice").Collect(r); msg != "" {
+		t.Fatal(msg)
+	}
+}
+
+func TestMarkAnswered(t *testing.T) {
+	a := setupApprove(t)
+	a.l.MarkAnswered(a.run, "retry", true)
+	c := a.f.comments[a.issue]
+	if got := c[len(c)-1].Body; got != "Decision `retry` was answered at the operator's terminal (yes); approvals here no longer apply." {
+		t.Fatal(got)
+	}
+}

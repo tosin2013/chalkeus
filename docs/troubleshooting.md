@@ -370,7 +370,8 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   - **`both a publisher token and a GitHub App key exist`:** set `PILOT_PUBLISHER_CREDENTIAL`
     to `token` or `app`.
 - **Confirm:** `pilot/pilot app-token --check` prints `OK`.
-- **Source:** `pilot/tools/app_token.py`, `pilot/specfoundry_pilot/ghapp.py`; see
+- **Source:** `internal/ghapp/ghapp.go` (reference: `pilot/tools/app_token.py`,
+  `pilot/specfoundry_pilot/ghapp.py`); see
   [github-app.md](github-app.md).
 
 ---

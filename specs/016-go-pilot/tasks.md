@@ -251,10 +251,13 @@ the harness channel working.
 
 **Independent test:** 004 quickstart §2–§5 on the Go pilot.
 
-- [ ] T039 [P] [US3] Implement the GitHub client setup in `internal/ghloop/client.go` (go-github):
+- [X] T039 [P] [US3] Implement the GitHub client setup in `internal/ghloop/client.go` (go-github):
   - read token resolution `GH_TOKEN` → `GITHUB_TOKEN` → `gh auth token`, with a fail-closed
     hint;
   - the write client from `publisher.env` or the App token (`secret.Value`).
+  Done as: `ReadToken`/`OperatorClient` (reads) and `NewWriter` (publisher credential from
+  `publisher.env` or the App token file) in `internal/ghloop`; the CLI resolves the credential
+  lazily (`credsFor`), so an App token is minted or refreshed when used.
 - [X] T040 [US3] Port the write probe from `pilot/images/tools/check_token.py` into
   `internal/ghloop/probe.go`:
   - blob POST for contents;
@@ -264,24 +267,33 @@ the harness channel working.
   - App kind skips `/user`.
 
   Port the `test_check_token.py` cases.
-- [ ] T041 [US3] Port `internal/ghloop` sync and drift from `ghsync.py`: `desired_state`,
+- [X] T041 [US3] Port `internal/ghloop` sync and drift from `ghsync.py`: `desired_state`,
   `checklist`, `issue_body` (marker `<!-- specfoundry:item=<id> -->`), `plan_ops`, `by_item`,
   `drift_report` (the R8 kinds), `sync`, `drift`, `issue_for`. The writes, ported from
   `ghops.py`: ensure labels, create, edit, comment, close; no merge. Port `test_ghsync.py` and
   `test_ghops.py`. Wire `pilot github sync|drift`.
-- [ ] T042 [US3] Port the approvals part of `internal/ghloop` from `ghapprove.py`:
+  Done as: `internal/ghloop/sync.go` (pure functions and `Loop.Sync`/`Drift`) and `api.go`
+  (`Reader`/`Writer` over go-github; ghops error wording kept). Issue bodies are byte-identical to
+  the reference's, so switching implementation does not rewrite issues.
+- [X] T042 [US3] Port the approvals part of `internal/ghloop` from `ghapprove.py`:
   `ensure_tracking`, `post_decision` (marker
   `<!-- specfoundry:decision run=<id> step=<s> task=<t> n=<n> -->`), `mark_answered`,
   `evaluate`, `find_approval` (`github/approvals.jsonl`, `approval_rejected` events), `collect`.
   Then wire them into `internal/pipeline` pauses and `resume`.
-- [ ] T043 [P] [US3] Write `internal/ghloop/vectors_test.go`: run `evaluate` on every case in
+  Done as: `internal/ghloop/approve.go`; wired into `internal/pipeline/github.go` (post on
+  pause, note a terminal answer, collect on resume without a terminal).
+- [X] T043 [P] [US3] Write `internal/ghloop/vectors_test.go`: run `evaluate` on every case in
   `approvals.json`, and `reconcile.CheckStatusPR` on every case in `status_pr.json`
   (contracts/parity.md).
-- [ ] T044 [US3] Port the status-change PR: `reconcile.CheckStatusPR` and the status bundle,
+  Done as: `internal/ghloop/vectors_test.go` (15 approval cases, all status-PR cases).
+- [X] T044 [US3] Port the status-change PR: `reconcile.CheckStatusPR` and the status bundle,
   `publisher.PublishStatus`, and the pipeline's `reconcile_github` and `status_pr_merged`
   (`pending.status_pr`, `reconcile/A-status.json`, a merger approval note). Port
   `test_status_pr.py`.
-- [ ] T045 [US3] Port `internal/ghapp` from `ghapp.py` and `tools/app_token.py`:
+  Done as: `publisher.PublishStatus`, `pipeline.reconcileGitHub` and `statusPRMerged`. Change
+  from the reference: a failure to fetch or read the merged status PR pauses the run with a
+  message instead of raising.
+- [X] T045 [US3] Port `internal/ghapp` from `ghapp.py` and `tools/app_token.py`:
   - the JWT through `crypto/rsa` RS256 (iat −60 s, exp +9 min, iss = App id);
   - the installation token request (`repositories: [<name>]`, permissions contents, pull
     requests and issues: write), with permission and repository checks;
@@ -290,8 +302,13 @@ the harness channel working.
 
   Port `test_ghapp.py`, with a throwaway key generated in the test. Wire `pilot app-key` and
   `pilot app-token --check`. Refresh the publisher secret before each publish in App mode.
-- [ ] T046 [US3] Add `internal/ghloop/nomerge_test.go`, which asserts that the module's source calls no
+  Done as: `internal/ghapp` (key parsed and JWT signed in-process, R7). Change from the
+  reference: in App mode `pilot up` probes the minted App token; the reference probed
+  `publisher.env`, which App mode does not have.
+- [X] T046 [US3] Add `internal/ghloop/nomerge_test.go`, which asserts that the module's source calls no
   go-github merge or review-approve method (R6).
+  Done as: an AST scan of every non-test Go file for merge and review-approve calls and
+  hand-built merge or review URLs (mutation-checked).
 - [ ] T047 [US3] **Owner action:** run `specs/004-github-loop/quickstart.md` §2–§5 on the Go
   pilot, in token mode and App mode, with every refusal case (a second GitHub account is
   needed). Record it in `specs/004-github-loop/evidence/README.md` and copy the run records.
