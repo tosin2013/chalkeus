@@ -206,6 +206,13 @@ func eq(a, b any) bool {
 	return fmt.Sprint(a) == fmt.Sprint(b)
 }
 
+// Recorded reports whether an approval for exactly this step, task and attempt is already
+// recorded and not yet used (it does not consume it).
+func Recorded(run *evidence.Run, step string, task, n any) bool {
+	a := readJSON(file(run))
+	return a != nil && a["step"] == step && eq(a["task"], task) && eq(a["n"], n)
+}
+
 // TakeRecord uses the recorded approval for this exact step, once (deleted either way).
 func TakeRecord(run *evidence.Run, step string, task, n any) map[string]any {
 	raw, err := os.ReadFile(file(run))

@@ -266,7 +266,7 @@ implementation, except history and evidence.
 
 **Scope**
 
-- **FR-017**: No new operator-visible capability other than FR-013, FR-014 and FR-018. Items
+- **FR-017**: No new operator-visible capability other than FR-013, FR-014, FR-018 and FR-019. Items
   014, 015, 011 and 013 stay out of scope.
 - **FR-018**: The pilot MUST offer diagnostics on stderr at three levels (`-v` steps and
   timings, `-vv` pod phases, container states, Kubernetes events and model-proxy refusals,
@@ -274,6 +274,12 @@ implementation, except history and evidence.
   Diagnostics MUST NOT change stdout, exit codes or evidence, so they are outside parity, and
   every line MUST be redacted (secret values and the model hosts never appear). Added
   2026-11-15 as a debugging aid for the Go runs (roadmap 1.11.0 note on 016).
+- **FR-019**: With GitHub approvals on, the pilot MUST answer each `/approve` comment it
+  evaluates exactly once on the tracking issue: accepted (approver and comment, after the
+  approval is recorded), or refused with its reason code and a plain explanation. A reply never
+  changes the decision, and a failure to post one is ignored. An approval collected twice (the
+  watcher, then `resume`) MUST be recorded once. Added 2026-11-16 at the owner's request after
+  the App-mode run on the development machine.
 
 ### Key Entities
 

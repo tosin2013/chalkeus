@@ -288,6 +288,10 @@ func (l *Loop) FindApproval(run *evidence.Run, p *decisions.Pending) (*Found, er
 	if err != nil {
 		return nil, err
 	}
+	firstLines := map[int64]string{}
+	for _, c := range comments {
+		firstLines[c.ID] = firstLine(c.Body)
+	}
 	dc, _ := num(d["comment_id"])
 	accepted, log := Evaluate(comments, int64(dc), p.Step, l.Approvers, pub,
 		func(login string) string { return l.R.Permission(l.ctx(), l.Repo, login) })
@@ -310,6 +314,7 @@ func (l *Loop) FindApproval(run *evidence.Run, p *decisions.Pending) (*Found, er
 		if !e.Accepted {
 			_ = run.Event("approval", p.Task, p.N, "approval_rejected",
 				fmt.Sprintf("step=%s comment=%d author=%s reason=%s", p.Step, e.CommentID, e.Author, e.Reason))
+			l.reply(issue, RefusalReply(e, firstLines[e.CommentID], p.Step))
 		}
 	}
 	if accepted == nil {
@@ -326,6 +331,9 @@ func (l *Loop) Collect(run *evidence.Run) string {
 	if p == nil || (p.Step != "mode" && p.Step != "retry") {
 		return ""
 	}
+	if decisions.Recorded(run, p.Step, p.Task, p.N) { // already collected (the watcher, then resume)
+		return ""
+	}
 	found, err := l.FindApproval(run, p)
 	if err != nil {
 		return fmt.Sprintf("could not read GitHub approvals (%v); the run stays paused", err)
@@ -337,5 +345,44 @@ func (l *Loop) Collect(run *evidence.Run) string {
 	if code != 0 {
 		return ""
 	}
+	l.reply(TrackingIssue(run), AcceptReply(p.Step, found))
 	return msg
+}
+
+// reply posts the bot's answer to an /approve comment on the tracking issue (FR-019). Best
+// effort: a failed reply never changes the decision.
+func (l *Loop) reply(issue int, body string) {
+	if issue == 0 {
+		return
+	}
+	if w, err := l.W(); err == nil {
+		_, _ = w.Comment(l.ctx(), l.Repo, issue, body)
+	}
+}
+
+// AcceptReply is the bot's reply to an accepted /approve.
+func AcceptReply(step string, f *Found) string {
+	return fmt.Sprintf("✅ `/approve %s` from @%s accepted (comment %d); the run is resuming.", step, f.Approver, f.CommentID)
+}
+
+var refusalWhy = map[string]string{
+	"before_decision":    "it was posted before this decision",
+	"wrong_step":         "the pending step is `{step}`; reply exactly `/approve {step}`",
+	"app_authored":       "it was made through a GitHub App or by a bot",
+	"publisher_identity": "it was made with the publisher's identity",
+	"edited":             "the comment was edited; post a new one instead",
+	"not_an_approver":    "@{login} is not in PILOT_APPROVERS",
+	"withdrawn":          "it was withdrawn by a later `/withdraw {step}`",
+	"no_write_access":    "@{login} no longer has write access to the repository",
+	"duplicate":          "an earlier approval of this step was already accepted",
+}
+
+// RefusalReply is the bot's reply to a refused /approve: the reason code and what it means.
+func RefusalReply(e LogEntry, first, step string) string {
+	why := strings.NewReplacer("{step}", step, "{login}", e.Author).Replace(refusalWhy[e.Reason])
+	tail := " The run stays paused."
+	if e.Reason == "duplicate" {
+		tail = ""
+	}
+	return fmt.Sprintf("❌ `%s` from @%s not accepted (`%s`): %s.%s", first, e.Author, e.Reason, why, tail)
 }

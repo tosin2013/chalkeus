@@ -1,0 +1,21 @@
+{
+  "decisions": [
+    {
+      "at": "2026-11-16T04:11:15Z",
+      "comment_id": 6907079010,
+      "marker": "<!-- specfoundry:decision run=20261116T041113Z step=mode task=- n=- -->",
+      "n": null,
+      "step": "mode",
+      "task": null
+    },
+    {
+      "at": "2026-11-16T04:13:58Z",
+      "comment_id": 6907119253,
+      "marker": "<!-- specfoundry:decision run=20261116T041113Z step=retry task=A n=2 -->",
+      "n": 2,
+      "step": "retry",
+      "task": "A"
+    }
+  ],
+  "issue": 25
+}

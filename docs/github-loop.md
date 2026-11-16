@@ -82,6 +82,12 @@ A reply counts only if all of these hold:
 pilot looked at is logged in the run's `github/approvals.jsonl`, with the reason it was accepted
 or rejected.
 
+The bot answers each `/approve` once, on the tracking issue, so everyone watching the issue is
+notified:
+- `` ✅ `/approve retry` from @you accepted (comment N); the run is resuming. ``
+- `` ❌ `/approve retry` from @someone not accepted (`not_an_approver`): @someone is not in
+  PILOT_APPROVERS. The run stays paused. ``
+
 With a terminal attached, the terminal decides, and the pilot notes that under the post.
 
 ## 4. The status-change PR
