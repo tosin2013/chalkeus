@@ -53,22 +53,22 @@ type P struct {
 	Imgs   map[string]string
 	Out    io.Writer
 	Status gate.StatusSource
-	// CredentialEnv is the env file with the publisher credential (token or App token).
-	CredentialEnv string
+	// Creds is the publisher credential (token or App token), resolved when used.
+	Creds Creds
+	// GH is the 004 GitHub loop (built on first use).
+	GH *ghloop.Loop
 }
 
 func (p *P) say(format string, a ...any) { fmt.Fprintf(p.Out, format+"\n", a...) }
 
 // New wires the real collaborators.
-func New(l paths.Layout, cfg *config.Config, out io.Writer, credentialEnv string) (*P, error) {
+func New(l paths.Layout, cfg *config.Config, out io.Writer, creds Creds) (*P, error) {
 	c, err := k8s.New(paths.Context)
 	if err != nil {
 		return nil, err
 	}
-	return &P{L: l, Cfg: cfg, C: c, Runner: runner.Jobs{C: c}, Out: out, Status: gate.ExecStatus{}, CredentialEnv: credentialEnv}, nil
+	return &P{L: l, Cfg: cfg, C: c, Runner: runner.Jobs{C: c}, Out: out, Status: gate.ExecStatus{}, Creds: creds}, nil
 }
-
-func (p *P) githubOn() bool { return p.Cfg.GithubApprovals() || p.Cfg.GithubIssues() }
 
 // ModeOf is the run mode shown to the operator for confirmation.
 func (p *P) ModeOf() map[string]any {
@@ -89,6 +89,7 @@ func (p *P) confirmMode(run *evidence.Run) (bool, string) {
 	p.say("Run mode for this pilot: %s\n  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.", modeJSON(mode))
 	ok, ch := decisions.Decide(run, "mode", "Confirm this mode and start staging workers? [y/N] ", nil, nil, func(s string) { p.say("%s", s) })
 	decisions.Note(run, "mode", nil, nil, ok, ch, "", "")
+	p.githubTerminal(run, "mode", ok, ch)
 	if !ok {
 		_ = run.Event("mode", nil, nil, "mode_declined", modeJSON(mode))
 		return false, ch
@@ -101,6 +102,7 @@ func (p *P) confirmMode(run *evidence.Run) (bool, string) {
 func (p *P) confirmRetry(run *evidence.Run, task string, n, total int) (bool, string) {
 	ok, ch := decisions.Decide(run, "retry", fmt.Sprintf("Retry %s (attempt %d of %d)? [y/N] ", task, n, total), task, n, func(s string) { p.say("%s", s) })
 	decisions.Note(run, "retry", task, n, ok, ch, "", "")
+	p.githubTerminal(run, "retry", ok, ch)
 	ev := "retry_declined"
 	if ok {
 		ev = "retry_confirmed"
@@ -113,6 +115,7 @@ func (p *P) modeNotConfirmed(run *evidence.Run, ch string) int {
 	if ch == "none" {
 		p.pause(run, "awaiting-mode", nil)
 		p.say("paused: mode not confirmed. %s", decisions.Hint(run, "mode"))
+		p.githubPost(run)
 		return ExitDeclined
 	}
 	_ = run.SetRunState("failed", "MODE_NOT_CONFIRMED")
@@ -238,6 +241,9 @@ func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 				msg = decisions.Hint(run, "retry")
 			}
 			p.say("paused: retry of %s not confirmed. %s", task, msg)
+			if ch == "none" {
+				p.githubPost(run)
+			}
 			return ExitAwaitRetry
 		}
 		n++
@@ -271,8 +277,16 @@ func asInt(v any) int {
 	return 0
 }
 
-func (p *P) publisherDeps() publisher.Deps {
-	return publisher.Deps{L: p.L, C: p.C, Runner: p.Runner, Repo: p.Cfg.Repo(), Branch: p.Cfg.Branch()}
+func (p *P) publisherDeps(run *evidence.Run) (publisher.Deps, error) {
+	d := publisher.Deps{L: p.L, C: p.C, Runner: p.Runner, Repo: p.Cfg.Repo(), Branch: p.Cfg.Branch(), Closes: p.closes(run)}
+	if p.Creds.App { // App installation tokens cannot call GET /user; the host passes the bot login (004 US4)
+		login, err := p.Creds.BotLogin()
+		if err != nil {
+			return d, err
+		}
+		d.LoginHint, d.RefreshSecret = login, p.refreshSecret
+	}
+	return d, nil
 }
 
 func (p *P) publishTask(run *evidence.Run, task string) int {
@@ -280,7 +294,11 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 	n := asInt(t["passing_attempt"])
 	t["state"] = "publishing"
 	_ = run.Save()
-	pr, err := p.publisherDeps().Publish(run, p.Imgs, task, n)
+	deps, err := p.publisherDeps(run)
+	var pr map[string]any
+	if err == nil {
+		pr, err = deps.Publish(run, p.Imgs, task, n)
+	}
 	if err != nil {
 		t["state"] = "publish-failed"
 		msg := err.Error()
@@ -316,6 +334,7 @@ func errName(err error) string {
 }
 
 func (p *P) finish(run *evidence.Run) int {
+	p.githubRefresh(run, true)
 	ok, err := audit.Run(run, false, p.Cfg, p.Out)
 	if err != nil || !ok {
 		return p.fail(run, "AUDIT")
@@ -327,16 +346,8 @@ func (p *P) finish(run *evidence.Run) int {
 	return ExitOK
 }
 
-func (p *P) notYet() int {
-	p.say("pilot: the GitHub loop (PILOT_GITHUB_ISSUES / PILOT_GITHUB_APPROVALS) is not implemented in the Go pilot yet; use PILOT_IMPL=python or turn it off")
-	return ExitError
-}
-
 // Run starts a new run.
 func (p *P) Run() int {
-	if p.githubOn() {
-		return p.notYet()
-	}
 	imgs, err := images.Load(p.L)
 	if err != nil {
 		p.say("pilot: %v", err)
@@ -380,6 +391,16 @@ func (p *P) Run() int {
 	pins, _ := paths.ReadEnv(p.L.Pins)
 	_ = evidence.WriteVersions(run, pins, p.L.Build, paths.Context, paths.Cluster, imgs)
 	_ = run.Event("run", nil, nil, "run_started", p.Cfg.Repo())
+	if p.issuesOn() { // 004 US1: mirror the roadmap before anything is staged
+		l, err := p.loop()
+		if err == nil {
+			_, err = l.Sync(run)
+		}
+		if err != nil {
+			p.say("github sync failed: %v", err)
+			return p.fail(run, "GITHUB_SYNC")
+		}
+	}
 	p.checks().GateMatrix(run, p.Status)
 	rows, _ := evidence.ReadJSONL(filepath.Join(run.Dir, "checks", "results.jsonl"))
 	for _, r := range rows {
@@ -403,9 +424,6 @@ func (p *P) Run() int {
 
 // Resume continues a paused run.
 func (p *P) Resume(runID string) int {
-	if p.githubOn() {
-		return p.notYet()
-	}
 	run, err := evidence.LoadRun(p.L.EvidenceRoot(), runID)
 	state := "None"
 	if run != nil {
@@ -429,6 +447,7 @@ func (p *P) Resume(runID string) int {
 		return ExitError
 	}
 	p.Imgs = imgs
+	p.collectGitHub(run) // 004: a valid /approve on GitHub becomes the approval
 	pend, _ := run.State["pending"].(map[string]any)
 	run.State["state"] = "in-progress"
 	_ = run.Save()
@@ -449,6 +468,7 @@ func (p *P) Resume(runID string) int {
 			p.pause(run, "awaiting-retry", map[string]any{"task": task, "n": n})
 			if ch == "none" {
 				p.say("paused: retry of %s not confirmed. %s", task, decisions.Hint(run, "retry"))
+				p.githubPost(run)
 			}
 			return ExitAwaitRetry
 		}
@@ -457,6 +477,9 @@ func (p *P) Resume(runID string) int {
 		task, _ := pend["task"].(string)
 		return p.publishTask(run, task)
 	case "paused(awaiting-merge)":
+		if p.approvalsOn() { // 004 R6: the status change is approved by merging a status-change PR
+			return p.reconcileGitHub(run, pend)
+		}
 		return p.reconcileA(run)
 	}
 	p.say("cannot resume from %s", state)
@@ -528,6 +551,7 @@ func (p *P) reconcileA(run *evidence.Run) int {
 	tA["state"] = "verified"
 	_ = run.Save()
 	_ = run.Event("status", "A", nil, "task_verified", applied)
+	p.githubRefresh(run, false)
 	if d := p.gateTask(run, "B"); d.Decision != "allow" {
 		return p.fail(run, "B_STILL_BLOCKED")
 	}

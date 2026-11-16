@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -42,7 +43,13 @@ func ReadToken() (secret.Value, error) {
 // NewClient returns a go-github client authenticated with token.
 func NewClient(token secret.Value) *github.Client {
 	hc := &http.Client{Timeout: 60 * time.Second}
-	return github.NewClient(hc).WithAuthToken(token.Reveal())
+	c := github.NewClient(hc).WithAuthToken(token.Reveal())
+	if API != "https://api.github.com" { // tests point API at an httptest server
+		if u, err := url.Parse(strings.TrimSuffix(API, "/") + "/"); err == nil {
+			c.BaseURL = u
+		}
+	}
+	return c
 }
 
 // OperatorClient is the operator's own client (reads, and operator-approved writes such as

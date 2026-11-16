@@ -46,8 +46,9 @@ pilot/pilot app-key < ~/Downloads/<app-name>.<date>.private-key.pem
 rm ~/Downloads/<app-name>.*.private-key.pem
 ```
 
-The key is saved as `~/.config/specfoundry/github-app.pem` (mode 600). It's read only by
-`openssl` on your machine, never copied into the cluster or the evidence.
+The key is saved as `~/.config/specfoundry/github-app.pem` (mode 600). It's read only on your
+machine, to sign the request for a short-lived token, and is never copied into the cluster or the
+evidence.
 
 ## 4. Check it
 

@@ -269,3 +269,62 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 	_ = run.Event("publish", task, n, ev, pr.GetHTMLURL())
 	return entry, nil
 }
+
+// StatusBody is the status-change PR body (004 R6).
+func StatusBody(run *evidence.Run, task string, closes int) string {
+	item := paths.Tasks[task]
+	issue := ""
+	if closes > 0 {
+		issue = fmt.Sprintf(" Item issue: #%d.", closes)
+	}
+	return fmt.Sprintf("Opened by the specfoundry pilot **publisher** (run `%s`) after task %s's PR was merged "+
+		"and checked (merged, tasks 100%%, merged tree matches the graded attempt).\n\n"+
+		"It changes exactly one line: item %s `planned` → `verified` in `.specify/memory/roadmap.md`.%s\n\n"+
+		"**Merging this PR approves the status change.** The pilot checks that the merged change is exactly "+
+		"this edit, and that an allowed approver merged it. The pilot never merges.\n", run.ID, task, item, issue)
+}
+
+// PublishStatus opens (or finds) the status-change draft PR for task's item (004 R6).
+// Idempotent like task PRs. closes is the item issue number (0 if none).
+func (d Deps) PublishStatus(run *evidence.Run, imgs map[string]string, task, baseRev, bundle string, closes int) (map[string]any, error) {
+	for _, p := range PRs(run) {
+		if p["kind"] == "status" && p["task"] == task {
+			return p, nil
+		}
+	}
+	item := paths.Tasks[task]
+	head := fmt.Sprintf("pilot/%s/status-%s", run.ID, item)
+	spec := map[string]any{"repo": d.Repo, "head": head, "base": d.Branch, "base_revision": baseRev,
+		"title": fmt.Sprintf("pilot %s: %s verified", run.ID, item), "body": StatusBody(run, task, closes), "run_id": run.ID, "task": task}
+	if d.LoginHint != "" {
+		spec["publisher_login"] = d.LoginHint
+	}
+	_ = run.Event("publish", task, nil, "status_pr_started", head)
+	res, err := d.submit(run, imgs, "status-"+strings.ToLower(task), spec, bundle)
+	if err != nil {
+		return nil, err
+	}
+	gh, err := ghloop.OperatorClient()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	owner, name := ghloop.SplitRepo(d.Repo)
+	number := asInt(res["number"])
+	pr, _, err := gh.PullRequests.Get(ctx, owner, name, number)
+	if err != nil {
+		return nil, err
+	}
+	entry := map[string]any{"task": task, "kind": "status", "number": number, "url": pr.GetHTMLURL(), "head": pr.GetHead().GetRef(),
+		"draft": pr.GetDraft(), "author": pr.GetUser().GetLogin(), "publisher_identity": res["token_login"],
+		"base_revision": baseRev, "created": res["created"] == true}
+	if !pr.GetDraft() || pr.GetHead().GetRef() != head {
+		return nil, &Error{fmt.Sprintf("PR #%d is not the expected draft for %s", number, head)}
+	}
+	if err := evidence.WriteJSON(filepath.Join(run.Dir, "prs.json"), append(PRs(run), entry)); err != nil {
+		return nil, err
+	}
+	_ = run.Event("publish", task, nil, "status_pr_opened", pr.GetHTMLURL())
+	return entry, nil
+}

@@ -21,11 +21,11 @@ func pipelineFor(cmd *cobra.Command) (*pipeline.P, error) {
 	if err != nil {
 		return nil, err
 	}
-	credEnv, err := credentialEnv(cfg)
+	creds, err := credsFor(cfg)
 	if err != nil {
 		return nil, err
 	}
-	p, err := pipeline.New(l, cfg, cmd.OutOrStdout(), credEnv)
+	p, err := pipeline.New(l, cfg, cmd.OutOrStdout(), creds)
 	if err != nil {
 		return nil, Exit(ExitError, "%v", err)
 	}

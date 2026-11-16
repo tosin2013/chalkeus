@@ -86,6 +86,20 @@ func Value(v any) string {
 			parts[i] = Str(e)
 		}
 		return "[" + strings.Join(parts, ", ") + "]"
+	case OrderedMap:
+		parts := make([]string, len(x.Keys))
+		for i, k := range x.Keys {
+			parts[i] = Str(k) + ": " + Value(x.Values[k])
+		}
+		return "{" + strings.Join(parts, ", ") + "}"
+	case []OrderedMap:
+		parts := make([]string, len(x))
+		for i, e := range x {
+			parts[i] = Value(e)
+		}
+		return "[" + strings.Join(parts, ", ") + "]"
+	case map[string]any:
+		return Dict(x)
 	}
 	return fmt.Sprint(v)
 }
@@ -100,6 +114,24 @@ func Strings(xs []string) string { return Value(xs) }
 type OrderedMap struct {
 	Keys   []string
 	Values map[string]any
+}
+
+// MarshalJSON encodes the values as a plain object (encoding/json sorts the keys, matching the
+// reference's json.dumps(..., sort_keys=True) evidence files).
+func (o OrderedMap) MarshalJSON() ([]byte, error) { return json.Marshal(o.Values) }
+
+// Get returns the value for k.
+func (o OrderedMap) Get(k string) any { return o.Values[k] }
+
+// NewOrdered builds an OrderedMap from alternating key, value pairs.
+func NewOrdered(kv ...any) OrderedMap {
+	o := OrderedMap{Values: map[string]any{}}
+	for i := 0; i+1 < len(kv); i += 2 {
+		k := kv[i].(string)
+		o.Keys = append(o.Keys, k)
+		o.Values[k] = kv[i+1]
+	}
+	return o
 }
 
 // JSONDumps is Python's json.dumps(obj) with default settings: ", " and ": " separators,
