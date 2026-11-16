@@ -44,7 +44,8 @@ def read_pins() -> dict:
 
 
 def _help(*args) -> str:
-    r = subprocess.run([str(ROOT / "pilot/pilot"), *args, "--help"], capture_output=True, text=True, timeout=60)
+    # 300 s: the first call may build the Go pilot (the shim builds it on first use)
+    r = subprocess.run([str(ROOT / "pilot/pilot"), *args, "--help"], capture_output=True, text=True, timeout=300)
     return r.stdout + r.stderr
 
 
