@@ -1,6 +1,32 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.12.0 → 1.13.0
+Bump rationale: MINOR — a material change to 014's validation, and notes on 014, 015 and 017.
+
+Changes this revision (owner direction 2026-11-16, proposed):
+  - 014: the brownfield validation changes from a Quarkus repository to a legacy Java EE
+    upgrade on OpenShift (older EAP/WildFly app to EAP 8 or Quarkus), using Red Hat's migration
+    tools inside the process, with an in-cluster model; graded as behaviour unchanged
+  - 014 note: toolchain images are UBI-based on OpenShift and built on demand elsewhere
+  - 017 note: the greenfield validation runs on every cluster profile
+  - 015 note: waves scale the same way on kind, OpenShift and plain Kubernetes; only capacity
+    (the concurrency limit) differs
+  - 015 note: unblocked tasks inside an item may run in parallel; the pilot owns the schedule
+  - New Q12: parallel tasks inside an item
+  - New Q13: how planning scales
+  - Delivery order (owner direction 2026-11-16): laptop first, end to end (016, 014 on kind,
+    017, 009, 015, then the 013 release), then OpenShift (005, then 014's EAP validation); see
+    Cross-Cutting Notes
+  - 015 note: scaling is in the first release, with a small default concurrency limit on
+    laptops (for example 2)
+  - 014 note: kind and plain-Kubernetes users can ask for a new language toolchain image by
+    opening a GitHub issue
+
+Specs affected: 014, 015, 017
+Open questions added/resolved: Q12, Q13 added
+
+Previous revision 1.12.0 (2026-11-15):
 Version change: 1.11.0 → 1.12.0
 Bump rationale: MINOR — a new planned spec (017) and a material change to 014's validation.
 Q11 is resolved by 017.
@@ -709,20 +735,50 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - hidden acceptance tests written by a human and kept out of the worker's view, with the
     repo's own test suite run as a visible check.
 - **Scope (out):** parallel runs (015); writing specs or plans; choosing items automatically.
-- **Depends on:** 004, 016
-- **Governed by:** C-01, C-02, C-04, C-12
+- **Depends on:** 004, 016 (and 005 for the OpenShift EAP validation)
+- **Governed by:** C-01, C-02, C-04, C-09, C-12
 - **Addresses:** docs/prd.md §4 loop, F1, F8, F9
 - **Notes:** Owner decision 2026-11-15. The fixture stays the regression test. Pairs with 013
   (installable CLI). Grading a real repo needs the item's acceptance criteria to be runnable;
   the spec decides how that is expressed. 014 targets **brownfield** repos (existing code and
   tests); greenfield bootstrap is Q11 (owner decision 2026-11-15).
 
-  **Validation (owner decision 2026-11-15):** a real **Quarkus** (Java) brownfield repository,
-  chosen when 014 is specified, with a roadmap of a few items where one depends on another. The
-  owner prepares it (constitution, roadmap, specs, tasks, hidden JUnit/RestAssured acceptance
-  tests), and the pilot runs its items end to end. This exercises a JDK/Maven toolchain, Maven
-  Central egress, and build time and memory limits in kind. The fixture stays the fast,
-  deterministic regression test (its A/1 induction is the only reliable retry exercise).
+  ~~**Validation (owner decision 2026-11-15):** a real **Quarkus** (Java) brownfield repository,~~
+  ~~chosen when 014 is specified, with a roadmap of a few items where one depends on another.~~
+  **Validation (owner decision 2026-11-16, replaces the Quarkus validation):** a legacy Java EE
+  upgrade on **OpenShift**, the enterprise brownfield case:
+  - the starting point is a public application on the `javax` namespace with real tests, on an
+    older JBoss EAP or WildFly release (candidates: the Java EE 7 Petstore, Cargo Tracker's
+    javaee7 branch; chosen when 014 is specified), or a small app built for the purpose if
+    neither fits;
+  - the target is a current release (EAP 8 or Quarkus, decided when 014 is specified);
+  - the owner prepares the repository (constitution, roadmap, specs, tasks, and hidden
+    JUnit/RestAssured acceptance tests that pin the application's behaviour before the
+    upgrade) and splits the upgrade into a few dependent items (for example: build and
+    dependencies; `javax` to `jakarta`; server configuration; tests and cleanup);
+  - Red Hat's migration tools are used inside the process: the owner runs the Migration
+    Toolkit for Applications analysis when planning, and the worker image carries its CLI
+    (`kantra`, rule sets baked in) and may use Kai against the in-cluster model;
+  - the grader never trusts the migration tools' own reports; each item passes only if the
+    hidden tests and the app's own suite show behaviour is unchanged;
+  - it runs on OpenShift with the model served in the cluster, so worker model traffic stays
+    in the cluster; worker and grader images are Red Hat UBI-based (C-09 already allows
+    Quay/UBI images for OpenShift).
+
+  This exercises a JDK/Maven toolchain, Maven egress (plus the Red Hat Maven repository if EAP
+  artifacts are used), and OpenShift's restricted SCC. The story is that specfoundry governs the
+  upgrade (plan, isolation, independent grading, draft PR, audit) and the Red Hat tools do the
+  analysis inside it. The EAP validation therefore also needs 005 (OpenShift target) and an
+  in-cluster model endpoint. The fixture stays the fast, deterministic regression test (its A/1
+  induction is the only reliable retry exercise).
+
+  **Toolchain images (owner direction 2026-11-16):** on OpenShift, worker and grader toolchain
+  images are built on Red Hat UBI images (JDK, Node.js). Elsewhere (kind, minikube, plain
+  Kubernetes), toolchain images are built on demand, one per language a project needs, still by
+  GitHub Actions and pinned by digest (C-09).
+  On kind, minikube and plain Kubernetes, a user who needs a language toolchain that has no
+  image yet asks for one by opening a GitHub issue on the specfoundry repository (the issue
+  form and the image build are defined when 014 is specified).
 
 ### 015 — Released waves  [status: planned]
 
@@ -754,6 +810,21 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
   Human review is the expected bottleneck: every PR still needs a human merge. Laptop waves are
   small (kind capacity); large waves run in cluster mode (011).
+
+  **Scaling goal (owner direction 2026-11-16):** a released roadmap scales its jobs the same way
+  on kind, OpenShift and plain Kubernetes. Only capacity differs: the concurrency limit is set
+  per cluster, and the guarantees, evidence and audit are the same everywhere (C-11).
+
+  **In the first release (owner direction 2026-11-16):** scaling ships in the first release
+  (013), even if a laptop runs only a few items at once. The default concurrency limit on a
+  laptop is small (for example 2), and the value is set when 015 is specified.
+
+  **Parallel tasks inside an item (owner direction 2026-11-16, proposed):** blockers still block,
+  and that is fine. Where tasks have no blockers between them (Spec Kit's `[P]` marker in
+  tasks.md, checked against spec-status), they may run at the same time, each in its own
+  isolated unit; dependent tasks keep their order. The pilot owns the schedule: the human sees
+  one plan at release (what runs together, what waits, and why), and each worker sees only its
+  own task. See Q12.
 
 ### 016 — Go pilot at parity  [status: planned]
 
@@ -819,6 +890,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Notes:** Owner decision 2026-11-15; resolves Q11. The Node.js repository is chosen when 017
   is specified. Planning still comes first: an empty repository gets its constitution, roadmap,
   and the scaffold's spec, tasks and acceptance tests from a human before any agent runs.
+  **Runs anywhere (owner direction 2026-11-16):** the greenfield validation must pass on every
+  cluster profile (kind, minikube, plain Kubernetes and OpenShift), using an on-demand Node.js
+  image off OpenShift and a UBI Node.js image on OpenShift.
 
 ## Open Questions
 
@@ -875,9 +949,30 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   first either way (constitution, roadmap, spec and tasks, C-12). **Resolved 2026-11-15:**
   entry 017, after 014; item 001 of a new project is a human-specified scaffold, validated on
   a Node.js repository.
+- Q12 — Parallel tasks inside an item (raised 2026-11-16). Run unblocked `[P]` tasks of one
+  item at the same time? Open: whether each task gets its own draft PR or they combine into the
+  item's PR; how overlapping file scopes are detected; how much the human and the worker need to
+  see of the schedule (proposed: the human sees the plan at release, the worker sees only its
+  task). Relates to Q4 (granularity), 004 (issues per task) and 015.
+- Q13 — How planning scales (raised 2026-11-16). Under C-12 the limit on throughput is how fast
+  humans prepare items (spec, tasks, hidden tests), not how many workers run. Open: whether
+  agents may draft specs, tasks or tests for a human to approve, and what tooling helps (for
+  example migration analysis reports in brownfield upgrades).
 
 ## Cross-Cutting Notes
 
+- **Delivery order (owner direction 2026-11-16):** laptop first, then OpenShift, in stages, so
+  someone on a laptop can trust that the whole loop works end to end before the enterprise case.
+  Dependencies are unchanged; this is the order of work among items that are ready.
+  1. 016 Go pilot at parity (its T047 owner run also closes 004's superseded validation).
+  2. 014 Any project, on kind with the fixture and a real repository; the EAP validation waits.
+  3. 017 Greenfield bootstrap, end to end on a laptop (kind or minikube).
+  4. 009 Period spend budget (015 depends on it).
+  5. 015 Released waves, with a small laptop concurrency limit (for example 2).
+  6. 013 Installable pilot release: the first release includes scaling.
+  7. 005 OpenShift target (laptop mode).
+  8. 014's EAP validation on OpenShift with an in-cluster model.
+  9. Then 007, 008, 010 and 011.
 - spec-status asks drafted in PRD §8 (report-only skills, per-item readiness exit
   code, CLI container image) gate 002 and 003 in practice; track them as upstream
   issues. **002 workarounds in place:** the gate runs on the host (no CLI image); the
@@ -921,4 +1016,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.12.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-15
+**Version**: 1.13.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-16
