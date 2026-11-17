@@ -30,6 +30,23 @@ For each item you want the pilot to build:
   `.github/`, `.specify/`, the roadmap or another item's spec folder is refused.
 - **Hidden acceptance tests** live in a separate **private** repository: the *companion*. They
   go in `items/<NNN>/`, laid out like the project (for example `items/002/src/test/java/…`).
+  - **One companion can serve all your targets**, in any languages. Give each target its own
+    folder and name it with `PILOT_COMPANION_PATH` (section 2):
+
+    ```text
+    my-acceptance/                                  (private)
+    ├── cli-schema-mcp/items/006/tests/test_bundled_flags.py
+    ├── helmdeck/items/002/internal/server/router_test.go
+    └── greeting-service/items/002/src/test/java/…/GreetingTest.java
+    ```
+
+    The companion is only storage: nothing builds it as a whole. For a run, the pilot copies
+    just that item's folder over a clean copy of the project, and the project's own test
+    command compiles and runs it. Your editor won't resolve the tests' imports while you browse
+    the companion on its own; that's expected.
+  - Give access to the companion only to the people who write hidden tests, and never open it
+    in a coding agent: an agent that sees the tests can write code that passes them without
+    doing what the spec asks.
   - The pilot reads them on your machine with your own git access, and gives them only to the
     grader. The agent never sees them.
   - They must fail on the current code.
@@ -76,7 +93,8 @@ PILOT_TARGET_BRANCH=main
 PILOT_TOOLCHAIN=jdk21-maven
 PILOT_TEST_COMMAND=mvn -B test
 PILOT_REGISTRY_HOSTS=repo.maven.apache.org
-PILOT_COMPANION_REPO=you/greeting-service-acceptance
+PILOT_COMPANION_REPO=you/my-acceptance
+PILOT_COMPANION_PATH=greeting-service       # optional: this target's folder in a shared companion
 PILOT_GITHUB_ISSUES=off
 ```
 

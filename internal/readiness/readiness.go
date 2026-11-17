@@ -166,9 +166,9 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		return done("ITEM_NO_HIDDEN_TESTS", "companion repository "+t.CompanionRepo+" could not be read with your git access")
 	}
 	defer func() { _ = os.RemoveAll(cdir) }()
-	n := countFiles(filepath.Join(cdir, "items", item))
+	n := countFiles(filepath.Join(cdir, filepath.FromSlash(t.CompanionItemDir(item))))
 	if n == 0 {
-		return done("ITEM_NO_HIDDEN_TESTS", t.CompanionRepo+" has no files under items/"+item+"/")
+		return done("ITEM_NO_HIDDEN_TESTS", t.CompanionRepo+" has no files under "+t.CompanionItemDir(item)+"/")
 	}
 	res.CompanionCommit, res.HiddenFiles = ccommit, n
 	rule("hidden_tests", true, fmt.Sprintf("%d file(s) at %s@%s", n, t.CompanionRepo, short(ccommit)))

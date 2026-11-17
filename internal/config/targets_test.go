@@ -189,3 +189,20 @@ func TestTestPaths(t *testing.T) {
 	_, err := c.LoadTarget("p", "")
 	wantCode(t, err, "TARGET_INVALID")
 }
+
+func TestCompanionPath(t *testing.T) {
+	c := targetCfg(t)
+	writeTarget(t, c, "p", goodTarget+"PILOT_COMPANION_PATH=/cli-schema-mcp/\n")
+	got, err := c.LoadTarget("p", "")
+	if err != nil || got.CompanionPath != "cli-schema-mcp" || got.CompanionItemDir("006") != "cli-schema-mcp/items/006" {
+		t.Fatalf("%+v %v", got, err)
+	}
+	if (Target{}).CompanionItemDir("006") != "items/006" {
+		t.Fatal("no path: items/ at the root, as before")
+	}
+	for _, bad := range []string{"../x", "a/../b", "a b", "a/./b", "a\\b"} {
+		writeTarget(t, c, "p", goodTarget+"PILOT_COMPANION_PATH="+bad+"\n")
+		_, err := c.LoadTarget("p", "")
+		wantCode(t, err, "TARGET_INVALID")
+	}
+}

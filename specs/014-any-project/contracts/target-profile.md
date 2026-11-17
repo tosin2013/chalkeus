@@ -31,6 +31,8 @@ PILOT_TEST_COMMAND=mvn -B test
 # PILOT_CHANGE_TYPE=fix
 PILOT_REGISTRY_HOSTS=repo.maven.apache.org
 PILOT_COMPANION_REPO=owner/greeting-service-acceptance
+# optional: the target's folder in a companion shared by several targets (items/ sits inside it)
+# PILOT_COMPANION_PATH=greeting-service
 PILOT_GITHUB_ISSUES=off
 PILOT_GITHUB_APPROVALS=on
 # optional, may only raise the toolchain defaults:

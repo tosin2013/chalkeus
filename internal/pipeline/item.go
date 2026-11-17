@@ -222,13 +222,13 @@ func (p *P) prepareItem(run *evidence.Run) error {
 		if err != nil {
 			return fmt.Errorf("companion repository %s: %v", p.Target.CompanionRepo, err)
 		}
-		tarb, c, err := grader.Overlay(cdir, p.Target.CompanionRepo, commit, item)
+		tarb, c, err := grader.Overlay(cdir, p.Target.CompanionRepo, commit, p.Target.CompanionItemDir(item), item)
 		_ = os.RemoveAll(cdir)
 		if err != nil {
 			return err
 		}
 		if c.FileCount == 0 {
-			return fmt.Errorf("%s has no files under items/%s/", p.Target.CompanionRepo, item)
+			return fmt.Errorf("%s has no files under %s/", p.Target.CompanionRepo, p.Target.CompanionItemDir(item))
 		}
 		if err := os.WriteFile(overlay, tarb, 0o600); err != nil {
 			return err
@@ -236,7 +236,7 @@ func (p *P) prepareItem(run *evidence.Run) error {
 		if err := grader.WriteCompanion(run.Dir, c); err != nil {
 			return err
 		}
-		run.State["companion"] = map[string]any{"repo": c.Repo, "commit": c.Commit, "file_count": c.FileCount, "files_sha256": c.FilesSHA256}
+		run.State["companion"] = map[string]any{"repo": c.Repo, "commit": c.Commit, "dir": c.Dir, "file_count": c.FileCount, "files_sha256": c.FilesSHA256}
 		_ = run.Save()
 	}
 	if err := grader.EnsureNamespace(p.L, p.C, p.itemGrading(run), run.ID); err != nil {
