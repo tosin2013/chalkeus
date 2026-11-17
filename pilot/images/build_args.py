@@ -43,6 +43,10 @@ def build_args(image: str, pins: dict | None = None) -> dict:
                 "SPEC_SHA256": p["SPEC_SHA256"], "SPEC_CHECKSUMS": f"spec_{version}_checksums.txt"}
     if image == "egress":
         return {"ALPINE_BASE": p["ALPINE_BASE"]}
+    if image == "toolchain-python3.13":
+        repo, tag = split_release(p["PYTHON313_RELEASE"])
+        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "PYTHON313_REPO": repo, "PYTHON313_TAG": tag,
+                "PYTHON313_ASSET": p["PYTHON313_ASSET"], "PYTHON313_ASSET_SHA256": p["PYTHON313_ASSET_SHA256"]}
     raise SystemExit(f"unknown image {image!r}")
 
 

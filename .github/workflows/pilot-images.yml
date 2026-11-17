@@ -62,10 +62,17 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
+      - name: List images (the pilot's three, plus each catalog toolchain with an image dir; 014)
+        run: |
+          set -euo pipefail
+          tc="$(python3 -c 'import json,os; c=json.load(open("pilot/images/toolchains.json")); print(" ".join("toolchain-"+n for n,v in sorted(c.items()) if v.get("image_key") and os.path.isdir("pilot/images/toolchain-"+n)))')"
+          echo "IMAGES=worker tools egress $tc" >> "$GITHUB_ENV"
+          echo "images: worker tools egress $tc"
+
       - name: Prepare build contexts
         run: |
           set -euo pipefail
-          for i in worker tools egress; do
+          for i in $IMAGES; do
             ctx="$RUNNER_TEMP/ctx-$i"; rm -rf "$ctx"; mkdir -p "$ctx"
             cp -r "pilot/images/$i/." "$ctx/"
             cp pilot/images/common/frame.py "$ctx/"
@@ -74,13 +81,15 @@ jobs:
       - name: Build locally (upstream checksums verified inside the Dockerfiles)
         run: |
           set -euo pipefail
-          for i in worker tools egress; do
+          for i in $IMAGES; do
             args=(); while IFS= read -r kv; do args+=(--build-arg "$kv"); done < <(python3 pilot/images/build_args.py "$i")
             docker buildx build --load -t "pilot-$i:ci" "${args[@]}" "$RUNNER_TEMP/ctx-$i"
           done
 
       - name: Smoke test as an arbitrary UID (US2)
-        run: WORKER=pilot-worker:ci TOOLS=pilot-tools:ci EGRESS=pilot-egress:ci pilot/images/smoke.sh
+        run: |
+          tcs=""; for i in $IMAGES; do case "$i" in toolchain-*) tcs="$tcs pilot-$i:ci";; esac; done
+          WORKER=pilot-worker:ci TOOLS=pilot-tools:ci EGRESS=pilot-egress:ci TOOLCHAINS="$tcs" pilot/images/smoke.sh
 
       - name: Log in to registry
         if: env.PUSH == 'true'
@@ -95,7 +104,7 @@ jobs:
         run: |
           set -euo pipefail
           short="${GITHUB_SHA::12}"
-          for i in worker tools egress; do
+          for i in $IMAGES; do
             args=(); while IFS= read -r kv; do args+=(--build-arg "$kv"); done < <(python3 pilot/images/build_args.py "$i")
             ref="$REGISTRY/$NAMESPACE/specfoundry-pilot-$i"
             docker buildx build --push --provenance=mode=max --sbom=true \
@@ -120,7 +129,7 @@ jobs:
                                          "sha256": pins["OPENCODE_ASSET_SHA256"]},
                             "spec": {"release": pins["SPEC_RELEASE"], "sha256": pins["SPEC_ASSET_SHA256"]},
                             "bases": {"debian": pins["DEBIAN_BASE"], "alpine": pins["ALPINE_BASE"]}}}
-          for i in ("worker", "tools", "egress"):
+          for i in os.environ["IMAGES"].split():
               meta = json.load(open(f"{tmp}/meta-{i}.json"))
               out["images"][i] = f"{reg}/{ns}/specfoundry-pilot-{i}@{meta['containerimage.digest']}"
               out["attestations"][i] = {"provenance": "mode=max", "sbom": "spdx"}
@@ -160,10 +169,15 @@ jobs:
           import json, re
           d = json.load(open("image-digests.json"))
           p = "pilot/images.lock"; s = open(p).read()
-          for key, img in (("WORKER_IMAGE", "worker"), ("TOOLS_IMAGE", "tools"), ("EGRESS_IMAGE", "egress")):
+          cat = json.load(open("pilot/images/toolchains.json"))
+          keys = [("WORKER_IMAGE", "worker"), ("TOOLS_IMAGE", "tools"), ("EGRESS_IMAGE", "egress")]
+          keys += [(v["image_key"], "toolchain-" + n) for n, v in sorted(cat.items()) if v.get("image_key") and "toolchain-" + n in d["images"]]
+          for key, img in keys:
               ref = d["images"][img]
-              assert re.fullmatch(r"[a-z0-9./:-]+@sha256:[0-9a-f]{64}", ref), ref
+              assert re.fullmatch(r"[a-z0-9./:_-]+@sha256:[0-9a-f]{64}", ref), ref
               s, n = re.subn(rf"^{key}=.*$", f"{key}={ref}", s, flags=re.M)
+              if n == 0 and key.startswith("TOOLCHAIN_"):  # a new toolchain's first digest (014)
+                  s, n = s.rstrip("\n") + f"\n{key}={ref}\n", 1
               assert n == 1, key
           open(p, "w").write(s)
           PY

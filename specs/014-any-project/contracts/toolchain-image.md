@@ -15,7 +15,7 @@ specfoundry's; a toolchain image only supplies files.
 ```
 
 - **How it reaches the pods:** an init container copies `/opt/toolchain/` into an `emptyDir`
-  mounted at `/opt/toolchain` in the worker, prefetch and grader containers. It runs `cp -a
+  mounted at `/opt/toolchain` in the worker, prefetch and grader containers. It runs `cp -R
   /opt/toolchain/. /dest/`, so the image must contain `cp`, or a static copy helper at
   `/opt/toolchain/.copy`.
 - **Ownership:** files must be readable by group 0 (`chgrp -R 0 /opt/toolchain && chmod -R g=u
