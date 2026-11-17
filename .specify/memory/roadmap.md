@@ -1,7 +1,30 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.16.0 → 1.16.1 (this revision)
+Version change: 1.16.1 → 1.17.0 (this revision)
+Bump rationale: MINOR — a new decision (C-15 developer mode), a new planned spec (019), and
+material scope changes to C-14 (security levels) and 018 (skill, laptop session). Nothing
+existing is invalidated: build workers' isolation is unchanged at every level and in dev mode.
+
+Changes this revision (owner decisions 2026-11-17):
+  - C-14: three security levels for the test author and publisher (minimal, the laptop default;
+    recommended; strict, the cluster default), with the reasoning: the one realistic way a build
+    worker could learn hidden tests is if they land in the target repository, so the levels
+    differ in who can write the target and who can read the companion. Build-worker isolation is
+    the same at every level.
+  - C-15 (new): developer mode, an explicit flag for developing specfoundry itself. It may relax
+    test authoring, the companion and approvals, never build-worker isolation; it is stamped
+    everywhere and can never change a roadmap status.
+  - 018: status specced; the test author is a skill; on a laptop it runs as a separate agent
+    session (not the session that drives runs), in cluster mode as its own Job; its identity
+    follows the C-14 level.
+  - 019 (new): Developer mode, specced.
+  - 011: cluster mode defaults to the strict level.
+
+Specs affected: 011 (note), 018 (status, scope), 019 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.16.0 → 1.16.1 (this revision)
 Bump rationale: PATCH — C-14 wording: humans may write hidden tests too (as C-12 and 014 say);
 the test author's write access is limited to the companion. Grader evidence now withholds
 hidden-test output (014 contract grading.md), so C-14's "never expose test contents" holds.
@@ -508,6 +531,36 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   may serve many targets. A local folder is acceptable only as a laptop experiment and must be
   labelled so in the evidence.
 
+  **Security levels (owner decision 2026-11-17).** Why the rules exist: a build worker sees only
+  the item's spec and tasks and a snapshot of the target repository, and has no route to GitHub.
+  The one realistic way it could learn hidden tests is if they land **in the target
+  repository** (an agent copies them there by mistake or through a prompt injection, or a
+  publisher bug carries them over); the next run's snapshot would then contain them. So the
+  levels differ only in who can write the target and who can read the companion. Build-worker
+  isolation is the same at every level.
+
+  | Level | For | Test author's identity | Publisher on the companion | Test author's egress |
+  |---|---|---|---|---|
+  | **minimal** (laptop default) | a solo developer | the operator's own git access | allowed | not enforced |
+  | **recommended** | teams | a token or App that can write **only** the companion | not allowed | not enforced |
+  | **strict** (cluster default) | enterprise, cluster mode | a separate App, companion only, its own Job | not allowed | enforced (C-07) |
+
+  At the minimal level the protection is branch protection on the target, human review of
+  every PR, the test-author skill's rules, and P11. Separate identities are **recommended**
+  for teams and **expected** in enterprise environments, where review alone doesn't scale and
+  separation of duties (who wrote the tests vs. who wrote the code) is often required. Evidence
+  records the level; the audit reports it and never fails a run for using a lower level.
+
+- **C-15 — Developer mode is a labelled sandbox** (owner decision 2026-11-17): while
+  specfoundry itself is being developed, an explicit flag (`--dev`, never a default) may relax
+  steps that exist only to protect real results: hidden tests from a local folder, the same
+  agent session drafting them, approvals in the terminal only. It never relaxes build-worker
+  isolation (no secrets, model-only egress, no hidden tests in worker inputs). A dev-mode run is
+  stamped in its evidence, at its start, in its PR titles (`[dev]`) and in the audit
+  ("development run: does not count"), and it can never propose or change a roadmap status.
+  The first real run of an item (for example `cli-schema-mcp` 006) uses a real level, not dev
+  mode, so that its result counts.
+
 ## Planned Specs
 
 ### 001 — M0 stub isolation test on kind with Calico  [status: verified]
@@ -790,7 +843,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   GitHub App token scoped to that repository's contents; graders still hold no SCM credential,
   and runs record the companion's repository, commit and folder exactly as in laptop mode.
   The test-author Job (018) is the only cluster identity that may write the companion, and it
-  runs in its own namespace; the operator's grader path stays read-only.
+  runs in its own namespace; the operator's grader path stays read-only. Cluster mode defaults
+  to the **strict** level (C-14).
 
 ### 012 — Working with an agent: pilot skill and harness approvals  [status: verified]
 
@@ -1049,7 +1103,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   cluster profile (kind, minikube, plain Kubernetes and OpenShift), using an on-demand Node.js
   image off OpenShift and a UBI Node.js image on OpenShift.
 
-### 018 — Test author  [status: planned]
+### 018 — Test author  [status: specced]
 
 - **Description:** A separate test-author agent drafts an item's hidden acceptance tests.
   Humans still plan and approve. Build workers never write or see those tests.
@@ -1066,6 +1120,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     no route to the worker or publisher proxies, and no route from workers to it;
   - laptop mode uses a separate identity; cluster mode runs the test author as its own Job in
     its own namespace (C-11);
+  - **amended 2026-11-17:** the test author is a **skill**. On a laptop it runs as a separate
+    agent session (never the session that drives runs); in cluster mode the Job runs an agent
+    with the same skill. Its identity follows the C-14 level: the operator's own access at
+    minimal, a companion-only token or App at recommended, a separate App at strict. Helper
+    commands in `pilot/pilot` check a draft against the unchanged base, check the mapping and
+    open the companion PR;
   - the output is a pull request to the companion repository, which a human merges (C-04);
   - evidence records the author identity and the companion commit;
   - a new grader check: every hidden test maps to an acceptance criterion in the item's spec,
@@ -1074,8 +1134,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   steering or reviewing workers; the test author touching worker branches; the test author
   writing specs, tasks or the roadmap (the specs and tasks half of Q13 stays open).
 - **Depends on:** 014
-- **Governed by:** C-01, C-03, C-04, C-07, C-08, C-11, C-12, C-14
-- **Notes:** Owner decision 2026-11-17 (Tosin Akinosho). Not started. The publisher remains the
+- **Governed by:** C-01, C-03, C-04, C-07, C-08, C-11, C-12, C-14, C-15
+- **Spec dir:** specs/018-test-author/
+- **Notes:** Owner decision 2026-11-17 (Tosin Akinosho). Specced 2026-11-17. The publisher remains the
   only writer of the target repository (C-03); the test author's credential is companion-only.
   The test author never launches, steers or reviews workers, and worker evidence and grader
   evidence never expose test contents (C-14).
@@ -1094,6 +1155,26 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
   The mapping check is new and sits beside those four. It reads the merged companion folder
   and the item's spec, and it does not show test contents to workers.
+
+### 019 — Developer mode  [status: specced]
+
+- **Description:** An explicit `--dev` flag for developing specfoundry itself, which relaxes
+  steps that only protect real results and stamps the run as a development run (C-15).
+- **Outcome:** A maintainer can exercise the pilot end to end on a throwaway item without a
+  private companion, a separate test-author session or GitHub approvals. Every dev-mode run is
+  unmistakably labelled and can never change a roadmap status. Build-worker isolation is
+  identical to a real run.
+- **Scope (in):** the `--dev` flag on run and resume (and the test author's commands); hidden
+  tests from a local folder; the same session drafting tests; terminal-only approvals; stamps in
+  evidence, run start, PR titles and audit; no status PR and no status change; a check that dev
+  mode never changes worker isolation (the same P-checks pass).
+- **Scope (out):** any relaxation of build-worker isolation, secrets handling or human merge;
+  making dev mode a default or a profile-wide setting; counting dev-mode runs as evidence.
+- **Depends on:** 014
+- **Governed by:** C-04, C-12, C-14, C-15
+- **Spec dir:** specs/019-dev-mode/
+- **Notes:** Owner decision 2026-11-17: "a devmode option that is a flag to the project when
+  developing".
 
 ## Open Questions
 
@@ -1222,4 +1303,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.16.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17
+**Version**: 1.17.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17
