@@ -1,7 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.13.1 → 1.14.0
+Version change: 1.14.0 → 1.15.0
+Bump rationale: MINOR — a new decision (hidden tests across contexts) and a scope change on
+014 (one companion for many targets); 011 gains a matching scope note. No entry is invalidated.
+
+Changes this revision (owner decisions 2026-11-17):
+  - New decision C-14: hidden acceptance tests come from a private git repository the agent's
+    side can't read, in every context (laptop, server, team, cluster); each run records the
+    repository, commit and folder.
+  - 014: one companion repository may serve many targets in any languages
+    (`PILOT_COMPANION_PATH`); the companion is storage only, never built as a whole.
+  - 011: the operator reads the companion read-only (GitHub App token for that repository only);
+    graders still hold no SCM credential.
+  - 014 note: the first real target is tosin2013/cli-schema-mcp (Python 3.13), item 006.
+
+Prior: Version change: 1.13.1 → 1.14.0
 Bump rationale: MINOR — a constraint gains an exception (C-09: operator-supplied toolchain
 images); it doesn't invalidate existing entries. Plus a material scope clarification on 014.
 
@@ -437,6 +451,14 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - the same audit results on every committed evidence record (the golden data);
   - a passing fixture run.
 
+- **C-14 — Hidden tests stay out of the agent's reach in every context** (owner decision
+  2026-11-17): hidden acceptance tests come from a private git repository (the companion) that
+  the agent's side can't read, whether the pilot runs on a laptop, a server, for a team or in a
+  cluster. Each context reads it with its own credential (your git access; a test-authors team
+  on GitHub; the operator's read-only App token), and each run records the repository, commit
+  and folder. One companion may serve many targets. A local folder is acceptable only as a
+  laptop experiment and must be labelled so in the evidence.
+
   The in-cluster image scripts (grader, publisher, token check, GitHub writes) may stay in
   Python behind their contracts until there is a reason to port them.
 
@@ -718,6 +740,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   operator is designed around OpenShift's constraints (SCC, arbitrary UIDs, namespace
   permissions, egress). The operator lives in `operator/` in this repo until Q9's split
   trigger is met. It runs released waves (015) in the cluster, reusing the same wave scheduler.
+  **Hidden tests (C-14, 2026-11-17):** the operator reads the companion read-only, with a
+  GitHub App token scoped to that repository's contents; graders still hold no SCM credential,
+  and runs record the companion's repository, commit and folder exactly as in laptop mode.
 
 ### 012 — Working with an agent: pilot skill and harness approvals  [status: verified]
 
@@ -841,6 +866,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     repository with the hidden tests) live in operator-side profiles,
     `~/.config/specfoundry/targets/<name>.env`. The target repository declares nothing. In
     cluster mode (011) the same fields become a cluster resource.
+  - **Hidden tests (owner decision 2026-11-17, C-14):** one private companion repository
+    may serve all targets, in any languages; each target names its folder
+    (`PILOT_COMPANION_PATH`). The companion is storage only; the pilot copies one item's folder
+    over the project in the grader. First real target: `tosin2013/cli-schema-mcp`, item 006.
   - See `specs/014-any-project/`.
 
 ### 015 — Released waves  [status: planned]
@@ -1089,4 +1118,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.14.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17
+**Version**: 1.15.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17

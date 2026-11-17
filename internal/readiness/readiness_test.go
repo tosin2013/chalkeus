@@ -73,6 +73,7 @@ type world struct {
 	heads             []string
 	headsErr          error
 	cloneFails        map[string]bool
+	companionPath     string
 }
 
 func newWorld() *world {
@@ -108,7 +109,7 @@ func (w *world) check(t *testing.T, item string, maxMB int) (Result, string) {
 		},
 		OpenPRHeads: func(string) ([]string, error) { return w.heads, w.headsErr },
 	}
-	tg := config.Target{Name: "t", Repo: "me/target", Branch: "main", CompanionRepo: "me/target-acceptance", MaxInputMB: maxMB}
+	tg := config.Target{Name: "t", Repo: "me/target", Branch: "main", CompanionRepo: "me/target-acceptance", CompanionPath: w.companionPath, MaxInputMB: maxMB}
 	res, err := Check(d, tg, item, 3, out)
 	if err != nil {
 		t.Fatal(err)
@@ -202,4 +203,19 @@ func contains(xs []string, s string) bool {
 		}
 	}
 	return false
+}
+
+// One shared companion repository serves several targets: each target's items sit under its
+// own folder (PILOT_COMPANION_PATH), and only that folder counts.
+func TestSharedCompanionPath(t *testing.T) {
+	w := newWorld()
+	w.companionPath = "target"
+	w.companion = map[string]string{"target/items/002/tests/test_x.py": "x", "other/items/002/tests/test_y.py": "y", "items/002/z.py": "z"}
+	if res, _ := w.check(t, "002", 50); res.Decision != "allow" || res.HiddenFiles != 1 {
+		t.Fatalf("%+v", res)
+	}
+	w.companion = map[string]string{"other/items/002/tests/test_y.py": "y", "items/002/z.py": "z"}
+	if res, _ := w.check(t, "002", 50); res.Decision != "refuse" || !contains(res.Reasons, "ITEM_NO_HIDDEN_TESTS") {
+		t.Fatalf("another target's tests must not count: %+v", res)
+	}
 }

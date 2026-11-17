@@ -35,6 +35,7 @@ type Target struct {
 	ChangeType      string // Conventional Commits type of the item's PR title (default feat)
 	RegistryHosts   []string
 	CompanionRepo   string
+	CompanionPath   string // folder inside the companion that holds items/ ("" = the root); one repo can serve many targets
 	GithubIssues    string // on|off
 	GithubApprovals string // on|off
 	GraderMemory    string // optional override, e.g. 3Gi
@@ -43,6 +44,29 @@ type Target struct {
 	MaxInputMB      int
 	PublisherEnv    string // token mode: targets/<name>.publisher.env
 	Fixture         bool
+}
+
+var companionPathRE = regexp.MustCompile(`^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$`)
+
+func companionPathOK(p string) bool {
+	if !companionPathRE.MatchString(p) {
+		return false
+	}
+	for _, part := range strings.Split(p, "/") {
+		if part == "." || part == ".." {
+			return false
+		}
+	}
+	return true
+}
+
+// CompanionItemDir is where an item's hidden tests live inside the companion checkout
+// (slash-separated): [<PILOT_COMPANION_PATH>/]items/<item>.
+func (t Target) CompanionItemDir(item string) string {
+	if t.CompanionPath == "" {
+		return "items/" + item
+	}
+	return t.CompanionPath + "/items/" + item
 }
 
 var changeTypes = map[string]bool{"feat": true, "fix": true, "refactor": true, "perf": true, "test": true,
@@ -121,6 +145,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	t := Target{Name: name, Repo: v["PILOT_TARGET_REPO"], Branch: v["PILOT_TARGET_BRANCH"], Toolchain: v["PILOT_TOOLCHAIN"],
 		ToolchainImage: v["PILOT_TOOLCHAIN_IMAGE"],
 		TestCommand:    strings.TrimSpace(v["PILOT_TEST_COMMAND"]), CompanionRepo: v["PILOT_COMPANION_REPO"],
+		CompanionPath:  strings.Trim(strings.TrimSpace(v["PILOT_COMPANION_PATH"]), "/"),
 		InstallCommand: strings.TrimSpace(v["PILOT_INSTALL_COMMAND"]), ChangeType: v["PILOT_CHANGE_TYPE"],
 		GithubIssues: v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
 		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50}
@@ -144,6 +169,9 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	}
 	if !repoRE.MatchString(t.CompanionRepo) {
 		return Target{}, invalid("PILOT_COMPANION_REPO", "must be owner/name")
+	}
+	if t.CompanionPath != "" && !companionPathOK(t.CompanionPath) {
+		return Target{}, invalid("PILOT_COMPANION_PATH", "must be a relative folder of letters, digits, '.', '_', '-' and '/', without '..'")
 	}
 	if strings.EqualFold(t.CompanionRepo, t.Repo) {
 		return Target{}, invalid("PILOT_COMPANION_REPO", "must differ from PILOT_TARGET_REPO")

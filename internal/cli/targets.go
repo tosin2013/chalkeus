@@ -54,7 +54,16 @@ func runTargets(cmd *cobra.Command, _ []string) error {
 		if regs == "" {
 			regs = "-"
 		}
-		fmt.Fprintf(out, "%s\t%s@%s\ttoolchain=%s\tregistries=%s\tcompanion=%s\n", t.Name, t.Repo, t.Branch, t.Toolchain, regs, t.CompanionRepo)
+		fmt.Fprintf(out, "%s\t%s@%s\ttoolchain=%s\tregistries=%s\tcompanion=%s\n", t.Name, t.Repo, t.Branch, t.Toolchain, regs, companionRef(t))
 	}
 	return nil
+}
+
+// companionRef is the companion repository, plus the folder inside it when one repo serves
+// several targets.
+func companionRef(t config.Target) string {
+	if t.CompanionPath == "" {
+		return t.CompanionRepo
+	}
+	return t.CompanionRepo + "/" + t.CompanionPath
 }

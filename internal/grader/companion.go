@@ -27,17 +27,18 @@ type CompanionFile struct {
 type Companion struct {
 	Repo        string          `json:"repo"`
 	Commit      string          `json:"commit"`
+	Dir         string          `json:"dir"` // the item's folder in the companion, e.g. cli-schema-mcp/items/006
 	Item        string          `json:"item"`
 	FileCount   int             `json:"file_count"`
 	FilesSHA256 string          `json:"files_sha256"` // SHA-256 of the overlay tar
 	Files       []CompanionFile `json:"files"`
 }
 
-// Overlay tars items/<item>/ of a companion checkout, with paths relative to that folder (so
+// Overlay tars dir (the item's folder, e.g. items/<item> or <path>/items/<item>) of a companion checkout, with paths relative to that folder (so
 // it lands mirrored over the project), and describes it. Entries are sorted and their times and
 // owners fixed, so the same tests always give the same tar and hash.
-func Overlay(companionDir, repo, commit, item string) ([]byte, Companion, error) {
-	root := filepath.Join(companionDir, "items", item)
+func Overlay(companionDir, repo, commit, dir, item string) ([]byte, Companion, error) {
+	root := filepath.Join(companionDir, filepath.FromSlash(dir))
 	var files []string
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -55,7 +56,7 @@ func Overlay(companionDir, repo, commit, item string) ([]byte, Companion, error)
 	sort.Strings(files)
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
-	c := Companion{Repo: repo, Commit: commit, Item: item, FileCount: len(files)}
+	c := Companion{Repo: repo, Commit: commit, Dir: dir, Item: item, FileCount: len(files)}
 	for _, rel := range files {
 		raw, err := os.ReadFile(filepath.Join(root, rel))
 		if err != nil {
