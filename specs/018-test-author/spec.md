@@ -33,15 +33,37 @@ Terms used below:
 
 ### Session 2026-11-17
 
-- Q: Which identity should the test author use in laptop mode? → A: A second GitHub App (for
-  example "specfoundry-test-author"), installed only on the companion repository, with contents
-  and pull-request write. Its tokens are minted per draft and scoped to the companion. It is
-  never the publisher's App and never the operator's account. (Owner said "proceed" with the
-  recommended options; the owner may override.)
+- Q: Which identity should the test author use? → A: It follows the security level (roadmap
+  C-14): **minimal** (laptop default) the operator's own git access; **recommended** (teams) a
+  token or App that can write only the companion; **strict** (enterprise, cluster default) a
+  separate GitHub App installed only on the companion. Separate identities are recommended for
+  teams and expected in enterprise environments. (Owner, 2026-11-17: "recommended and minimal
+  settings"; a solo developer shouldn't need several Apps. Replaces an earlier answer that
+  required a second App everywhere.)
 - Q: In laptop mode, does the test author run in the local cluster or as a local agent session?
-  → A: In the local cluster, as its own Job in its own namespace with its own egress proxy, like
-  a worker but under the test-author role. The same design then carries to cluster mode (011)
-  unchanged. (Recommended option; owner may override.)
+  → A: As a **separate agent session** following a test-author **skill** (never the session that
+  drives runs); in cluster mode, as its own Job running an agent with the same skill (roadmap
+  018 scope). Replaces an earlier answer that put a Job in the local cluster.
+- Q: Should there be a developer mode? → A: Yes, as its own spec (019, roadmap C-15): an
+  explicit `--dev` flag that may let the same session draft tests, but stamps the run as a
+  development run that never counts and never changes a roadmap status.
+
+## Why the rules exist
+
+A build worker sees only the item's spec and tasks and a snapshot of the **target repository**,
+and it has no route to GitHub. The one realistic way it could learn hidden tests is if they land
+in the target repository: the test author copies them there by mistake or through a prompt
+injection in a file it reads, or a publisher bug carries them over. The next run's snapshot
+would then contain them. So what matters is **who can write the target** and **who can read the
+companion**; the security levels (roadmap C-14) set exactly that:
+
+| Level | Test author's identity | What prevents tests reaching the target |
+|---|---|---|
+| minimal (laptop default) | the operator's own access | branch protection on the target, human review of every PR, the skill's rules, P11 |
+| recommended (teams) | a token or App that can write only the companion | GitHub itself: the identity can't write the target |
+| strict (enterprise, cluster default) | a separate App, companion only, in its own Job | as recommended, plus enforced egress (C-07) |
+
+Build-worker isolation is identical at every level.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -90,11 +112,13 @@ the test author's own evidence contains no test contents.
 
 **Acceptance Scenarios**:
 
-1. **Given** the test author runs, **When** its isolation is checked, **Then** it runs under its
-   own identity, separate from the publisher's and the operator's, and that identity can write
-   only the companion repository (it cannot write the target repository).
-2. **Given** the test author runs, **When** its network reach is checked, **Then** it can reach
-   only the model host(s) and the companion repository's host; it cannot reach the worker or
+1. **Given** the recommended or strict level, **When** the test author's identity is checked
+   before the model is called, **Then** it can write the companion and cannot write the target;
+   otherwise the draft is refused (`AUTHOR_CAN_WRITE_TARGET`). At the minimal level the check
+   reports that the identity can write the target and records it, and the operator is reminded
+   to protect the target's main branch.
+2. **Given** the strict level, **When** the test author's network reach is checked, **Then** it
+   can reach only the model host(s) and the companion's host; it cannot reach the worker or
    publisher proxies, and no worker can reach it.
 3. **Given** the test author is running or has run, **When** the evidence and the driving
    session's output are inspected, **Then** neither contains test contents: only file names,
@@ -157,16 +181,19 @@ listed as uncovered.
 - **FR-004**: The output MUST be a single pull request on the companion repository that adds or
   changes files only under `<PILOT_COMPANION_PATH>/items/<NNN>/`. A human merges it; the pilot
   never merges (C-04).
-- **FR-005**: The test author MUST run under its own identity, whose write access is limited to
-  the companion repository; the request is refused if that identity can write the target. In
-  laptop mode the identity is a second GitHub App installed only on the companion, separate
-  from the publisher's App and the operator's account; its tokens are minted per draft and
-  scoped to the companion.
-- **FR-006**: The test author MUST run isolated from build workers and the publisher: its own
-  network role (model host(s) and the companion's host only), its own execution boundary, and
-  no shared storage with workers (C-07, C-08). In both modes it runs in the cluster as its own
-  Job in its own namespace (in laptop mode, the local cluster), never as an agent session on
-  the operator's machine.
+- **FR-005**: The test author's identity MUST follow the security level (roadmap C-14):
+  minimal (the laptop default) uses the operator's own access; recommended uses a token or App
+  that can write only the companion; strict uses a separate App installed only on the
+  companion. At recommended and strict, a draft MUST be refused if the identity can write the
+  target. The level and identity MUST be recorded in the evidence.
+- **FR-006**: The test author MUST be a skill run by an agent session separate from build
+  workers and from the session that drives runs: on a laptop a separate agent session; in
+  cluster mode its own Job and namespace. It shares no storage with workers (C-08). At the
+  strict level its egress is limited to the model host(s) and the companion's host (C-07).
+- **FR-006a**: `pilot/pilot` MUST provide the helper steps the skill uses, so that the session
+  never handles raw credentials or test contents in its output: check a draft against the
+  unchanged base (offline, with the run's dependency cache), check the mapping, and open the
+  companion pull request under the level's identity.
 - **FR-007**: Evidence for a draft MUST record: the target, item, spec hash, identity, model,
   companion repository, folder, the pull request, the commit it adds, file names and hashes,
   the base check's results and the mapping; it MUST NOT record test contents. Output shown to
@@ -180,8 +207,10 @@ listed as uncovered.
   not change; merged drafts are read exactly like hand-written tests.
 - **FR-011**: The test author MUST NOT start, steer or review build runs, touch worker branches,
   or edit the target's specs, tasks or roadmap.
-- **FR-012**: The same draft request MUST work in laptop mode and, later, cluster mode (011),
-  with the same evidence and guarantees (C-11).
+- **FR-012**: The same skill and helper steps MUST work in laptop mode and, later, cluster mode
+  (011), with the same evidence (C-11).
+- **FR-013**: The level MUST be shown at the start of each draft and each run, and reported by
+  the audit; a lower level never fails a run.
 
 ### Key Entities
 
@@ -190,15 +219,18 @@ listed as uncovered.
 - **Draft**: the files proposed for `<path>/items/<NNN>/`, their hashes, the mapping, the spec
   hash, and the base-check results.
 - **Mapping**: for each hidden test, the acceptance criteria it covers; plus uncovered criteria.
-- **Test-author identity**: the account or app under which the pull request is opened, with
-  write access to the companion only.
+- **Test-author identity**: the account, token or app under which the pull request is opened;
+  companion-only at the recommended and strict levels.
+- **Security level**: minimal, recommended or strict (roadmap C-14), chosen in the target's
+  profile; recorded in every draft's and run's evidence.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: For item 006 of `cli-schema-mcp`, the operator goes from "no hidden tests" to a
-  reviewable pull request with one command and no hand-written test code.
+  reviewable pull request without writing test code, and at the minimal level without creating
+  any new App or token.
 - **SC-002**: 100% of opened drafts fail on the unchanged base and keep the project's own tests
   passing.
 - **SC-003**: In every run that uses drafted tests, no test file name or content hash appears in
@@ -216,7 +248,8 @@ listed as uncovered.
   the run's offline grading (cache and grader) rather than giving the test author registry
   access.
 - Drafting is requested explicitly by the operator; it is never triggered automatically.
-- Cluster mode (011) is not built yet; this feature builds laptop mode and keeps the design
-  usable by the operator later.
-- The driving session may run the draft command, but by rule (pilot skill) never reads the
-  pull request's files; only the operator reviews them.
+- Cluster mode (011) is not built yet; this feature builds the skill, the helper steps and
+  laptop mode at all three levels (strict's enforced egress arrives with 011's Job).
+- Developer mode (019) is a separate feature; there, the same session may draft tests.
+- The session that drives runs never acts as the test author and never reads the companion's
+  files (pilot skill); only the operator reviews them.
