@@ -242,15 +242,15 @@ PR is refused.
   entries for each `approval_rejected` reason. Then run `pilot/tools/docs_check.py`.
 - [X] T033 Update `pilot/README.md` with the new commands and config keys.
 - [X] T034 Run the full unit suite and docs check; record the counts in this file's Notes.
-- [ ] T035 *(superseded 2026-11-15, see Notes)* **Owner action:** quickstart §2–§3 on the fixture in token mode. Record results in
+- [X] T035 *(superseded 2026-11-15, see Notes; done as 016 T047, 2026-11-17)* **Owner action:** quickstart §2–§3 on the fixture in token mode. Record results in
   `specs/004-github-loop/evidence/README.md` and copy the run record into `evidence/<run-id>/`.
-- [ ] T036 *(superseded 2026-11-15, see Notes)* **Owner action:** quickstart §4 in App mode (SC-005), timing the App setup from the
+- [X] T036 *(superseded 2026-11-15, see Notes; done as 016 T047, 2026-11-17)* **Owner action:** quickstart §4 in App mode (SC-005), timing the App setup from the
   docs only (SC-007).
-- [ ] T037 *(superseded 2026-11-15, see Notes)* **Owner action:** quickstart §5, a terminal run with GitHub approvals off (no
+- [X] T037 *(superseded 2026-11-15, see Notes; done as 016 T047 and T052, 2026-11-17)* **Owner action:** quickstart §5, a terminal run with GitHub approvals off (no
   change).
-- [ ] T038 *(superseded 2026-11-15, see Notes)* Privacy check: AU08 passes for every 004 run, and no token, key or model host
+- [X] T038 *(superseded 2026-11-15, see Notes; done as 016 T058, 2026-11-17)* Privacy check: AU08 passes for every 004 run, and no token, key or model host
   appears in `specs/004-github-loop/`.
-- [ ] T039 *(superseded 2026-11-15, see Notes)* Add an Evidence section to `specs/004-github-loop/spec.md`, then
+- [X] T039 *(superseded 2026-11-15, see Notes; done as 016 T059, 2026-11-17)* Add an Evidence section to `specs/004-github-loop/spec.md`, then
   `/speckit-roadmap-debrief`, and with the owner's approval `/speckit-roadmap-write`: 004
   spec dir and status; Q4 resolved ("per item").
 

@@ -1,6 +1,24 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.13.0 → 1.13.1
+Bump rationale: PATCH — two status transitions, an outcome clarification and notes; no new
+entry, constraint or open question.
+
+Changes this revision (owner decisions 2026-11-17, after the 016 and 004 debriefs):
+  - 016: planned → verified; spec dir linked; notes: the spec-status library is deferred to
+    tosin2013/spec-status#65 (the exec gate meets FR-015), approval replies (FR-019) added on
+    the owner's request, App mode first proven end to end on the Go pilot
+  - 004: planned → verified (SC-007, the App setup time, was not measured; the owner accepted
+    that); outcome clarified: one issue per roadmap item with its task checklist, as the spec
+    decided; notes: validated on the Go pilot (016 T047), refusal cases partly in CI by owner
+    decision, approval replies and the walk-away watcher delivered with 016
+  - Unblocked: 013 (depends on 016); 010 and 014 (depend on 004; 014 also on 016)
+
+Specs affected: 004, 016 (status); 010, 013, 014 (dependencies now satisfied)
+Open questions added/resolved: none
+
+Previous revision 1.13.0 (2026-11-16):
 Version change: 1.12.0 → 1.13.0
 Bump rationale: MINOR — a material change to 014's validation, and notes on 014, 015 and 017.
 
@@ -489,11 +507,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   ~~(former notes) Revisit per-run provider keys here (see Cross-Cutting Notes).~~
   ~~(former addresses) docs/prd.md §9 M2, F10~~
 
-### 004 — M3 GitHub loop  [status: planned]
+### 004 — M3 GitHub loop  [status: verified]
 
 - **Description:** Tie roadmap entries, issues and PRs together on GitHub.
-- **Outcome:** taskstoissues creates one issue per task, labels mirror spec status
-  state, PRs carry Closes #N, and reconcile after merge shows no drift.
+- **Outcome:** ~~taskstoissues creates one issue per task,~~ one issue per roadmap item with its
+  task checklist *(clarified 2026-11-17: what the spec decided and what was built)*, labels mirror
+  spec status state, PRs carry Closes #N, and reconcile after merge shows no drift.
 - **Scope (in):** issue creation, label sync, PR linking, post-merge reconcile. Added
   2026-11-14: GitHub approvals for the human decisions (mode, retry, approving a status
   change; merge is already on GitHub), usable in laptop and cluster mode (C-11); GitHub App
@@ -522,6 +541,13 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   the behaviour to Go, and 004's validation (quickstart §2–§5) runs against the Go pilot, which
   also produces the golden evidence for the `github` channel. Status stays `planned` until then. Issue #25 (watching needs a terminal) is
   solved in the Go design: a laptop daemon in 016, and the operator in 011.
+  **2026-11-17: verified** on the Go pilot (016 T047; evidence in `specs/004-github-loop/spec.md`
+  §Evidence and the debrief). Live: App mode 11/11 with every decision on GitHub, the
+  walk-away run, `publisher_identity` and `STATUS_PR_MERGED_BY_PUBLISHER` refusals, and the
+  App's write probe (fixture writable, canary not). By owner decision, `wrong_step`, `edited`,
+  `withdrawn` and `not_an_approver` are covered in CI rather than live (one maintainer account).
+  SC-007 (App setup under 30 minutes) was not timed; the owner accepted that. Delivered with 016:
+  approval replies on GitHub (FR-019) and the walk-away watcher (issue #25).
 - **Spec dir:** specs/004-github-loop/
 
 ### 005 — M4 OpenShift target (laptop mode)  [status: planned]
@@ -826,7 +852,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   one plan at release (what runs together, what waits, and why), and each worker sees only its
   own task. See Q12.
 
-### 016 — Go pilot at parity  [status: planned]
+### 016 — Go pilot at parity  [status: verified]
 
 - **Description:** Rewrite the pilot CLI in Go (C-13), reproducing the reference Python pilot's
   behaviour exactly, before any new feature is built.
@@ -865,6 +891,16 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   Stderr diagnostics (`-v` step timings, `-vv` pod phases and events, `-vvv` live agent
   activity) are allowed as a debugging aid outside parity: they never change stdout, exit codes
   or evidence, and they are redacted (owner decision 2026-11-15).
+
+  **2026-11-17: verified** (evidence in `specs/016-go-pilot/spec.md` §Evidence and the debrief):
+  the Go-only pilot ran the guide's walkthrough at 11/11 after the Python pilot was retired, and
+  its audit matches the reference on all golden records. The gate still runs the `spec` binary:
+  the library form waits for tosin2013/spec-status#65, and the exec form meets FR-015. Added on
+  the owner's request: approval replies on GitHub (FR-019). App mode was first proven end to end
+  on the Go pilot; the parity runs also fixed a publisher-namespace quota race and an AU08 false
+  positive that the reference shared. 004's refusal cases are partly covered in CI by owner
+  decision (see 004).
+- **Spec dir:** specs/016-go-pilot/
 
 ### 017 — Greenfield bootstrap  [status: planned]
 
@@ -1016,4 +1052,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.13.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-16
+**Version**: 1.13.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17

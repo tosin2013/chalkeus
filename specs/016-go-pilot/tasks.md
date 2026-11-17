@@ -442,10 +442,14 @@ GitHub.
   key or model host appears in `specs/016-go-pilot/` or `specs/004-github-loop/`.
   Done as: AU08 passes for all seven committed run records (016 and 004); the scan of both spec
   folders finds no model host and no token or private-key pattern.
-- [ ] T059 Add Evidence sections to `specs/016-go-pilot/spec.md` and
+- [X] T059 Add Evidence sections to `specs/016-go-pilot/spec.md` and
   `specs/004-github-loop/spec.md`. Run `/speckit-roadmap-debrief` for 016 and for 004. Then,
   with the owner's approval, `/speckit-roadmap-write`: the 016 and 004 statuses and spec dirs,
   and 013 unblocked.
+  Done as: §Evidence in both specs; debriefs `roadmap-reviews/debrief-20261117T013000Z.md` (016)
+  and `specs/004-github-loop/roadmap-reviews/debrief-20261117T013500Z.md` (004), both without
+  Must-Address findings; roadmap 1.13.1 (owner approval 2026-11-17): 016 and 004 verified, spec
+  dirs linked, 004's outcome wording clarified; 010, 013 and 014 unblocked.
 
 ---
 
