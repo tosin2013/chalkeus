@@ -61,6 +61,10 @@ install -m 600 /dev/null ~/.config/specfoundry/targets/greeting.env
 $EDITOR ~/.config/specfoundry/targets/greeting.env
 ```
 
+- **The pilot checks the modes:** the folder must be `0700` and each file `0600`, otherwise it
+  stops with `TARGET_MODE`. If you made them with `mkdir` or an editor, run
+  `chmod 700 ~/.config/specfoundry/targets` and `chmod 600 ~/.config/specfoundry/targets/*.env`.
+- **Check your profiles** with `pilot/pilot targets`: it lists each one, or says why it's invalid.
 - **If the file is missing**, the pilot stops with `TARGET_UNKNOWN: no target "greeting":
   create …/targets/greeting.env`, and prints the full path it looked for.
 
