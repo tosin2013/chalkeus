@@ -1,0 +1,58 @@
+name: Toolchain image request
+description: Ask for a language toolchain image so the pilot can run items of your project (014).
+title: "Toolchain image: <language> <version> + <build tool>"
+labels: ["toolchain-image"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The pilot runs a project's items with a toolchain image built by this repository's image
+        workflow from verified upstream releases and pinned by digest (constraint C-09). Use this
+        form when `pilot/pilot run --target … --item …` refused with `TOOLCHAIN_UNAVAILABLE`.
+        Don't paste tokens, private repository names or internal hostnames.
+  - type: input
+    id: language
+    attributes:
+      label: Language and version
+      placeholder: "for example: Node.js 22, Java 21, Go 1.27"
+    validations:
+      required: true
+  - type: input
+    id: build-tool
+    attributes:
+      label: Build tool and version
+      placeholder: "for example: npm 10, Maven 3.9, Gradle 8"
+    validations:
+      required: true
+  - type: textarea
+    id: registries
+    attributes:
+      label: Package registry hosts the build needs
+      description: One hostname per line. These become the target's PILOT_REGISTRY_HOSTS.
+      placeholder: "registry.npmjs.org"
+    validations:
+      required: true
+  - type: input
+    id: upstream
+    attributes:
+      label: Upstream release with published checksums
+      description: A link to the official release page that lists SHA-256 or SHA-512 checksums.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where you run the pilot
+      multiple: true
+      options:
+        - kind
+        - minikube
+        - plain Kubernetes
+        - OpenShift
+    validations:
+      required: true
+  - type: textarea
+    id: test-command
+    attributes:
+      label: How the project's tests run
+      placeholder: "npm ci && npm test"

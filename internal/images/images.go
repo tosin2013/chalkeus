@@ -110,7 +110,6 @@ func BuildArgs(image string, pins map[string]string) (map[string]string, error) 
 // FramePy is where the image build finds frame.py (both images COPY it).
 func FramePy(l paths.Layout) string { return filepath.Join(l.Images, "common", "frame.py") }
 
-
 func copyDir(src, dst string) error {
 	return filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {

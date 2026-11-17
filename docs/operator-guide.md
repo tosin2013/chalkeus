@@ -613,6 +613,7 @@ This guide describes the pilot today. Planned
 | Item | Effect on this guide |
 |---|---|
 | **004:** GitHub loop | Available as an option: issues per roadmap item, approvals on GitHub, and a GitHub App as the publisher. See [the GitHub loop](github-loop.md) and [GitHub App](github-app.md). This walkthrough is unchanged with it off |
+| **014:** Your own repositories | Configure targets and check an item's readiness today (`pilot/pilot targets`, `pilot/pilot gate --target <name> --item NNN`); running an item is being built. See [targets](targets.md). The fixture walkthrough is unchanged |
 | **005:** OpenShift | An enterprise install path (restricted SCC, possibly images on Quay), and per-run model keys |
 | **007:** Operator observability | Metrics, traces and events from each run to a collector you run |
 | **008:** More harnesses | Claude Code and Codex workers alongside OpenCode |

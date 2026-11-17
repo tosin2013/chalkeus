@@ -340,7 +340,11 @@ func (r *Run) WriteSummary() (string, error) {
 	if reason, ok := st["reason"].(string); ok && reason != "" {
 		head += " (" + reason + ")"
 	}
-	out := []string{"# M1 pilot run " + r.ID, "", head, ""}
+	title := "# M1 pilot run "
+	if r.Kind() == KindItem {
+		title = "# pilot item run "
+	}
+	out := []string{title + r.ID, "", head, ""}
 	if len(ev) > 0 {
 		t0, e0 := time.Parse(TimeFormat, pyStr(ev[0]["at"]))
 		t1, e1 := time.Parse(TimeFormat, pyStr(ev[len(ev)-1]["at"]))
@@ -363,7 +367,7 @@ func (r *Run) WriteSummary() (string, error) {
 	}
 	out = append(out, "## Attempts", "", "| Task | Attempt | Induction | Grade | Cost (USD) | Tokens |", "|---|---|---|---|---|---|")
 	tasks, _ := st["tasks"].(map[string]any)
-	for _, label := range []string{"A", "B"} {
+	for _, label := range r.TaskLabels() {
 		t, _ := tasks[label].(map[string]any)
 		atts, _ := t["attempts"].([]any)
 		for _, x := range atts {
@@ -486,6 +490,42 @@ func PyFloat(f float64) json.Number {
 		s += ".0"
 	}
 	return json.Number(s)
+}
+
+// Run kinds (014 R1): the fixture's A→B run, or one prepared item of a target repository.
+const (
+	KindFixture = "fixture"
+	KindItem    = "item"
+)
+
+// Kind is the run's kind; records written before 014 have none and are fixture runs.
+func (r *Run) Kind() string {
+	if k, _ := r.State["kind"].(string); k == KindItem {
+		return KindItem
+	}
+	return KindFixture
+}
+
+// TaskLabels are the run's task labels in order: A then B for the fixture (as the reference
+// summary listed them), the item id for an item run.
+func (r *Run) TaskLabels() []string {
+	if r.Kind() == KindFixture {
+		return []string{"A", "B"}
+	}
+	tasks, _ := r.State["tasks"].(map[string]any)
+	out := make([]string, 0, len(tasks))
+	for k := range tasks {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// SetItemRun marks the run as an item run of target (name, repo, branch, toolchain) and item.
+func (r *Run) SetItemRun(target map[string]any, item string) {
+	r.State["kind"] = KindItem
+	r.State["target"] = target
+	r.State["item"] = item
 }
 
 // NewRun creates a run directory under root with a fresh state (the reference new_run); impl

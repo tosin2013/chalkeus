@@ -1,0 +1,2 @@
+Run mode for this pilot: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}
+  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.

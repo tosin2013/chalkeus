@@ -505,5 +505,33 @@ func Dir(d string, keyFiles, envFiles []string, final bool) ([]evidence.CheckRow
 		}
 	}
 	rows = append(rows, row("AU11", len(bad11) == 0, "induction applied to A/1 only, withholding exactly the acceptance section", pyrepr.Strings(bad11)))
+	if runKind(d) == evidence.KindItem {
+		rows = itemVariants(d, rows)
+	}
 	return rows, nil
+}
+
+// runKind reads run.json's kind; records without one (every pre-014 record) are fixture runs.
+func runKind(d string) string {
+	var st map[string]any
+	if !readJSON(filepath.Join(d, "run.json"), &st) {
+		return evidence.KindFixture
+	}
+	return (&evidence.Run{State: st}).Kind()
+}
+
+// itemVariants replaces the fixture-shaped checks (AU01, AU02, AU03, AU11) with their
+// item-run variants (014 contracts/audit-item.md). Until they are implemented (014 US1) an
+// item run fails them, so it can never pass the audit by default.
+func itemVariants(_ string, rows []evidence.CheckRow) []evidence.CheckRow {
+	out := make([]evidence.CheckRow, 0, len(rows))
+	for _, r := range rows {
+		switch r.ID {
+		case "AU01", "AU02", "AU03", "AU11":
+			out = append(out, row(r.ID, false, r.Description, "item-run variant not implemented yet (014 US1)"))
+		default:
+			out = append(out, r)
+		}
+	}
+	return out
 }
