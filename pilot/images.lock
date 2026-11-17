@@ -2,7 +2,7 @@
 # This file is never a workflow trigger (paths-ignore), so merging a digest PR cannot start
 # another build (analysis F1). Inputs live in pilot/pins.env.
 IMAGE_REGISTRY=ghcr.io/tosin2013
-WORKER_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:a00701daa874f33094d7e2977180274cbf682e0d8a0592bbdb96dc36a7f0219e
-TOOLS_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-tools@sha256:1a25de9a96c0cdfab6bd583e01742cafd5291455ccd8f1d0eb42b20aae04d93a
-EGRESS_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-egress@sha256:b4f496ea0c7f2cd1ce373ec47d2d1072e5546f1613d5a7a65d2b13ec339cd543
-TOOLCHAIN_PYTHON313_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-toolchain-python3.13@sha256:61f10ad1d62e8b85b8af65a3e511e14470f4655fb12c5745d68f8da1c9a82b59
+WORKER_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:d7d8be3ad2623cac36c6ea383f85e2cf62d511df9661f06f719aa22f670a4f0f
+TOOLS_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-tools@sha256:9a56f8dfd5eb74e2d04bad4e63b9493deeeb4caa5fe44537055304a47b4d68cc
+EGRESS_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-egress@sha256:73ee7058de62d53241ea92cba049eb7f85bebb736f080f7bce905b1b7ec3759e
+TOOLCHAIN_PYTHON313_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-toolchain-python3.13@sha256:d69bb093323f9916682c987aa39a92c4556e86c01a6ca8c7bac90647bc2cc18f
