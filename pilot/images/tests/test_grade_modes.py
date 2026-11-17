@@ -218,3 +218,33 @@ class TestRules(Modes):
         self.change_files({"app.py": SHOUT, "tests/test_visible.py": extended})
         r = self.run_grade(self.tmeta())
         self.assertEqual(r["result"], "pass", r["checks"])
+
+
+
+class HiddenOutputWithheld(Modes):
+    """C-14: an item run's G5 detail never carries the hidden tests' output (it can show their
+    source), in attempts and in the baseline."""
+
+    MARK = "SECRET_EXPECTATION_42"
+
+    def setUp(self):
+        super().setUp()
+        write(self.grading, "overlay/tests/test_hidden.py",
+              "import unittest, app\nclass H(unittest.TestCase):\n    def test_shout(self):\n"
+              f"        self.assertEqual(app.shout('a'), 'A!', '{self.MARK}')\n")
+
+    def detail(self, r):
+        return next(c["detail"] for c in r["checks"] if c["id"] == "G5_hidden_tests")
+
+    def test_attempt_detail_has_no_output(self):
+        self.change("def greet(n):\n    return 'hi ' + n\n\ndef shout(n):\n    return n\n")
+        r = self.run_grade(self.meta())
+        self.assertEqual(self.results(r)["G5_hidden_tests"], "fail")
+        self.assertNotIn(self.MARK, json.dumps(r))
+        self.assertIn("output withheld", self.detail(r))
+
+    def test_baseline_detail_has_no_output(self):
+        r = self.run_grade(self.meta(mode="baseline"))
+        self.assertEqual(r["result"], "pass")
+        self.assertNotIn(self.MARK, json.dumps(r))
+        self.assertIn("fail on the base revision (expected)", self.detail(r))

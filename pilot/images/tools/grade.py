@@ -165,6 +165,15 @@ def existing_tests_kept(meta, repo, work, base, add):
                 "'## Tests that may change'\n") + out)
 
 
+def hidden_summary(rc, out):
+    """What an item run's G5 may record: the exit code and the size and hash of the output,
+    never the output itself. Test runners print failing assertions and source lines, and grade
+    evidence is kept and may be shared, so the hidden tests' contents must not reach it (C-14)."""
+    import hashlib
+    digest = hashlib.sha256(out.encode()).hexdigest()
+    return f"exit={rc} output_lines={len(out.splitlines())} output_sha256={digest} (output withheld: hidden tests)"
+
+
 def visible_and_hidden(meta, grading, repo, add, work=None, base=None):
     rc, out = project_tests(meta, repo)
     if add("G4_visible_tests", rc == 0, out):
@@ -175,7 +184,7 @@ def visible_and_hidden(meta, grading, repo, add, work=None, base=None):
             add("G5_hidden_tests", False, why)
             return
         rc, out = project_tests(meta, repo)
-        add("G5_hidden_tests", rc == 0, out)
+        add("G5_hidden_tests", rc == 0, hidden_summary(rc, out))
 
 
 def baseline(meta, inp, grading, work, repo):
@@ -202,7 +211,7 @@ def baseline(meta, inp, grading, work, repo):
                 # Here a pass means the hidden tests FAILED on the base, as they must.
                 add("G5_hidden_tests", "pass" if rc != 0 else "fail",
                     ("hidden tests fail on the base revision (expected)\n" if rc != 0 else
-                     "hidden tests PASS on the base revision: they carry no signal\n") + out)
+                     "hidden tests PASS on the base revision: they carry no signal\n") + hidden_summary(rc, out))
     done = {r["id"] for r in results}
     for cid in CHECKS:
         if cid not in done:
