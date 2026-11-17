@@ -61,6 +61,22 @@ PILOT_GITHUB_ISSUES=off
 - **`PILOT_TOOLCHAIN`** names a toolchain specfoundry builds: `jdk21-maven`, `node24`,
   `python3.13` or `go` (`pilot/images/toolchains.json`). Until its image is published, the pilot
   refuses with `TOOLCHAIN_UNAVAILABLE`.
+- **Dependencies:** list the package registries in `PILOT_REGISTRY_HOSTS` and set
+  `PILOT_INSTALL_COMMAND`. The install runs twice: once for the agent (with the registries
+  reachable), and once, before any attempt, into a cache built from your unchanged code plus the
+  hidden tests. The grader then runs offline from that cache, so **an attempt can't add
+  dependencies**; add new ones to the project yourself when you prepare the item. For Python
+  (`python3.13`):
+
+  ```sh
+  PILOT_TOOLCHAIN=python3.13
+  PILOT_REGISTRY_HOSTS=pypi.org,files.pythonhosted.org
+  PILOT_INSTALL_COMMAND=pip install -r requirements.txt      # dependencies only, not -e .
+  PILOT_TEST_COMMAND=PYTHONPATH=src python -m pytest -q -p no:cacheprovider tests
+  ```
+
+  The packages go into a virtual environment the pilot creates; your tests must find the project's
+  own code through `PYTHONPATH` or your pytest configuration.
 - **Any other language:** bring your own toolchain image (next section), or ask for one with the
   [toolchain image request form](https://github.com/tosin2013/specfoundry/issues/new?template=toolchain-image.yml).
 - **Optional keys** may only raise the toolchain's defaults: `PILOT_GRADER_MEMORY`,

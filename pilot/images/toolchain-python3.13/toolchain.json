@@ -1,0 +1,9 @@
+{
+  "name": "python3.13",
+  "version_command": ["python3", "--version"],
+  "path": ["${PILOT_DEPS}/venv/bin", "/opt/toolchain/python/bin"],
+  "env": {"PYTHONDONTWRITEBYTECODE": "1", "PIP_DISABLE_PIP_VERSION_CHECK": "1", "PIP_NO_INPUT": "1",
+          "VIRTUAL_ENV": "${PILOT_DEPS}/venv"},
+  "setup_command": ["sh", "-c", "[ -x \"$PILOT_DEPS/venv/bin/python\" ] || python3 -m venv \"$PILOT_DEPS/venv\""],
+  "proxy": "env"
+}

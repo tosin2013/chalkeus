@@ -68,4 +68,27 @@ if docker logs pilot-smoke-proxy 2>&1 | grep -q 'refused on filtered domain "blo
   echo "  PASS proxy running and refused a non-allowlisted host (curl http=$code)"
 else echo "  FAIL proxy did not refuse as expected"; docker logs pilot-smoke-proxy 2>&1 | tail -5; fail=1; fi
 
+# --- toolchain images (014, contracts/toolchain-image.md): the init copy, then the version
+# command, both as an arbitrary UID with a read-only root, as in the pods. TOOLCHAINS lists refs.
+for tc in ${TOOLCHAINS:-}; do
+  vol="pilot-smoke-tc-$RANDOM"; docker volume create "$vol" >/dev/null
+  docker run --rm --user 0:0 -v "$vol":/dest "$TOOLS" chmod 0777 /dest >/dev/null 2>&1 || true
+  if "${RUN[@]}" -v "$vol":/dest "$tc" >/dev/null 2>&1 \
+     && v="$("${RUN[@]}" -v "$vol":/opt/toolchain:ro --tmpfs /tmp:exec,mode=1777 "$TOOLS" python3 -c '
+import json, os, subprocess, sys
+t = json.load(open("/opt/toolchain/toolchain.json"))
+env = dict(os.environ, PILOT_DEPS="/tmp/deps")
+path = [p.replace("${PILOT_DEPS}", "/tmp/deps") for p in t["path"]]
+env["PATH"] = ":".join(path + [env["PATH"]])
+for root, _, files in os.walk("/opt/toolchain"):
+    for f in files:
+        p = os.path.join(root, f)
+        if os.path.isfile(p) and not os.path.islink(p) and os.stat(p).st_mode & 0o6000:
+            sys.exit("setuid file: " + p)
+print(subprocess.run(t["version_command"], env=env, capture_output=True, text=True, check=True).stdout.strip())' 2>&1)"; then
+    echo "  PASS toolchain $tc: $v"
+  else echo "  FAIL toolchain $tc: ${v:-copy failed}"; fail=1; fi
+  docker volume rm -f "$vol" >/dev/null
+done
+
 [ "$fail" -eq 0 ] && echo "== smoke: all images pass as an arbitrary UID" || { echo "== smoke: FAILED"; exit 1; }

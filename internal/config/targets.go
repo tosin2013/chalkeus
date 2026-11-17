@@ -31,6 +31,7 @@ type Target struct {
 	Toolchain       string
 	ToolchainImage  string // operator-supplied toolchain image (digest-pinned), "" for the catalog's
 	TestCommand     string
+	InstallCommand  string // installs the project\'s dependencies (prefetch and worker; 014 R7)
 	RegistryHosts   []string
 	CompanionRepo   string
 	GithubIssues    string // on|off
@@ -116,7 +117,8 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	t := Target{Name: name, Repo: v["PILOT_TARGET_REPO"], Branch: v["PILOT_TARGET_BRANCH"], Toolchain: v["PILOT_TOOLCHAIN"],
 		ToolchainImage: v["PILOT_TOOLCHAIN_IMAGE"],
 		TestCommand:    strings.TrimSpace(v["PILOT_TEST_COMMAND"]), CompanionRepo: v["PILOT_COMPANION_REPO"],
-		GithubIssues: v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
+		InstallCommand: strings.TrimSpace(v["PILOT_INSTALL_COMMAND"]),
+		GithubIssues:   v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
 		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50}
 	if !repoRE.MatchString(t.Repo) {
 		return Target{}, invalid("PILOT_TARGET_REPO", "must be owner/name")
@@ -147,6 +149,9 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 			return Target{}, invalid("PILOT_REGISTRY_HOSTS", "entries must be hostnames, got "+h)
 		}
 		t.RegistryHosts = append(t.RegistryHosts, h)
+	}
+	if t.InstallCommand != "" && len(t.RegistryHosts) == 0 {
+		return Target{}, invalid("PILOT_INSTALL_COMMAND", "needs PILOT_REGISTRY_HOSTS: dependencies are downloaded from the registries you list")
 	}
 	if t.GithubIssues == "" {
 		t.GithubIssues = "off" // a new target opts in (014 R14)

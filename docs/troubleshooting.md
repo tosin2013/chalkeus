@@ -38,6 +38,7 @@ instead.
 | An item run refuses with `ITEM_…`, `INPUT_TOO_LARGE`, `OPEN_ITEM_PR` or `TOOLCHAIN_UNAVAILABLE` | [Item not prepared](#item-not-ready) |
 | An item run fails with `BASELINE_SUITE_FAILS` or `BASELINE_HIDDEN_PASSES` | [Baseline fails](#item-baseline) |
 | An item run fails with `PREPARE` or `REPLAY_MISMATCH`, or `target … needs its own publisher token` | [Item run setup](#item-setup) |
+| An item run fails with `TOOLCHAIN_CONTRACT` or `PREFETCH_FAILED` | [Toolchain or dependencies](#item-toolchain) |
 
 ---
 
@@ -428,6 +429,25 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
     use the GitHub App, installed on the target.
 - **Confirm:** the run gets past the step that failed.
 - **Source:** `internal/pipeline/item.go`, `internal/fixture/snapshot.go`, `internal/cli/run.go`.
+
+<a id="item-toolchain"></a>
+### Toolchain or dependencies: `TOOLCHAIN_CONTRACT` or `PREFETCH_FAILED`
+
+- **Symptom:** after the mode approval, the run fails with `TOOLCHAIN_CONTRACT: …` or
+  `PREFETCH_FAILED: …`, before any worker starts.
+- **Cause:**
+  - `TOOLCHAIN_CONTRACT`: the toolchain image failed a check. The message names it: no
+    `/opt/toolchain/toolchain.json`, a rule it breaks, a failing version command, a setuid file,
+    or the image can't copy `/opt/toolchain` with `cp`. See
+    [the toolchain image contract](../specs/014-any-project/contracts/toolchain-image.md).
+  - `PREFETCH_FAILED`: `PILOT_INSTALL_COMMAND` didn't finish on your unchanged code. Usually a
+    package host is missing from `PILOT_REGISTRY_HOSTS`, the command is wrong, or a hidden test
+    needs a package the project doesn't declare.
+- **Fix:** read `<run>/toolchain.json` or `<run>/prefetch.json` (the install's last output) in the
+  evidence. Add the missing registry host, correct the command, or add the dependency to the
+  project while preparing the item.
+- **Confirm:** a new run gets past `prepare` to `baseline`.
+- **Source:** `internal/grader/item.go` (`ProbeToolchain`, `Prefetch`).
 
 ## Teardown
 

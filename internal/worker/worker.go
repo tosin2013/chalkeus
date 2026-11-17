@@ -18,6 +18,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/prompt"
 	"github.com/tosin2013/specfoundry/internal/runner"
 	"github.com/tosin2013/specfoundry/internal/stage"
+	"github.com/tosin2013/specfoundry/internal/toolchain"
 )
 
 // Deadline is the worker Job's active deadline in seconds.
@@ -44,7 +45,17 @@ type Item struct {
 	TestCommand    string
 	CommandTimeout int    // seconds per test command in the grader
 	InputLimit     string // emptyDir size for staged inputs, e.g. "64Mi"
+	// Egress and toolchain (014 R5, R6): the worker's one proxy, the toolchain image and its checked
+	// toolchain.json (nil: built into the images), and the setup script ("" when nothing to install).
+	ProxyNS, ProxyURL string
+	ToolchainImage    string
+	ToolchainSpec     *toolchain.Spec
+	SetupScript       string
+	HomeLimit         string
 }
+
+// WorkerDeps is where an item run's worker installs dependencies (its home volume).
+const WorkerDeps = "/home/worker/deps"
 
 // AllowedPaths are the paths a worker may change for a task.
 func AllowedPaths(task string) []string {
@@ -201,7 +212,11 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 				_ = run.Event("attempt", task, n, "attempt_error", fmt.Sprintf("panic: %v", r))
 			}
 		}()
-		nsYAML, err := k8s.Render(filepath.Join(d.L.Manifests, "worker-ns.yaml.tmpl"), map[string]string{"NS": ns, "RUN_ID": run.ID})
+		nsTmpl, nsVars := "worker-ns.yaml.tmpl", map[string]string{"NS": ns, "RUN_ID": run.ID}
+		if d.Item != nil {
+			nsTmpl, nsVars["PROXY_NS"] = "worker-ns-item.yaml.tmpl", d.Item.ProxyNS
+		}
+		nsYAML, err := k8s.Render(filepath.Join(d.L.Manifests, nsTmpl), nsVars)
 		if err != nil {
 			update("failed", "harness_error")
 			_ = run.Event("attempt", task, n, "attempt_error", trim(err))
@@ -211,7 +226,15 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 			"NS": ns, "DEADLINE": fmt.Sprint(Deadline), "WORKER_IMAGE": imgs["worker"], "PILOT_MODEL": cfg.Get("PILOT_MODEL"),
 			"SPEND_CAP": cfg.Get("PILOT_SPEND_CAP_USD"), "TOKEN_CAP": cfg.Get("PILOT_TOKEN_CAP")}
 		if d.Item != nil {
-			tmpl, vars["TOOLS_IMAGE"], vars["INPUT_LIMIT"] = "worker-job-item.yaml.tmpl", imgs["tools"], d.Item.InputLimit
+			it := d.Item
+			tmpl, vars["TOOLS_IMAGE"], vars["INPUT_LIMIT"] = "worker-job-item.yaml.tmpl", imgs["tools"], it.InputLimit
+			b := toolchain.PodBlocks(it.ToolchainImage, it.ToolchainSpec, WorkerDeps)
+			inits := b.Inits
+			if it.SetupScript != "" {
+				inits = strings.TrimPrefix(inits+"\n"+toolchain.SetupInit(imgs["tools"], it.ProxyURL, it.ToolchainSpec, WorkerDeps), "\n")
+			}
+			vars["PROXY_URL"], vars["HOME_LIMIT"] = it.ProxyURL, it.HomeLimit
+			vars["TOOLCHAIN_INITS"], vars["TOOLCHAIN_ENV"], vars["TOOLCHAIN_MOUNTS"], vars["TOOLCHAIN_VOLUMES"] = inits, b.Env, b.Mounts, b.Volumes
 		}
 		jobYAML, err := k8s.Render(filepath.Join(d.L.Manifests, tmpl), vars)
 		if err != nil {
@@ -358,6 +381,11 @@ func stageInputs(d Deps, idir, ns string) error {
 	for name, p := range map[string]string{"prompt.md": filepath.Join(idir, "prompt.md"), "meta.json": filepath.Join(idir, "meta.json"),
 		"base.bundle": d.Item.SnapshotBundle} {
 		if err := t.AddFile(name, p); err != nil {
+			return err
+		}
+	}
+	if d.Item.SetupScript != "" {
+		if err := t.AddBytes("setup.sh", []byte(d.Item.SetupScript)); err != nil {
 			return err
 		}
 	}

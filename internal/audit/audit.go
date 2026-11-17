@@ -557,7 +557,20 @@ func itemAU04(d string, base evidence.CheckRow) evidence.CheckRow {
 		}
 	}
 	ok := base.Result == "pass" && n > 0 && pass
-	return row("AU04", ok, base.Description+"; no hidden test reached a worker (P11, 014)", fmt.Sprintf("%s p11_rows=%d", base.Detail, n))
+	// With a dependency cache, P12 must pass too: graders had no egress (014 R7).
+	var st map[string]any
+	readJSON(filepath.Join(d, "run.json"), &st)
+	p12 := 0
+	if _, cache := st["cache"]; cache {
+		for _, c := range checks {
+			if str(c, "id") == "P12" {
+				p12++
+				ok = ok && str(c, "result") == "pass"
+			}
+		}
+		ok = ok && p12 > 0
+	}
+	return row("AU04", ok, base.Description+"; no hidden test reached a worker (P11, 014)", fmt.Sprintf("%s p11_rows=%d p12_rows=%d", base.Detail, n, p12))
 }
 
 // itemAU01: only the item was gated allow, its readiness passed, and no other task has events

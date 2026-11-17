@@ -23,6 +23,8 @@ PILOT_TOOLCHAIN=jdk21-maven
 # or your own toolchain image (contracts/toolchain-image.md):
 # PILOT_TOOLCHAIN_IMAGE=quay.io/you/toolchain-rust@sha256:<64 hex>   PILOT_TOOLCHAIN=rust-1.83
 PILOT_TEST_COMMAND=mvn -B test
+# optional: installs dependencies (needs PILOT_REGISTRY_HOSTS); runs in the worker and the prefetch
+# PILOT_INSTALL_COMMAND=pip install -r requirements.txt
 PILOT_REGISTRY_HOSTS=repo.maven.apache.org
 PILOT_COMPANION_REPO=owner/greeting-service-acceptance
 PILOT_GITHUB_ISSUES=off

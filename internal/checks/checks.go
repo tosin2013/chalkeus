@@ -285,6 +285,45 @@ func HiddenTestsAbsent(runDir, configMaps, prompt string, staged []string) (bool
 	return len(leaks) == 0, fmt.Sprintf("hidden_files=%d leaks=%s", len(c.Files), pyrepr.Value(strsAny(leaks)))
 }
 
+// GradingPolicies is P12's rule (014 R7) over a grading namespace's NetworkPolicies: a default deny
+// for every pod, and at most one allow rule, which selects only the prefetch pod and reaches only
+// DNS and the target's prefetch proxy. So graders have no egress at all.
+func GradingPolicies(policies []map[string]any, prefetchProxyNS string) (bool, string) {
+	deny, extra := false, []string{}
+	for _, np := range policies {
+		name := s(m(np["metadata"])["name"])
+		spec := m(np["spec"])
+		sel := m(spec["podSelector"])
+		labels := m(sel["matchLabels"])
+		switch {
+		case name == "default-deny-all" && len(labels) == 0 && len(l(spec["egress"])) == 0 && len(l(spec["ingress"])) == 0:
+			deny = true
+		case name == "allow-prefetch-egress" && len(labels) == 1 && s(labels["pilot/role"]) == "prefetch":
+			for _, rule := range l(spec["egress"]) {
+				for _, to := range l(m(rule)["to"]) {
+					ns := s(m(m(m(to)["namespaceSelector"])["matchLabels"])["kubernetes.io/metadata.name"])
+					if ns != "kube-system" && ns != prefetchProxyNS {
+						extra = append(extra, name+"->"+ns)
+					}
+					if m(to)["ipBlock"] != nil {
+						extra = append(extra, name+"->ipBlock")
+					}
+				}
+			}
+		default:
+			extra = append(extra, name)
+		}
+	}
+	return deny && len(extra) == 0, fmt.Sprintf("default_deny=%t unexpected=%s", deny, pyrepr.Value(strsAny(extra)))
+}
+
+// RunGradingChecks records P12 for an item run's grading namespace.
+func (d Deps) RunGradingChecks(run *evidence.Run, ns, prefetchProxyNS string) {
+	nps, _ := d.C.List(ns, "netpol", "")
+	ok, detail := GradingPolicies(nps, prefetchProxyNS)
+	d.rec(run, "P12", "014 R7", ok, "graders have no egress; only the prefetch pod reaches DNS and its registries-only proxy", ns, detail)
+}
+
 // RunClusterChecks runs P09 and P10.
 func (d Deps) RunClusterChecks(run *evidence.Run) {
 	// P09: only pilot-publish/scm-token holds an SCM-like credential.

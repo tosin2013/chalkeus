@@ -152,6 +152,12 @@ code. Each is recorded as a gate row in `gate/<seq>-<label>.json`.
 
 ## R6 — Egress for registries
 
+> **Amended 2026-11-17 (implementation):** the worker gets **one** per-target proxy,
+> `pilot-egress-w-<target>`, allowing the model host(s) plus the registries: pip, npm and Go
+> all read the same `HTTPS_PROXY` the agent uses for the model, so a separate registry proxy
+> can't serve them. The prefetch pod gets `pilot-egress-r-<target>` (registries only, never the
+> model host). Maven still gets `settings.xml` (proxy kind `maven-settings`).
+
 - **Decision:** model traffic keeps the existing `pilot-egress-model` proxy, set at `up`.
   Registry traffic goes through a **per-target registry proxy**, `pilot-egress-r-<target>`.
   - Its allowlist is exactly the profile's `PILOT_REGISTRY_HOSTS`, and the model host is never
@@ -178,7 +184,16 @@ code. Each is recorded as a gate row in `gate/<seq>-<label>.json`.
     in parallel.
   - One proxy per run: more churn, with no gain over per-target.
 
-## R7 — Dependencies for the grader: per-run PVC, prefetched from the base revision only
+## R7 — Dependencies for the grader
+
+> **Amended 2026-11-17 (implementation):** dependencies are installed by the target's
+> `PILOT_INSTALL_COMMAND`, after the toolchain's `setup_command` (for Python: a venv at
+> `${PILOT_DEPS}/venv`). It runs in the worker's setup init container (into its own home) and in
+> the prefetch Job (into the cache). The cache is mounted at the same path (`/deps`) in prefetch
+> and graders, so a venv's absolute paths stay valid. For Python the install command installs
+> **dependencies only** (for example `pip install -r requirements.txt`), and the test command
+> finds the project's code itself (for example `PYTHONPATH=src python -m pytest`): an editable
+> install would point at the prefetch's checkout, not the grader's.: per-run PVC, prefetched from the base revision only
 
 - **Decision (owner, 2026-11-17):**
   - **One grading namespace per run.** Item runs use `pilot-g-<label>` instead of

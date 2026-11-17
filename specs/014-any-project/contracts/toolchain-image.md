@@ -15,7 +15,7 @@ specfoundry's; a toolchain image only supplies files.
 ```
 
 - **How it reaches the pods:** an init container copies `/opt/toolchain/` into an `emptyDir`
-  mounted at `/opt/toolchain` in the worker, prefetch and grader containers. It runs `cp -a
+  mounted at `/opt/toolchain` in the worker, prefetch and grader containers. It runs `cp -R
   /opt/toolchain/. /dest/`, so the image must contain `cp`, or a static copy helper at
   `/opt/toolchain/.copy`.
 - **Ownership:** files must be readable by group 0 (`chgrp -R 0 /opt/toolchain && chmod -R g=u
@@ -44,6 +44,11 @@ specfoundry's; a toolchain image only supplies files.
 | `path` | Absolute paths under `/opt/toolchain`, put first on `PATH` |
 | `env` | Extra environment. It may not set `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY` or any `*TOKEN*`/`*KEY*`/`*SECRET*` name (the pilot sets the proxies) |
 | `proxy` | `env`: the package manager honours `HTTPS_PROXY` (npm, pip, Go, cargo, …). `maven-settings`: the pilot passes a generated `settings.xml` (Maven, Gradle's Maven repositories). |
+| `setup_command` | Optional; run from the project root before the target's install command (for example creating a Python venv) |
+
+`${PILOT_DEPS}` in `path` and `env` is the role's dependency directory: the worker's own
+(`/home/worker/deps`), or the run's cache at `/deps` (writable in the prefetch Job, read-only in
+graders).
 
 ## Where a target's toolchain comes from
 

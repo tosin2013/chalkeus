@@ -1,0 +1,52 @@
+# The toolchain probe of an item run (014, contracts/toolchain-image.md): no network, no secrets.
+# The init container copies the toolchain image's /opt/toolchain as the pods will; the probe then
+# prints toolchain.json, the version line and any setuid file, for the pilot to check.
+apiVersion: batch/v1
+kind: Job
+metadata: {name: toolchain-probe, namespace: ${NS}}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  template:
+    metadata: {labels: {app: toolchain-probe, pilot/role: grader}}
+    spec:
+      serviceAccountName: grader
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext: {runAsNonRoot: true, runAsUser: 10002, runAsGroup: 10002, fsGroup: 10002, seccompProfile: {type: RuntimeDefault}}
+      initContainers:
+${TOOLCHAIN_INITS}
+      containers:
+        - name: probe
+          image: ${TOOLS_IMAGE}
+          command:
+            - /usr/bin/python3
+            - -c
+            - |
+              import json, os, subprocess
+              out = {"toolchain_json": None, "version": None, "version_rc": None, "setuid": []}
+              try:
+                  out["toolchain_json"] = open("/opt/toolchain/toolchain.json").read()
+                  t = json.loads(out["toolchain_json"])
+                  env = dict(os.environ, PILOT_DEPS="/tmp/deps")
+                  env["PATH"] = ":".join([p.replace("$${PILOT_DEPS}", "/tmp/deps") for p in t.get("path", [])] + [env["PATH"]])
+                  r = subprocess.run(t["version_command"], env=env, capture_output=True, text=True, timeout=60)
+                  out["version_rc"], out["version"] = r.returncode, (r.stdout + r.stderr).strip().splitlines()[0][:200] if (r.stdout + r.stderr).strip() else ""
+              except Exception as e:
+                  out["error"] = str(e)[:300]
+              for root, _, files in os.walk("/opt/toolchain"):
+                  for f in files:
+                      p = os.path.join(root, f)
+                      if os.path.isfile(p) and not os.path.islink(p) and os.stat(p).st_mode & 0o6000:
+                          out["setuid"].append(p)
+              print("PILOT_PROBE " + json.dumps(out))
+          env: [{name: HOME, value: /tmp}]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: "1", memory: 512Mi}}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+            - {name: toolchain, mountPath: /opt/toolchain, readOnly: true}
+      volumes:
+        - {name: tmp, emptyDir: {sizeLimit: 256Mi}}
+        - {name: toolchain, emptyDir: {sizeLimit: 2Gi}}

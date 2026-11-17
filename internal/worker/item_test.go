@@ -11,6 +11,8 @@ import (
 	"github.com/tosin2013/specfoundry/internal/k8s"
 	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/prompt"
+	"github.com/tosin2013/specfoundry/internal/toolchain"
+	"sigs.k8s.io/yaml"
 )
 
 func TestMakeItemInputs(t *testing.T) {
@@ -47,19 +49,41 @@ func TestMakeItemInputs(t *testing.T) {
 
 func TestItemWorkerJobRenders(t *testing.T) {
 	root, _ := filepath.Abs("../..")
-	y, err := k8s.Render(filepath.Join(root, "pilot/manifests/worker-job-item.yaml.tmpl"), map[string]string{
-		"NS": "pilot-w-002-1", "DEADLINE": "1200", "WORKER_IMAGE": "w@sha256:0", "TOOLS_IMAGE": "t@sha256:0", "PILOT_MODEL": "p/m",
-		"SPEND_CAP": "1.00", "TOKEN_CAP": "2000000", "INPUT_LIMIT": "64Mi"})
-	if err != nil {
-		t.Fatal(err)
+	render := func(b toolchain.Blocks, inits string) string {
+		y, err := k8s.Render(filepath.Join(root, "pilot/manifests/worker-job-item.yaml.tmpl"), map[string]string{
+			"NS": "pilot-w-002-1", "DEADLINE": "1200", "WORKER_IMAGE": "w@sha256:0", "TOOLS_IMAGE": "t@sha256:0", "PILOT_MODEL": "p/m",
+			"SPEND_CAP": "1.00", "TOKEN_CAP": "2000000", "INPUT_LIMIT": "64Mi", "PROXY_URL": "http://proxy.pilot-egress-w-g.svc.cluster.local:8888",
+			"HOME_LIMIT": "1Gi", "TOOLCHAIN_INITS": inits, "TOOLCHAIN_ENV": b.Env, "TOOLCHAIN_MOUNTS": b.Mounts, "TOOLCHAIN_VOLUMES": b.Volumes})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var v any
+		if err := yaml.Unmarshal([]byte(y), &v); err != nil {
+			t.Fatalf("not YAML: %v\n%s", err, y)
+		}
+		return y
 	}
+	y := render(toolchain.Blocks{}, "")
 	for _, want := range []string{"name: receiver", "image: t@sha256:0", "{name: inputs, emptyDir: {sizeLimit: 64Mi}}",
-		"{name: inputs, mountPath: /in, readOnly: true}", "automountServiceAccountToken: false"} {
+		"{name: inputs, mountPath: /in, readOnly: true}", "automountServiceAccountToken: false", "pilot-egress-w-g"} {
 		if !strings.Contains(y, want) {
 			t.Errorf("missing %q", want)
 		}
 	}
 	if strings.Contains(y, "configMap: {name: inputs}") {
 		t.Error("item-run inputs must not come from a ConfigMap")
+	}
+	raw, _ := os.ReadFile(filepath.Join(root, "pilot/images/toolchain-python3.13/toolchain.json"))
+	spec, err := toolchain.Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := toolchain.PodBlocks("tc@sha256:1", &spec, WorkerDeps)
+	y = render(b, b.Inits+"\n"+toolchain.SetupInit("t@sha256:0", "http://p:8888", &spec, WorkerDeps))
+	for _, want := range []string{"name: toolchain", "image: tc@sha256:1", "name: setup", "sh /in/setup.sh",
+		`{name: VIRTUAL_ENV, value: "/home/worker/deps/venv"}`, "{name: toolchain, mountPath: /opt/toolchain, readOnly: true}"} {
+		if !strings.Contains(y, want) {
+			t.Errorf("toolchain render lacks %q", want)
+		}
 	}
 }
