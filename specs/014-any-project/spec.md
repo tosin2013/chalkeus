@@ -36,9 +36,17 @@ is roadmap item 017.
 ### Session 2026-11-17
 
 - Q: Where are a project's toolchain, package registries and test command declared? → A: Only
-  in the operator's `pilot.env`, per target repository. The target repository declares nothing,
-  so no agent change or merged PR can widen the worker's egress. This also works for greenfield
-  (017): the operator sets the values before the scaffold runs.
+  in operator-side configuration, never in the target repository, so no agent change or merged
+  PR can widen the worker's egress. This also works for greenfield (017): the operator sets the
+  values before the scaffold runs. *(Refined in the next answer: per-target profiles.)*
+- Q: Does the configuration support more than one repository, and what happens in Kubernetes?
+  → A: Yes, through per-target profiles. Shared settings stay in `pilot.env`. Each target
+  repository gets a profile (`targets/<name>.env` beside it) holding its repository, toolchain,
+  test command, registry hosts, companion repository and, in token mode, its publisher
+  credential. The operator picks one with `--target <name>`. Without `--target`, today's
+  single-repository `pilot.env` works unchanged, and the fixture is one target among others. In
+  cluster mode (011), the same fields become a namespaced cluster resource, changeable only by
+  people the cluster's access rules allow, never by worker or grader pods.
 - Q: Which status does the status-change PR propose after the human merges a real item's PR?
   → A: `verified`, as on the fixture. The evidence is grading (the repository's suite and the
   hidden tests) plus the audit. The human's merge of the status-change PR, or their approval in
@@ -190,7 +198,8 @@ over every committed record is unchanged.
 - **A registry host is also a general-purpose host (for example a code host):** allowed only
   if declared and shown at the mode approval. The operator decides.
 - **The repository name doesn't match the configured target:** the repo guard stops the run.
-  The fixture-only naming rule is replaced by an explicit list of allowed target repositories.
+  The fixture-only naming rule is replaced by the configured targets: a repository with no
+  profile is never pushed to.
 - **A large repository:** clone and bundle sizes are limited, and the limit is shown in the
   error.
 
@@ -213,8 +222,16 @@ over every committed record is unchanged.
   - (e) hidden acceptance tests exist for the item;
   - (f) the item's spec declares an "Allowed paths" list.
 - **FR-003**: Status that cannot be read MUST refuse (fail closed, C-02), as today.
-- **FR-004**: The pilot MUST only push to repositories the operator listed as allowed targets.
+- **FR-004**: The pilot MUST only push to repositories the operator configured as targets.
   Any other repository stops the run with the existing guard exit code.
+- **FR-004a**: The operator MUST be able to configure several target repositories, one profile
+  each, and choose one per command (`--target <name>`). Shared settings (model, approvers,
+  publisher mode) stay in `pilot.env`. With no `--target`, the single-repository `pilot.env`
+  MUST keep working exactly as today. Paused runs MUST resume against the target they started
+  with.
+- **FR-004b**: A target profile's fields MUST be defined so that cluster mode (011) can hold the
+  same fields in a cluster resource with the same meaning. No field may depend on the
+  operator's laptop, except the paths of local secret files.
 
 **Building and grading**
 
@@ -239,12 +256,12 @@ over every committed record is unchanged.
 
 **Toolchains and dependencies**
 
-- **FR-009**: The operator's configuration MUST name, per target repository, one toolchain from
+- **FR-009**: The target's profile MUST name one toolchain from
   a list the pilot supports, and the command that runs the repository's own tests. The target
   repository declares nothing; these values are never read from it.
   The worker and the grader MUST then use that toolchain's images: built by the image workflow,
   pinned by digest, hardened like today's images (C-08, C-09).
-- **FR-010**: The operator's configuration MUST name the package registry hosts the build needs.
+- **FR-010**: The target's profile MUST name the package registry hosts the build needs.
   The worker's egress MUST allow exactly the model host(s) plus those registries, and the run
   mode shown for approval MUST list them.
 - **FR-011**: An undeclared toolchain, or one with no published image, MUST refuse the run. The
@@ -285,8 +302,9 @@ over every committed record is unchanged.
 
 - **Target repository:** a real repository the operator allows the pilot to push to, with its
   roadmap, specs, tasks and own test suite.
-- **Target configuration:** the operator's per-repository settings in `pilot.env`: allowed
-  target, toolchain, test command, registry hosts and companion repository.
+- **Target profile:** the operator's per-repository settings: repository, toolchain, test
+  command, registry hosts, companion repository and (token mode) publisher credential. A file
+  beside `pilot.env` on a laptop; a cluster resource in cluster mode (011).
 - **Prepared item:** a roadmap item that passes every readiness rule (FR-002), including an
   "Allowed paths" list in its spec; the only thing the pilot will build.
 - **Hidden acceptance tests:** a human-written test set per item, kept in the project's private
@@ -317,6 +335,9 @@ over every committed record is unchanged.
   codes, and the audit of all committed evidence is unchanged.
 - **SC-006**: An operator who has prepared a repository can start the item's run from the docs
   alone, in under 15 minutes of setup beyond the fixture's, with 0 outside lookups.
+- **SC-007**: With two targets configured (the fixture and the real repository), the operator
+  runs each by name with 0 configuration edits between runs, and each run's evidence records
+  which target it used.
 
 ## Assumptions
 
@@ -338,8 +359,8 @@ over every committed record is unchanged.
   registry (Maven Central) are the first beyond the fixture's. They are also what the later EAP
   validation on OpenShift needs.
 - **Publishing and GitHub:** both publisher modes (token and GitHub App) and the GitHub loop work
-  for the real repository as they do for the fixture. The App must be installed on the target
-  repository.
+  for the real repository as they do for the fixture. The App must be installed on each target
+  repository; in token mode, each target's profile names its own fine-grained token.
 - **The run's limits stay as today:** spend cap, token cap, deadline and retry limit; the mode
   approval may show different values per repository.
 - **Fixture refusal on reset:** `reset-fixture` stays fixture-only. A real repository is never
