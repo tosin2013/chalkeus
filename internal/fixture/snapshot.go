@@ -100,7 +100,11 @@ func Replay(clone, base, snapshot, changeBundle, out string) (string, error) {
 	if _, err := gitEnv(clone, nil, "update-ref", "refs/heads/pilot-replayed", parent); err != nil {
 		return "", err
 	}
-	if _, err := gitEnv(clone, nil, "bundle", "create", "-q", out, base+"..pilot-replayed"); err != nil {
+	// The publisher and reconcile fetch the bundle's HEAD, as for a worker's change bundle.
+	if _, err := gitEnv(clone, nil, "symbolic-ref", "HEAD", "refs/heads/pilot-replayed"); err != nil {
+		return "", err
+	}
+	if _, err := gitEnv(clone, nil, "bundle", "create", "-q", out, base+"..HEAD"); err != nil {
 		return "", err
 	}
 	return parent, nil

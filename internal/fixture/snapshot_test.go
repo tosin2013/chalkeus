@@ -84,6 +84,10 @@ func TestSnapshotThenReplay(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "p")
 	sh(t, "", "clone", "-q", repo, p)
 	sh(t, p, "bundle", "verify", out)
+	sh(t, p, "fetch", "-q", out, "HEAD:refs/pilot/published")
+	if got := sh(t, p, "rev-parse", "refs/pilot/published"); got != head {
+		t.Fatalf("the bundle's HEAD is %s, want %s", got, head)
+	}
 }
 
 func TestReplayRefusesForeignSnapshotAndEmptyChange(t *testing.T) {

@@ -17,6 +17,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/prompt"
 	"github.com/tosin2013/specfoundry/internal/runner"
+	"github.com/tosin2013/specfoundry/internal/stage"
 )
 
 // Deadline is the worker Job's active deadline in seconds.
@@ -29,6 +30,20 @@ type Deps struct {
 	Runner runner.Runner
 	// Checks runs the live P01–P08 checks while the worker runs (nil to skip).
 	Checks func(task string, n int, ns string)
+	// Item is set for an item run (014): its inputs come from the target, not the fixture.
+	Item *Item
+}
+
+// Item is what an item run's worker needs (014 R4, R10).
+type Item struct {
+	SnapshotBundle string   // host path of the snapshot bundle (one commit, the base tree)
+	SnapshotCommit string   // the snapshot commit: the base revision the worker and grader see
+	SpecDir        string   // the item's spec folder in the target
+	AllowedPaths   []string // from the spec's "## Allowed paths" (+ its tasks.md)
+	Toolchain      string
+	TestCommand    string
+	CommandTimeout int    // seconds per test command in the grader
+	InputLimit     string // emptyDir size for staged inputs, e.g. "64Mi"
 }
 
 // AllowedPaths are the paths a worker may change for a task.
@@ -157,7 +172,15 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 		att["state"] = state
 		att["reason"] = reason
 	}
-	idir, record, err := MakeInputs(d, run, task, n, clone, baseRev)
+	var idir string
+	var record map[string]any
+	var err error
+	if d.Item != nil {
+		idir, err = MakeItemInputs(d, run, task, n, clone)
+		att["base_revision"] = d.Item.SnapshotCommit
+	} else {
+		idir, record, err = MakeInputs(d, run, task, n, clone, baseRev)
+	}
 	if err != nil {
 		update("failed", "harness_error")
 		_ = run.Event("attempt", task, n, "attempt_error", trim(err))
@@ -184,9 +207,13 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 			_ = run.Event("attempt", task, n, "attempt_error", trim(err))
 			return
 		}
-		jobYAML, err := k8s.Render(filepath.Join(d.L.Manifests, "worker-job.yaml.tmpl"), map[string]string{
+		tmpl, vars := "worker-job.yaml.tmpl", map[string]string{
 			"NS": ns, "DEADLINE": fmt.Sprint(Deadline), "WORKER_IMAGE": imgs["worker"], "PILOT_MODEL": cfg.Get("PILOT_MODEL"),
-			"SPEND_CAP": cfg.Get("PILOT_SPEND_CAP_USD"), "TOKEN_CAP": cfg.Get("PILOT_TOKEN_CAP")})
+			"SPEND_CAP": cfg.Get("PILOT_SPEND_CAP_USD"), "TOKEN_CAP": cfg.Get("PILOT_TOKEN_CAP")}
+		if d.Item != nil {
+			tmpl, vars["TOOLS_IMAGE"], vars["INPUT_LIMIT"] = "worker-job-item.yaml.tmpl", imgs["tools"], d.Item.InputLimit
+		}
+		jobYAML, err := k8s.Render(filepath.Join(d.L.Manifests, tmpl), vars)
 		if err != nil {
 			update("failed", "harness_error")
 			_ = run.Event("attempt", task, n, "attempt_error", trim(err))
@@ -198,6 +225,9 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 			func() error { return d.C.Apply(nsYAML) },
 			func() error { return d.C.CreateSecretFromFiles(ns, "model-key", cfg.ModelFiles()) },
 			func() error {
+				if d.Item != nil { // staged after submit instead (014 R4)
+					return nil
+				}
 				return d.C.CreateConfigMap(ns, "inputs", map[string]string{"base.bundle": filepath.Join(idir, "base.bundle"),
 					"prompt.md": filepath.Join(idir, "prompt.md"), "meta.json": filepath.Join(idir, "meta.json")}, nil)
 			},
@@ -216,6 +246,13 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 			return
 		}
 		handle = &h
+		if d.Item != nil {
+			if err := stageInputs(d, idir, ns); err != nil {
+				update("failed", "harness_error")
+				_ = run.Event("attempt", task, n, "attempt_error", trim(err))
+				return
+			}
+		}
 		att["state"] = "running"
 		_ = run.Event("attempt", task, n, "attempt_running", imgs["worker"])
 		if d.Checks != nil {
@@ -264,6 +301,71 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 	reason, _ := att["reason"].(string)
 	_ = run.Event("attempt", task, n, "attempt_"+fmt.Sprint(att["state"]), reason)
 	return att
+}
+
+// MakeItemInputs writes an item attempt's prompt and meta (014 R10) to the inputs dir and the
+// evidence; the snapshot bundle stays where the run made it. clone is the target at its real base,
+// whose tree is the snapshot's.
+func MakeItemInputs(d Deps, run *evidence.Run, task string, n int, clone string) (string, error) {
+	it := d.Item
+	adir, err := run.AttemptDir(task, n)
+	if err != nil {
+		return "", err
+	}
+	idir := InputsDir(d.L, run.ID, task, n)
+	if err := os.MkdirAll(idir, 0o755); err != nil {
+		return "", err
+	}
+	rd := func(name string) (string, error) {
+		b, err := os.ReadFile(filepath.Join(clone, it.SpecDir, name))
+		return string(b), err
+	}
+	spec, err := rd("spec.md")
+	if err != nil {
+		return "", err
+	}
+	tasks, err := rd("tasks.md")
+	if err != nil {
+		return "", err
+	}
+	plan, _ := rd("plan.md") // optional for an item
+	text, err := prompt.BuildItem(prompt.Item{Spec: spec, Plan: plan, Tasks: tasks, TasksPath: it.SpecDir + "/tasks.md",
+		AllowedPaths: it.AllowedPaths, Toolchain: it.Toolchain, TestCommand: it.TestCommand})
+	if err != nil {
+		return "", err
+	}
+	allowed := make([]any, 0, len(it.AllowedPaths))
+	for _, p := range it.AllowedPaths {
+		allowed = append(allowed, p)
+	}
+	meta := map[string]any{"run_id": run.ID, "task": task, "attempt": n, "item_id": task, "base_revision": it.SnapshotCommit,
+		"allowed_paths": allowed, "induction": nil, "mode": "attempt", "test_command": it.TestCommand, "hidden_mode": "overlay",
+		"toolchain": it.Toolchain, "spec_sha256": prompt.SpecSHA256(spec), "command_timeout_s": it.CommandTimeout}
+	for _, dir := range []string{idir, adir} {
+		if err := os.WriteFile(filepath.Join(dir, "prompt.md"), []byte(text), 0o644); err != nil {
+			return "", err
+		}
+		if err := evidence.WriteJSON(filepath.Join(dir, "meta.json"), meta); err != nil {
+			return "", err
+		}
+	}
+	return idir, nil
+}
+
+// stageInputs streams the attempt's inputs to the worker Job's receiver (014 R4).
+func stageInputs(d Deps, idir, ns string) error {
+	t := stage.New()
+	for name, p := range map[string]string{"prompt.md": filepath.Join(idir, "prompt.md"), "meta.json": filepath.Join(idir, "meta.json"),
+		"base.bundle": d.Item.SnapshotBundle} {
+		if err := t.AddFile(name, p); err != nil {
+			return err
+		}
+	}
+	b, err := t.Bytes()
+	if err != nil {
+		return err
+	}
+	return d.C.StageInputs(ns, "worker", "receiver", "/stage", b, 5*time.Minute)
 }
 
 func pyNone(v any) string {

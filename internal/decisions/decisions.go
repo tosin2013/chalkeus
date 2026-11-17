@@ -52,12 +52,22 @@ var AskTTY = func(question string) string {
 // Pending is the decision a run is paused at.
 type Pending struct {
 	Step        string // mode | retry | reconcile | merge
-	Task        any    // nil or "A"/"B"
+	Task        any    // nil, "A"/"B" (fixture), or the item id (014 item run)
 	N           any    // nil or the attempt number
 	Mode        any
 	MergeCommit string
 	Proposed    string
 	ItemID      any
+	Target      string // an item run's "target <name> (<repo>), item NNN, …" line (014)
+}
+
+// mergeTask is the task whose PR a paused run awaits: A, or an item run's item.
+func mergeTask(run *evidence.Run) string {
+	if run.Kind() == evidence.KindItem {
+		item, _ := run.State["item"].(string)
+		return item
+	}
+	return "A"
 }
 
 func toInt(v any) (int, bool) {
@@ -93,18 +103,20 @@ func PendingStep(run *evidence.Run) *Pending {
 	pend, _ := run.State["pending"].(map[string]any)
 	switch st {
 	case "paused(awaiting-mode)":
-		return &Pending{Step: "mode", Mode: run.State["proposed_mode"]}
+		target, _ := run.State["proposed_target"].(string)
+		return &Pending{Step: "mode", Mode: run.State["proposed_mode"], Target: target}
 	case "paused(awaiting-retry)":
 		n, _ := toInt(pend["n"])
 		return &Pending{Step: "retry", Task: pend["task"], N: n}
 	case "paused(awaiting-merge)":
-		rec := readJSON(filepath.Join(run.Dir, "reconcile", "A.json"))
+		task := mergeTask(run)
+		rec := readJSON(filepath.Join(run.Dir, "reconcile", task+".json"))
 		mc, _ := rec["merge_commit"].(string)
 		prop, _ := rec["proposed"].(string)
 		if rec["reason"] == "DECLINED" && prop != "" && mc != "" {
-			return &Pending{Step: "reconcile", Task: "A", MergeCommit: mc, Proposed: prop, ItemID: rec["item_id"]}
+			return &Pending{Step: "reconcile", Task: task, MergeCommit: mc, Proposed: prop, ItemID: rec["item_id"]}
 		}
-		return &Pending{Step: "merge", Task: "A"}
+		return &Pending{Step: "merge", Task: task}
 	}
 	return nil
 }
@@ -148,11 +160,18 @@ func Describe(p *Pending) string {
 	switch p.Step {
 	case "mode":
 		mode, _ := json.Marshal(p.Mode) // maps marshal with sorted keys
+		if p.Target != "" {
+			return "start the run in this mode: " + PyJSON(string(mode)) + "; " + p.Target
+		}
 		return "start the run in this mode: " + PyJSON(string(mode))
 	case "retry":
 		return fmt.Sprintf("retry task %v (attempt %v)", p.Task, p.N)
 	case "reconcile":
-		return fmt.Sprintf("apply '%s: %s' to the fixture roadmap (merge commit %s)", pyNone(p.ItemID), p.Proposed, p.MergeCommit)
+		where := "the fixture roadmap"
+		if t, ok := p.Task.(string); ok && t != "A" {
+			where = "the target's roadmap"
+		}
+		return fmt.Sprintf("apply '%s: %s' to %s (merge commit %s)", pyNone(p.ItemID), p.Proposed, where, p.MergeCommit)
 	}
 	return "merge"
 }
@@ -165,6 +184,10 @@ func Record(run *evidence.Run, step, channel, approver string, commentID any) (i
 		return 2, fmt.Sprintf("run %s is not paused at a decision (state=%s)", run.ID, pyNone(run.State["state"]))
 	}
 	if p.Step == "merge" {
+		if p.Task != "A" {
+			return 4, fmt.Sprintf("the run is waiting for you to merge %v's PR on GitHub; merging is never approved here. "+
+				"Merge it, run `pilot/pilot resume`, then approve the reconcile proposal it shows.", p.Task)
+		}
 		return 4, "the run is waiting for you to merge A's PR on GitHub; merging is never approved here. " +
 			"Merge it, run `pilot/pilot resume`, then approve the reconcile proposal it shows."
 	}
@@ -227,7 +250,7 @@ func TakeRecord(run *evidence.Run, step string, task, n any) map[string]any {
 	if a["step"] != step || !eq(a["task"], task) || !eq(a["n"], n) {
 		return nil
 	}
-	if step == "reconcile" && readJSON(filepath.Join(run.Dir, "reconcile", "A.json"))["merge_commit"] != a["merge_commit"] {
+	if step == "reconcile" && readJSON(filepath.Join(run.Dir, "reconcile", mergeTask(run)+".json"))["merge_commit"] != a["merge_commit"] {
 		return nil
 	}
 	return a

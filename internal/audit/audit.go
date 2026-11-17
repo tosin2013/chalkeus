@@ -538,9 +538,26 @@ func itemVariants(d string, rows []evidence.CheckRow) []evidence.CheckRow {
 		if x, ok := repl[r.ID]; ok {
 			r = x
 		}
+		if r.ID == "AU04" {
+			r = itemAU04(d, r)
+		}
 		out = append(out, r)
 	}
 	return out
+}
+
+// itemAU04 adds P11 to AU04 for an item run: no hidden-test file reached any worker (014 FR-008).
+func itemAU04(d string, base evidence.CheckRow) evidence.CheckRow {
+	checks, _ := evidence.ReadJSONL(filepath.Join(d, "checks", "results.jsonl"))
+	n, pass := 0, true
+	for _, c := range checks {
+		if str(c, "id") == "P11" {
+			n++
+			pass = pass && str(c, "result") == "pass"
+		}
+	}
+	ok := base.Result == "pass" && n > 0 && pass
+	return row("AU04", ok, base.Description+"; no hidden test reached a worker (P11, 014)", fmt.Sprintf("%s p11_rows=%d", base.Detail, n))
 }
 
 // itemAU01: only the item was gated allow, its readiness passed, and no other task has events

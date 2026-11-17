@@ -173,10 +173,13 @@ completes and the audit passes 11/11 (T036, Owner).
 
 **Inputs into pods (R4)**
 
-- [ ] T018 [US1] Add `ExecStream(ns, pod, container, tar io.Reader, dir)` and
+- [X] T018 [US1] Add `ExecStream(ns, pod, container, tar io.Reader, dir)` and
   `CreatePVC/DeletePVC` in `internal/k8s/k8s.go`, with fake-clientset tests in
   `internal/k8s/k8s_test.go`. The exec stream is a tar unpacked by the receiver; secrets are
   never logged.
+  Done as: `k8s.ExecStdin`, `ReceiverReady` and `StageInputs` (tar streamed into the receiver
+  init container, then `.ready`); PVC helpers moved to US3 with the cache (R7). `internal/stage`
+  builds the reproducible staging tar.
 - [X] T019 [US1] Write snapshot and replay tests in `internal/fixture/snapshot_test.go`, using
   real `git` in a temp dir:
   - `Snapshot(clone, base)` builds a one-commit bundle whose tree equals `base`'s tree;
@@ -185,7 +188,7 @@ completes and the audit passes 11/11 (T036, Owner).
   - a conflict-free replay is required, and a mismatch fails with `REPLAY_MISMATCH`.
 - [X] T020 [US1] Implement `internal/fixture/snapshot.go` (`Snapshot`, `Replay`; uses the
   existing git helpers).
-- [ ] T021 [US1] Add the input receiver for item runs to `pilot/manifests/worker-job.yaml.tmpl`
+- [X] T021 [US1] Add the input receiver for item runs to `pilot/manifests/worker-job.yaml.tmpl`
   and `pilot/manifests/grader-job.yaml.tmpl`, behind a template switch so fixture rendering is
   byte-identical:
   - an init container (tools image) waits for `/in/.ready` on an emptyDir;
@@ -196,6 +199,8 @@ completes and the audit passes 11/11 (T036, Owner).
 
 **Prompt, worker, grading**
 
+  Done as: separate item templates (`worker-job-item.yaml.tmpl`, `grader-job-item.yaml.tmpl`), so the
+  fixture templates are untouched (the fixture guard covers them).
 - [X] T022 [P] [US1] Add `prompt.BuildItem(spec, plan, tasks, tasksPath, allowedPaths,
   toolchain, testCommand)` in `internal/prompt/prompt.go`, per R10.
   - It has a generic preamble, no "Python standard library" line, and no induction.
@@ -217,7 +222,7 @@ completes and the audit passes 11/11 (T036, Owner).
   Tests in `pilot/images/tests/test_grade_modes.py`, using a tiny Python sample project:
   baseline pass, baseline with hidden passing (fail), overlay fail, overlay pass, and a fixture
   meta with unchanged output.
-- [ ] T025 [US1] Add a run-scoped grading namespace in `internal/grader/grader.go` and the new
+- [X] T025 [US1] Add a run-scoped grading namespace in `internal/grader/grader.go` and the new
   `pilot/manifests/grading-ns.yaml.tmpl`:
   - `pilot-g-<nnn>` per run, with quota, LimitRange and a default-deny NetworkPolicy;
   - `role=grader` pods have no egress rule;
@@ -227,13 +232,15 @@ completes and the audit passes 11/11 (T036, Owner).
 
   The fixture keeps `pilot-g-<t>-<n>`. Tests cover rendering and the namespace lifecycle with
   the fake clientset.
+  Done as: `grader.GradeItem`, `EnsureNamespace` (`grading-ns.yaml.tmpl`), `BaselineMeta`,
+  `BaselineReason`; the namespace is deleted once the PR is open or the run fails.
 - [X] T026 [US1] Write `companion.json` evidence in `internal/grader/companion.go`: repository,
   commit, file count and file list with SHA-256s, never contents (R9). Test that no file
   content reaches the evidence dir.
 
 **Pipeline**
 
-- [ ] T027 [US1] Implement the item-run state machine in `internal/pipeline/item.go`, per the
+- [X] T027 [US1] Implement the item-run state machine in `internal/pipeline/item.go`, per the
   data-model.md state diagram:
   1. readiness, where a refusal exits 10;
   2. the mode approval, which shows target, item and toolchain, and egress `model host(s) <n>`
@@ -246,7 +253,11 @@ completes and the audit passes 11/11 (T036, Owner).
 
   Fixture `Run` and `Resume` dispatch on `kind` and are otherwise untouched. Resume reads the
   target from `run.json`.
-- [ ] T028 [US1] Generalize the A-specific GitHub and resume paths in
+  Done as: `internal/pipeline/item.go` (`RunItem`, `startItem`, `prepareItem`, `replay`) on the shared
+  attempt loop; `run --target <name> --item NNN`; `resume`/`watch` take the target from `run.json`
+  and refuse if its profile now names another repository; per-target credentials (App token
+  scoped and cached per repository; or `targets/<name>.publisher.env`).
+- [X] T028 [US1] Generalize the A-specific GitHub and resume paths in
   `internal/pipeline/github.go` (`statusPending`, `reconcileGitHub`, `statusPRMerged`,
   `ReadyToResume`) and in `internal/decisions/decisions.go` (`PendingStep`, `Describe`,
   `reconcile/<label>.json`).
@@ -255,6 +266,7 @@ completes and the audit passes 11/11 (T036, Owner).
     B.
   - Tests in `internal/pipeline/github_test.go` and `internal/decisions/decisions_test.go` for
     both kinds.
+  Done as: plus the GitHub decision post shows the item run's target, toolchain and registries.
 - [X] T029 [US1] Generalize the status edit in `internal/reconcile/reconcile.go` (R12):
   - `StatusEdit` accepts `planned|specced|in-progress` → `verified` for exactly one line;
   - `rec["proposed"]` names the old status;
@@ -272,9 +284,11 @@ completes and the audit passes 11/11 (T036, Owner).
 
 **Checks and audit**
 
-- [ ] T032 [US1] Add the P11 check in `internal/checks/checks.go`: no overlay file name or
+- [X] T032 [US1] Add the P11 check in `internal/checks/checks.go`: no overlay file name or
   SHA-256 from `companion.json` appears in the worker namespace's ConfigMaps, staged-input
   list or `prompt.md`. Tests in `internal/checks/checks_test.go`.
+  Done as: P11 in `RunWorkerChecks`, and AU04 requires it for item runs; P08 checks the run's
+  grading namespace.
 - [X] T033 [US1] Implement the item-run audit variants in `internal/audit/audit.go`, per
   contracts/audit-item.md:
   - AU01: only NNN allowed, readiness rows pass, `other_attempts=0`;
@@ -288,10 +302,12 @@ completes and the audit passes 11/11 (T036, Owner).
 
   Tests with synthetic item records in `internal/audit/audit_item_test.go` (pass and each
   failure).
-- [ ] T034 [US1] Add `-v` timings and `-vv` pod and event lines for the readiness, baseline and
+- [X] T034 [US1] Add `-v` timings and `-vv` pod and event lines for the readiness, baseline and
   grading-namespace steps, in `internal/pipeline/item.go` and `internal/runner` (FR-018 rules:
   stderr only, redacted).
-- [ ] T035 [US1] Write the operator docs:
+  Done as: readiness, prepare and baseline lines at `-v`; the runner's `-vv` pod watch covers the
+  new Jobs unchanged.
+- [X] T035 [US1] Write the operator docs:
   - new `docs/targets.md`: preparing a target (Spec Kit, `## Allowed paths`, the companion
     `items/NNN/` layout, hidden tests that fail on the base and use only declared
     dependencies), the profile keys, `pilot targets`, `gate --item`, `run --target --item`,
@@ -300,6 +316,8 @@ completes and the audit passes 11/11 (T036, Owner).
   - troubleshooting entries for each new code in `docs/troubleshooting.md`.
 
   `go test ./internal/cli -run TestDocsCheck` must pass.
+  Done as: `docs/targets.md` §4 (running an item), troubleshooting (item not prepared, baseline,
+  item setup), operator guide §13, pilot skill (commands; agents never touch hidden tests).
 - [ ] T036 [US1] **Owner action:** a Python sample target, run end to end on kind.
   1. Create a small public Python repository with a test suite.
   2. Create its private companion repository with `items/001/` (failing tests on the base).

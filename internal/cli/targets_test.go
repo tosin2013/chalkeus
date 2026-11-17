@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/tosin2013/specfoundry/internal/config"
+	"github.com/tosin2013/specfoundry/internal/paths"
 )
 
 // configDir writes a pilot.env (and optional target profiles) into a temp SPECFOUNDRY_CONFIG.
@@ -73,5 +76,48 @@ func TestGateItemFlagRules(t *testing.T) {
 	}
 	if code, _, _ := run("gate", "--item", "002", "A"); code != ExitError {
 		t.Fatalf("an item check takes no A/B argument: %d", code)
+	}
+}
+
+func TestRunItemFlagRules(t *testing.T) {
+	configDir(t, nil)
+	if code, _, errs := run("run", "--item", "002"); code != ExitError || !strings.Contains(errs, "--item needs --target") {
+		t.Fatalf("%d %q", code, errs)
+	}
+	if code, _, errs := run("run", "--target", "greeting"); code != ExitError || !strings.Contains(errs, "needs --item NNN") {
+		t.Fatalf("%d %q", code, errs)
+	}
+}
+
+// 014 FR-004a: a paused item run continues against the target its run.json names.
+func TestTargetForRunFollowsTheRecord(t *testing.T) {
+	configDir(t, map[string]string{"greeting": "PILOT_TARGET_REPO=me/greeting-service\nPILOT_TOOLCHAIN=python\nPILOT_TEST_COMMAND=pytest\nPILOT_COMPANION_REPO=me/g-acceptance\n"})
+	cfg, err := config.Load(t.TempDir(), false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := paths.At(t.TempDir())
+	rd := filepath.Join(l.EvidenceRoot(), "20990101T000000Z")
+	_ = os.MkdirAll(rd, 0o755)
+	write := func(repo string) {
+		raw := `{"run_id": "20990101T000000Z", "kind": "item", "item": "002", "target": {"name": "greeting", "repo": "` + repo + `"}}`
+		_ = os.WriteFile(filepath.Join(rd, "run.json"), []byte(raw), 0o644)
+	}
+	cmd := resumeCmd()
+	_ = cmd.Flags().Set("run", "20990101T000000Z")
+	write("me/greeting-service")
+	tg, err := targetFor(cmd, l, cfg)
+	if err != nil || tg.Name != "greeting" || tg.Fixture {
+		t.Fatalf("%+v %v", tg, err)
+	}
+	write("me/somewhere-else")
+	if _, err := targetFor(cmd, l, cfg); err == nil || !strings.Contains(err.Error(), "restore the profile") {
+		t.Fatalf("a changed profile must not silently redirect a paused run: %v", err)
+	}
+	if tg, _ := targetFor(downCmd(), l, cfg); !tg.Fixture {
+		t.Fatal("no --run flag and no --target: the fixture")
+	}
+	if tg, _ := targetFor(statusCmd(), l, cfg); tg.Fixture {
+		t.Fatal("no --run value means the latest run, here the item run")
 	}
 }

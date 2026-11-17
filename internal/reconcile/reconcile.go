@@ -21,6 +21,25 @@ import (
 	"github.com/tosin2013/specfoundry/internal/paths"
 )
 
+// changeBundle is the attempt's change on the real base: the replayed bundle of an item run
+// (014 R4), else the worker's own change bundle (the fixture's base is real).
+func changeBundle(attemptDir string) string {
+	if p := filepath.Join(attemptDir, "publish.bundle"); fileExists(p) {
+		return p
+	}
+	return filepath.Join(attemptDir, "change.bundle")
+}
+
+func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
+
+// itemOf is a task's roadmap item: the fixture's A/B, or an item run's label (the item id).
+func itemOf(task string) string {
+	if item, ok := paths.Tasks[task]; ok {
+		return item
+	}
+	return task
+}
+
 // RoadmapRel is the fixture roadmap path.
 const RoadmapRel = ".specify/memory/roadmap.md"
 
@@ -134,7 +153,7 @@ func (r Reconciler) Run(task, item string, pr int, changed []string) (int, map[s
 		return code, rec
 	}
 	q := fmt.Sprintf("Apply '%s: planned → verified' to the fixture roadmap? [y/N] ", item) // the guide quotes this
-	if r.Where != "" { // an item run (014): its own status and repository
+	if r.Where != "" {                                                                      // an item run (014): its own status and repository
 		q = fmt.Sprintf("Apply '%s: %s → verified' to %s? [y/N] ", item, OldStatus(r.RoadmapText(), item), r.Where)
 	}
 	ans := strings.ToLower(strings.TrimSpace(r.Ask(q)))
@@ -212,7 +231,7 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 		return Reconciler{}, func() {}, fmt.Errorf("git clone: %s", out)
 	}
 	for _, a := range [][]string{{"checkout", "--quiet", baseRev},
-		{"fetch", "--quiet", filepath.Join(attemptDir, "change.bundle"), "HEAD:refs/pilot/graded"},
+		{"fetch", "--quiet", changeBundle(attemptDir), "HEAD:refs/pilot/graded"},
 		{"checkout", "--quiet", "refs/pilot/graded"}} {
 		if _, err := gitIn(graded, a...); err != nil {
 			cleanup()
@@ -272,7 +291,7 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 			if _, err := fixture.Git(clone, "add", RoadmapRel); err != nil {
 				return "", err
 			}
-			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", fmt.Sprintf("pilot: %s verified (run %s)", paths.Tasks[task], runID)); err != nil {
+			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", fmt.Sprintf("pilot: %s verified (run %s)", itemOf(task), runID)); err != nil {
 				return "", err
 			}
 			if _, err := fixture.Git(clone, "push", "--quiet", fixture.URL(repo), "HEAD:refs/heads/"+branch); err != nil {
@@ -291,7 +310,7 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 			if _, err := fixture.Git(clone, "add", RoadmapRel); err != nil {
 				return "", "", err
 			}
-			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", fmt.Sprintf("pilot: %s verified (run %s)", paths.Tasks[task], runID)); err != nil {
+			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", fmt.Sprintf("pilot: %s verified (run %s)", itemOf(task), runID)); err != nil {
 				return "", "", err
 			}
 			out := filepath.Join(runDir, ".status-"+task+".bundle")

@@ -50,12 +50,18 @@ matching troubleshooting entry before suggesting any fix.
 | `pilot/pilot status [--run <id>]` | current run state (JSON); read `state` and `pending` |
 | `pilot/pilot up` | stand up the local cluster (several minutes) |
 | `pilot/pilot run` | start a run: gate checks, mode, task A attempts, publish A |
+| `pilot/pilot targets` | list the human's configured target repositories (no secrets) |
+| `pilot/pilot gate --target <name> --item NNN` | check an item of a target is prepared (no cluster); exit 10 = refused, with a code |
+| `pilot/pilot run --target <name> --item NNN` | an item run of the human's own repository: readiness, mode, baseline, attempts, draft PR on the target |
 | `pilot/pilot resume --run <id>` | continue a paused run |
 | `pilot/pilot approve --run <id> mode\|retry\|reconcile` | record the human's yes for the one pending step |
 | `pilot/pilot audit [--run <id>]` | evidence audit AU01–AU11 |
 | `pilot/pilot down` | tear down and verify |
 
-Always pass `--run <id>` once you know the run id (printed as `== run <id>`).
+Always pass `--run <id>` once you know the run id (printed as `== run <id>`). For an item run, `resume`, `approve`
+and `audit` take only `--run`; the run remembers its target. Only the human prepares a target's
+items and hidden tests ([docs/targets.md](../../../docs/targets.md)); never write or read the
+companion repository's hidden tests yourself.
 
 To diagnose a stuck or failing step, add `-vv` to the command (pod phases, Kubernetes events,
 model-proxy refusals, the first failing grader check; stderr only, redacted). Use `-vvv` (the

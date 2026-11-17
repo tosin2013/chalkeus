@@ -178,6 +178,13 @@ func (d Deps) submit(run *evidence.Run, imgs map[string]string, key string, spec
 	return res, nil
 }
 
+// ItemBase is an item run's real base revision (the snapshot's tree is its tree).
+func ItemBase(run *evidence.Run) string {
+	snap, _ := run.State["snapshot"].(map[string]any)
+	s, _ := snap["base_revision"].(string)
+	return s
+}
+
 func baseRevision(adir string) string {
 	var meta map[string]any
 	if raw, err := os.ReadFile(filepath.Join(adir, "meta.json")); err == nil {
@@ -225,13 +232,17 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 		}
 	}
 	head := fmt.Sprintf("pilot/%s/%s", run.ID, strings.ToLower(task))
-	spec := map[string]any{"repo": d.Repo, "head": head, "base": d.Branch, "base_revision": baseRevision(adir),
-		"title": fmt.Sprintf("pilot %s task %s", run.ID, task), "body": body(d.L, run, task, n, closes), "run_id": run.ID, "task": task}
+	base, bundle, title := baseRevision(adir), filepath.Join(adir, "change.bundle"), fmt.Sprintf("pilot %s task %s", run.ID, task)
+	if run.Kind() == evidence.KindItem { // the change replayed onto the real base (014 R4)
+		base, bundle, title = ItemBase(run), filepath.Join(adir, "publish.bundle"), fmt.Sprintf("pilot %s: item %s", run.ID, task)
+	}
+	spec := map[string]any{"repo": d.Repo, "head": head, "base": d.Branch, "base_revision": base,
+		"title": title, "body": body(d.L, run, task, n, closes), "run_id": run.ID, "task": task}
 	if d.LoginHint != "" {
 		spec["publisher_login"] = d.LoginHint
 	}
 	_ = run.Event("publish", task, n, "publish_started", head)
-	res, err := d.submit(run, imgs, strings.ToLower(task), spec, filepath.Join(adir, "change.bundle"))
+	res, err := d.submit(run, imgs, strings.ToLower(task), spec, bundle)
 	if err != nil {
 		return nil, err
 	}

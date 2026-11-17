@@ -187,6 +187,23 @@ func MintToken(keyPath, appID, installationID, repo, outEnv string, now time.Tim
 type App struct {
 	Cfg *config.Config
 	Now func() time.Time
+	// Repo is the repository tokens are minted for: an item run's target (014), else the fixture.
+	Repo string
+}
+
+func (a App) repo() string {
+	if a.Repo != "" {
+		return a.Repo
+	}
+	return a.Cfg.Repo()
+}
+
+// suffix keeps a target's cached token apart from the fixture's (tokens are scoped to one repo).
+func (a App) suffix() string {
+	if a.Repo == "" || a.Repo == a.Cfg.Repo() {
+		return ""
+	}
+	return "-" + strings.NewReplacer("/", "_", ".", "_").Replace(a.Repo)
 }
 
 func (a App) now() time.Time {
@@ -197,10 +214,10 @@ func (a App) now() time.Time {
 }
 
 // EnvPath is app-token.env next to the key.
-func (a App) EnvPath() string { return filepath.Join(a.Cfg.ConfigDir, "app-token.env") }
+func (a App) EnvPath() string { return filepath.Join(a.Cfg.ConfigDir, "app-token"+a.suffix()+".env") }
 
 // InfoPath is app-token.json (login, expiry, repositories; no secret).
-func (a App) InfoPath() string { return filepath.Join(a.Cfg.ConfigDir, "app-token.json") }
+func (a App) InfoPath() string { return filepath.Join(a.Cfg.ConfigDir, "app-token"+a.suffix()+".json") }
 
 func (a App) info() map[string]any {
 	var m map[string]any
@@ -238,7 +255,7 @@ func (a App) Mint(key, out string) (Result, error) {
 	if err := config.CheckMode(key); err != nil {
 		return Result{}, err
 	}
-	res := MintToken(key, a.Cfg.Get("PILOT_APP_ID"), a.Cfg.Get("PILOT_APP_INSTALLATION_ID"), a.Cfg.Repo(), out, a.now())
+	res := MintToken(key, a.Cfg.Get("PILOT_APP_ID"), a.Cfg.Get("PILOT_APP_INSTALLATION_ID"), a.repo(), out, a.now())
 	if res.OK && out == a.EnvPath() {
 		raw := pyrepr.JSONDumps(pyrepr.NewOrdered("login", res.Login, "expires_at", res.ExpiresAt, "repositories", toAny(res.Repositories)))
 		if err := os.WriteFile(a.InfoPath(), []byte(raw), 0o600); err != nil {
@@ -308,7 +325,7 @@ func (a App) Check(out io.Writer, key, canary string) int {
 		}
 		return 1
 	}
-	probe := ghloop.VerifyFile(tmp, a.Cfg.Repo(), canary, true)
+	probe := ghloop.VerifyFile(tmp, a.repo(), canary, true)
 	fmt.Fprintf(out, "GitHub App %s: token expires %s, repositories %s\n", res.Login, res.ExpiresAt, pyrepr.Strings(res.Repositories))
 	ghloop.Report(out, probe)
 	if probe.OK {

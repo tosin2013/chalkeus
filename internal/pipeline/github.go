@@ -13,7 +13,6 @@ import (
 	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/fixture"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
 	"github.com/tosin2013/specfoundry/internal/reconcile"
 	"github.com/tosin2013/specfoundry/internal/watcher"
@@ -29,8 +28,19 @@ type Creds struct {
 	BotLogin func() (string, error) // App mode: the bot login passed to the publisher Job
 }
 
-func (p *P) approvalsOn() bool { return p.Cfg.GithubApprovals() }
-func (p *P) issuesOn() bool    { return p.Cfg.GithubIssues() }
+func (p *P) approvalsOn() bool {
+	if p.item() {
+		return p.Target.GithubApprovals == "on"
+	}
+	return p.Cfg.GithubApprovals()
+}
+
+func (p *P) issuesOn() bool {
+	if p.item() {
+		return p.Target.GithubIssues == "on" || p.approvalsOn()
+	}
+	return p.Cfg.GithubIssues()
+}
 
 // loop returns the run's GitHub loop (operator reads, publisher-credential writes).
 func (p *P) loop() (*ghloop.Loop, error) {
@@ -41,7 +51,7 @@ func (p *P) loop() (*ghloop.Loop, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.GH = &ghloop.Loop{Repo: p.Cfg.Repo(), Branch: p.Cfg.Branch(), Approvers: p.Cfg.Approvers(), R: r,
+	p.GH = &ghloop.Loop{Repo: p.repo(), Branch: p.branch(), Approvers: p.Cfg.Approvers(), R: r,
 		W: func() (ghloop.Writer, error) {
 			env, err := p.Creds.Env()
 			if err != nil {
@@ -49,7 +59,7 @@ func (p *P) loop() (*ghloop.Loop, error) {
 			}
 			return ghloop.NewWriter(env)
 		},
-		Snapshot: ghloop.DefaultSnapshot(p.Cfg.Repo(), p.Cfg.Branch())}
+		Snapshot: ghloop.DefaultSnapshot(p.repo(), p.branch())}
 	return p.GH, nil
 }
 
@@ -71,7 +81,7 @@ func (p *P) githubPost(run *evidence.Run) {
 		return
 	}
 	p.say("  or approve on GitHub: https://github.com/%s/issues/%d (reply `/approve %s`; allowed: %s)",
-		p.Cfg.Repo(), ghloop.TrackingIssue(run), pend.Step, strings.Join(p.Cfg.Approvers(), ", "))
+		p.repo(), ghloop.TrackingIssue(run), pend.Step, strings.Join(p.Cfg.Approvers(), ", "))
 	p.ensureWatcher(run)
 }
 
@@ -179,7 +189,7 @@ func (p *P) closes(run *evidence.Run) func(task string) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		n, _ := s.Issues.Get(paths.Tasks[task]).(int)
+		n, _ := s.Issues.Get(run.ItemOf(task)).(int)
 		return n, nil
 	}
 }
@@ -195,8 +205,8 @@ func (p *P) refreshSecret() error {
 }
 
 // statusPending is the awaiting-merge pending record while a status-change PR is open.
-func statusPending(num int, base string) map[string]any {
-	return map[string]any{"task": "A", "status_pr": num, "status_base": base}
+func statusPending(task string, num int, base string) map[string]any {
+	return map[string]any{"task": task, "status_pr": num, "status_base": base}
 }
 
 // reconcileGitHub (004 US3): after A's merge, check reality, open a status-change PR and pause.
@@ -206,17 +216,18 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 	if _, ok := pend["status_pr"]; ok && pend["status_pr"] != nil {
 		return p.statusPRMerged(run, pend)
 	}
-	tA := run.Task("A")
+	task := mergeTask(run)
+	tA := run.Task(task)
 	n := asInt(tA["passing_attempt"])
-	adir, _ := run.AttemptDir("A", n)
+	adir, _ := run.AttemptDir(task, n)
 	baseRev, _ := tA["base_revision"].(string)
-	rec, cleanup, err := reconcile.ForFixture(p.Cfg.Repo(), p.Cfg.Branch(), run.Dir, run.ID, "A", adir, baseRev,
+	rec, cleanup, err := reconcile.ForFixture(p.repo(), p.branch(), run.Dir, run.ID, task, adir, baseRev,
 		func(string) string { return "" }, func(s string) { p.say("%s", s) })
 	if err != nil {
 		return p.fail(run, "RECONCILE_SETUP")
 	}
 	pr, _ := tA["pr"].(map[string]any)
-	code, r, edited := rec.Check("A", paths.Tasks["A"], asInt(pr["number"]), changedPaths(tA, n))
+	code, r, edited := rec.Check(task, run.ItemOf(task), asInt(pr["number"]), changedPaths(tA, n))
 	var base, bundle string
 	if code == 0 {
 		base, bundle, err = rec.StatusBundle(edited)
@@ -227,17 +238,21 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 	}
 	cleanup()
 	r["channel"] = "github"
-	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", "A.json"), r)
+	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", task+".json"), r)
 	reason, _ := r["reason"].(string)
 	ev := "reconcile_proposed"
 	if reason != "" {
 		ev = "reconcile_" + reason
 	}
 	mc, _ := r["merge_commit"].(string)
-	_ = run.Event("reconcile", "A", n, ev, mc)
+	_ = run.Event("reconcile", task, n, ev, mc)
 	if code == ExitAwaitMerge {
-		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
-		p.say("A's PR is not merged yet. Merge it on GitHub, then run `pilot resume` (or `pilot github watch`).")
+		p.pause(run, "awaiting-merge", map[string]any{"task": task})
+		if task == "A" {
+			p.say("A's PR is not merged yet. Merge it on GitHub, then run `pilot resume` (or `pilot github watch`).") // the guide quotes this
+		} else {
+			p.say("%s's PR is not merged yet. Merge it on GitHub, then run `pilot resume` (or `pilot github watch`).", task)
+		}
 		p.ensureWatcher(run)
 		return ExitAwaitMerge
 	}
@@ -247,18 +262,18 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 	deps, err := p.publisherDeps(run)
 	var spr map[string]any
 	if err == nil {
-		spr, err = deps.PublishStatus(run, p.Imgs, "A", base, bundle, ghloop.IssueFor(run, "A"))
+		spr, err = deps.PublishStatus(run, p.Imgs, task, base, bundle, ghloop.IssueFor(run, task))
 	}
 	if err != nil {
-		_ = run.Event("publish", "A", nil, "status_pr_failed", fmt.Sprintf("%s: %s", errName(err), clip(err.Error(), 300)))
-		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
+		_ = run.Event("publish", task, nil, "status_pr_failed", fmt.Sprintf("%s: %s", errName(err), clip(err.Error(), 300)))
+		p.pause(run, "awaiting-merge", map[string]any{"task": task})
 		p.say("could not open the status-change PR: %v\n`pilot resume` tries again.", err)
 		p.ensureWatcher(run)
 		return ExitFail
 	}
-	p.pause(run, "awaiting-merge", statusPending(asInt(spr["number"]), base))
+	p.pause(run, "awaiting-merge", statusPending(task, asInt(spr["number"]), base))
 	p.say("\nStatus-change PR: %v\nIt changes only item %s to `verified`. "+
-		"Merging it on GitHub approves the status change; then run `pilot resume` (or `pilot github watch`).", spr["url"], paths.Tasks["A"])
+		"Merging it on GitHub approves the status change; then run `pilot resume` (or `pilot github watch`).", spr["url"], run.ItemOf(task))
 	p.ensureWatcher(run)
 	return ExitAwaitMerge
 }
@@ -279,26 +294,27 @@ func changedPaths(t map[string]any, n int) []string {
 func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
 	num := asInt(pend["status_pr"])
 	base, _ := pend["status_base"].(string)
-	item := paths.Tasks["A"]
+	task := mergeTask(run)
+	item := run.ItemOf(task)
 	l, err := p.loop()
 	var view ghloop.PRView
 	if err == nil {
-		view, err = l.R.PR(l.Context(), p.Cfg.Repo(), num)
+		view, err = l.R.PR(l.Context(), p.repo(), num)
 	}
 	if err != nil {
-		p.pause(run, "awaiting-merge", statusPending(num, base))
+		p.pause(run, "awaiting-merge", statusPending(task, num, base))
 		p.say("could not read status-change PR #%d: %v; the run stays paused", num, err)
 		return ExitError
 	}
 	if view.State != "MERGED" {
-		p.pause(run, "awaiting-merge", statusPending(num, base))
+		p.pause(run, "awaiting-merge", statusPending(task, num, base))
 		p.say("status-change PR #%d is not merged yet. Merge it on GitHub to approve, then `pilot resume`.", num)
 		p.ensureWatcher(run)
 		return ExitAwaitMerge
 	}
-	clone, _, err := fixture.FreshClone(p.Cfg.Repo(), p.Cfg.Branch(), 0)
+	clone, _, err := fixture.FreshClone(p.repo(), p.branch(), 0)
 	if err != nil {
-		p.pause(run, "awaiting-merge", statusPending(num, base))
+		p.pause(run, "awaiting-merge", statusPending(task, num, base))
 		p.say("could not read status-change PR #%d: %v; the run stays paused", num, err)
 		return ExitError
 	}
@@ -316,14 +332,14 @@ func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
 	onDefault := regexp.MustCompile(`(?m)^### ` + regexp.QuoteMeta(item) + ` — .*\[status: verified\]`).MatchString(show("HEAD"))
 	_ = os.RemoveAll(clone)
 	if ferr != nil || derr != nil {
-		p.pause(run, "awaiting-merge", statusPending(num, base))
+		p.pause(run, "awaiting-merge", statusPending(task, num, base))
 		p.say("could not read status-change PR #%d: %v; the run stays paused", num, firstErr(ferr, derr))
 		return ExitError
 	}
 	changed := strings.Fields(diff)
 	pub, err := l.PublisherLogin(run)
 	if err != nil {
-		p.pause(run, "awaiting-merge", statusPending(num, base))
+		p.pause(run, "awaiting-merge", statusPending(task, num, base))
 		p.say("could not read status-change PR #%d: %v; the run stays paused", num, err)
 		return ExitError
 	}
@@ -335,24 +351,27 @@ func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
 	for i, c := range changed {
 		changedAny[i] = c
 	}
-	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", "A-status.json"), map[string]any{"pr": num, "base": base,
+	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", task+"-status.json"), map[string]any{"pr": num, "base": base,
 		"head": nullable(view.HeadSHA), "merge_commit": nullable(view.MergeCommit), "merged_by": nullable(view.MergedBy),
 		"changed": changedAny, "ok": ok, "reason": nullable(reason), "at": evidence.Now()})
 	rs := reason
 	if rs == "" {
 		rs = "None"
 	}
-	_ = run.Event("reconcile", "A", nil, "status_pr_checked", fmt.Sprintf("pr=%d ok=%t reason=%s", num, ok, rs))
+	_ = run.Event("reconcile", task, nil, "status_pr_checked", fmt.Sprintf("pr=%d ok=%t reason=%s", num, ok, rs))
 	if !ok {
-		decisions.Note(run, "reconcile", "A", nil, false, "github", view.MergedBy, fmt.Sprintf("pr=%d reason=%s", num, reason))
+		decisions.Note(run, "reconcile", task, nil, false, "github", view.MergedBy, fmt.Sprintf("pr=%d reason=%s", num, reason))
 		return p.fail(run, reason)
 	}
-	decisions.Note(run, "reconcile", "A", nil, true, "github", view.MergedBy, fmt.Sprintf("pr=%d", num))
-	tA := run.Task("A")
+	decisions.Note(run, "reconcile", task, nil, true, "github", view.MergedBy, fmt.Sprintf("pr=%d", num))
+	tA := run.Task(task)
 	tA["state"] = "verified"
 	_ = run.Save()
-	_ = run.Event("status", "A", nil, "task_verified", view.MergeCommit)
+	_ = run.Event("status", task, nil, "task_verified", view.MergeCommit)
 	p.githubRefresh(run, false)
+	if run.Kind() == evidence.KindItem { // one item: nothing follows its verification (014)
+		return p.finish(run)
+	}
 	if d := p.gateTask(run, "B"); d.Decision != "allow" {
 		return p.fail(run, "B_STILL_BLOCKED")
 	}
@@ -380,7 +399,7 @@ func (p *P) prMerged(num int) bool {
 	if err != nil {
 		return false
 	}
-	v, err := l.R.PR(l.Context(), p.Cfg.Repo(), num)
+	v, err := l.R.PR(l.Context(), p.repo(), num)
 	return err == nil && v.State == "MERGED"
 }
 
@@ -402,7 +421,7 @@ func (p *P) ReadyToResume(run *evidence.Run) bool {
 		if spr := asInt(pend["status_pr"]); spr > 0 {
 			return p.prMerged(spr)
 		}
-		pr, _ := run.Task("A")["pr"].(map[string]any)
+		pr, _ := run.Task(mergeTask(run))["pr"].(map[string]any)
 		n := asInt(pr["number"])
 		return n > 0 && p.prMerged(n)
 	}

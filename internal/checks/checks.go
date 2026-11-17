@@ -8,6 +8,7 @@
 package checks
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -193,6 +194,18 @@ func (d Deps) RunWorkerChecks(run *evidence.Run, imgs map[string]string, task st
 	}
 	d.rec(run, "P05", "FR-007", !hasGrading && !gradingMount, "no grading material in the worker namespace", unit,
 		"configmaps="+pyrepr.Value(strsAny(cmNames)))
+	if run.Kind() == evidence.KindItem {
+		var cmText strings.Builder
+		for _, cm := range cms {
+			for k, v := range m(cm["data"]) {
+				cmText.WriteString(k + "\n" + s(v) + "\n")
+			}
+		}
+		adir, _ := run.AttemptDir(task, n)
+		promptText, _ := os.ReadFile(filepath.Join(adir, "prompt.md"))
+		ok, detail := HiddenTestsAbsent(run.Dir, cmText.String(), string(promptText), []string{"base.bundle", "meta.json", "prompt.md"})
+		d.rec(run, "P11", "014 FR-008", ok, "no hidden-test file reaches the worker (ConfigMaps, staged inputs, prompt)", unit, detail)
+	}
 	// P06/P07 network, from the probe twin
 	func() {
 		defer d.C.DeleteNS(twin, false)
@@ -230,6 +243,9 @@ func (d Deps) RunWorkerChecks(run *evidence.Run, imgs map[string]string, task st
 	}()
 	// P08 RBAC
 	gns := fmt.Sprintf("pilot-g-%s-%d", strings.ToLower(task), n)
+	if run.Kind() == evidence.KindItem { // one grading namespace per item run (014 R7)
+		gns = "pilot-g-" + strings.ToLower(task)
+	}
 	ans := map[string]any{}
 	for _, r := range []string{"pods", "configmaps", "pods/exec"} {
 		ans[r] = d.C.CanI("create", r, gns, sa)
@@ -240,6 +256,33 @@ func (d Deps) RunWorkerChecks(run *evidence.Run, imgs map[string]string, task st
 		allNo = allNo && v == "no"
 	}
 	d.rec(run, "P08", "FR-010", allNo, "worker SA cannot create/patch/exec in its grader namespace", unit, pyrepr.SortedJSON(ans))
+}
+
+// HiddenTestsAbsent is P11's rule (014 FR-008): no hidden-test path from companion.json appears in
+// the worker's ConfigMaps or prompt, and the staged inputs are exactly the expected three.
+func HiddenTestsAbsent(runDir, configMaps, prompt string, staged []string) (bool, string) {
+	var c struct {
+		Files []struct {
+			Path string `json:"path"`
+		} `json:"files"`
+	}
+	raw, err := os.ReadFile(filepath.Join(runDir, "companion.json"))
+	if err != nil || json.Unmarshal(raw, &c) != nil || len(c.Files) == 0 {
+		return false, "companion.json missing or empty"
+	}
+	var leaks []string
+	for _, f := range c.Files {
+		if strings.Contains(configMaps, f.Path) || strings.Contains(prompt, f.Path) {
+			leaks = append(leaks, f.Path)
+		}
+	}
+	want := map[string]bool{"base.bundle": true, "meta.json": true, "prompt.md": true}
+	for _, n := range staged {
+		if !want[n] {
+			leaks = append(leaks, "staged:"+n)
+		}
+	}
+	return len(leaks) == 0, fmt.Sprintf("hidden_files=%d leaks=%s", len(c.Files), pyrepr.Value(strsAny(leaks)))
 }
 
 // RunClusterChecks runs P09 and P10.

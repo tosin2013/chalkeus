@@ -42,8 +42,11 @@ func resetFixtureCmd() *cobra.Command {
 }
 
 func runCmd() *cobra.Command {
-	return &cobra.Command{Use: "run", Short: "start a new pilot run", Args: cobra.NoArgs,
+	c := &cobra.Command{Use: "run", Short: "start a new pilot run (the fixture, or --target <name> --item NNN)", Args: cobra.NoArgs,
 		RunE: runRun}
+	c.Flags().String("item", "", "run this prepared roadmap item of the --target repository (014)")
+	addTargetFlag(c)
+	return c
 }
 
 func resumeCmd() *cobra.Command {
