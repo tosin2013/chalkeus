@@ -15,6 +15,9 @@ func runResetFixture(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	if name, _ := cmd.Flags().GetString("target"); name != "" && name != config.FixtureTarget {
+		return Exit(ExitError, "NOT_A_FIXTURE: reset-fixture force-pushes and only ever acts on the fixture; target %q is a real repository", name)
+	}
 	cfg, err := config.Load(l.Root, false, true)
 	if err != nil {
 		return err

@@ -58,7 +58,10 @@ func FreshClone(repo, branch string, depth int) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	args := []string{"clone", "--quiet", "--branch", branch}
+	args := []string{"clone", "--quiet"}
+	if branch != "" { // "" = the remote's default branch (a companion repository, 014)
+		args = append(args, "--branch", branch)
+	}
 	if depth > 0 {
 		args = append(args, "--depth", fmt.Sprint(depth))
 	}

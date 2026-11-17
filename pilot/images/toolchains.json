@@ -1,0 +1,22 @@
+{
+  "jdk17-maven": {
+    "image_key": "TOOLCHAIN_JDK17_MAVEN_IMAGE",
+    "env": {
+      "JAVA_HOME": "/opt/toolchain/jdk",
+      "MAVEN_HOME": "/opt/toolchain/maven",
+      "PATH_PREFIX": "/opt/toolchain/jdk/bin:/opt/toolchain/maven/bin"
+    },
+    "proxy": "maven-settings",
+    "worker": {"home": "1Gi", "tmp": "512Mi", "env": {"MAVEN_OPTS": "-Xmx768m"}},
+    "grader": {"cpu": "2", "memory": "2Gi", "deadline_s": 900, "command_timeout_s": 600},
+    "cache": {"size": "2Gi", "local_repo_flag": "-Dmaven.repo.local"}
+  },
+  "python": {
+    "image_key": null,
+    "env": {},
+    "proxy": "env",
+    "worker": null,
+    "grader": null,
+    "cache": null
+  }
+}

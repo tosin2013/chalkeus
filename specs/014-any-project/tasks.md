@@ -29,14 +29,14 @@ creates repositories on the owner's behalf.
 
 ## Phase 1: Setup
 
-- [ ] T001 Create the toolchain catalog `pilot/images/toolchains.json`, with entries `python`
+- [X] T001 Create the toolchain catalog `pilot/images/toolchains.json`, with entries `python`
   (no image) and `jdk17-maven` (image key `TOOLCHAIN_JDK17_MAVEN_IMAGE`, env, worker, grader
   and cache defaults), exactly as in data-model.md "Toolchain (catalog entry)".
-- [ ] T002 [P] Add the issue form `.github/ISSUE_TEMPLATE/toolchain-image.yml` (FR-012).
+- [X] T002 [P] Add the issue form `.github/ISSUE_TEMPLATE/toolchain-image.yml` (FR-012).
   - Fields: language and version, build tool and version, registry hosts, a link to the
     upstream release with its checksums, and the requester's target platform (kind, minikube,
     plain Kubernetes, OpenShift).
-- [ ] T003 [P] Create `specs/014-any-project/evidence/README.md`. It has a table: run, machine,
+- [X] T003 [P] Create `specs/014-any-project/evidence/README.md`. It has a table: run, machine,
   target, item, approvals, result, notes.
 
 ---
@@ -46,11 +46,11 @@ creates repositories on the owner's behalf.
 **Purpose:** target profiles, run kinds and audit dispatch. Once this phase is done, the
 fixture is still unchanged and the golden audit still passes.
 
-- [ ] T004 Add a fixture regression guard in `internal/pipeline/fixture_parity_test.go`. This is
+- [X] T004 Add a fixture regression guard in `internal/pipeline/fixture_parity_test.go`. This is
   US4's guard; write it before any other code change. It checks that the rendered fixture
   manifests, mode text, prompt, `meta.json` and summary are byte-identical
   to golden copies captured before 014's first change, in `internal/pipeline/testdata/fixture/`.
-- [ ] T005 Write tests for target profiles in `internal/config/targets_test.go`. Cover:
+- [X] T005 Write tests for target profiles in `internal/config/targets_test.go`. Cover:
   - name rule `^[a-z0-9][a-z0-9-]{0,30}$`, with `fixture` reserved;
   - `targets/` must be 0700 and each `<name>.env` 0600 (`TARGET_MODE`);
   - required keys `PILOT_TARGET_REPO` (owner/name), `PILOT_TOOLCHAIN`, `PILOT_TEST_COMMAND`
@@ -63,23 +63,26 @@ fixture is still unchanged and the golden audit still passes.
     origin, or another target's companion repository);
   - the implicit `fixture` target built from `pilot.env` alone is identical to today's
     `Config`.
-- [ ] T006 Implement `internal/config/targets.go` per contracts/target-profile.md:
+- [X] T006 Implement `internal/config/targets.go` per contracts/target-profile.md:
   - `LoadTarget(dir, name)`, `ListTargets(dir)`, `Target` struct;
   - `Config.Target()` with the fixture default;
   - the publisher env path is `targets/<name>.publisher.env` in token mode;
   - toolchain validation against `pilot/images/toolchains.json` and `pilot/images.lock`
     (`TOOLCHAIN_UNAVAILABLE`, whose message links `.github/ISSUE_TEMPLATE/toolchain-image.yml`).
-- [ ] T007 [P] Add the `targets` command in `internal/cli/targets.go`, wired in
+- [X] T007 [P] Add the `targets` command in `internal/cli/targets.go`, wired in
   `internal/cli/commands.go`. It lists name, repository, branch, toolchain, registries and
   companion, and never prints a secret or the model host.
-- [ ] T008 Add the global `--target <name>` flag in `internal/cli/root.go`, and thread the
+- [X] T008 Add the global `--target <name>` flag in `internal/cli/root.go`, and thread the
   selected `Target` into `run`, `gate`, `github …`, `app-token --check` and `reset-fixture`.
   - `resume`, `approve`, `status` and `audit` read the target from `run.json`, never from the
     flag (FR-004a).
   - With no flag, nothing changes.
-- [ ] T009 Make `reset-fixture` refuse any target but `fixture`: exit 2, `NOT_A_FIXTURE`
+  Done as: `--target` is a per-command flag (not global), on `gate` and `reset-fixture` now;
+  `run`, `github …` and `app-token --check` gain it with the item run (US1: T027, T031). `resume`,
+  `approve`, `status` and `audit` never take it: they read the target from `run.json`.
+- [X] T009 Make `reset-fixture` refuse any target but `fixture`: exit 2, `NOT_A_FIXTURE`
   (R17), in `internal/cli/fixture.go`, with a test in `internal/cli/fixture_test.go`.
-- [ ] T010 Record the run kind in `internal/evidence/evidence.go`:
+- [X] T010 Record the run kind in `internal/evidence/evidence.go`:
   - `run.json` gains `kind` (`fixture` | `item`; absent reads as `fixture`), `target` (`{name,
     repo, branch, toolchain}`) and `item`;
   - `WriteSummary` lists the tasks found in `run.json` instead of the fixed `A`,`B`;
@@ -87,10 +90,10 @@ fixture is still unchanged and the golden audit still passes.
 
   Tests in `internal/evidence/evidence_test.go`: a pre-014 record reads as `fixture`, and the
   fixture summary is byte-identical.
-- [ ] T011 Add `kind` dispatch in `internal/audit/audit.go`: `kind=item` selects variant
+- [X] T011 Add `kind` dispatch in `internal/audit/audit.go`: `kind=item` selects variant
   functions (stubbed to fail until US1); fixture and missing `kind` use today's checks.
   `internal/audit/golden_test.go` must stay green unchanged.
-- [ ] T012 [P] Make `internal/images/images.go` read the image list and lock keys from
+- [X] T012 [P] Make `internal/images/images.go` read the image list and lock keys from
   `pilot/images/toolchains.json` plus the fixed `worker`, `tools`, `egress`.
   - Add `ToolchainImage(name)`, which returns the digest, or `TOOLCHAIN_UNAVAILABLE` when none
     is locked.
@@ -109,7 +112,7 @@ code, without a cluster.
 **Independent test:** for each rule in contracts/readiness.md, an item that breaks only that
 rule refuses with its code. A prepared item gives `allow`.
 
-- [ ] T013 [P] [US2] Write tests for the allowed-paths parser in
+- [X] T013 [P] [US2] Write tests for the allowed-paths parser in
   `internal/readiness/paths_test.go`, per contracts/item-spec.md:
   - an `## Allowed paths` level-2 heading, then list items whose first backticked span is a
     glob;
@@ -119,9 +122,9 @@ rule refuses with its code. A prepared item gives `allow`.
     `.specify/memory/roadmap.md` or another item's spec folder.
 
   Matching uses fnmatch, where `*` matches `/`.
-- [ ] T014 [P] [US2] Implement `internal/readiness/paths.go` (`AllowedPaths(specText,
+- [X] T014 [P] [US2] Implement `internal/readiness/paths.go` (`AllowedPaths(specText,
   specDir, otherSpecDirs) ([]string, error)`).
-- [ ] T015 [US2] Write tests for the readiness rules in `internal/readiness/readiness_test.go`,
+- [X] T015 [US2] Write tests for the readiness rules in `internal/readiness/readiness_test.go`,
   using a temp target repository fixture and synthetic `spec status` JSON. Each code in
   contracts/readiness.md order 0–7 is produced by breaking only its rule:
   - existing gate codes;
@@ -135,7 +138,7 @@ rule refuses with its code. A prepared item gives `allow`.
   - `OPEN_ITEM_PR`.
 
   Also test that the first failing rule wins, and that unreadable status refuses.
-- [ ] T016 [US2] Implement `internal/readiness/readiness.go`. `Check(target, item) (Result,
+- [X] T016 [US2] Implement `internal/readiness/readiness.go`. `Check(target, item) (Result,
   []Row)`:
   - fresh clone at the target branch, and `gate.EvaluateFresh` (startable: `planned`,
     `specced`, `in-progress`; dependencies verified);
@@ -147,7 +150,7 @@ rule refuses with its code. A prepared item gives `allow`.
   - open `pilot/*/<NNN>` PRs.
 
   Returns rows for `gate/<seq>-<NNN>.json`.
-- [ ] T017 [US2] Add `pilot gate --target <name> --item NNN` in `internal/cli/gate.go`:
+- [X] T017 [US2] Add `pilot gate --target <name> --item NNN` in `internal/cli/gate.go`:
   readiness only, exit 10 with the reason code on refuse, exit 0 on allow. `gate {A|B}` is
   unchanged. CLI tests in `internal/cli/gate_test.go`.
 

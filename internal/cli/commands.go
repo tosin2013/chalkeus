@@ -37,6 +37,7 @@ func importOpencodeCmd() *cobra.Command {
 func resetFixtureCmd() *cobra.Command {
 	c := &cobra.Command{Use: "reset-fixture", Short: "force-reset the throwaway fixture repo", Args: cobra.NoArgs, RunE: runResetFixture}
 	c.Flags().Bool("yes", false, "skip the confirmation prompt")
+	addTargetFlag(c)
 	return c
 }
 
@@ -67,14 +68,31 @@ func approveCmd() *cobra.Command {
 
 func gateCmd() *cobra.Command {
 	c := &cobra.Command{
-		Use:       "gate {A|B}",
-		Short:     "evaluate the gate for one task",
+		Use:       "gate {A|B} | gate --target <name> --item NNN",
+		Short:     "evaluate the gate for one fixture task, or a target item's readiness (014)",
 		ValidArgs: []string{"A", "B"},
-		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-		RunE:      runGate,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if item, _ := cmd.Flags().GetString("item"); item != "" {
+				return cobra.NoArgs(cmd, args)
+			}
+			return cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs)(cmd, args)
+		},
+		RunE: runGate,
 	}
 	c.Flags().String("root", "", "evaluate this directory instead of a fresh clone")
+	c.Flags().String("item", "", "roadmap item NNN of the --target repository: check its readiness (no cluster)")
+	addTargetFlag(c)
 	return c
+}
+
+func targetsCmd() *cobra.Command {
+	return &cobra.Command{Use: "targets", Short: "list configured target repositories (014); never prints secrets", Args: cobra.NoArgs,
+		RunE: runTargets}
+}
+
+// addTargetFlag adds --target to a command that acts on one target repository (014 FR-004a).
+func addTargetFlag(c *cobra.Command) {
+	c.Flags().String("target", "", "target profile name in ~/.config/specfoundry/targets/ (default: the fixture in pilot.env)")
 }
 
 func auditCmd() *cobra.Command {
