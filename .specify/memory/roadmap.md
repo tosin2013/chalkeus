@@ -1,6 +1,26 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.13.1 → 1.14.0
+Bump rationale: MINOR — a constraint gains an exception (C-09: operator-supplied toolchain
+images); it doesn't invalidate existing entries. Plus a material scope clarification on 014.
+
+Changes this revision (owner decisions 2026-11-17, during 014's implementation):
+  - C-09: exception for a target's toolchain image, which may be operator-supplied: pinned by
+    digest, checked by the toolchain contract probe, shown at the mode approval and recorded
+    as operator-supplied. A GitHub build attestation is verified when present but not
+    required. The worker image and the grader/publisher tools image always stay
+    specfoundry-built.
+  - 014 note: "any repo" means any programming language. specfoundry builds JDK 21 + Maven,
+    Node.js 24 + npm, Python 3.13 and Go first, replacing the JDK 17 plan. Other languages use
+    an own toolchain image from a template (UBI base for Red Hat/OpenShift, any base
+    elsewhere) or the request form. Target settings live in operator-side profiles
+    (targets/<name>.env), which become a cluster resource in 011.
+
+Specs affected: 014 (scope), 011 (note via 014), 017 (Node.js 24 toolchain available)
+Open questions added/resolved: none
+
+Previous revision 1.13.1 (2026-11-17):
 Version change: 1.13.0 → 1.13.1
 Bump rationale: PATCH — two status transitions, an outcome clarification and notes; no new
 entry, constraint or open question.
@@ -376,6 +396,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   specfoundry-*`). The OpenShift target may use different images published to Quay (for
   example UBI-based variants for OpenShift's arbitrary-UID restricted SCC); 005 decides
   (PRD S6, constitution VII; decided 2026-11-13).
+  **Exception (owner decision 2026-11-17, 014):** a target's *toolchain* image, which only
+  supplies a language's tools under `/opt/toolchain`, may be operator-supplied. It must be
+  pinned by digest and pass the toolchain contract probe. It is shown at the mode approval and
+  recorded in the evidence as operator-supplied. A GitHub build attestation is verified when
+  present but not required, so enterprise CI and UBI bases work. The worker image and the
+  grader/publisher tools image are always built here, under the rule above.
 - **C-10 — Telemetry is operator observability only:** no third-party telemetry. First-party
   telemetry means metrics, traces and events (e.g. OpenTelemetry or Prometheus) sent only to
   a collector the operator runs. Nothing leaves the operator's environment unless they
@@ -806,6 +832,17 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   image yet asks for one by opening a GitHub issue on the specfoundry repository (the issue
   form and the image build are defined when 014 is specified).
 
+  **Any language (owner decision 2026-11-17):** "any project" means any programming language.
+  - **specfoundry builds** JDK 21 + Maven, Node.js 24 + npm, Python 3.13 and Go first. JDK 21
+    replaces the earlier JDK 17 plan.
+  - **Any other language** uses an own toolchain image built from a template (a UBI base for
+    Red Hat and OpenShift, any base elsewhere; C-09 exception), or the request form.
+  - **Target settings** (repository, toolchain, test command, registry hosts, companion
+    repository with the hidden tests) live in operator-side profiles,
+    `~/.config/specfoundry/targets/<name>.env`. The target repository declares nothing. In
+    cluster mode (011) the same fields become a cluster resource.
+  - See `specs/014-any-project/`.
+
 ### 015 — Released waves  [status: planned]
 
 - **Description:** A human releases a set of prepared items, and the pilot builds them in
@@ -1052,4 +1089,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.13.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17
+**Version**: 1.14.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17

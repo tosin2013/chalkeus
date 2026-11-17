@@ -351,7 +351,7 @@ func DriftReport(desired []Desired, issues []Issue, prs []map[string]any, number
 			continue
 		}
 		task, _ := p["task"].(string)
-		w, ok := num(numbers[paths.Tasks[task]])
+		w, ok := num(numbers[itemOf(task)])
 		if !ok || w == 0 {
 			continue
 		}
@@ -528,6 +528,15 @@ func (l *Loop) Drift(run *evidence.Run) ([]pyrepr.OrderedMap, error) {
 
 // IssueFor is the item issue number recorded for task in the run, or 0.
 func IssueFor(run *evidence.Run, task string) int {
-	n, _ := num(readIssues(run)[paths.Tasks[task]])
+	n, _ := num(readIssues(run)[run.ItemOf(task)])
 	return n
+}
+
+// itemOf maps a PR's task label to its item: the fixture's A/B, or an item run's label, which
+// is the item id itself (014).
+func itemOf(task string) string {
+	if item, ok := paths.Tasks[task]; ok {
+		return item
+	}
+	return task
 }

@@ -24,14 +24,28 @@ import (
 // RoadmapRel is the fixture roadmap path.
 const RoadmapRel = ".specify/memory/roadmap.md"
 
-// StatusEdit changes exactly one `[status: planned]` heading of item to verified.
+// StatusEdit changes exactly one startable `[status: planned|specced|in-progress]` heading of
+// item to verified (014 R12; the fixture's items are always planned).
 func StatusEdit(roadmap, item string) (string, error) {
-	re := regexp.MustCompile(`(?m)^(### ` + regexp.QuoteMeta(item) + ` — .*?\[status: )planned(\])[ \t]*$`)
+	re := statusRE(item)
 	hits := re.FindAllStringIndex(roadmap, -1)
 	if len(hits) != 1 {
 		return "", fmt.Errorf("expected exactly one planned heading for %s, found %d", item, len(hits))
 	}
-	return re.ReplaceAllString(roadmap, "${1}verified${2}"), nil
+	return re.ReplaceAllString(roadmap, "${1}verified${3}"), nil
+}
+
+// OldStatus is the status StatusEdit would replace ("" if there isn't exactly one).
+func OldStatus(roadmap, item string) string {
+	m := statusRE(item).FindAllStringSubmatch(roadmap, -1)
+	if len(m) != 1 {
+		return ""
+	}
+	return m[0][2]
+}
+
+func statusRE(item string) *regexp.Regexp {
+	return regexp.MustCompile(`(?m)^(### ` + regexp.QuoteMeta(item) + ` — .*?\[status: )(planned|specced|in-progress)(\])[ \t]*$`)
 }
 
 // Reconciler holds the reality checks' data sources (injected so tests need no network).
@@ -45,6 +59,7 @@ type Reconciler struct {
 	Ask          func(question string) string
 	StatusBundle func(text string) (base, bundle string, err error)
 	Say          func(string)
+	Where        string // "the fixture roadmap" (default) or "<owner/name>'s roadmap" for an item run
 }
 
 // NewRecord is the reconcile/A.json skeleton.
@@ -103,6 +118,9 @@ func (r Reconciler) Check(task, item string, pr int, changed []string) (int, map
 		}
 	}
 	rec["proposed"] = "planned→verified"
+	if from := OldStatus(old, item); from != "planned" {
+		rec["proposed"] = from + "→verified" // an item run starting from specced or in-progress (014)
+	}
 	r.Say(fmt.Sprintf("Reconcile proposal for task %s (item %s), PR #%d merged (%v), tasks 100%%, graded tree matches:\n%s",
 		task, item, pr, rec["merge_commit"], strings.Join(diff, "\n")))
 	return 0, rec, edited
@@ -115,7 +133,11 @@ func (r Reconciler) Run(task, item string, pr int, changed []string) (int, map[s
 	if code != 0 {
 		return code, rec
 	}
-	ans := strings.ToLower(strings.TrimSpace(r.Ask(fmt.Sprintf("Apply '%s: planned → verified' to the fixture roadmap? [y/N] ", item))))
+	q := fmt.Sprintf("Apply '%s: planned → verified' to the fixture roadmap? [y/N] ", item) // the guide quotes this
+	if r.Where != "" { // an item run (014): its own status and repository
+		q = fmt.Sprintf("Apply '%s: %s → verified' to %s? [y/N] ", item, OldStatus(r.RoadmapText(), item), r.Where)
+	}
+	ans := strings.ToLower(strings.TrimSpace(r.Ask(q)))
 	if ans != "y" {
 		rec["reason"] = "DECLINED"
 		return 5, rec

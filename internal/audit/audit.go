@@ -520,18 +520,174 @@ func runKind(d string) string {
 	return (&evidence.Run{State: st}).Kind()
 }
 
-// itemVariants replaces the fixture-shaped checks (AU01, AU02, AU03, AU11) with their
-// item-run variants (014 contracts/audit-item.md). Until they are implemented (014 US1) an
-// item run fails them, so it can never pass the audit by default.
-func itemVariants(_ string, rows []evidence.CheckRow) []evidence.CheckRow {
+// itemVariants replaces the fixture-shaped checks (AU01, AU02, AU03, AU11) with their item-run
+// variants (014 specs/014-any-project/contracts/audit-item.md). The other checks are shared.
+func itemVariants(d string, rows []evidence.CheckRow) []evidence.CheckRow {
+	var st map[string]any
+	readJSON(filepath.Join(d, "run.json"), &st)
+	item, _ := st["item"].(string)
+	ev, _ := evidence.ReadJSONL(filepath.Join(d, "events.jsonl"))
+	repl := map[string]evidence.CheckRow{
+		"AU01": itemAU01(d, item, ev),
+		"AU02": itemAU02(item, ev),
+		"AU03": itemAU03(d, st),
+		"AU11": itemAU11(d, item),
+	}
 	out := make([]evidence.CheckRow, 0, len(rows))
 	for _, r := range rows {
-		switch r.ID {
-		case "AU01", "AU02", "AU03", "AU11":
-			out = append(out, row(r.ID, false, r.Description, "item-run variant not implemented yet (014 US1)"))
-		default:
-			out = append(out, r)
+		if x, ok := repl[r.ID]; ok {
+			r = x
 		}
+		out = append(out, r)
 	}
 	return out
+}
+
+// itemAU01: only the item was gated allow, its readiness passed, and no other task has events
+// in the attempt stage.
+func itemAU01(d, item string, ev []evidence.Row) evidence.CheckRow {
+	allows, other := 0, 0
+	for _, e := range ev {
+		if str(e, "event") == "gate_allow" {
+			if str(e, "task") != item {
+				other++
+			}
+			allows++
+		}
+		if str(e, "stage") == "attempt" && str(e, "task") != item {
+			other++
+		}
+	}
+	pass, total := 0, 0
+	recs, _ := filepath.Glob(filepath.Join(d, "gate", "*-"+item+".readiness.json"))
+	sort.Strings(recs)
+	allowed := false
+	if len(recs) > 0 {
+		var res struct {
+			Decision string `json:"decision"`
+			Rules    []struct {
+				Result string `json:"result"`
+			} `json:"rules"`
+		}
+		if readJSON(recs[len(recs)-1], &res) {
+			allowed = res.Decision == "allow"
+			for _, r := range res.Rules {
+				total++
+				if r.Result == "pass" {
+					pass++
+				}
+			}
+		}
+	}
+	ok := item != "" && allows > 0 && other == 0 && allowed && total > 0 && pass == total
+	return row("AU01", ok, "only the prepared item was allowed and attempted (014 FR-002)",
+		fmt.Sprintf("item=%s readiness=%d/%d other_attempts=%d", item, pass, total, other))
+}
+
+// itemAU02: the baseline passed before the first attempt; then zero or more failed grades and
+// exactly one pass, which is the last.
+func itemAU02(item string, ev []evidence.Row) evidence.CheckRow {
+	baseline, firstAttempt := -1, -1
+	var grades []string
+	for i, e := range ev {
+		if str(e, "event") == "baseline_pass" && baseline < 0 {
+			baseline = i
+		}
+		if str(e, "stage") == "attempt" && firstAttempt < 0 {
+			firstAttempt = i
+		}
+		evn := str(e, "event")
+		if str(e, "stage") == "grade" && (evn == "grade_pass" || evn == "grade_fail") && str(e, "task") == item {
+			grades = append(grades, strings.TrimPrefix(evn, "grade_"))
+		}
+	}
+	passes := 0
+	for _, g := range grades {
+		if g == "pass" {
+			passes++
+		}
+	}
+	ok := baseline >= 0 && firstAttempt >= 0 && baseline < firstAttempt && passes == 1 && grades[len(grades)-1] == "pass"
+	b := "missing"
+	if baseline >= 0 {
+		b = "pass"
+	}
+	return row("AU02", ok, "baseline passed, then failed attempts and exactly one final pass (014 FR-007)",
+		fmt.Sprintf("baseline=%s order=%s", b, pyrepr.Strings(grades)))
+}
+
+// itemAU03: exactly 1 task PR and at most 1 status PR, all drafts by the publisher identity, on
+// the target repository.
+func itemAU03(d string, st map[string]any) evidence.CheckRow {
+	var prs []map[string]any
+	readJSON(filepath.Join(d, "prs.json"), &prs)
+	target, _ := st["target"].(map[string]any)
+	repo, _ := target["repo"].(string)
+	nTask, nStatus, ok := 0, 0, repo != ""
+	for _, p := range prs {
+		switch p["kind"] {
+		case "task", nil:
+			nTask++
+		case "status":
+			nStatus++
+		default:
+			ok = false
+		}
+		draft, _ := p["draft"].(bool)
+		url, _ := p["url"].(string)
+		if !draft || !truthy(p["author"]) || fmt.Sprint(p["author"]) != fmt.Sprint(p["publisher_identity"]) ||
+			!strings.Contains(url, "github.com/"+repo+"/pull/") {
+			ok = false
+		}
+	}
+	ok = ok && nTask == 1 && nStatus <= 1
+	return row("AU03", ok, "exactly 1 draft task PR (plus at most 1 status PR) on the target, by the publisher identity (014)",
+		fmt.Sprintf("repo=%s task_prs=%d status_prs=%d", repo, nTask, nStatus))
+}
+
+// itemAU11: no attempt was induced, and every prompt carries the spec unaltered: the spec text
+// in the prompt hashes to meta.spec_sha256, the same for every attempt.
+func itemAU11(d, item string) evidence.CheckRow {
+	var bad []string
+	dirs, _ := filepath.Glob(filepath.Join(d, "attempts", item+"-*"))
+	sort.Strings(dirs)
+	want := ""
+	for _, a := range dirs {
+		name := filepath.Base(a)
+		var meta map[string]any
+		if !readJSON(filepath.Join(a, "meta.json"), &meta) {
+			bad = append(bad, name+": no meta.json")
+			continue
+		}
+		if meta["induction"] != nil {
+			bad = append(bad, name+": induced")
+		}
+		sha, _ := meta["spec_sha256"].(string)
+		if want == "" {
+			want = sha
+		}
+		raw, err := os.ReadFile(filepath.Join(a, "prompt.md"))
+		if sha == "" || sha != want || err != nil || prompt.SpecSHA256(specSection(string(raw))) != sha {
+			bad = append(bad, name+": spec altered or unrecorded")
+		}
+	}
+	if len(dirs) == 0 {
+		bad = append(bad, "no attempts")
+	}
+	return row("AU11", len(bad) == 0, "no induction; every attempt got the item's spec unaltered (014)",
+		fmt.Sprintf("attempts=%d %s", len(dirs), pyrepr.Strings(bad)))
+}
+
+// specSection is the "# Specification" part of an item prompt.
+func specSection(p string) string {
+	_, rest, ok := strings.Cut(p, "\n# Specification\n\n")
+	if !ok {
+		return ""
+	}
+	for _, next := range []string{"\n# Plan\n", "\n# Task list ("} {
+		if i := strings.Index(rest, next); i >= 0 {
+			rest = rest[:i]
+		}
+	}
+	return rest
 }

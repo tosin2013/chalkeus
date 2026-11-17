@@ -10,7 +10,7 @@ behaviour; the fixture sets none of them, so its grading is unchanged.
 | `hidden_mode` | `overlay` | G5 copies `/grading/overlay/` over the project, then runs `test_command`. Absent means the single-file pytest as today. |
 | `toolchain` | name | recorded in the report |
 | `spec_sha256` | hex | the SHA-256 of the spec text given to the worker (AU11 item variant) |
-| `command_timeout_s` | int | default 180; from the catalog (600 for `jdk17-maven`) |
+| `command_timeout_s` | int | default 180; from the catalog (600 for each catalog toolchain) |
 
 ## Grader pod (item runs)
 

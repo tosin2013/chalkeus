@@ -32,6 +32,9 @@ creates repositories on the owner's behalf.
 - [X] T001 Create the toolchain catalog `pilot/images/toolchains.json`, with entries `python`
   (no image) and `jdk17-maven` (image key `TOOLCHAIN_JDK17_MAVEN_IMAGE`, env, worker, grader
   and cache defaults), exactly as in data-model.md "Toolchain (catalog entry)".
+  Done as: then updated to the owner's catalog (2026-11-17): `jdk21-maven`, `node24`,
+  `python3.13`, `go`, plus `python` (built in). Environment moved into each image's own
+  `toolchain.json`, and operator-supplied images were added (`PILOT_TOOLCHAIN_IMAGE`).
 - [X] T002 [P] Add the issue form `.github/ISSUE_TEMPLATE/toolchain-image.yml` (FR-012).
   - Fields: language and version, build tool and version, registry hosts, a link to the
     upstream release with its checksums, and the requester's target platform (kind, minikube,
@@ -174,13 +177,13 @@ completes and the audit passes 11/11 (T036, Owner).
   `CreatePVC/DeletePVC` in `internal/k8s/k8s.go`, with fake-clientset tests in
   `internal/k8s/k8s_test.go`. The exec stream is a tar unpacked by the receiver; secrets are
   never logged.
-- [ ] T019 [US1] Write snapshot and replay tests in `internal/fixture/snapshot_test.go`, using
+- [X] T019 [US1] Write snapshot and replay tests in `internal/fixture/snapshot_test.go`, using
   real `git` in a temp dir:
   - `Snapshot(clone, base)` builds a one-commit bundle whose tree equals `base`'s tree;
   - `Replay(clone, base, snapshot, changeBundle)` rebases the change onto `base`, and the
     replayed tree is identical to the graded tree;
   - a conflict-free replay is required, and a mismatch fails with `REPLAY_MISMATCH`.
-- [ ] T020 [US1] Implement `internal/fixture/snapshot.go` (`Snapshot`, `Replay`; uses the
+- [X] T020 [US1] Implement `internal/fixture/snapshot.go` (`Snapshot`, `Replay`; uses the
   existing git helpers).
 - [ ] T021 [US1] Add the input receiver for item runs to `pilot/manifests/worker-job.yaml.tmpl`
   and `pilot/manifests/grader-job.yaml.tmpl`, behind a template switch so fixture rendering is
@@ -193,7 +196,7 @@ completes and the audit passes 11/11 (T036, Owner).
 
 **Prompt, worker, grading**
 
-- [ ] T022 [P] [US1] Add `prompt.BuildItem(spec, plan, tasks, tasksPath, allowedPaths,
+- [X] T022 [P] [US1] Add `prompt.BuildItem(spec, plan, tasks, tasksPath, allowedPaths,
   toolchain, testCommand)` in `internal/prompt/prompt.go`, per R10.
   - It has a generic preamble, no "Python standard library" line, and no induction.
   - `Build` (the fixture) stays unchanged.
@@ -204,7 +207,7 @@ completes and the audit passes 11/11 (T036, Owner).
     `mode:"attempt"`, and `allowed_paths` from readiness;
   - label = item id (namespaces `pilot-w-<nnn>-<n>`);
   - `MakeInputs` (fixture) unchanged.
-- [ ] T024 [P] [US1] Extend `pilot/images/tools/grade.py` per contracts/grading.md:
+- [X] T024 [P] [US1] Extend `pilot/images/tools/grade.py` per contracts/grading.md:
   - optional `meta.mode` (`attempt` | `baseline`), `test_command` (run via `sh -c` from the
     project root), `hidden_mode:"overlay"` (copy `/grading/overlay/` over the project, then
     rerun `test_command`), and `command_timeout_s` (default 180);
@@ -224,7 +227,7 @@ completes and the audit passes 11/11 (T036, Owner).
 
   The fixture keeps `pilot-g-<t>-<n>`. Tests cover rendering and the namespace lifecycle with
   the fake clientset.
-- [ ] T026 [US1] Write `companion.json` evidence in `internal/grader/companion.go`: repository,
+- [X] T026 [US1] Write `companion.json` evidence in `internal/grader/companion.go`: repository,
   commit, file count and file list with SHA-256s, never contents (R9). Test that no file
   content reaches the evidence dir.
 
@@ -252,7 +255,7 @@ completes and the audit passes 11/11 (T036, Owner).
     B.
   - Tests in `internal/pipeline/github_test.go` and `internal/decisions/decisions_test.go` for
     both kinds.
-- [ ] T029 [US1] Generalize the status edit in `internal/reconcile/reconcile.go` (R12):
+- [X] T029 [US1] Generalize the status edit in `internal/reconcile/reconcile.go` (R12):
   - `StatusEdit` accepts `planned|specced|in-progress` → `verified` for exactly one line;
   - `rec["proposed"]` names the old status;
   - the commit message and `publisher.StatusBody` name the item and the old status;
@@ -260,10 +263,10 @@ completes and the audit passes 11/11 (T036, Owner).
 
   Tests in `internal/reconcile/reconcile_test.go` for the three source statuses plus the
   existing vectors.
-- [ ] T030 [P] [US1] Item wording in `internal/publisher/publisher.go`: the PR body names the
+- [X] T030 [P] [US1] Item wording in `internal/publisher/publisher.go`: the PR body names the
   target and item, and the evidence path comes from the run, not the hard-coded 002 path. The
   PR head is `pilot/<run>/<nnn>`. The fixture body is unchanged (test).
-- [ ] T031 [P] [US1] Map GitHub issues by item id in `internal/ghloop/sync.go` (`IssueFor`,
+- [X] T031 [P] [US1] Map GitHub issues by item id in `internal/ghloop/sync.go` (`IssueFor`,
   `DriftReport`) instead of `paths.Tasks`, keeping the fixture mapping. Tests in
   `internal/ghloop/sync_test.go`.
 
@@ -272,7 +275,7 @@ completes and the audit passes 11/11 (T036, Owner).
 - [ ] T032 [US1] Add the P11 check in `internal/checks/checks.go`: no overlay file name or
   SHA-256 from `companion.json` appears in the worker namespace's ConfigMaps, staged-input
   list or `prompt.md`. Tests in `internal/checks/checks_test.go`.
-- [ ] T033 [US1] Implement the item-run audit variants in `internal/audit/audit.go`, per
+- [X] T033 [US1] Implement the item-run audit variants in `internal/audit/audit.go`, per
   contracts/audit-item.md:
   - AU01: only NNN allowed, readiness rows pass, `other_attempts=0`;
   - AU02: the baseline passed before the first attempt, then `fail*` and exactly one `pass`,
@@ -311,37 +314,74 @@ completes and the audit passes 11/11 (T036, Owner).
 
 ## Phase 5: User Story 3 — toolchain and registries (P2)
 
-**Goal:** a Java/Maven target builds with its own toolchain image and Maven Central only, and
-the grader works offline from a cache filled from human inputs (R5, R6, R7).
+**Goal:** any language works. A Java/Maven target builds with a catalog toolchain and Maven
+Central only; another language builds with an operator-supplied toolchain image. The grader
+works offline from a cache filled from human inputs (R5, R6, R7).
 
 **Independent test:** `greeting-service` item 001 runs end to end. An undeclared host is
-refused and recorded. The audit passes 11/11, including P06r and P12 (T050, Owner).
+refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owner).
 
 **Toolchain image (R5)**
 
-- [ ] T037 [US3] Add pins to `pilot/pins.env`: `TEMURIN_17_RELEASE`, `TEMURIN_17_SHA256`
-  (linux x64 and aarch64 tarballs), `MAVEN_VERSION` (3.9.x) and `MAVEN_SHA512` (Apache release
-  `.sha512`).
-- [ ] T038 [US3] Create `pilot/images/toolchain-jdk17-maven/Dockerfile`:
-  - a fetch stage downloads both tarballs and verifies them against the pins;
-  - the final stage holds only `/opt/toolchain/jdk` and `/opt/toolchain/maven`, owned by group
-    0 and `g=u`, with no shell required at run time;
-  - the copy entrypoint is a static `cp -a /opt/toolchain/. /dest/`, from a pinned busybox
-    stage or the tools image.
-
-  Add the branch in `pilot/images/build_args.py`.
+- [ ] T037 [US3] Add pins to `pilot/pins.env` for the catalog toolchains (owner decision
+  2026-11-17), each with linux amd64 and arm64 checksums from the upstream release:
+  - Eclipse Temurin 21 (SHA-256);
+  - Apache Maven 3.9.x (SHA-512 from the Apache `.sha512`);
+  - the Node.js 24 LTS tarball (SHA-256 from `SHASUMS256.txt`);
+  - `python-build-standalone` 3.13 (SHA-256);
+  - Go (SHA-256 from go.dev).
+- [ ] T038 [US3] Create one image per catalog toolchain: `pilot/images/toolchain-jdk21-maven/`,
+  `toolchain-node24/`, `toolchain-python3.13/` and `toolchain-go/`. Each one:
+  - has a fetch stage that verifies every tarball against the pins;
+  - has a final stage that holds only `/opt/toolchain/` with its `toolchain.json`
+    (contracts/toolchain-image.md: `name`, `version_command`, `path`, `env`, `proxy`), files group
+    0 and `g=u`, no setuid, and a static copy helper;
+  - gets a branch in `pilot/images/build_args.py`.
 - [ ] T039 [US3] Make `.github/workflows/pilot-images.yml` data-driven from
   `pilot/images/toolchains.json` plus `worker`, `tools`, `egress`. That covers the context
-  loop, the push loop, `image-digests.json` and the `digest-pr` key list, including
-  `TOOLCHAIN_JDK17_MAVEN_IMAGE` in `pilot/images.lock`.
-- [ ] T040 [US3] Extend `pilot/images/smoke.sh`. Under an arbitrary UID, check `java -version`
-  and `mvn -v` from the copied toolchain. The tools image grades a tiny offline Maven project
-  in `pilot/images/tests/maven-sample/`, with a pre-seeded repository, through
-  `test_command="mvn -B -o test"` and an overlay.
+  loop, the push loop, `image-digests.json` and the `digest-pr` key list, including the four
+  `TOOLCHAIN_*_IMAGE` keys in `pilot/images.lock`.
+- [ ] T040 [US3] Extend `pilot/images/smoke.sh`.
+  - Every catalog toolchain image passes the contract checks under an arbitrary UID.
+  - The tools image grades one tiny offline sample per toolchain, under
+    `pilot/images/tests/samples/{maven,npm,pytest,go}/`, with its dependencies pre-seeded,
+    through `test_command` and an overlay.
+- [ ] T041 [US3] Write the toolchain contract probe in `internal/toolchain/probe.go`, and the new
+  `pilot/manifests/toolchain-probe-job.yaml.tmpl`.
+  - After the mode approval, a no-network Job in the run's grading namespace copies the
+    toolchain under an arbitrary UID with group 0 and checks: `toolchain.json` parses and
+    follows the rules (paths under `/opt/toolchain`, no proxy or secret-like env names, `proxy`
+    is `env` or `maven-settings`), the files are readable, `version_command` exits 0 within
+    60 s, and nothing is setuid or setgid.
+  - A failure refuses with `TOOLCHAIN_CONTRACT`, naming the check.
+  - Evidence goes to `toolchain.json`: source (`catalog` | `operator-supplied`), image digest,
+    name, version line, attestation.
+  - The `toolchain.json` parsing and rule checks are unit-tested in
+    `internal/toolchain/probe_test.go`.
+- [ ] T042 [US3] Handle operator-supplied toolchain images (FR-011a, FR-011b).
+  - `PILOT_TOOLCHAIN_IMAGE` in the profile (already parsed and checked for a digest) is used
+    for the toolchain init container only. The worker and tools images are never replaceable.
+  - The mode approval adds `toolchain <label> (operator-supplied <image>)`.
+  - When `gh` is available, run `gh attestation verify oci://<image> --owner <registry owner>`
+    and record the result:
+    - **verified:** the run continues;
+    - **absent:** recorded, and the run continues;
+    - **present but failing:** the run refuses with `TOOLCHAIN_ATTESTATION_FAILED`.
+  - Tests in `internal/toolchain/attest_test.go`, with a fake `gh`.
+- [ ] T043 [P] [US3] Add the own-image template in `pilot/images/toolchain-template/`:
+  - `Dockerfile.ubi`, from a Red Hat UBI language image (for example `ubi9/nodejs-22`,
+    `ubi9/openjdk-21`), copying the runtime into `/opt/toolchain`;
+  - `Dockerfile.debian`, from any base;
+  - `toolchain.json.example`;
+  - `toolchain-image.yml`, a GitHub Actions workflow that builds, pushes, attests
+    (`actions/attest-build-provenance`) and prints the digest;
+  - `README.md` with the steps.
+
+  `pilot/images/smoke.sh` builds the Debian example once and runs the contract probe on it.
 
 **Toolchain wiring**
 
-- [ ] T041 [US3] Add the toolchain init container to item-run worker, prefetch and grader pods,
+- [ ] T044 [US3] Add the toolchain init container to item-run worker, prefetch and grader pods,
   in `pilot/manifests/worker-job.yaml.tmpl` and `pilot/manifests/grader-job.yaml.tmpl`. It
   copies `/opt/toolchain` into an emptyDir, and the catalog sets `JAVA_HOME`, `MAVEN_HOME` and
   the PATH prefix. Item-run worker volumes come from the catalog (`/home/worker` 1Gi, `/tmp`
@@ -349,7 +389,7 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T050, Owne
 
 **Registry egress (R6)**
 
-- [ ] T042 [US3] Add the per-target registry proxy in `internal/cluster/infra.go`:
+- [ ] T045 [US3] Add the per-target registry proxy in `internal/cluster/infra.go`:
   - `EnsureRegistryProxy(target)` renders `pilot/manifests/egress.yaml.tmpl` as
     `pilot-egress-r-<target>`, with an allowlist of exactly `PILOT_REGISTRY_HOSTS` (never the
     model host). It is re-rendered when the hosts change;
@@ -358,18 +398,18 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T050, Owne
   - `down` deletes all `pilot-egress-r-*` and writes teardown row T04.
 
   Tests in `internal/cluster/cluster_test.go`.
-- [ ] T043 [US3] Generate `settings.xml` with a `<proxy>` for `pilot-egress-r-<target>` and
+- [ ] T046 [US3] Generate `settings.xml` with a `<proxy>` for `pilot-egress-r-<target>` and
   pass `MAVEN_ARGS=-s /in/settings.xml`, in `internal/worker/worker.go` and
   `internal/grader/grader.go`, for `proxy: maven-settings` toolchains. OpenCode keeps
   `HTTPS_PROXY` (the model proxy). Tests.
-- [ ] T044 [US3] Add the P06r check in `internal/checks/checks.go`: a declared registry is
+- [ ] T047 [US3] Add the P06r check in `internal/checks/checks.go`: a declared registry is
   reachable through the registry proxy from a probe pod in the worker policy, and
   `example.invalid` is refused. Copy the registry proxy's refusals into the attempt's
   `proxy-denials.log` (extending `worker.ProxyDenials`). Tests.
 
 **Dependency cache (R7)**
 
-- [ ] T045 [US3] Add the cache PVC and prefetch:
+- [ ] T048 [US3] Add the cache PVC and prefetch:
   - in `pilot/manifests/grading-ns.yaml.tmpl`, a PVC `deps` (size from the catalog or
     `PILOT_CACHE_SIZE`, default StorageClass), and a NetworkPolicy letting `role=prefetch`
     pods reach only DNS and `pilot-egress-r-<target>`;
@@ -379,16 +419,16 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T050, Owne
     `-Dmaven.repo.local=/deps`. Its exit code is recorded, not judged. A failure to resolve is
     `PREFETCH_FAILED`;
   - `prefetch.json` evidence (result, duration, bytes).
-- [ ] T046 [US3] Mount the cache in grader Jobs: `/deps` read-only, Maven with `-o -s
+- [ ] T049 [US3] Mount the cache in grader Jobs: `/deps` read-only, Maven with `-o -s
   /in/settings.xml -Dmaven.repo.local=/tmp/m2 -Dmaven.repo.local.tail=/deps`. Grader resources
   and deadline come from the catalog (2 CPU, 2Gi, 900 s; 600 s per command) or the profile.
   The namespace and PVC are deleted at run end; `down` deletes leftovers and writes teardown
   row T05.
-- [ ] T047 [US3] Add the P12 check in `internal/checks/checks.go`: grader pods in
+- [ ] T050 [US3] Add the P12 check in `internal/checks/checks.go`: grader pods in
   `pilot-g-<nnn>` have no egress rule, and the prefetch pod's rule allows only DNS and the
   registry proxy. Extend P07 and P08 to the run-scoped namespace. Make AU04 require P12 and
   AU07 require T04 and T05 for item runs, in `internal/audit/audit.go`. Tests.
-- [ ] T048 [US3] Update `docs/targets.md` and `docs/troubleshooting.md`:
+- [ ] T051 [US3] Update `docs/targets.md` and `docs/troubleshooting.md`:
   - toolchains and the request form;
   - registry hosts at the mode approval;
   - an attempt can't add dependencies (the human adds them while preparing the item);
@@ -396,7 +436,7 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T050, Owne
 
 **Validation (Owner)**
 
-- [ ] T049 [US3] **Owner action:** prepare the validation repository (quickstart §1).
+- [ ] T052 [US3] **Owner action:** prepare the validation repository (quickstart §1).
   - Copy `spring-guides/gs-rest-service` `complete/` (Apache-2.0) into
     `<owner>/greeting-service`. Remove Gradle; keep the license and notice.
   - Spec Kit roadmap with items 001 (validate `name`), 002 (greeting templates) and 003
@@ -404,17 +444,27 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T050, Owne
   - Private `<owner>/greeting-service-acceptance` with `items/00N/` hidden JUnit tests that
     fail on the base.
   - App installed on the target if App mode; `targets/greeting.env`.
-- [ ] T050 [US3] **Owner action:** quickstart §3–§4.
+- [ ] T053 [US3] **Owner action:** quickstart §3–§4.
   1. Readiness refusals on a scratch branch: each code once.
   2. Run `greeting-service` item 001 end to end: mode approval shows `repo.maven.apache.org` →
      prefetch → baseline pass → attempts → draft PR → merge → status PR → `down` → audit 11/11.
   3. Check by hand that no hidden-test name is in prompts or the PR.
 
   Copy the records to `specs/014-any-project/evidence/`.
-- [ ] T051 [US3] **Owner action:** quickstart §5. Run item 002, then 003 (unblocked by 002).
+- [ ] T054 [US3] **Owner action:** quickstart §5. Run item 002, then 003 (unblocked by 002).
   Then run the fixture with no configuration edit between runs (SC-007). Record them.
 
-**Checkpoint:** a Java/Maven project runs under every guarantee on kind.
+- [ ] T055 [US3] **Owner action (SC-008):** a language specfoundry has no image for (for example
+  Rust or .NET).
+  1. Build a toolchain image from `pilot/images/toolchain-template/` (UBI or another base) in
+     your own repository.
+  2. Set `PILOT_TOOLCHAIN_IMAGE` to its digest.
+  3. Run one prepared item end to end: the mode approval shows the image as operator-supplied,
+     and the audit is 11/11.
+  4. Record it in `specs/014-any-project/evidence/README.md`.
+
+**Checkpoint:** a Java/Maven project, and a project in a language specfoundry has no image for,
+run under every guarantee on kind.
 
 ---
 
@@ -424,7 +474,7 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T050, Owne
 
 **Independent test:** one fixture run, 11/11; the golden audit is unchanged.
 
-- [ ] T052 [US4] **Owner action:** a fixture run on the final branch, following the operator
+- [ ] T056 [US4] **Owner action:** a fixture run on the final branch, following the operator
   guide: `up` → `run` → … → `down` → audit 11/11. Record it in
   `specs/014-any-project/evidence/README.md`.
 
@@ -432,12 +482,12 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T050, Owne
 
 ## Phase 7: Polish and close-out
 
-- [ ] T053 [P] Do a privacy check: AU08 passes for every 014 record, and no model host, token,
+- [ ] T057 [P] Do a privacy check: AU08 passes for every 014 record, and no model host, token,
   key or hidden-test content appears in `specs/014-any-project/`.
-- [ ] T054 [P] Update `README.md` ("What works today"), `pilot/README.md` (layout: toolchains,
+- [ ] T058 [P] Update `README.md` ("What works today"), `pilot/README.md` (layout: toolchains,
   manifests) and `.claude/skills/pilot/SKILL.md` (`--target`/`--item`; refusal codes go to
   troubleshooting). Run the docs check.
-- [ ] T055 Add an Evidence section to `specs/014-any-project/spec.md`. Run
+- [ ] T059 Add an Evidence section to `specs/014-any-project/spec.md`. Run
   `/speckit-roadmap-debrief` for 014. Then, with the owner's approval, run
   `/speckit-roadmap-write`:
   - 014 status and spec dir;
@@ -451,16 +501,17 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T050, Owne
 - **Setup (T001–T003)** → **Foundational (T004–T012)** blocks every story.
 - **US2 (T013–T017)** needs Foundational and no cluster. **US1 (T018–T036)** needs US2's
   readiness (T016).
-- **US3 (T037–T051)** needs US1's pipeline, grading namespace and overlay grading.
-  - T037–T040 (the image) can start in parallel with US1, because they touch different files.
-  - T049 (the owner preparing the repository) can start any time.
+- **US3 (T037–T055)** needs US1's pipeline, grading namespace and overlay grading.
+  - T037–T043 (the catalog images, the probe's unit tests and the own-image template) can start
+    in parallel with US1, because they touch different files.
+  - T052 (the owner preparing the repository) can start any time.
 - **US4:** its guard (T004) is the first Foundational task, written before any code change;
-  the fixture run (T052) is last.
-- **Polish (T053–T055)** comes last.
+  the fixture run (T056) is last.
+- **Polish (T057–T059)** comes last.
 
 ```text
-Setup → Foundational → US2 → US1 → US3 → US4(T052) → Polish
-                       ↘ T037–T040 (image) ─────┘
+Setup → Foundational → US2 → US1 → US3 → US4(T056) → Polish
+                       ↘ T037–T043 (images) ────┘
 ```
 
 ## Parallel opportunities
@@ -469,8 +520,8 @@ Setup → Foundational → US2 → US1 → US3 → US4(T052) → Polish
 - **US2:** T013 and T014 alongside T015.
 - **US1:** T022, T024, T030 and T031 are independent files; T018 and T019 can be written
   together.
-- **US3:** the image track (T037–T040) runs alongside the wiring track (T041–T047) until T050.
-- **Polish:** T053 and T054.
+- **US3:** the image track (T037–T043) runs alongside the wiring track (T044–T050) until T053.
+- **Polish:** T057 and T058.
 
 ## Implementation strategy
 
@@ -478,6 +529,6 @@ Setup → Foundational → US2 → US1 → US3 → US4(T052) → Polish
    This is useful on its own to check that a project is prepared.
 2. **Then US1 on the Python toolchain**, proven by T036, before any Java work. That isolates the
    general path from toolchain issues.
-3. **Then US3 for Java/Maven**, validated on `greeting-service` (T050–T051).
-4. **US4's guard (T004)** is in place from early on, and T052 confirms the fixture at the end.
+3. **Then US3 for Java/Maven**, validated on `greeting-service` (T053–T054).
+4. **US4's guard (T004)** is in place from early on, and T056 confirms the fixture at the end.
 5. **One PR per phase or slice; the owner merges.**

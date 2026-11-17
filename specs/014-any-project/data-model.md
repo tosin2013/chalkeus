@@ -11,7 +11,8 @@ One per target repository, on the operator's machine ([contracts/target-profile.
 | name | file name `targets/<name>.env` | `^[a-z0-9][a-z0-9-]{0,30}$`; `fixture` is reserved for the implicit target |
 | repository | `PILOT_TARGET_REPO` | `owner/name`; not this checkout's origin; not any profile's companion repository |
 | branch | `PILOT_TARGET_BRANCH` | default `main` |
-| toolchain | `PILOT_TOOLCHAIN` | a name in `pilot/images/toolchains.json` whose image is locked |
+| toolchain | `PILOT_TOOLCHAIN` | a name in `pilot/images/toolchains.json` whose image is locked; or a free label when `PILOT_TOOLCHAIN_IMAGE` is set |
+| own toolchain image | `PILOT_TOOLCHAIN_IMAGE` | optional; `registry/name@sha256:<64 hex>`; must meet contracts/toolchain-image.md |
 | test command | `PILOT_TEST_COMMAND` | non-empty; runs from the repository root; exit 0 = pass |
 | registry hosts | `PILOT_REGISTRY_HOSTS` | comma-separated hostnames (`^[A-Za-z0-9.-]+$`); may be empty |
 | companion repository | `PILOT_COMPANION_REPO` | `owner/name`, private, readable by the operator |
@@ -70,15 +71,18 @@ approval), and the status-change PR merge on GitHub.
 `pilot/images/toolchains.json`:
 
 ```json
-{"jdk17-maven": {"image_key": "TOOLCHAIN_JDK17_MAVEN_IMAGE",
-                 "env": {"JAVA_HOME": "/opt/toolchain/jdk", "MAVEN_HOME": "/opt/toolchain/maven",
-                         "PATH_PREFIX": "/opt/toolchain/jdk/bin:/opt/toolchain/maven/bin"},
+{"jdk21-maven": {"image_key": "TOOLCHAIN_JDK21_MAVEN_IMAGE",
                  "proxy": "maven-settings",
                  "worker": {"home": "1Gi", "tmp": "512Mi", "env": {"MAVEN_OPTS": "-Xmx768m"}},
                  "grader": {"cpu": "2", "memory": "2Gi", "deadline_s": 900, "command_timeout_s": 600},
-                 "cache": {"size": "2Gi", "local_repo_flag": "-Dmaven.repo.local"}},
+                 "cache": {"size": "2Gi"}},
+ "node24": {"image_key": "TOOLCHAIN_NODE24_IMAGE", "proxy": "env", "…": "…"},
  "python": {"image_key": null, "proxy": "env", "grader": "default", "cache": null}}
 ```
+
+The image's own `/opt/toolchain/toolchain.json` supplies `PATH` and environment
+(contracts/toolchain-image.md). An operator-supplied image gets the same default resources as a
+catalog toolchain.
 
 ## Registry proxy
 

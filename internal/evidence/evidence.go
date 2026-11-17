@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/specfoundry/internal/paths"
 	"io"
 	"os"
 	"os/exec"
@@ -519,6 +520,22 @@ func (r *Run) TaskLabels() []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// ItemOf is the roadmap item a task label stands for: the fixture's A/B map, or the label itself
+// in an item run (where the label is the item id).
+func (r *Run) ItemOf(task string) string {
+	if r.Kind() == KindItem {
+		return task
+	}
+	return paths.Tasks[task]
+}
+
+// TargetRepo is the item run's target repository ("" for a fixture run).
+func (r *Run) TargetRepo() string {
+	t, _ := r.State["target"].(map[string]any)
+	s, _ := t["repo"].(string)
+	return s
 }
 
 // SetItemRun marks the run as an item run of target (name, repo, branch, toolchain) and item.

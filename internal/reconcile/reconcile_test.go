@@ -89,10 +89,23 @@ func TestRefusals(t *testing.T) {
 	}
 }
 
-func TestStatusEditNeedsExactlyOnePlannedHeading(t *testing.T) {
+func TestStatusEditNeedsExactlyOneStartableHeading(t *testing.T) {
 	rm := roadmap(t)
-	if _, err := StatusEdit(strings.Replace(rm, "[status: planned]", "[status: specced]", 1), "001"); err == nil {
-		t.Error("no planned heading must fail")
+	// 014 R12: an item may start from planned, specced or in-progress; each becomes verified.
+	for _, from := range []string{"planned", "specced", "in-progress"} {
+		text := strings.Replace(rm, "[status: planned]", "[status: "+from+"]", 1)
+		got, err := StatusEdit(text, "001")
+		if err != nil || OldStatus(text, "001") != from {
+			t.Fatalf("%s: %v %q", from, err, OldStatus(text, "001"))
+		}
+		if strings.Count(got, "[status: verified]")-strings.Count(text, "[status: verified]") != 1 || len(got) != len(text)-len(from)+len("verified") {
+			t.Errorf("%s: not exactly one line changed", from)
+		}
+	}
+	for _, from := range []string{"implemented", "verified", "abandoned"} {
+		if _, err := StatusEdit(strings.Replace(rm, "[status: planned]", "[status: "+from+"]", 1), "001"); err == nil {
+			t.Errorf("%s must fail: only a startable status becomes verified", from)
+		}
 	}
 	if _, err := StatusEdit(rm, "009"); err == nil {
 		t.Error("unknown item must fail")

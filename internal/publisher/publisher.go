@@ -86,6 +86,9 @@ func body(l paths.Layout, run *evidence.Run, task string, n int, closes int) str
 	if raw, err := os.ReadFile(l.ImagesJSON); err == nil {
 		_ = json.Unmarshal(raw, &imgs)
 	}
+	if run.Kind() == evidence.KindItem {
+		return itemBody(run, task, n, gs, rows, imgs, closes)
+	}
 	b := fmt.Sprintf("Opened by the specfoundry M1 pilot **publisher** (run `%s`, task %s, fixture item %s).\n\n"+
 		"Passing attempt: **%d**. Gate decisions: %s.\n\n"+
 		"| Attempt | Induction | Grade | Cost (USD) | Tokens |\n|---|---|---|---|---|\n%s\n\n"+
@@ -270,16 +273,38 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 	return entry, nil
 }
 
-// StatusBody is the status-change PR body (004 R6).
+// itemBody is an item run's PR body (014): the target and item instead of the fixture wording,
+// and the run's evidence location on the operator's machine.
+func itemBody(run *evidence.Run, task string, n int, gs string, rows []string, imgs map[string]string, closes int) string {
+	b := fmt.Sprintf("Opened by the specfoundry pilot **publisher** (run `%s`, item %s of `%s`).\n\n"+
+		"Passing attempt: **%d**. Gate and readiness decisions: %s.\n\n"+
+		"| Attempt | Induction | Grade | Cost (USD) | Tokens |\n|---|---|---|---|---|\n%s\n\n"+
+		"Images: worker `%s`, grader/publisher `%s`.\n\n"+
+		"Graded independently: the project's own tests and hidden acceptance tests the worker never saw. "+
+		"Evidence: run `%s` on the operator's machine.\n\n"+
+		"This is a **draft**. A human reviews and merges it; the pilot never merges.\n",
+		run.ID, task, run.TargetRepo(), n, gs, strings.Join(rows, "\n"), imgs["worker"], imgs["tools"], run.ID)
+	if closes > 0 {
+		b += fmt.Sprintf("\nCloses #%d\n", closes)
+	}
+	return b
+}
+
+// StatusBody is the status-change PR body (004 R6). An item run names the status it starts from
+// (014 R12: planned, specced or in-progress).
 func StatusBody(run *evidence.Run, task string, closes int) string {
-	item := paths.Tasks[task]
+	item := run.ItemOf(task)
+	from, _ := run.State["status_from"].(string)
+	if from == "" {
+		from = "planned"
+	}
 	issue := ""
 	if closes > 0 {
 		issue = fmt.Sprintf(" Item issue: #%d.", closes)
 	}
 	return fmt.Sprintf("Opened by the specfoundry pilot **publisher** (run `%s`) after task %s's PR was merged "+
 		"and checked (merged, tasks 100%%, merged tree matches the graded attempt).\n\n"+
-		"It changes exactly one line: item %s `planned` → `verified` in `.specify/memory/roadmap.md`.%s\n\n"+
+		"It changes exactly one line: item %s `"+from+"` → `verified` in `.specify/memory/roadmap.md`.%s\n\n"+
 		"**Merging this PR approves the status change.** The pilot checks that the merged change is exactly "+
 		"this edit, and that an allowed approver merged it. The pilot never merges.\n", run.ID, task, item, issue)
 }
@@ -292,7 +317,7 @@ func (d Deps) PublishStatus(run *evidence.Run, imgs map[string]string, task, bas
 			return p, nil
 		}
 	}
-	item := paths.Tasks[task]
+	item := run.ItemOf(task)
 	head := fmt.Sprintf("pilot/%s/status-%s", run.ID, item)
 	spec := map[string]any{"repo": d.Repo, "head": head, "base": d.Branch, "base_revision": baseRev,
 		"title": fmt.Sprintf("pilot %s: %s verified", run.ID, item), "body": StatusBody(run, task, closes), "run_id": run.ID, "task": task}

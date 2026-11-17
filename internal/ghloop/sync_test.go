@@ -270,3 +270,19 @@ func TestTaskPRMustCloseItsIssue(t *testing.T) {
 		t.Fatal(rep)
 	}
 }
+
+// 014: an item run's task label is the item id, for both the PR-closes drift check and IssueFor.
+func TestItemRunMapsByItemID(t *testing.T) {
+	d := DesiredState(doc(t, nil), texts())
+	prs := []map[string]any{{"task": "002", "number": json.Number("9"), "kind": "task", "closes": nil}}
+	nums := map[string]any{"002": json.Number("2")}
+	if k := kinds(DriftReport(d, driftIssues("open", "status:planned"), prs, nums)); !reflect.DeepEqual(k, []string{"pr_without_closes"}) {
+		t.Fatal(k)
+	}
+	run := testRun(t, "20261117T101500Z", map[string]any{"kind": "item", "item": "002"})
+	_ = os.MkdirAll(filepath.Join(run.Dir, "github"), 0o755)
+	_ = os.WriteFile(filepath.Join(run.Dir, "github", "issues.json"), []byte(`{"issues": {"001": 1, "002": 2}}`), 0o644)
+	if IssueFor(run, "002") != 2 {
+		t.Fatal("IssueFor by item id")
+	}
+}

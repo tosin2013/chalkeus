@@ -18,9 +18,10 @@ The design adds an `item` run kind beside the `fixture` kind ([research](researc
   tests fail on the base and the suite passes.
 - **Large repositories** (R4): a single-commit snapshot, streamed into pods through a staged
   upload instead of the 1 MiB ConfigMaps.
-- **Toolchains** (R5): separate small images (`toolchain-jdk17-maven` first), copied into the
-  worker, prefetch and grader pods by an init container. The worker and tools images are
-  unchanged.
+- **Toolchains** (R5): separate small images, copied into the
+  worker, prefetch and grader pods by an init container. The catalog has `jdk21-maven`,
+  `node24`, `python3.13` and `go`; an operator may supply their own digest-pinned image
+  instead. The worker and tools images are unchanged and always specfoundry's.
 - **Registry egress** (R6): a per-target registry proxy, separate from the model proxy and
   shown at the mode approval.
 - **Dependencies for the offline grader** (R7): a per-run grading namespace with a PVC. It is
@@ -43,7 +44,8 @@ OpenShift EAP validation follows 005 (R18).
 
 **Primary Dependencies**: no new Go modules. It reuses client-go (Jobs, PVCs, exec streaming,
 NetworkPolicies), Cobra, and the existing `spec` binary for status. Images: the existing
-`worker`, `tools` and `egress`, plus `toolchain-jdk17-maven`.
+`worker`, `tools` and `egress`, plus the catalog toolchain images (`toolchain-jdk21-maven`,
+`toolchain-node24`, `toolchain-python3.13`, `toolchain-go`).
 
 **Storage**:
 - **Files:** `~/.config/specfoundry/targets/*.env`, and the evidence under `pilot/runs/`
@@ -78,7 +80,8 @@ but the design stays SCC-compatible.
 - Fail closed everywhere.
 
 **Scale/Scope**:
-- 2 toolchains (`python`, `jdk17-maven`);
+- 5 catalog toolchains (`python` built in; `jdk21-maven`, `node24`, `python3.13`, `go`), plus
+  operator-supplied images;
 - 1 to N targets (one run at a time; parallel runs are 015);
 - items whose snapshot is up to 50 MB by default;
 - about 12 packages touched, 1 new image, 6 contracts.
@@ -147,7 +150,8 @@ internal/
 └── cli/          # --target/--item flags, `targets`, gate --item, reset-fixture refusal
 pilot/images/
 ├── toolchains.json                 # NEW catalog
-├── toolchain-jdk17-maven/Dockerfile# NEW: /opt/toolchain only
+├── toolchain-{jdk21-maven,node24,python3.13,go}/Dockerfile   # NEW: /opt/toolchain only
+├── toolchain-template/             # NEW: Dockerfile.ubi, Dockerfile.debian, toolchain-image.yml
 ├── tools/grade.py                  # + baseline mode, test_command, overlay
 ├── tests/                          # + grade.py mode tests, Maven sample
 └── smoke.sh                        # + Maven case
@@ -177,7 +181,7 @@ beside the fixture's in `pipeline/`, so the fixture path isn't edited beyond dis
    item prompt, overlay grading, the run-scoped grading namespace (PVC unused for python),
    the status edit, the audit variants. Validated first on a Python sample target.
 4. **US3, toolchains and egress:**
-   - the toolchain catalog and the `toolchain-jdk17-maven` image;
+   - the toolchain contract and probe, the catalog images, operator-supplied images, and the template;
    - the registry proxy;
    - prefetch plus the PVC;
    - the baseline;
