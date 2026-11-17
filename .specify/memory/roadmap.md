@@ -1,7 +1,31 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.14.0 → 1.15.0
+Version change: 1.15.0 → 1.16.0
+Bump rationale: MINOR — a new planned spec (018) and amendments to C-07, C-12 and C-14. No
+existing entry is invalidated: humans still plan and approve, and build workers still never
+see hidden tests.
+
+Changes this revision (owner decision 2026-11-17, Tosin Akinosho):
+  - C-12: humans still plan and approve. A separate test-author agent may write hidden
+    acceptance tests; a human reviews and merges them into the private companion repository.
+    Build workers never write or see them.
+  - C-14: hidden tests stay out of reach of every build worker, controller-launched worker
+    session and publisher. Only the test-author identity may write, and only the companion
+    repository (`PILOT_COMPANION_REPO` / `PILOT_COMPANION_PATH`). The test author never
+    launches, steers or reviews workers. Worker and grader evidence never expose test contents.
+  - C-07: a test-author egress role reaches model hosts and the companion repository's SCM
+    host only. It has no route to the worker or publisher proxies, and workers cannot reach it.
+  - New entry: 018 Test author (planned, not started); depends on 014.
+  - 011, 014 and 017: C-14 added to Governed by. 014's "written by a human" scope line marked
+    as no longer the only path.
+  - Q13: the tests half is resolved (agents may draft hidden tests only via the test-author
+    role; a human merges). The specs and tasks half stays open.
+
+Specs affected: 011, 014, 017 (governed by); 018 (new)
+Open questions added/resolved: Q13 partly resolved (tests half)
+
+Prior: Version change: 1.14.0 → 1.15.0
 Bump rationale: MINOR — a new decision (hidden tests across contexts) and a scope change on
 014 (one companion for many targets); 011 gains a matching scope note. No entry is invalidated.
 
@@ -397,6 +421,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   workers, the SCM for the publisher). NetworkPolicy decides which namespace may reach
   which proxy, because Calico OSS cannot match domain names. A worker can never reach
   the SCM proxy (PRD S2, S4; decided in 002, research R4).
+  **Test-author role (owner decision 2026-11-17, Tosin Akinosho):** a test-author egress role
+  reaches model hosts and the companion repository's SCM host only. It has no route to the
+  worker proxy or the publisher proxy, and workers cannot reach it. NetworkPolicy still decides
+  which namespace may reach which proxy.
 - **C-08 — No storage shared between worker and grader:** nothing writable is shared
   between a worker and the grader. Worker results leave only as a framed stdout result
   collected by the orchestrator; grading material lives only in grader namespaces (PRD
@@ -442,6 +470,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   through the status change a human approves. Every unblock passes through a human merge and an
   approved status change. In PRD F6 ("who launches workers"), the human launches for now
   (decided 2026-11-15).
+  **Amended 2026-11-17 (owner decision, Tosin Akinosho):** humans still plan and approve. A
+  separate test-author agent may write the hidden acceptance tests. A human reviews that work
+  and merges it into the private companion repository. Build workers never write those tests
+  and never see them. The test author does not implement roadmap items, and the pilot still
+  never writes specs or picks up an item by itself.
 - **C-13 — One implementation language, Go:** the CLI and the operator are written in Go, in
   one Go module in this repository (decided 2026-11-15). The Python pilot
   (`pilot/specfoundry_pilot/`) is the reference implementation until the Go CLI reaches
@@ -454,13 +487,21 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   The in-cluster image scripts (grader, publisher, token check, GitHub writes) may stay in
   Python behind their contracts until there is a reason to port them.
 
-- **C-14 — Hidden tests stay out of the agent's reach in every context** (owner decision
-  2026-11-17): hidden acceptance tests come from a private git repository (the companion) that
-  the agent's side can't read, whether the pilot runs on a laptop, a server, for a team or in a
-  cluster. Each context reads it with its own credential (your git access; a test-authors team
-  on GitHub; the operator's read-only App token), and each run records the repository, commit
-  and folder. One companion may serve many targets. A local folder is acceptable only as a
-  laptop experiment and must be labelled so in the evidence.
+- **C-14 — ~~Hidden tests stay out of the agent's reach in every context~~ Hidden tests stay out of every build worker's reach** (owner decision
+  2026-11-17; **amended 2026-11-17, Tosin Akinosho**): hidden acceptance tests come from a
+  private git repository (the companion) ~~that the agent's side can't read~~. They stay out of
+  reach of every build worker, every controller-launched worker session and the publisher,
+  whether the pilot runs on a laptop, a server, for a team or in a cluster. Only the
+  test-author identity has write access, and only to that companion repository
+  (`PILOT_COMPANION_REPO` / `PILOT_COMPANION_PATH`). That write is not a credential for the
+  target repository: the publisher remains the only identity that may write the target (C-03).
+  The test author never launches, steers or reviews workers. Worker evidence and grader
+  evidence never expose test contents. ~~Each context reads it with its own credential (your
+  git access; a test-authors team on GitHub; the operator's read-only App token), and~~ each
+  run records the repository, commit and folder. Humans and the operator still read it with
+  their own credentials (your git access; the operator's read-only App token). One companion
+  may serve many targets. A local folder is acceptable only as a laptop experiment and must be
+  labelled so in the evidence.
 
 ## Planned Specs
 
@@ -729,7 +770,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   from 005).
 - **Scope (out):** a hosted SaaS or UI; multi-cluster; any weakening of a guarantee.
 - **Depends on:** 004, 005, 016
-- **Governed by:** C-01, C-02, C-03, C-04, C-07, C-08, C-10, C-11
+- **Governed by:** C-01, C-02, C-03, C-04, C-07, C-08, C-10, C-11, C-14
 - **Addresses:** docs/prd.md F2, N1, §9 M4
 - **Notes:** Owner decision 2026-11-14. 007 (observability), 009 (period budgets) and 010
   (event-proposed runs) gain the most in cluster mode. Decide here how runs get namespaces
@@ -743,6 +784,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   **Hidden tests (C-14, 2026-11-17):** the operator reads the companion read-only, with a
   GitHub App token scoped to that repository's contents; graders still hold no SCM credential,
   and runs record the companion's repository, commit and folder exactly as in laptop mode.
+  The test-author Job (018) is the only cluster identity that may write the companion, and it
+  runs in its own namespace; the operator's grader path stays read-only.
 
 ### 012 — Working with an agent: pilot skill and harness approvals  [status: verified]
 
@@ -809,11 +852,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     the repo's configuration), still digest-pinned and hardened (C-08, C-09);
   - an egress allowlist for the repo's package registries, so dependencies can be installed,
     declared per repo and shown at the mode approval;
-  - hidden acceptance tests written by a human and kept out of the worker's view, with the
-    repo's own test suite run as a visible check.
+  - hidden acceptance tests ~~written by a human and~~ kept out of the worker's view, with the
+    repo's own test suite run as a visible check. A human may write them, or the test author
+    (018) may draft them for a human to review and merge (C-12, owner decision 2026-11-17).
 - **Scope (out):** parallel runs (015); writing specs or plans; choosing items automatically.
 - **Depends on:** 004, 016 (and 005 for the OpenShift EAP validation)
-- **Governed by:** C-01, C-02, C-04, C-09, C-12
+- **Governed by:** C-01, C-02, C-04, C-09, C-12, C-14
 - **Addresses:** docs/prd.md §4 loop, F1, F8, F9
 - **Notes:** Owner decision 2026-11-15. The fixture stays the regression test. Pairs with 013
   (installable CLI). Grading a real repo needs the item's acceptance criteria to be runnable;
@@ -869,7 +913,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - **Hidden tests (owner decision 2026-11-17, C-14):** one private companion repository
     may serve all targets, in any languages; each target names its folder
     (`PILOT_COMPANION_PATH`). The companion is storage only; the pilot copies one item's folder
-    over the project in the grader. First real target: `tosin2013/cli-schema-mcp`, item 006.
+    over the project in the grader. Who drafts them is 018: a human, or the test author with a
+    human merge. First real target: `tosin2013/cli-schema-mcp`, item 006.
   - See `specs/014-any-project/`.
 
 ### 015 — Released waves  [status: planned]
@@ -987,14 +1032,63 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Scope (out):** generating the constitution, roadmap or specs (humans plan, C-12); project
   templates as a product; languages beyond the ones 014 and 017 validate.
 - **Depends on:** 014
-- **Governed by:** C-01, C-04, C-07, C-08, C-12
+- **Governed by:** C-01, C-04, C-07, C-08, C-12, C-14
 - **Addresses:** docs/prd.md §4 loop, F1
 - **Notes:** Owner decision 2026-11-15; resolves Q11. The Node.js repository is chosen when 017
   is specified. Planning still comes first: an empty repository gets its constitution, roadmap,
-  and the scaffold's spec, tasks and acceptance tests from a human before any agent runs.
+  ~~and the scaffold's spec, tasks and acceptance tests from a human before any agent runs.~~
+  and the scaffold's spec and tasks from a human before any build worker runs. Acceptance
+  tests may be written by that human or drafted by the test author (018); a human merges them
+  (owner decision 2026-11-17).
   **Runs anywhere (owner direction 2026-11-16):** the greenfield validation must pass on every
   cluster profile (kind, minikube, plain Kubernetes and OpenShift), using an on-demand Node.js
   image off OpenShift and a UBI Node.js image on OpenShift.
+
+### 018 — Test author  [status: planned]
+
+- **Description:** A separate test-author agent drafts an item's hidden acceptance tests.
+  Humans still plan and approve. Build workers never write or see those tests.
+- **Outcome:** For a prepared item, the test author opens a pull request on the private
+  companion repository. A human reviews and merges it. The evidence records the test-author
+  identity and the companion commit. Every hidden test maps to an acceptance criterion in the
+  item's spec, and any criterion with no test is flagged. Build workers, controller-launched
+  worker sessions and the publisher still cannot read the tests.
+- **Scope (in):**
+  - a test-author skill and job, with its own agent session, separate from every build worker;
+  - a credential that can write only the companion repository (`PILOT_COMPANION_REPO` /
+    `PILOT_COMPANION_PATH`);
+  - its own egress role (C-07): model hosts and the companion repository's SCM host only, with
+    no route to the worker or publisher proxies, and no route from workers to it;
+  - laptop mode uses a separate identity; cluster mode runs the test author as its own Job in
+    its own namespace (C-11);
+  - the output is a pull request to the companion repository, which a human merges (C-04);
+  - evidence records the author identity and the companion commit;
+  - a new grader check: every hidden test maps to an acceptance criterion in the item's spec,
+    and criteria with no test are flagged.
+- **Scope (out):** build workers writing or seeing hidden tests; the test author launching,
+  steering or reviewing workers; the test author touching worker branches; the test author
+  writing specs, tasks or the roadmap (the specs and tasks half of Q13 stays open).
+- **Depends on:** 014
+- **Governed by:** C-01, C-03, C-04, C-07, C-08, C-11, C-12, C-14
+- **Notes:** Owner decision 2026-11-17 (Tosin Akinosho). Not started. The publisher remains the
+  only writer of the target repository (C-03); the test author's credential is companion-only.
+  The test author never launches, steers or reviews workers, and worker evidence and grader
+  evidence never expose test contents (C-14).
+
+  These checks from 014 stay as they are. This item does not redefine them:
+  - **G5** still means the hidden acceptance tests pass on the worker's change, and that the
+    worker never saw them. The test author produces those tests. G5 is not the mapping check.
+  - **P11** still fails if an overlay file name or content hash appears in the worker's
+    ConfigMaps, staged input or prompt. The test-author session must not put test contents on
+    any worker path.
+  - **BASELINE_HIDDEN_PASSES** still refuses a run whose hidden tests already pass on the
+    unchanged base. Tests the author drafts have to fail on that base, or the run has no signal.
+  - **ITEM_NO_HIDDEN_TESTS** still refuses a run when `items/NNN/` is missing, empty or
+    unreadable. The human-merged companion pull request is what fills that folder. The test
+    author does not bypass the readiness check.
+
+  The mapping check is new and sits beside those four. It reads the merged companion folder
+  and the item's spec, and it does not show test contents to workers.
 
 ## Open Questions
 
@@ -1057,9 +1151,14 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   see of the schedule (proposed: the human sees the plan at release, the worker sees only its
   task). Relates to Q4 (granularity), 004 (issues per task) and 015.
 - Q13 — How planning scales (raised 2026-11-16). Under C-12 the limit on throughput is how fast
-  humans prepare items (spec, tasks, hidden tests), not how many workers run. Open: whether
-  agents may draft specs, tasks or tests for a human to approve, and what tooling helps (for
-  example migration analysis reports in brownfield upgrades).
+  humans prepare items (spec, tasks, hidden tests), not how many workers run.
+  ~~Open: whether agents may draft specs, tasks or tests for a human to approve, and what
+  tooling helps (for example migration analysis reports in brownfield upgrades).~~
+  **Tests half resolved 2026-11-17 (owner decision, Tosin Akinosho):** agents may draft hidden
+  acceptance tests only through the separate test-author role (018, C-12, C-14). A human reviews
+  and merges them into the companion repository. Build workers never write or see them.
+  **Still open:** whether agents may draft specs or tasks for a human to approve, and what
+  tooling helps (for example migration analysis reports in brownfield upgrades).
 
 ## Cross-Cutting Notes
 
@@ -1118,4 +1217,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.15.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17
+**Version**: 1.16.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17

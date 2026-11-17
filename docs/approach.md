@@ -57,7 +57,10 @@ An item is **ready for agents** only when a human made it so:
 - a human released it.
 
 The pilot never picks up an item on its own, never writes specs, and changes the roadmap only
-through a status change a human approves (roadmap constraint C-12).
+through a status change a human approves (roadmap constraint C-12). A separate test-author
+agent may draft the hidden acceptance tests. A human reviews and merges them into the private
+companion repository, and build workers never write or see them (C-12, amended 2026-11-17;
+roadmap item 018).
 
 ---
 
@@ -291,12 +294,13 @@ for each one, while people keep the decisions.
 ## 7. Existing and new projects
 
 The planning comes first either way. The project gets a constitution and a roadmap, and each
-item gets a spec, a plan and tasks before any agent runs (C-12).
+item gets a spec, a plan and tasks before any build worker runs (C-12).
 
 - **Existing projects (brownfield).** This is the case specfoundry targets first (roadmap item
   014). Items are specified against the code that already exists. The repository's own test
-  suite is the visible check (G4), and a human writes the item's acceptance tests, which the
-  worker never sees (G5). Real repositories bring needs the fixture does not have:
+  suite is the visible check (G4). The item's acceptance tests, which build workers never see
+  (G5, C-14), are written by a human or drafted by the test-author agent and merged by a human
+  (C-12, item 018). Real repositories bring needs the fixture does not have:
   - a language toolchain in the worker and grader images;
   - access to package registries to install dependencies.
 
@@ -304,7 +308,8 @@ item gets a spec, a plan and tasks before any agent runs (C-12).
   explicit.
 - **New projects (greenfield).** An empty repository has no build, tests or code to grade
   against. The likely path is that the first item is a human-specified scaffold (layout, test
-  harness, CI), and humans write its acceptance tests. After that, the project is grown item
+  harness, CI), and a human writes its acceptance tests or the test author drafts them for a
+  human to merge. After that, the project is grown item
   by item like any existing one. Whether the pilot supports this before 014 is proven on
   existing repositories is open question Q11 in the roadmap.
 - **Today.** The pilot runs its built-in fixture: two items, hand-written hidden tests and a
@@ -317,7 +322,7 @@ item gets a spec, a plan and tasks before any agent runs (C-12).
 
 | Principle | Constitution / roadmap constraint | Delivered by | Status |
 |---|---|---|---|
-| Humans plan, research and release | Constitution I; C-01, C-12 | Spec Kit + `spec status` gate (002); any item (014); released waves (015) | gate verified; 014 and 015 planned |
+| Humans plan, research and release | Constitution I; C-01, C-12 | Spec Kit + `spec status` gate (002); any item (014); released waves (015); test author (018) | gate verified; 014, 015 and 018 planned |
 | Isolation and least privilege | Constitution II, IV; C-03, C-07, C-08 | isolation (001), gated pilot (002), hardened images (003) | verified |
 | Humans approve and merge; evidence decides | Constitution III, V; C-04, C-11 | terminal and harness approvals (012), GitHub approvals and status-change PR (004) | 012 verified; 004 implemented in the reference pilot, validated on the Go pilot (016) |
 | Parallel waves within capacity | C-12; C-07 (spend caps) | spend budget (009), released waves (015), cluster mode (011) | planned |
