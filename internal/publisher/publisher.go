@@ -234,7 +234,7 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 	head := fmt.Sprintf("pilot/%s/%s", run.ID, strings.ToLower(task))
 	base, bundle, title := baseRevision(adir), filepath.Join(adir, "change.bundle"), fmt.Sprintf("pilot %s task %s", run.ID, task)
 	if run.Kind() == evidence.KindItem { // the change replayed onto the real base (014 R4)
-		base, bundle, title = ItemBase(run), filepath.Join(adir, "publish.bundle"), fmt.Sprintf("pilot %s: item %s", run.ID, task)
+		base, bundle, title = ItemBase(run), filepath.Join(adir, "publish.bundle"), ItemTitle(run, task)
 	}
 	spec := map[string]any{"repo": d.Repo, "head": head, "base": d.Branch, "base_revision": base,
 		"title": title, "body": body(d.L, run, task, n, closes), "run_id": run.ID, "task": task}
@@ -320,6 +320,38 @@ func StatusBody(run *evidence.Run, task string, closes int) string {
 		"this edit, and that an allowed approver merged it. The pilot never merges.\n", run.ID, task, item, issue)
 }
 
+// ItemTitle is an item run's PR title in Conventional Commits form, because many projects
+// squash-merge and use the PR title as the changelog entry: "<type>(<item>): <roadmap title>".
+// The run id stays in the PR body and branch name.
+func ItemTitle(run *evidence.Run, item string) string {
+	r, _ := run.State["readiness"].(map[string]any)
+	typ, _ := r["change_type"].(string)
+	if typ == "" {
+		typ = "feat"
+	}
+	title, _ := r["title"].(string)
+	if title = strings.TrimSpace(title); title == "" {
+		title = "roadmap item " + item
+	}
+	return fmt.Sprintf("%s(%s): %s", typ, item, title)
+}
+
+// StatusCommit is the status change's title and commit message: Conventional Commits for an
+// item run; the fixture keeps its historical wording.
+func StatusCommit(kindItem bool, item, runID string) string {
+	if kindItem {
+		return fmt.Sprintf("docs(roadmap): %s verified", item)
+	}
+	return fmt.Sprintf("pilot: %s verified (run %s)", item, runID)
+}
+
+func statusTitle(run *evidence.Run, item string) string {
+	if run.Kind() == evidence.KindItem {
+		return StatusCommit(true, item, run.ID)
+	}
+	return fmt.Sprintf("pilot %s: %s verified", run.ID, item)
+}
+
 // PublishStatus opens (or finds) the status-change draft PR for task's item (004 R6).
 // Idempotent like task PRs. closes is the item issue number (0 if none).
 func (d Deps) PublishStatus(run *evidence.Run, imgs map[string]string, task, baseRev, bundle string, closes int) (map[string]any, error) {
@@ -331,7 +363,7 @@ func (d Deps) PublishStatus(run *evidence.Run, imgs map[string]string, task, bas
 	item := run.ItemOf(task)
 	head := fmt.Sprintf("pilot/%s/status-%s", run.ID, item)
 	spec := map[string]any{"repo": d.Repo, "head": head, "base": d.Branch, "base_revision": baseRev,
-		"title": fmt.Sprintf("pilot %s: %s verified", run.ID, item), "body": StatusBody(run, task, closes), "run_id": run.ID, "task": task}
+		"title": statusTitle(run, item), "body": StatusBody(run, task, closes), "run_id": run.ID, "task": task}
 	if d.LoginHint != "" {
 		spec["publisher_login"] = d.LoginHint
 	}

@@ -40,6 +40,16 @@ func itemOf(task string) string {
 	return task
 }
 
+// statusMsg is the status commit's message: the fixture's historical wording, or Conventional
+// Commits for an item run (its task is the item id, not a fixture task).
+func statusMsg(task, runID string) string {
+	_, fixtureTask := paths.Tasks[task]
+	if fixtureTask {
+		return fmt.Sprintf("pilot: %s verified (run %s)", itemOf(task), runID)
+	}
+	return fmt.Sprintf("docs(roadmap): %s verified", task)
+}
+
 // RoadmapRel is the fixture roadmap path.
 const RoadmapRel = ".specify/memory/roadmap.md"
 
@@ -291,7 +301,7 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 			if _, err := fixture.Git(clone, "add", RoadmapRel); err != nil {
 				return "", err
 			}
-			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", fmt.Sprintf("pilot: %s verified (run %s)", itemOf(task), runID)); err != nil {
+			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", statusMsg(task, runID)); err != nil {
 				return "", err
 			}
 			if _, err := fixture.Git(clone, "push", "--quiet", fixture.URL(repo), "HEAD:refs/heads/"+branch); err != nil {
@@ -310,7 +320,7 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 			if _, err := fixture.Git(clone, "add", RoadmapRel); err != nil {
 				return "", "", err
 			}
-			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", fmt.Sprintf("pilot: %s verified (run %s)", itemOf(task), runID)); err != nil {
+			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", statusMsg(task, runID)); err != nil {
 				return "", "", err
 			}
 			out := filepath.Join(runDir, ".status-"+task+".bundle")

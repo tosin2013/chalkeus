@@ -155,3 +155,12 @@ func TestStatusPRVectors(t *testing.T) {
 		}
 	}
 }
+
+func TestStatusMsg(t *testing.T) {
+	if got := statusMsg("A", "R1"); got != "pilot: 001 verified (run R1)" {
+		t.Fatal("fixture wording changed: " + got)
+	}
+	if got := statusMsg("006", "R1"); got != "docs(roadmap): 006 verified" {
+		t.Fatal(got)
+	}
+}

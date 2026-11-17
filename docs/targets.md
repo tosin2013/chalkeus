@@ -103,6 +103,12 @@ PILOT_GITHUB_ISSUES=off
   own code through `PYTHONPATH` or your pytest configuration.
 - **Any other language:** bring your own toolchain image (next section), or ask for one with the
   [toolchain image request form](https://github.com/tosin2013/specfoundry/issues/new?template=toolchain-image.yml).
+- **PR titles follow [Conventional Commits](https://www.conventionalcommits.org/)**, because many
+  projects squash-merge and use the PR title as the changelog entry. The item's PR is
+  `feat(<item>): <the item's roadmap title>`; set `PILOT_CHANGE_TYPE` (`fix`, `refactor`, `perf`,
+  `test`, `docs`, `build`, `ci`, `style` or `chore`) when the item isn't a feature. The
+  status-change PR and its commit are `docs(roadmap): <item> verified`. The run id is in each
+  PR's branch name and body.
 - **Optional keys** may only raise the toolchain's defaults: `PILOT_GRADER_MEMORY`,
   `PILOT_GRADER_DEADLINE_S` and `PILOT_CACHE_SIZE`. `PILOT_MAX_INPUT_MB` (default 50) limits
   the repository snapshot.

@@ -39,6 +39,7 @@ type Result struct {
 	Gate            gate.Decision `json:"-"`
 	Commit          string        `json:"commit,omitempty"`
 	SpecDir         string        `json:"spec_dir,omitempty"`
+	Title           string        `json:"title,omitempty"` // the item's roadmap title
 	AllowedPaths    []string      `json:"allowed_paths,omitempty"`
 	CompanionCommit string        `json:"companion_commit,omitempty"`
 	HiddenFiles     int           `json:"hidden_files,omitempty"`
@@ -122,6 +123,7 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		return done("ITEM_SPEC_MISSING", "item "+item+" has no Spec dir on the roadmap")
 	}
 	res.SpecDir = specDir
+	res.Title, _ = itemDoc["title"].(string)
 	spec, err := os.ReadFile(filepath.Join(dir, specDir, "spec.md"))
 	if err != nil {
 		return done("ITEM_SPEC_MISSING", specDir+"/spec.md is missing")
