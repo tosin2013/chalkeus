@@ -451,6 +451,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - the same audit results on every committed evidence record (the golden data);
   - a passing fixture run.
 
+  The in-cluster image scripts (grader, publisher, token check, GitHub writes) may stay in
+  Python behind their contracts until there is a reason to port them.
+
 - **C-14 — Hidden tests stay out of the agent's reach in every context** (owner decision
   2026-11-17): hidden acceptance tests come from a private git repository (the companion) that
   the agent's side can't read, whether the pilot runs on a laptop, a server, for a team or in a
@@ -458,9 +461,6 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   on GitHub; the operator's read-only App token), and each run records the repository, commit
   and folder. One companion may serve many targets. A local folder is acceptable only as a
   laptop experiment and must be labelled so in the evidence.
-
-  The in-cluster image scripts (grader, publisher, token check, GitHub writes) may stay in
-  Python behind their contracts until there is a reason to port them.
 
 ## Planned Specs
 
