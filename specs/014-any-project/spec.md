@@ -273,13 +273,13 @@ over every committed record is unchanged.
 
 **Approvals and GitHub**
 
-- **FR-017**: After the human merges the item's PR, the status change MUST propose `verified`
-  for that item only, changing one roadmap line, and MUST be approved by a human (terminal,
-  harness, or merge of the status-change PR) before it is recorded.
 - **FR-016**: Every human decision the fixture run has (mode, retry, status change after the
   merge) MUST exist for a real item too. It MUST be usable from the terminal, the agent harness
   and GitHub, as today. The GitHub loop (item issues, labels, PR linking, drift) MUST work
   against the real repository's roadmap.
+- **FR-017**: After the human merges the item's PR, the status change MUST propose `verified`
+  for that item only, changing one roadmap line, and MUST be approved by a human (terminal,
+  harness, or merge of the status-change PR) before it is recorded.
 
 ### Key Entities
 
