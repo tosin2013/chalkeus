@@ -45,7 +45,12 @@ func Snapshot(clone, base, out string) (string, error) {
 	if _, err := gitEnv(clone, nil, "update-ref", "refs/heads/pilot-snapshot", snap); err != nil {
 		return "", err
 	}
-	if _, err := gitEnv(clone, nil, "bundle", "create", "-q", out, "pilot-snapshot"); err != nil {
+	// HEAD names the snapshot, so a clone of the bundle checks it out without a warning. The
+	// clone's worktree already holds base's tree, which is the snapshot's.
+	if _, err := gitEnv(clone, nil, "symbolic-ref", "HEAD", "refs/heads/pilot-snapshot"); err != nil {
+		return "", err
+	}
+	if _, err := gitEnv(clone, nil, "bundle", "create", "-q", out, "HEAD", "pilot-snapshot"); err != nil {
 		return "", err
 	}
 	return snap, nil
