@@ -31,6 +31,28 @@ legacy Java EE upgrade on OpenShift with an in-cluster model, comes later. It ne
 Brownfield only: the repository already has code and tests. Starting from an empty repository
 is roadmap item 017.
 
+## Clarifications
+
+### Session 2026-11-17
+
+- Q: Where are a project's toolchain, package registries and test command declared? → A: Only
+  in the operator's `pilot.env`, per target repository. The target repository declares nothing,
+  so no agent change or merged PR can widen the worker's egress. This also works for greenfield
+  (017): the operator sets the values before the scaffold runs.
+- Q: Which status does the status-change PR propose after the human merges a real item's PR?
+  → A: `verified`, as on the fixture. The evidence is grading (the repository's suite and the
+  hidden tests) plus the audit. The human's merge of the status-change PR, or their approval in
+  the terminal, is the human review, and dependent items unblock immediately.
+- Q: How does the pilot know which files a real item's change may touch? → A: The human
+  declares an "Allowed paths" list (globs) in the item's spec when preparing it. An item without
+  one is not prepared. The item's own `tasks.md` is always allowed, so the worker can tick its
+  boxes.
+- Q: How does the grader run an item's hidden acceptance tests? → A: As an overlay. The item's
+  folder in the companion repository mirrors the project's layout (for Java, test classes under
+  `src/test/java/...`). The grader runs the project's test command on the changed project (the
+  visible check), then copies the folder over it and runs the same command again (the hidden
+  check). The fixture works the same way.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Run a chosen item of my repository (Priority: P1)
@@ -65,7 +87,8 @@ finish and check that the audit passes every check that applies to a single-item
    draft PR is opened by the publisher identity, linked to the item, and the run waits for the
    human merge.
 4. **Given** the human merged the PR, **When** the run resumes, **Then** it proposes the item's
-   status change for approval, as on the fixture.
+   status change to `verified` for approval, as on the fixture. Only that one line of the
+   target repository's roadmap changes.
 5. **Given** the run ended, **When** the audit runs, **Then** every check that applies passes.
    The audit does not assume the fixture's two items or its planned first failure.
 
@@ -74,8 +97,8 @@ finish and check that the audit passes every check that applies to a single-item
 ### User Story 2 - The pilot refuses an item that is not prepared (Priority: P1)
 
 An operator asks for an item that isn't ready. The spec or tasks may be missing, a dependency
-may not be verified, the spec may still have open questions, or no hidden acceptance tests may
-exist. The pilot refuses before anything starts, says why, and records the refusal.
+may not be verified, the spec may still have open questions, no hidden acceptance tests may
+exist, or the spec may not say which files the item may change. The pilot refuses before anything starts, says why, and records the refusal.
 
 **Why this priority**: C-12 (humans plan, agents build) and the fail-closed gate are
 non-negotiable. A general runner that builds unprepared items breaks the project's core rule.
@@ -95,14 +118,16 @@ run refuses with that reason and stages no worker.
    the pilot refuses. It never grades with the visible tests alone.
 5. **Given** the item's status cannot be read (status tool error, malformed roadmap), **When**
    the operator runs it, **Then** the pilot refuses (fail closed).
+6. **Given** item NNN's spec has no "Allowed paths" list, **When** the operator runs it,
+   **Then** the pilot refuses, naming the missing list.
 
 ---
 
 ### User Story 3 - The worker gets the toolchain and dependencies my project needs (Priority: P2)
 
 The repository is not written in Python, or it needs packages from its ecosystem's registry.
-The repository declares which supported toolchain it needs and which package registries its
-build must reach. The worker and the grader run with that toolchain. The worker can install
+The operator declares, in their pilot configuration, which supported toolchain the repository
+needs, which package registries its build must reach, and the command that runs its tests. The worker and the grader run with that toolchain. The worker can install
 dependencies from the declared registries only, and the operator sees those hosts when
 approving the run mode.
 
@@ -116,14 +141,14 @@ to any other host is refused and recorded.
 
 **Acceptance Scenarios**:
 
-1. **Given** a repository that declares a supported toolchain, **When** an attempt runs,
+1. **Given** a configuration that declares a supported toolchain, **When** an attempt runs,
    **Then** the worker and the grader use that toolchain's published, digest-pinned images.
-2. **Given** a repository that declares package registries, **When** the mode is shown for
+2. **Given** a configuration that declares package registries, **When** the mode is shown for
    approval, **Then** the operator sees the model host and each registry host the worker
    will be allowed to reach.
 3. **Given** a worker that tries to reach an undeclared host, **When** the request is made,
    **Then** it is refused, and the refusal appears in the attempt's evidence.
-4. **Given** a repository that declares a toolchain with no published image, **When** the
+4. **Given** a configuration that declares a toolchain with no published image, **When** the
    operator runs an item, **Then** the pilot refuses. It names the toolchain and points to how
    to request an image (a GitHub issue form on the specfoundry repository).
 
@@ -185,7 +210,8 @@ over every committed record is unchanged.
   - (c) the item is not yet `implemented` or `verified`;
   - (d) the item's spec has no unresolved clarification markers, and no roadmap open question is
     linked to it;
-  - (e) hidden acceptance tests exist for the item.
+  - (e) hidden acceptance tests exist for the item;
+  - (f) the item's spec declares an "Allowed paths" list.
 - **FR-003**: Status that cannot be read MUST refuse (fail closed, C-02), as today.
 - **FR-004**: The pilot MUST only push to repositories the operator listed as allowed targets.
   Any other repository stops the run with the existing guard exit code.
@@ -193,11 +219,13 @@ over every committed record is unchanged.
 **Building and grading**
 
 - **FR-005**: The worker's prompt MUST be built from the item's own spec and tasks, and from the
-  paths the tasks allow it to change.
+  item's "Allowed paths" list. Grading's allowed-paths check MUST use exactly that list plus the
+  item's own `tasks.md`.
 - **FR-006**: Grading MUST run, in an isolated grader that the worker cannot reach or write to:
-  - the repository's own test suite (a visible check);
-  - the item's hidden acceptance tests (kept out of the worker's view);
-  - the existing checks: change applies, allowed paths, tasks checked off.
+  - the existing checks: change applies, allowed paths, tasks checked off;
+  - the visible check: the repository's test command on the changed project;
+  - the hidden check: the same test command after the item's companion folder is copied over
+    the changed project, mirroring its layout. Any failure fails the attempt.
 - **FR-007**: Before the first attempt, the pilot MUST run the hidden acceptance tests and the
   repository's suite against the base revision. It MUST refuse if the hidden tests already pass
   (no signal) or the suite already fails.
@@ -211,10 +239,12 @@ over every committed record is unchanged.
 
 **Toolchains and dependencies**
 
-- **FR-009**: A repository MUST be able to declare one toolchain from a list the pilot supports.
+- **FR-009**: The operator's configuration MUST name, per target repository, one toolchain from
+  a list the pilot supports, and the command that runs the repository's own tests. The target
+  repository declares nothing; these values are never read from it.
   The worker and the grader MUST then use that toolchain's images: built by the image workflow,
   pinned by digest, hardened like today's images (C-08, C-09).
-- **FR-010**: A repository MUST be able to declare the package registry hosts its build needs.
+- **FR-010**: The operator's configuration MUST name the package registry hosts the build needs.
   The worker's egress MUST allow exactly the model host(s) plus those registries, and the run
   mode shown for approval MUST list them.
 - **FR-011**: An undeclared toolchain, or one with no published image, MUST refuse the run. The
@@ -243,6 +273,9 @@ over every committed record is unchanged.
 
 **Approvals and GitHub**
 
+- **FR-017**: After the human merges the item's PR, the status change MUST propose `verified`
+  for that item only, changing one roadmap line, and MUST be approved by a human (terminal,
+  harness, or merge of the status-change PR) before it is recorded.
 - **FR-016**: Every human decision the fixture run has (mode, retry, status change after the
   merge) MUST exist for a real item too. It MUST be usable from the terminal, the agent harness
   and GitHub, as today. The GitHub loop (item issues, labels, PR linking, drift) MUST work
@@ -251,17 +284,19 @@ over every committed record is unchanged.
 ### Key Entities
 
 - **Target repository:** a real repository the operator allows the pilot to push to, with its
-  roadmap, specs, tasks, own test suite, declared toolchain and declared registries.
-- **Prepared item:** a roadmap item that passes every readiness rule (FR-002); the only thing
-  the pilot will build.
+  roadmap, specs, tasks and own test suite.
+- **Target configuration:** the operator's per-repository settings in `pilot.env`: allowed
+  target, toolchain, test command, registry hosts and companion repository.
+- **Prepared item:** a roadmap item that passes every readiness rule (FR-002), including an
+  "Allowed paths" list in its spec; the only thing the pilot will build.
 - **Hidden acceptance tests:** a human-written test set per item, kept in the project's private
-  companion repository. The grader runs them; the worker never sees them.
+  companion repository in a folder that mirrors the project's layout. The grader runs them; the worker never sees them.
 - **Companion repository:** a private repository holding a project's hidden acceptance tests,
   one folder per item. The operator can read it; the pilot passes one item's folder to the
   grader. Neither the worker nor the publisher can reach it.
 - **Toolchain:** a supported language environment with published worker and grader images,
-  named by the repository.
-- **Registry allowlist:** the package registry hosts a repository declares, added to the
+  named in the operator's configuration.
+- **Registry allowlist:** the package registry hosts the operator declares for a repository, added to the
   worker's egress for that run and shown at the mode approval.
 - **Single-item run:** one run of one prepared item, with its evidence and audit.
 
@@ -273,7 +308,7 @@ over every committed record is unchanged.
   laptop: draft PR opened, merged by the human, status change approved. The audit passes 100% of
   the checks that apply.
 - **SC-002**: For each readiness rule, an item that breaks only that rule is refused before any
-  worker starts: 5 of 5 rules (FR-002 a–e), plus unreadable status.
+  worker starts: 6 of 6 rules (FR-002 a–f), plus unreadable status.
 - **SC-003**: 0 hidden acceptance test files or their contents appear in any worker namespace,
   worker prompt, PR, or worker-visible evidence across the validation runs.
 - **SC-004**: A worker request to a host outside the model and declared registries is refused
@@ -294,8 +329,8 @@ over every committed record is unchanged.
   out of scope, and writing specs or plans is out of scope (C-12).
 - **The human prepares the repository with Spec Kit:** constitution, roadmap, spec, tasks, and
   the hidden acceptance tests. The status tool reads its roadmap as it does the fixture's.
-- **Tasks name the paths an item may change, as the fixture's do.** The allowed-paths check
-  uses them.
+- **Allowed paths are written by the human** in each item's spec (a list of globs), as part of
+  preparing the item.
 - **Toolchains:** the supported list starts with the fixture's (Python) and JDK/Maven. More are added through the image request form.
 - **The validation repository (owner decision 2026-11-17):** a small public **Java/Maven**
   service with JUnit tests, chosen at planning time and copied into an owner-controlled
