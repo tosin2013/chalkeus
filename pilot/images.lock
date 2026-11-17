@@ -2,6 +2,6 @@
 # This file is never a workflow trigger (paths-ignore), so merging a digest PR cannot start
 # another build (analysis F1). Inputs live in pilot/pins.env.
 IMAGE_REGISTRY=ghcr.io/tosin2013
-WORKER_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:061333e38494b9e3d25bb5b4e617da06fb40bdbca369adc2897389f0b3e0a81e
-TOOLS_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-tools@sha256:fd262c4751d545757f5f8b333ca7798a531e1f9b5d31e02786bd10d05c9455a8
-EGRESS_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-egress@sha256:823726647a05911e5e0519c77e6f957b484a23f92e97ca6ed829d0dbc9b5cbc1
+WORKER_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:ad0aaa539e661293b32a888e28550c71594ca778e591d618c370fa03c21c6426
+TOOLS_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-tools@sha256:c740e606fd11e5107a6f5f60bca40be323d1dc7b84341b1c6bcccee4f3b8929b
+EGRESS_IMAGE=ghcr.io/tosin2013/specfoundry-pilot-egress@sha256:3f510235b48daecbde28c5f5be8242df8989a56b880a49790ce6fdd415788e54
