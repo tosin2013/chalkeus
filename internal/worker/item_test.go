@@ -2,6 +2,7 @@ package worker
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,6 +45,40 @@ func TestMakeItemInputs(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(adir, "induction.json")); err == nil {
 		t.Error("an item run has no induction")
+	}
+}
+
+// With PILOT_TEST_PATHS, meta.json switches on the grader's G6/G7; without it, nothing changes.
+func TestItemTestRulesInMeta(t *testing.T) {
+	for _, withRules := range []bool{false, true} {
+		clone := t.TempDir()
+		_ = os.MkdirAll(filepath.Join(clone, "specs/002-shout"), 0o755)
+		_ = os.WriteFile(filepath.Join(clone, "specs/002-shout/spec.md"), []byte("# Shout\n"), 0o644)
+		_ = os.WriteFile(filepath.Join(clone, "specs/002-shout/tasks.md"), []byte("- [ ] T001 shout\n"), 0o644)
+		rd := filepath.Join(t.TempDir(), "20990101T000000Z")
+		_ = os.MkdirAll(filepath.Join(rd, "attempts"), 0o755)
+		run := &evidence.Run{Dir: rd, ID: filepath.Base(rd), State: map[string]any{"kind": "item", "item": "002"}}
+		it := &Item{SnapshotCommit: "s", SpecDir: "specs/002-shout", AllowedPaths: []string{"app.py", "tests/*"},
+			Toolchain: "python", TestCommand: "pytest", CommandTimeout: 180}
+		if withRules {
+			it.TestPaths, it.TestsMayChange = []string{"tests/*"}, []string{"tests/test_old.py"}
+		}
+		idir, err := MakeItemInputs(Deps{L: paths.At(t.TempDir()), Item: it}, run, "002", 1, clone)
+		if err != nil {
+			t.Fatal(err)
+		}
+		adir, _ := run.AttemptDir("002", 1)
+		var meta map[string]any
+		raw, _ := os.ReadFile(filepath.Join(adir, "meta.json"))
+		_ = json.Unmarshal(raw, &meta)
+		p, _ := os.ReadFile(filepath.Join(idir, "prompt.md"))
+		_, has := meta["test_paths"]
+		if has != withRules || strings.Contains(string(p), "original versions") != withRules {
+			t.Fatalf("rules=%t meta=%v\n%s", withRules, meta, p)
+		}
+		if withRules && (fmt.Sprint(meta["tests_may_change"]) != "[tests/test_old.py]" || !strings.Contains(string(p), "`tests/test_old.py`")) {
+			t.Fatalf("%v\n%s", meta, p)
+		}
 	}
 }
 

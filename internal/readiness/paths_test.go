@@ -60,3 +60,13 @@ func TestMatchIsFnmatch(t *testing.T) {
 		}
 	}
 }
+
+func TestTestsMayChange(t *testing.T) {
+	spec := "# X\n\n## Allowed paths\n- `src/*`\n\n## Tests that may change\n\n- `tests/test_old.py` (its expectation changes)\n\n## Notes\n- `not/this`\n"
+	if got := TestsMayChange(spec); len(got) != 1 || got[0] != "tests/test_old.py" {
+		t.Fatal(got)
+	}
+	if got := TestsMayChange("# X\n"); len(got) != 0 {
+		t.Fatal(got)
+	}
+}

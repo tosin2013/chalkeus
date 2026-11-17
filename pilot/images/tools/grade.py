@@ -10,6 +10,13 @@ Item runs (014, specs/014-any-project/contracts/grading.md) add optional meta fi
   test_command       run with `sh -c` from the project root for G4 and G5 (else pytest, as the fixture)
   hidden_mode        "overlay": copy /grading/overlay/ over the project, then run test_command again
   command_timeout_s  per-command timeout (default 180)
+  test_paths         globs of the project's test files (the target's PILOT_TEST_PATHS). When set,
+                     two more checks run on an attempt:
+                       G6_tests_changed        the change adds or edits at least one test file
+                       G7_existing_tests_kept  the base's versions of the test files the change
+                                               edited or deleted still pass against the changed
+                                               code (an agent can't weaken a test to pass)
+  tests_may_change   globs of existing tests the item's spec says may change (skipped by G7)
 Without them, grading is exactly the fixture's.
 """
 from __future__ import annotations
@@ -23,6 +30,11 @@ import sys
 import tempfile
 
 CHECKS = ["G1_bundle_applies", "G2_allowed_paths", "G3_tasks_checked", "G4_visible_tests", "G5_hidden_tests"]
+TEST_CHECKS = ["G6_tests_changed", "G7_existing_tests_kept"]
+
+
+def matches(path, globs):
+    return any(fnmatch.fnmatch(path, g) for g in globs or [])
 
 
 def run(cmd, cwd=None, env=None, timeout=180):
@@ -71,7 +83,8 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
                 pass
             if add("G3_tasks_checked", pct == 100, f"tasks percent={pct}"):
                 if meta.get("test_command"):  # an item run (014)
-                    visible_and_hidden(meta, grading, repo, add)
+                    if not meta.get("test_paths") or tests_changed(meta, repo, base, add):
+                        visible_and_hidden(meta, grading, repo, add, work, base)
                 else:  # the fixture, unchanged
                     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
                     rc, out = run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/"], cwd=repo, env=env)
@@ -84,11 +97,12 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
                         rc, out = run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
                                        os.path.join(tdir, os.path.basename(hidden))], cwd=tdir, env=env)
                         add("G5_hidden_tests", rc == 0, out)
+    expected = CHECKS + (TEST_CHECKS if meta.get("test_command") and meta.get("test_paths") else [])
     done = {r["id"] for r in results}
-    for cid in CHECKS:
+    for cid in expected:
         if cid not in done:
             results.append({"id": cid, "result": "skipped", "detail": "earlier check failed"})
-    passed = all(r["result"] == "pass" for r in results) and len(results) == 5
+    passed = all(r["result"] == "pass" for r in results) and len(results) == len(expected)
     return {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),
             "result": "pass" if passed else "fail", "failure": None,
             "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
@@ -108,9 +122,54 @@ def overlay(grading, repo):
     return True, ""
 
 
-def visible_and_hidden(meta, grading, repo, add):
+def changes(repo, base):
+    """(status, path) pairs of the change against the base: A added, M modified, D deleted."""
+    rc, out = run(["git", "diff", "--name-status", "--no-renames", base, "HEAD"], cwd=repo)
+    pairs = []
+    for line in out.splitlines() if rc == 0 else []:
+        parts = line.split("\t", 1)
+        if len(parts) == 2:
+            pairs.append((parts[0][:1], parts[1]))
+    return pairs
+
+
+def tests_changed(meta, repo, base, add):
+    """G6: a change must add or edit a test file (the project's rule, PILOT_TEST_PATHS)."""
+    tests = [p for st, p in changes(repo, base) if st in ("A", "M") and matches(p, meta["test_paths"])]
+    return add("G6_tests_changed", bool(tests),
+               f"test files added or edited: {tests}" if tests else
+               f"the change adds or edits no test file matching {meta['test_paths']}: add tests for the change")
+
+
+def existing_tests_kept(meta, repo, work, base, add):
+    """G7: put back the base's version of every test file the change edited or deleted (except
+    those the spec says may change), and run the project's tests against the changed code."""
+    touched = [p for st, p in changes(repo, base)
+               if st in ("M", "D") and matches(p, meta["test_paths"]) and not matches(p, meta.get("tests_may_change"))]
+    if not touched:
+        return add("G7_existing_tests_kept", True, "no existing test file was edited or deleted")
+    # A clean checkout of the change (no build output or bytecode left by G4), then the base's
+    # versions of the touched test files on top.
+    orig = os.path.join(work, "original-tests")
+    rc, out = run(["git", "worktree", "add", "--quiet", "--detach", orig, "HEAD"], cwd=repo)
+    if rc == 0:
+        rc, out = run(["git", "checkout", "--quiet", base, "--", *touched], cwd=orig)
+    if rc != 0:
+        return add("G7_existing_tests_kept", False, f"could not restore {touched}: {out}")
+    rc, out = project_tests(meta, orig)
+    run(["git", "worktree", "remove", "--force", orig], cwd=repo)
+    return add("G7_existing_tests_kept", rc == 0,
+               (f"the original versions of {touched} still pass\n" if rc == 0 else
+                f"the original versions of {touched} FAIL against the change: an existing test was "
+                "weakened or removed; keep it passing, or list it in the spec under "
+                "'## Tests that may change'\n") + out)
+
+
+def visible_and_hidden(meta, grading, repo, add, work=None, base=None):
     rc, out = project_tests(meta, repo)
     if add("G4_visible_tests", rc == 0, out):
+        if meta.get("test_paths") and not existing_tests_kept(meta, repo, work, base, add):
+            return
         ok, why = overlay(grading, repo)
         if not ok:
             add("G5_hidden_tests", False, why)

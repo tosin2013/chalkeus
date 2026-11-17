@@ -75,7 +75,7 @@ func (p *P) RunItem(item string) int {
 	}
 	t["base_revision"] = res.Commit
 	run.State["readiness"] = map[string]any{"spec_dir": res.SpecDir, "allowed_paths": toAnyList(res.AllowedPaths),
-		"title": res.Title, "change_type": p.Target.ChangeType,
+		"title": res.Title, "change_type": p.Target.ChangeType, "tests_may_change": toAnyList(res.TestsMayChange),
 		"companion_commit": res.CompanionCommit, "hidden_files": res.HiddenFiles, "input_bytes": res.InputBytes}
 	_ = run.Save()
 
@@ -411,7 +411,11 @@ func (p *P) workerItem(run *evidence.Run) *worker.Item {
 	if w := p.catalogEntry().Worker; w != nil && w.Home != "" {
 		home = w.Home
 	}
-	return &worker.Item{SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"), SnapshotCommit: commit,
+	var mayChange []string
+	for _, x := range anyList(r["tests_may_change"]) {
+		mayChange = append(mayChange, fmt.Sprint(x))
+	}
+	return &worker.Item{TestPaths: p.Target.TestPaths, TestsMayChange: mayChange, SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"), SnapshotCommit: commit,
 		SpecDir: specDir, AllowedPaths: allowed, Toolchain: p.Target.Toolchain, TestCommand: p.Target.TestCommand,
 		CommandTimeout: p.commandTimeout(), InputLimit: p.inputLimit(),
 		ProxyNS: proxyNS, ProxyURL: "http://proxy." + proxyNS + ".svc.cluster.local:8888",

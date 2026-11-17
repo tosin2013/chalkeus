@@ -43,8 +43,10 @@ type Item struct {
 	AllowedPaths   []string // from the spec's "## Allowed paths" (+ its tasks.md)
 	Toolchain      string
 	TestCommand    string
-	CommandTimeout int    // seconds per test command in the grader
-	InputLimit     string // emptyDir size for staged inputs, e.g. "64Mi"
+	TestPaths      []string // the project's test files (PILOT_TEST_PATHS); grader G6/G7 when set
+	TestsMayChange []string // from the spec's "## Tests that may change"
+	CommandTimeout int      // seconds per test command in the grader
+	InputLimit     string   // emptyDir size for staged inputs, e.g. "64Mi"
 	// Egress and toolchain (014 R5, R6): the worker's one proxy, the toolchain image and its checked
 	// toolchain.json (nil: built into the images), and the setup script ("" when nothing to install).
 	ProxyNS, ProxyURL string
@@ -353,7 +355,8 @@ func MakeItemInputs(d Deps, run *evidence.Run, task string, n int, clone string)
 	}
 	plan, _ := rd("plan.md") // optional for an item
 	text, err := prompt.BuildItem(prompt.Item{Spec: spec, Plan: plan, Tasks: tasks, TasksPath: it.SpecDir + "/tasks.md",
-		AllowedPaths: it.AllowedPaths, Toolchain: it.Toolchain, TestCommand: it.TestCommand})
+		AllowedPaths: it.AllowedPaths, Toolchain: it.Toolchain, TestCommand: it.TestCommand,
+		TestPaths: it.TestPaths, TestsMayChange: it.TestsMayChange})
 	if err != nil {
 		return "", err
 	}
@@ -364,6 +367,9 @@ func MakeItemInputs(d Deps, run *evidence.Run, task string, n int, clone string)
 	meta := map[string]any{"run_id": run.ID, "task": task, "attempt": n, "item_id": task, "base_revision": it.SnapshotCommit,
 		"allowed_paths": allowed, "induction": nil, "mode": "attempt", "test_command": it.TestCommand, "hidden_mode": "overlay",
 		"toolchain": it.Toolchain, "spec_sha256": prompt.SpecSHA256(spec), "command_timeout_s": it.CommandTimeout}
+	if len(it.TestPaths) > 0 { // grader G6/G7 (absent: grading as before)
+		meta["test_paths"], meta["tests_may_change"] = anyStrings(it.TestPaths), anyStrings(it.TestsMayChange)
+	}
 	for _, dir := range []string{idir, adir} {
 		if err := os.WriteFile(filepath.Join(dir, "prompt.md"), []byte(text), 0o644); err != nil {
 			return "", err
@@ -412,4 +418,12 @@ func trim(err error) string {
 		s = s[:300]
 	}
 	return s
+}
+
+func anyStrings(xs []string) []any {
+	out := make([]any, 0, len(xs))
+	for _, x := range xs {
+		out = append(out, x)
+	}
+	return out
 }

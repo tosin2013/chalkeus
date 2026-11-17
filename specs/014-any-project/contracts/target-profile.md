@@ -25,6 +25,8 @@ PILOT_TOOLCHAIN=jdk21-maven
 PILOT_TEST_COMMAND=mvn -B test
 # optional: installs dependencies (needs PILOT_REGISTRY_HOSTS); runs in the worker and the prefetch
 # PILOT_INSTALL_COMMAND=pip install -r requirements.txt
+# optional: the project's test files; attempts must add or edit tests (G6) and keep the existing ones passing (G7)
+# PILOT_TEST_PATHS=tests/*
 # optional: Conventional Commits type of the item's PR title (default feat)
 # PILOT_CHANGE_TYPE=fix
 PILOT_REGISTRY_HOSTS=repo.maven.apache.org

@@ -41,6 +41,7 @@ type Result struct {
 	SpecDir         string        `json:"spec_dir,omitempty"`
 	Title           string        `json:"title,omitempty"` // the item's roadmap title
 	AllowedPaths    []string      `json:"allowed_paths,omitempty"`
+	TestsMayChange  []string      `json:"tests_may_change,omitempty"`
 	CompanionCommit string        `json:"companion_commit,omitempty"`
 	HiddenFiles     int           `json:"hidden_files,omitempty"`
 	InputBytes      int64         `json:"input_bytes,omitempty"`
@@ -156,6 +157,7 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		return done(r.Code, r.Detail)
 	}
 	res.AllowedPaths = allowed
+	res.TestsMayChange = TestsMayChange(string(spec))
 	rule("allowed_paths", true, strings.Join(allowed, ", "))
 
 	// 5. Hidden tests in the companion repository (read with the operator's own access).

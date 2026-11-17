@@ -89,6 +89,8 @@ type Item struct {
 	AllowedPaths      []string
 	Toolchain         string
 	TestCommand       string
+	TestPaths         []string // the project's test files; when set, the change must add tests
+	TestsMayChange    []string // existing tests the spec allows to change
 }
 
 // BuildItem is the prompt for one item of a target repository. It has no induction and no
@@ -109,6 +111,14 @@ func BuildItem(it Item) (string, error) {
 		fmt.Fprintf(&b, "  - `%s`\n", p)
 	}
 	fmt.Fprintf(&b, "- The project uses the %s toolchain. Check your work with: `%s`\n", it.Toolchain, it.TestCommand)
+	if len(it.TestPaths) > 0 {
+		fmt.Fprintf(&b, "- Add or extend tests for your change in the project's test files (%s). Keep every existing\n", quoteList(it.TestPaths))
+		b.WriteString("  test passing unchanged: the grader re-runs the original versions of any test file you edit or delete")
+		if len(it.TestsMayChange) > 0 {
+			fmt.Fprintf(&b, ",\n  except %s, which the specification allows to change", quoteList(it.TestsMayChange))
+		}
+		b.WriteString(".\n")
+	}
 	b.WriteString("- Only the project's existing dependencies are available to the grader; do not add new ones.\n")
 	b.WriteString("- Do not run git commands; the harness commits your work.\n- When finished, stop.\n")
 	fmt.Fprintf(&b, "\n# Specification\n\n%s\n", strings.TrimSpace(it.Spec))
@@ -124,4 +134,12 @@ func BuildItem(it Item) (string, error) {
 func SpecSHA256(spec string) string {
 	h := sha256.Sum256([]byte(strings.TrimSpace(spec)))
 	return hex.EncodeToString(h[:])
+}
+
+func quoteList(xs []string) string {
+	q := make([]string, len(xs))
+	for i, x := range xs {
+		q[i] = "`" + x + "`"
+	}
+	return strings.Join(q, ", ")
 }

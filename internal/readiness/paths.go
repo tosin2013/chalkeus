@@ -12,6 +12,7 @@ import (
 
 var (
 	allowedHeadingRE = regexp.MustCompile(`^##\s+Allowed paths\s*$`)
+	mayChangeRE      = regexp.MustCompile(`^##\s+Tests that may change\s*$`)
 	headingRE        = regexp.MustCompile(`^#{1,2}\s`)
 	listItemRE       = regexp.MustCompile("^\\s*[-*]\\s+.*?`([^`]+)`")
 )
@@ -27,15 +28,13 @@ func (r *Refusal) Error() string { return r.Code + ": " + r.Detail }
 // protected are paths no item may change: CI, Spec Kit's own files, and the roadmap.
 var protected = []string{".github/workflows/ci.yml", ".github/x", ".specify/memory/roadmap.md", ".specify/x"}
 
-// AllowedPaths parses the "## Allowed paths" section of an item's spec.md (contracts/item-spec.md):
-// each list item's first backticked span is one glob. The item's own tasks.md is always added.
-// A glob that could match a protected path or another item's spec folder is refused.
-func AllowedPaths(specText, specDir string, otherSpecDirs []string) ([]string, error) {
+// section returns each list item's first backticked span under the "## <heading>" line.
+func section(specText string, heading *regexp.Regexp) []string {
 	var globs []string
 	in := false
 	for _, line := range strings.Split(specText, "\n") {
 		switch {
-		case allowedHeadingRE.MatchString(line):
+		case heading.MatchString(line):
 			in = true
 		case in && headingRE.MatchString(line):
 			in = false
@@ -45,6 +44,18 @@ func AllowedPaths(specText, specDir string, otherSpecDirs []string) ([]string, e
 			}
 		}
 	}
+	return globs
+}
+
+// TestsMayChange parses the optional "## Tests that may change" section: existing test files the
+// item is meant to change, so the grader's G7 doesn't hold the change to their old versions.
+func TestsMayChange(specText string) []string { return section(specText, mayChangeRE) }
+
+// AllowedPaths parses the "## Allowed paths" section of an item's spec.md (contracts/item-spec.md):
+// each list item's first backticked span is one glob. The item's own tasks.md is always added.
+// A glob that could match a protected path or another item's spec folder is refused.
+func AllowedPaths(specText, specDir string, otherSpecDirs []string) ([]string, error) {
+	globs := section(specText, allowedHeadingRE)
 	if len(globs) == 0 {
 		return nil, &Refusal{"ITEM_NO_ALLOWED_PATHS", specDir + "/spec.md has no \"## Allowed paths\" list of backticked globs"}
 	}

@@ -31,8 +31,9 @@ type Target struct {
 	Toolchain       string
 	ToolchainImage  string // operator-supplied toolchain image (digest-pinned), "" for the catalog's
 	TestCommand     string
-	InstallCommand  string // installs the project\'s dependencies (prefetch and worker; 014 R7)
-	ChangeType      string // Conventional Commits type of the item's PR title (default feat)
+	InstallCommand  string   // installs the project\'s dependencies (prefetch and worker; 014 R7)
+	ChangeType      string   // Conventional Commits type of the item's PR title (default feat)
+	TestPaths       []string // the project's test files (globs): attempts must add tests and keep existing ones (G6, G7)
 	RegistryHosts   []string
 	CompanionRepo   string
 	GithubIssues    string // on|off
@@ -156,6 +157,12 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	}
 	if t.InstallCommand != "" && len(t.RegistryHosts) == 0 {
 		return Target{}, invalid("PILOT_INSTALL_COMMAND", "needs PILOT_REGISTRY_HOSTS: dependencies are downloaded from the registries you list")
+	}
+	for _, g := range splitList(v["PILOT_TEST_PATHS"], false) {
+		if strings.HasPrefix(g, "/") || strings.Contains(g, "..") {
+			return Target{}, invalid("PILOT_TEST_PATHS", "entries must be relative globs inside the repository, got "+g)
+		}
+		t.TestPaths = append(t.TestPaths, g)
 	}
 	if t.ChangeType == "" {
 		t.ChangeType = "feat"

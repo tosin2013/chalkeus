@@ -144,3 +144,77 @@ class Modes(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+SHOUT = "def greet(n):\n    return 'hi ' + n\n\ndef shout(n):\n    return n.upper() + '!'\n"
+SHOUT_TEST = ("import unittest, app\nclass S(unittest.TestCase):\n    def test_shout(self):\n"
+              "        self.assertEqual(app.shout('b'), 'B!')\n")
+
+
+class TestRules(Modes):
+    """G6 and G7 (PILOT_TEST_PATHS): the change must add tests and keep the existing ones."""
+
+    def change_files(self, files, delete=()):
+        for rel, body in files.items():
+            write(self.repo, rel, body)
+        for rel in delete:
+            Path(self.repo, rel).unlink()
+        sh(self.repo, "add", "-A")
+        sh(self.repo, "commit", "-qm", "pilot: change")
+        sh(self.repo, "bundle", "create", "-q", str(self.inp / "change.bundle"), f"{self.base}..HEAD")
+
+    def tmeta(self, **kw):
+        return self.meta(allowed_paths=["app.py", "tests/*", "specs/002-shout/tasks.md"], test_paths=["tests/*"], **kw)
+
+    def test_fixture_and_items_without_test_paths_keep_five_checks(self):
+        self.change(SHOUT)
+        r = self.run_grade(self.meta())
+        self.assertEqual(r["result"], "pass")
+        self.assertEqual(len(r["checks"]), 5)
+
+    def test_change_with_a_new_test_passes_all_seven(self):
+        self.change_files({"app.py": SHOUT, "tests/test_shout.py": SHOUT_TEST})
+        r = self.run_grade(self.tmeta())
+        self.assertEqual(r["result"], "pass", r["checks"])
+        self.assertEqual(len(r["checks"]), 7)
+        self.assertEqual(self.results(r)["G7_existing_tests_kept"], "pass")
+
+    def test_change_without_tests_fails_g6(self):
+        self.change(SHOUT)
+        r = self.run_grade(self.tmeta())
+        self.assertEqual(r["result"], "fail")
+        res = self.results(r)
+        self.assertEqual(res["G6_tests_changed"], "fail")
+        self.assertEqual(res["G4_visible_tests"], "skipped")
+
+    def test_weakened_existing_test_fails_g7(self):
+        # The change breaks greet() and edits the existing test to match.
+        broken = "def greet(n):\n    return 'yo ' + n\n\ndef shout(n):\n    return n.upper() + '!'\n"
+        weak = "import unittest, app\nclass T(unittest.TestCase):\n    def test_greet(self):\n        self.assertEqual(app.greet('a'), 'yo a')\n"
+        self.change_files({"app.py": broken, "tests/test_visible.py": weak, "tests/test_shout.py": SHOUT_TEST})
+        r = self.run_grade(self.tmeta())
+        res = self.results(r)
+        self.assertEqual(res["G4_visible_tests"], "pass")
+        self.assertEqual(res["G7_existing_tests_kept"], "fail")
+        self.assertEqual(res["G5_hidden_tests"], "skipped")
+        self.assertEqual(r["result"], "fail")
+
+    def test_deleted_existing_test_is_restored_and_checked(self):
+        broken = "def greet(n):\n    return 'yo ' + n\n\ndef shout(n):\n    return n.upper() + '!'\n"
+        self.change_files({"app.py": broken, "tests/test_shout.py": SHOUT_TEST}, delete=["tests/test_visible.py"])
+        r = self.run_grade(self.tmeta())
+        self.assertEqual(self.results(r)["G7_existing_tests_kept"], "fail")
+
+    def test_spec_may_allow_an_existing_test_to_change(self):
+        changed = "def greet(n):\n    return 'yo ' + n\n\ndef shout(n):\n    return n.upper() + '!'\n"
+        new = "import unittest, app\nclass T(unittest.TestCase):\n    def test_greet(self):\n        self.assertEqual(app.greet('a'), 'yo a')\n"
+        self.change_files({"app.py": changed, "tests/test_visible.py": new})
+        r = self.run_grade(self.tmeta(tests_may_change=["tests/test_visible.py"]))
+        self.assertEqual(r["result"], "pass", r["checks"])
+
+    def test_extending_an_existing_test_file_passes(self):
+        extended = (Path(self.repo, "tests/test_visible.py").read_text() +
+                    "    def test_shout(self):\n        self.assertEqual(app.shout('c'), 'C!')\n")
+        self.change_files({"app.py": SHOUT, "tests/test_visible.py": extended})
+        r = self.run_grade(self.tmeta())
+        self.assertEqual(r["result"], "pass", r["checks"])
