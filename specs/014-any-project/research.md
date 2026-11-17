@@ -104,42 +104,51 @@ code. Each is recorded as a gate row in `gate/<seq>-<label>.json`.
 
 ## R5 — Toolchains: separate images, copied in by an init container
 
-- **Decision (owner, 2026-11-17):** the `worker` and `tools` images stay as they are, one each.
-  Each toolchain is its own small image holding only `/opt/toolchain`.
-  - The first one is `toolchain-jdk17-maven`: Eclipse Temurin 17 (tarball, SHA-256 pinned) and
-    Apache Maven 3.9.x (tarball, SHA-512 pinned from the Apache release). Maven 3.9 is needed
-    for `maven.repo.local.tail`.
-  - It is built by the image workflow from verified upstream inputs, pinned by digest in
-    `pilot/images.lock`, non-root, with no shell needed at run time (C-08, C-09).
-  - An init container from that image copies `/opt/toolchain` into an `emptyDir` mounted at
-    `/opt/toolchain` in the worker, prefetch and grader containers. The pod then sets `PATH`,
-    `JAVA_HOME` and `MAVEN_HOME`.
-  - No native sidecar is needed for the copy. Native sidecars (Kubernetes ≥ 1.29; kind v0.27
-    runs 1.32) are kept for a long-lived helper, if one is ever needed.
-- **The `python` toolchain:** what the fixture uses, already in the worker and tools images. It
-  has no toolchain image.
-- **Catalog:** `pilot/images/toolchains.json` maps each toolchain name to:
-  - its image lock key (or none);
-  - its environment (`PATH` additions, `JAVA_HOME`, …);
-  - its proxy wiring (R6);
-  - default resources and deadlines (R7).
-
-  The image workflow, `build_args.py`, `digest-pr` and `images.go` read their image list from
-  it instead of four hard-coded `worker tools egress` loops.
-- **Smoke test:** the new image's `/opt/toolchain/bin/java -version` and `mvn -v` run under an
-  arbitrary UID. The tools image grades a tiny offline Maven project with the toolchain copied
-  in and a pre-seeded repository.
-- **FR-011:** a profile naming a toolchain absent from the catalog, or one whose image has no
-  lock digest, refuses with `TOOLCHAIN_UNAVAILABLE`. The message names the toolchain and links
-  the issue form (FR-012: `.github/ISSUE_TEMPLATE/toolchain-image.yml`).
-- **OpenShift later:** a UBI-based variant of the same toolchain image, chosen per cluster
-  profile. The worker and tools images don't change.
+- **Decision (owner, 2026-11-17):** the `worker` and `tools` images stay as they are, one each,
+  and always specfoundry's (FR-011b). A language's tools come in a **toolchain image** that holds
+  only `/opt/toolchain`, including a self-describing `toolchain.json`. An init container copies
+  it into an `emptyDir` mounted at `/opt/toolchain` in the worker, prefetch and grader
+  containers. The format is in [contracts/toolchain-image.md](contracts/toolchain-image.md).
+- **Three sources:**
+  - **The catalog** (`pilot/images/toolchains.json`): `jdk21-maven`, `node24`, `python3.13`
+    and `go`, built by the image workflow from checksum-pinned upstream releases. Those are
+    Temurin 21, Apache Maven 3.9.x (needed for `maven.repo.local.tail`), the Node.js 24 LTS
+    tarball, `python-build-standalone` 3.13 and the official Go tarball. They are pinned in
+    `pilot/images.lock` (C-08, C-09).
+  - **Operator-supplied:** `PILOT_TOOLCHAIN_IMAGE=registry/name@sha256:…` in the target
+    profile, built from the template in `pilot/images/toolchain-template/`. There is a UBI
+    Dockerfile for Red Hat and OpenShift, a Debian one for elsewhere, and a GitHub Actions
+    workflow that builds, pushes and attests.
+    - It must be digest-pinned and pass the contract probe.
+    - It is shown at the mode approval and recorded as `operator-supplied`.
+    - A GitHub build attestation is verified (`gh attestation verify`) and recorded when
+      present, but not required. That lets enterprise CI (Jenkins, Tekton) build them too.
+  - **Requested:** through the issue form, becoming a catalog toolchain.
+- **The `python` catalog entry:** what the fixture uses, built into the worker and tools
+  images. It has no toolchain image.
+- **Catalog content:** the image lock key, the proxy kind (`env` for npm, pip and Go;
+  `maven-settings` for Maven) and default resources. The image's own `toolchain.json` supplies
+  `PATH` and environment, so ours and operators' work the same way. The image workflow,
+  `build_args.py`, `digest-pr` and `images.go` read the image list from the catalog.
+- **Smoke test:** each catalog image passes the contract probe under an arbitrary UID. The
+  tools image grades a tiny offline sample project per toolchain through `test_command` and an
+  overlay.
+- **FR-011:** an unknown toolchain, or a catalog toolchain whose image has no lock digest,
+  refuses with `TOOLCHAIN_UNAVAILABLE`. The message names both ways forward: build your own
+  from the template, or use the request form.
+- **Threat model:** the adversary is the agent, and it can't change the toolchain image, which
+  is operator-side like the test command. An operator-supplied toolchain still runs inside the
+  grader, so a tampered image could fake a result. That is the operator's supply-chain
+  responsibility. The grader's own code (`grade.py`, in the tools image) is always
+  specfoundry's.
+- **OpenShift later:** UBI-based variants of the catalog toolchains, chosen per cluster profile.
+  The worker and tools images don't change.
 - **Alternatives:**
-  - Combined `worker-jdk17` and `tools-jdk17` images: every OpenCode or toolchain update
-    rebuilds each combination.
-  - Debian's `openjdk-17` and `maven` 3.8.7 packages: no `repo.local.tail`, and an older
-    Maven.
-  - One image with every toolchain: large, and it widens every pod's surface.
+  - Combined worker-plus-toolchain images: every OpenCode or toolchain update rebuilds each
+    combination.
+  - Only specfoundry-built toolchains: "any language" would wait on us.
+  - Operator-supplied tools or worker images: they would put the grader's own logic and the
+    agent's sandbox in the operator's hands, which is rejected (FR-011b).
 
 ## R6 — Egress for registries
 
@@ -174,7 +183,7 @@ code. Each is recorded as a gate row in `gate/<seq>-<label>.json`.
 - **Decision (owner, 2026-11-17):**
   - **One grading namespace per run.** Item runs use `pilot-g-<label>` instead of
     `pilot-g-<label>-<n>`. It holds one PVC (`deps`, default StorageClass: local-path on kind,
-    the cluster default on OpenShift; size from the catalog, 2Gi for `jdk17-maven`).
+    the cluster default on OpenShift; size from the catalog, 2Gi for each catalog toolchain).
   - **A prefetch Job runs once per run, before the baseline.** It runs in that namespace and
     resolves dependencies on the **human-controlled inputs only**: the base snapshot plus the
     hidden overlay. It runs the project's test command with the local repository on the PVC,
@@ -200,7 +209,7 @@ code. Each is recorded as a gate row in `gate/<seq>-<label>.json`.
 
   | Toolchain | Grader | Prefetch | Worker | Cache PVC |
   |---|---|---|---|---|
-  | `jdk17-maven` | 2 CPU, 2Gi, deadline 900 s, 600 s per command | same as grader | `/home/worker` 1Gi, `/tmp` 512Mi, `MAVEN_OPTS=-Xmx768m` | 2Gi |
+  | each catalog toolchain (and operator-supplied) | 2 CPU, 2Gi, deadline 900 s, 600 s per command | same as grader | `/home/worker` 1Gi, `/tmp` 512Mi, `MAVEN_OPTS=-Xmx768m` | 2Gi |
   | `python` | unchanged | none | unchanged | none |
 - **Teardown:** the grading namespace and its PVC are deleted when the run ends, and `down`
   deletes any that remain. Their deletion is a teardown row.
@@ -310,7 +319,7 @@ code. Each is recorded as a gate row in `gate/<seq>-<label>.json`.
 ## R16 — Validation repository (kind)
 
 - **Recommendation:** `spring-guides/gs-rest-service`, `complete/` folder.
-  - Apache-2.0; Spring Boot, JDK 17; JUnit 5 with two tests; Maven Central only.
+  - Apache-2.0; Spring Boot 4 (JDK 17+, validated on the `jdk21-maven` toolchain); JUnit 5 with two tests; Maven Central only.
   - Copied as one squashed commit into an owner-controlled public repository, with a private
     companion `<name>-acceptance`. The Gradle files are removed.
   - Three prepared items, each with hidden tests under `src/test/java/...`:

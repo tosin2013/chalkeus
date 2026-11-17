@@ -60,6 +60,15 @@ is roadmap item 017.
   `src/test/java/...`). The grader runs the project's test command on the changed project (the
   visible check), then copies the folder over it and runs the same command again (the hidden
   check). The fixture works the same way.
+- Q: Does "any repo" mean any programming language, and what if specfoundry has no image for it?
+  → A: Any language. specfoundry builds popular toolchains itself: JDK 21 + Maven, Node.js 24 +
+  npm, Python 3.13 and Go. These replace the earlier JDK 17 plan. For anything else, the
+  operator either builds their own toolchain image (from a template with a UBI base for Red Hat,
+  or any other base) and pins it by digest in the target profile, or asks for one through the
+  issue form. Operator-supplied images are allowed only for toolchains. The worker image and
+  the grader/publisher tools image stay specfoundry's. An own image is shown at the mode
+  approval and recorded as operator-supplied; a GitHub build attestation is verified when
+  present, but not required (owner decision 2026-11-17).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -256,18 +265,31 @@ over every committed record is unchanged.
 
 **Toolchains and dependencies**
 
-- **FR-009**: The target's profile MUST name one toolchain from
-  a list the pilot supports, and the command that runs the repository's own tests. The target
-  repository declares nothing; these values are never read from it.
+- **FR-009**: The target's profile MUST name its toolchain and the command that runs the
+  repository's own tests. The toolchain is either one specfoundry builds (initially JDK 21 +
+  Maven, Node.js 24, Python 3.13, Go), or an operator-supplied toolchain image pinned by digest.
+  The target repository declares nothing; these values are never read from it.
   The worker and the grader MUST then use that toolchain's images: built by the image workflow,
   pinned by digest, hardened like today's images (C-08, C-09).
 - **FR-010**: The target's profile MUST name the package registry hosts the build needs.
   The worker's egress MUST allow exactly the model host(s) plus those registries, and the run
   mode shown for approval MUST list them.
-- **FR-011**: An undeclared toolchain, or one with no published image, MUST refuse the run. The
-  refusal names the toolchain and points to the image request issue form.
+- **FR-011**: An unknown toolchain, or one with no published image, MUST refuse the run. The
+  refusal names the toolchain and points to both ways forward: build your own image from the
+  template, or use the request issue form.
+- **FR-011a**: Every toolchain image, specfoundry's or the operator's, MUST meet the toolchain
+  image contract (contracts/toolchain-image.md), checked by a probe before any worker starts.
+  It must be digest-pinned, runnable under an arbitrary UID and group 0, have a valid
+  `toolchain.json` and a working version command, and contain no setuid files. A failure
+  refuses with `TOOLCHAIN_CONTRACT`. An operator-supplied image MUST be shown at the mode
+  approval and recorded as operator-supplied in the evidence, with its attestation result.
+- **FR-011b**: The worker image and the grader/publisher tools image MUST always be
+  specfoundry's own, built by this repository's image workflow. An operator can replace only the
+  toolchain.
 - **FR-012**: The specfoundry repository MUST offer a GitHub issue form for requesting a new
-  toolchain image (roadmap note, 2026-11-16).
+  toolchain image (roadmap note, 2026-11-16). It MUST also offer a template for building your own
+  toolchain image: a Dockerfile for a UBI base (Red Hat, OpenShift), one for another base, and a
+  GitHub Actions workflow that builds, pushes and attests the image.
 
 **Evidence and audit**
 
@@ -312,8 +334,9 @@ over every committed record is unchanged.
 - **Companion repository:** a private repository holding a project's hidden acceptance tests,
   one folder per item. The operator can read it; the pilot passes one item's folder to the
   grader. Neither the worker nor the publisher can reach it.
-- **Toolchain:** a supported language environment with published worker and grader images,
-  named in the operator's configuration.
+- **Toolchain:** a language's tools, delivered as a toolchain image (`/opt/toolchain` with a
+  `toolchain.json`) copied into the pods. It is either from specfoundry's catalog or supplied by
+  the operator (pinned by digest).
 - **Registry allowlist:** the package registry hosts the operator declares for a repository, added to the
   worker's egress for that run and shown at the mode approval.
 - **Single-item run:** one run of one prepared item, with its evidence and audit.
@@ -335,6 +358,9 @@ over every committed record is unchanged.
   codes, and the audit of all committed evidence is unchanged.
 - **SC-006**: An operator who has prepared a repository can start the item's run from the docs
   alone, in under 15 minutes of setup beyond the fixture's, with 0 outside lookups.
+- **SC-008**: A project in a language specfoundry has no image for runs one item end to end
+  with an operator-supplied toolchain image built from the template, with 0 changes to the
+  pilot.
 - **SC-007**: With two targets configured (the fixture and the real repository), the operator
   runs each by name with 0 configuration edits between runs, and each run's evidence records
   which target it used.
@@ -352,7 +378,9 @@ over every committed record is unchanged.
   the hidden acceptance tests. The status tool reads its roadmap as it does the fixture's.
 - **Allowed paths are written by the human** in each item's spec (a list of globs), as part of
   preparing the item.
-- **Toolchains:** the supported list starts with the fixture's (Python) and JDK/Maven. More are added through the image request form.
+- **Toolchains:** specfoundry's catalog starts with JDK 21 + Maven, Node.js 24 + npm, Python
+  3.13 and Go. The fixture keeps the Python built into its images. Any other language works with
+  an operator-supplied toolchain image, or after a request. More are added through the image request form.
 - **The validation repository (owner decision 2026-11-17):** a small public **Java/Maven**
   service with JUnit tests, chosen at planning time and copied into an owner-controlled
   repository, prepared with a few dependent items. Its toolchain (JDK and Maven) and its

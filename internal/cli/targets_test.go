@@ -31,7 +31,7 @@ func TestTargetsListsFixtureAndProfiles(t *testing.T) {
 	configDir(t, map[string]string{
 		"pysample": "PILOT_TARGET_REPO=me/pysample\nPILOT_TOOLCHAIN=python\nPILOT_TEST_COMMAND=python3 -m pytest -q\nPILOT_COMPANION_REPO=me/pysample-acceptance\nPILOT_REGISTRY_HOSTS=pypi.org,files.pythonhosted.org\n",
 		"broken":   "PILOT_TARGET_REPO=nope\n",
-		"java":     "PILOT_TARGET_REPO=me/j\nPILOT_TOOLCHAIN=jdk17-maven\nPILOT_TEST_COMMAND=mvn -B test\nPILOT_COMPANION_REPO=me/j-acceptance\n",
+		"java":     "PILOT_TARGET_REPO=me/j\nPILOT_TOOLCHAIN=jdk21-maven\nPILOT_TEST_COMMAND=mvn -B test\nPILOT_COMPANION_REPO=me/j-acceptance\n",
 	})
 	code, out, errs := run("targets")
 	if code != 0 {

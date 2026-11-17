@@ -47,7 +47,7 @@ chmod 600 ~/.config/specfoundry/targets/greeting.env
 ```sh
 PILOT_TARGET_REPO=you/greeting-service
 PILOT_TARGET_BRANCH=main
-PILOT_TOOLCHAIN=jdk17-maven
+PILOT_TOOLCHAIN=jdk21-maven
 PILOT_TEST_COMMAND=mvn -B test
 PILOT_REGISTRY_HOSTS=repo.maven.apache.org
 PILOT_COMPANION_REPO=you/greeting-service-acceptance
@@ -56,14 +56,36 @@ PILOT_GITHUB_ISSUES=off
 
 - **Your repository declares none of this.** No agent change or merged PR can widen what the
   worker may reach.
-- **`PILOT_TOOLCHAIN`** names an entry in `pilot/images/toolchains.json`. If no image exists
-  for it yet, the pilot refuses with `TOOLCHAIN_UNAVAILABLE`. Ask for one with the
+- **`PILOT_TOOLCHAIN`** names a toolchain specfoundry builds: `jdk21-maven`, `node24`,
+  `python3.13` or `go` (`pilot/images/toolchains.json`). Until its image is published, the pilot
+  refuses with `TOOLCHAIN_UNAVAILABLE`.
+- **Any other language:** bring your own toolchain image (next section), or ask for one with the
   [toolchain image request form](https://github.com/tosin2013/specfoundry/issues/new?template=toolchain-image.yml).
 - **Optional keys** may only raise the toolchain's defaults: `PILOT_GRADER_MEMORY`,
   `PILOT_GRADER_DEADLINE_S` and `PILOT_CACHE_SIZE`. `PILOT_MAX_INPUT_MB` (default 50) limits
   the repository snapshot.
 - **The target repository can't be this one or any target's companion.** The pilot refuses
   with `TARGET_IS_CANARY`.
+
+### Your own toolchain image
+
+A toolchain image only supplies a language's tools. It holds `/opt/toolchain/` with a
+`toolchain.json` describing them. The pilot copies them into the agent's and the grader's
+pods; the agent's sandbox and the grader stay specfoundry's own images. The format is in
+[the toolchain image contract](../specs/014-any-project/contracts/toolchain-image.md). A
+template is coming: a UBI Dockerfile for Red Hat and OpenShift, a Debian one for elsewhere, and
+a GitHub Actions workflow that builds and attests the image.
+
+```sh
+PILOT_TOOLCHAIN=rust-1.83
+PILOT_TOOLCHAIN_IMAGE=quay.io/you/toolchain-rust@sha256:<64 hex>
+```
+
+- The image must be pinned by digest; a tag is refused.
+- Its name can't be one of specfoundry's toolchains.
+- The mode approval shows it as operator-supplied, and the run's evidence records it so.
+- It runs your project's tests inside the grader, so keep it trustworthy, as you would any base
+  image.
 
 List what's configured:
 

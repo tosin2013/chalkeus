@@ -21,7 +21,7 @@ pilot/pilot up && pilot/pilot run      # as in the operator guide; finish A and 
    commit into a new public repository you own, for example `<you>/greeting-service`.
    - Delete the Gradle files.
    - Keep the license and a notice of the source.
-   - Check that `mvn -B test` passes on JDK 17.
+   - Check that `mvn -B test` passes on JDK 21.
 2. Run Spec Kit in it: constitution, roadmap with three items, then spec and tasks for each:
    - `001` validate `name`;
    - `002` greeting templates;

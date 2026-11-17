@@ -20,6 +20,7 @@ var (
 	targetNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,30}$`)
 	hostRE       = regexp.MustCompile(`^[A-Za-z0-9.-]+$`)
 	quantityRE   = regexp.MustCompile(`^[0-9]+(Mi|Gi)$`)
+	digestRefRE  = regexp.MustCompile(`^[a-z0-9./:_-]+@sha256:[0-9a-f]{64}$`)
 )
 
 // Target is one configured target repository.
@@ -28,6 +29,7 @@ type Target struct {
 	Repo            string
 	Branch          string
 	Toolchain       string
+	ToolchainImage  string // operator-supplied toolchain image (digest-pinned), "" for the catalog's
 	TestCommand     string
 	RegistryHosts   []string
 	CompanionRepo   string
@@ -112,7 +114,8 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		return targetErr("TARGET_INVALID", "targets/%s.env: %s %s", name, key, why)
 	}
 	t := Target{Name: name, Repo: v["PILOT_TARGET_REPO"], Branch: v["PILOT_TARGET_BRANCH"], Toolchain: v["PILOT_TOOLCHAIN"],
-		TestCommand: strings.TrimSpace(v["PILOT_TEST_COMMAND"]), CompanionRepo: v["PILOT_COMPANION_REPO"],
+		ToolchainImage: v["PILOT_TOOLCHAIN_IMAGE"],
+		TestCommand:    strings.TrimSpace(v["PILOT_TEST_COMMAND"]), CompanionRepo: v["PILOT_COMPANION_REPO"],
 		GithubIssues: v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
 		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50}
 	if !repoRE.MatchString(t.Repo) {
@@ -121,8 +124,14 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	if t.Branch == "" {
 		t.Branch = "main"
 	}
+	if t.ToolchainImage != "" && !digestRefRE.MatchString(t.ToolchainImage) {
+		return Target{}, invalid("PILOT_TOOLCHAIN_IMAGE", "must be pinned by digest: registry/name@sha256:<64 hex>")
+	}
+	if t.Toolchain == "" && t.ToolchainImage != "" {
+		t.Toolchain = "operator-supplied"
+	}
 	if t.Toolchain == "" {
-		return Target{}, invalid("PILOT_TOOLCHAIN", "is required (a name from pilot/images/toolchains.json)")
+		return Target{}, invalid("PILOT_TOOLCHAIN", "is required (a name from pilot/images/toolchains.json, or set PILOT_TOOLCHAIN_IMAGE to your own image)")
 	}
 	if t.TestCommand == "" {
 		return Target{}, invalid("PILOT_TEST_COMMAND", "is required")

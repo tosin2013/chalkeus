@@ -19,7 +19,9 @@
 ```sh
 PILOT_TARGET_REPO=owner/greeting-service
 PILOT_TARGET_BRANCH=main
-PILOT_TOOLCHAIN=jdk17-maven
+PILOT_TOOLCHAIN=jdk21-maven
+# or your own toolchain image (contracts/toolchain-image.md):
+# PILOT_TOOLCHAIN_IMAGE=quay.io/you/toolchain-rust@sha256:<64 hex>   PILOT_TOOLCHAIN=rust-1.83
 PILOT_TEST_COMMAND=mvn -B test
 PILOT_REGISTRY_HOSTS=repo.maven.apache.org
 PILOT_COMPANION_REPO=owner/greeting-service-acceptance

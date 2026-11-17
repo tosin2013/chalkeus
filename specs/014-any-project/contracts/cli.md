@@ -20,7 +20,7 @@ Every existing command, flag, exit code and message is unchanged when `--target`
 
 ```text
 Run mode for this pilot: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, ...}
-  target greeting (owner/greeting-service@main), item 003, toolchain jdk17-maven
+  target greeting (owner/greeting-service@main), item 003, toolchain jdk21-maven
   egress: model host(s) 1 (from pilot.env); registries: repo.maven.apache.org
   one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.
 ```

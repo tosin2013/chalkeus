@@ -23,7 +23,7 @@ func targetCfg(t *testing.T) *Config {
 }
 
 const goodTarget = `PILOT_TARGET_REPO=me/greeting-service
-PILOT_TOOLCHAIN=jdk17-maven
+PILOT_TOOLCHAIN=jdk21-maven
 PILOT_TEST_COMMAND=mvn -B test
 PILOT_REGISTRY_HOSTS=repo.maven.apache.org, repo1.example.org
 PILOT_COMPANION_REPO=me/greeting-service-acceptance
@@ -53,7 +53,7 @@ func TestLoadTargetGood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := Target{Name: "greeting", Repo: "me/greeting-service", Branch: "main", Toolchain: "jdk17-maven",
+	want := Target{Name: "greeting", Repo: "me/greeting-service", Branch: "main", Toolchain: "jdk21-maven",
 		TestCommand: "mvn -B test", RegistryHosts: []string{"repo.maven.apache.org", "repo1.example.org"},
 		CompanionRepo: "me/greeting-service-acceptance", GithubIssues: "off", GithubApprovals: "on", MaxInputMB: 50,
 		PublisherEnv: filepath.Join(c.TargetsDir(), "greeting.publisher.env")}
@@ -87,7 +87,7 @@ func TestLoadTargetRefusals(t *testing.T) {
 
 	for key, body := range map[string]string{
 		"PILOT_TARGET_REPO":       strings.Replace(goodTarget, "me/greeting-service\n", "not-a-repo\n", 1),
-		"PILOT_TOOLCHAIN":         strings.Replace(goodTarget, "PILOT_TOOLCHAIN=jdk17-maven\n", "", 1),
+		"PILOT_TOOLCHAIN":         strings.Replace(goodTarget, "PILOT_TOOLCHAIN=jdk21-maven\n", "", 1),
 		"PILOT_TEST_COMMAND":      strings.Replace(goodTarget, "mvn -B test", "  ", 1),
 		"PILOT_COMPANION_REPO":    strings.Replace(goodTarget, "me/greeting-service-acceptance", "me/greeting-service", 1),
 		"PILOT_REGISTRY_HOSTS":    strings.Replace(goodTarget, "repo1.example.org", "https://x.org/y", 1),
@@ -141,4 +141,17 @@ func TestOverridesAndDefaults(t *testing.T) {
 		got.MaxInputMB != 80 || got.GithubIssues != "off" || got.GithubApprovals != "off" {
 		t.Fatalf("%+v", got)
 	}
+}
+
+func TestOwnToolchainImageKey(t *testing.T) {
+	c := targetCfg(t)
+	own := "quay.io/acme/toolchain-rust@sha256:" + strings.Repeat("c", 64)
+	writeTarget(t, c, "r", strings.Replace(goodTarget, "PILOT_TOOLCHAIN=jdk21-maven\n", "PILOT_TOOLCHAIN_IMAGE="+own+"\n", 1))
+	got, err := c.LoadTarget("r", "")
+	if err != nil || got.ToolchainImage != own || got.Toolchain != "operator-supplied" {
+		t.Fatalf("%+v %v", got, err)
+	}
+	writeTarget(t, c, "r", strings.Replace(goodTarget, "PILOT_TOOLCHAIN=jdk21-maven\n", "PILOT_TOOLCHAIN_IMAGE=quay.io/acme/rust:latest\n", 1))
+	_, err = c.LoadTarget("r", "")
+	wantCode(t, err, "TARGET_INVALID")
 }
