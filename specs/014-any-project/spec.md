@@ -256,8 +256,11 @@ over every committed record is unchanged.
   repository's suite against the base revision. It MUST refuse if the hidden tests already pass
   (no signal) or the suite already fails.
 - **FR-008**: Hidden acceptance tests MUST never enter the worker's namespace, the worker's
-  prompt, or the PR. They MUST live in a **private companion repository** per
-  project (for example `<project>-acceptance`), with one folder per item. The pilot, on the
+  prompt, or the PR. They MUST live in a **private companion repository**,
+  with one folder per item. One companion can serve several projects in any languages: each
+  target names its folder in it (`PILOT_COMPANION_PATH`, for example
+  `cli-schema-mcp/items/006/`), and only that item's folder is ever read; the companion is never
+  built as a whole (owner decision 2026-11-17, amending "one companion per project"). The pilot, on the
   operator's machine, reads the item's folder with the operator's own access and mounts only
   that folder into the grader's namespace, as it mounts the fixture's hidden tests today. So
   the grader still holds no SCM credential (AU04). The publisher never pushes to the companion
