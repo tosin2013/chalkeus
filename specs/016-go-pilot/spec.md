@@ -319,6 +319,45 @@ implementation, except history and evidence.
 - **SC-007**: The pilot's operator-facing behaviour on Linux is unchanged for someone who learned
   it from the current guide: 0 command, option or exit-code changes.
 
+## Evidence
+
+All records are in `specs/016-go-pilot/evidence/` (004's validation runs are in
+`specs/004-github-loop/evidence/`); per-run notes are in `evidence/README.md`.
+
+| Run | Date | How decisions were made | Audit | AU09 / AU10 channels |
+|---|---|---|---|---|
+| `20261115T162029Z` | 2026-11-15 | agent, harness approvals | 11/11 | `['harness']` |
+| `20261116T021112Z` | 2026-11-16 | agent on the validation machine, harness approvals (T037) | 11/11 | `['harness']` |
+| `20261116T041113Z` | 2026-11-16 | GitHub only (`/approve`, merges), App publisher | 11/11 on re-audit (AU08 false positive at run end, fixed) | `['github']` |
+| `20261116T201149Z` | 2026-11-16 | GitHub only, terminal closed after the start (T052), App publisher | 11/11 | `['github']` |
+| `20261116T210522Z` | 2026-11-16 | token mode: GitHub approvals refused (`publisher_identity`), harness approvals | failed as intended (`STATUS_PR_MERGED_BY_PUBLISHER`) | `['harness']` |
+| `20261116T231135Z` | 2026-11-16 | GitHub only, App publisher | AU01–AU06, AU08–AU11 (no teardown) | `['github']` |
+| `20261117T001332Z` | 2026-11-17 | GitHub only, App publisher, Go-only pilot after US5 (T057) | 11/11 | `['github']` |
+
+**Success criteria:**
+
+- **SC-001 (audit parity on golden evidence):** met. `internal/audit/golden_test.go` checks
+  the 8 reference records (002, 003, 006, 012) against `golden/audit-expected.json` on every CI
+  run.
+- **SC-002 (fixture run, 11/11, per the guide):** met by `20261115T162029Z` and
+  `20261116T021112Z`; the owner accepted harness approvals in place of a `tty` run (2026-11-16).
+- **SC-003 (agent run, harness channel):** met by the same two runs.
+- **SC-004 (004 on the Go pilot):** met with an owner decision (2026-11-16). Live:
+  `publisher_identity` and `STATUS_PR_MERGED_BY_PUBLISHER` (`20261116T210522Z`); App mode 11/11
+  (`20261116T201149Z`, `20261117T001332Z`); token-mode publishing 11/11 with harness approvals
+  (`20261115T162029Z`, `20261116T021112Z`). `wrong_step`, `edited`, `withdrawn` and
+  `not_an_approver` are covered in CI (shared vectors, reply tests,
+  `TestWatcherRefusesSingleAccountCasesThenAccepts`), not live.
+- **SC-005 (walk away):** met by `20261116T201149Z`: finished on GitHub after the terminal
+  closed; the watcher exited when the run ended. Also `20261116T041113Z`,
+  `20261116T231135Z` and `20261117T001332Z`.
+- **SC-006 (after retirement):** met. The docs check (`internal/cli/docs_test.go`) reports 0
+  problems; the walkthrough `20261117T001332Z` completed 11/11; outside `specs/` history and
+  evidence, only the roadmap's C-13 text and two "former …" comments name the removed code.
+- **SC-007 (operator behaviour unchanged):** met. Commands, options and exit codes are those of
+  the guide; additions are the `-v` levels (FR-018), approval replies (FR-019) and the watcher
+  (US4). `PILOT_IMPL`, a port-only switch, is gone.
+
 ## Assumptions
 
 - **Platform:** end-to-end support stays Linux (kind and a container runtime), as today. The new

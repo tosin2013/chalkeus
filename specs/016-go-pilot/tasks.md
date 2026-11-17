@@ -418,8 +418,10 @@ GitHub.
   Done as: the grep (excluding `specs/` history and evidence) finds only the roadmap's C-13 text
   and two "former …" comments; the ask rule for `python3 -m specfoundry_pilot approve` removed
   from `.claude/settings.json`.
-- [ ] T057 [US5] **Owner action:** one more guide walkthrough with the audit at 11/11 after
+- [X] T057 [US5] **Owner action:** one more guide walkthrough with the audit at 11/11 after
   retirement. Record it in `specs/016-go-pilot/evidence/README.md`.
+  Done as: run `20261117T001332Z` on main `835c2e2` (after US5): App publisher, every approval and
+  merge on GitHub (#42, PRs #43–#45), `down`, audit 11/11.
 
 - [X] T060 [US2] Verbose levels (FR-018, owner request 2026-11-15): global `-v` count flag and
   `PILOT_VERBOSE` in `internal/cli/root.go`; `internal/verbose` (levels, redaction of secret
@@ -436,12 +438,18 @@ GitHub.
 
 ## Phase 9: Polish and closeout
 
-- [ ] T058 [P] Run a privacy check: AU08 passes for every 016 and 004 run record, and no token,
+- [X] T058 [P] Run a privacy check: AU08 passes for every 016 and 004 run record, and no token,
   key or model host appears in `specs/016-go-pilot/` or `specs/004-github-loop/`.
-- [ ] T059 Add Evidence sections to `specs/016-go-pilot/spec.md` and
+  Done as: AU08 passes for all seven committed run records (016 and 004); the scan of both spec
+  folders finds no model host and no token or private-key pattern.
+- [X] T059 Add Evidence sections to `specs/016-go-pilot/spec.md` and
   `specs/004-github-loop/spec.md`. Run `/speckit-roadmap-debrief` for 016 and for 004. Then,
   with the owner's approval, `/speckit-roadmap-write`: the 016 and 004 statuses and spec dirs,
   and 013 unblocked.
+  Done as: §Evidence in both specs; debriefs `roadmap-reviews/debrief-20261117T013000Z.md` (016)
+  and `specs/004-github-loop/roadmap-reviews/debrief-20261117T013500Z.md` (004), both without
+  Must-Address findings; roadmap 1.13.1 (owner approval 2026-11-17): 016 and 004 verified, spec
+  dirs linked, 004's outcome wording clarified; 010, 013 and 014 unblocked.
 
 ---
 
