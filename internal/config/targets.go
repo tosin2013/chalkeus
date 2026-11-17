@@ -32,6 +32,7 @@ type Target struct {
 	ToolchainImage  string // operator-supplied toolchain image (digest-pinned), "" for the catalog's
 	TestCommand     string
 	InstallCommand  string // installs the project\'s dependencies (prefetch and worker; 014 R7)
+	ChangeType      string // Conventional Commits type of the item's PR title (default feat)
 	RegistryHosts   []string
 	CompanionRepo   string
 	GithubIssues    string // on|off
@@ -43,6 +44,9 @@ type Target struct {
 	PublisherEnv    string // token mode: targets/<name>.publisher.env
 	Fixture         bool
 }
+
+var changeTypes = map[string]bool{"feat": true, "fix": true, "refactor": true, "perf": true, "test": true,
+	"docs": true, "build": true, "ci": true, "style": true, "chore": true}
 
 // TargetsDir is ConfigDir/targets.
 func (c *Config) TargetsDir() string { return filepath.Join(c.ConfigDir, "targets") }
@@ -117,8 +121,8 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	t := Target{Name: name, Repo: v["PILOT_TARGET_REPO"], Branch: v["PILOT_TARGET_BRANCH"], Toolchain: v["PILOT_TOOLCHAIN"],
 		ToolchainImage: v["PILOT_TOOLCHAIN_IMAGE"],
 		TestCommand:    strings.TrimSpace(v["PILOT_TEST_COMMAND"]), CompanionRepo: v["PILOT_COMPANION_REPO"],
-		InstallCommand: strings.TrimSpace(v["PILOT_INSTALL_COMMAND"]),
-		GithubIssues:   v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
+		InstallCommand: strings.TrimSpace(v["PILOT_INSTALL_COMMAND"]), ChangeType: v["PILOT_CHANGE_TYPE"],
+		GithubIssues: v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
 		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50}
 	if !repoRE.MatchString(t.Repo) {
 		return Target{}, invalid("PILOT_TARGET_REPO", "must be owner/name")
@@ -152,6 +156,12 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	}
 	if t.InstallCommand != "" && len(t.RegistryHosts) == 0 {
 		return Target{}, invalid("PILOT_INSTALL_COMMAND", "needs PILOT_REGISTRY_HOSTS: dependencies are downloaded from the registries you list")
+	}
+	if t.ChangeType == "" {
+		t.ChangeType = "feat"
+	}
+	if !changeTypes[t.ChangeType] {
+		return Target{}, invalid("PILOT_CHANGE_TYPE", "must be a Conventional Commits type: feat, fix, refactor, perf, test, docs, build, ci, style or chore")
 	}
 	if t.GithubIssues == "" {
 		t.GithubIssues = "off" // a new target opts in (014 R14)

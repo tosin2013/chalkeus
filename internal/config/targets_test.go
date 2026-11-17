@@ -55,7 +55,7 @@ func TestLoadTargetGood(t *testing.T) {
 	}
 	want := Target{Name: "greeting", Repo: "me/greeting-service", Branch: "main", Toolchain: "jdk21-maven",
 		TestCommand: "mvn -B test", RegistryHosts: []string{"repo.maven.apache.org", "repo1.example.org"},
-		CompanionRepo: "me/greeting-service-acceptance", GithubIssues: "off", GithubApprovals: "on", MaxInputMB: 50,
+		CompanionRepo: "me/greeting-service-acceptance", GithubIssues: "off", GithubApprovals: "on", MaxInputMB: 50, ChangeType: "feat",
 		PublisherEnv: filepath.Join(c.TargetsDir(), "greeting.publisher.env")}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\n got %+v\nwant %+v", got, want)
@@ -165,5 +165,16 @@ func TestInstallCommandNeedsRegistries(t *testing.T) {
 	}
 	writeTarget(t, c, "p", strings.Replace(goodTarget, "PILOT_REGISTRY_HOSTS=repo.maven.apache.org, repo1.example.org\n", "", 1)+"PILOT_INSTALL_COMMAND=pip install x\n")
 	_, err = c.LoadTarget("p", "")
+	wantCode(t, err, "TARGET_INVALID")
+}
+
+func TestChangeType(t *testing.T) {
+	c := targetCfg(t)
+	writeTarget(t, c, "p", goodTarget+"PILOT_CHANGE_TYPE=fix\n")
+	if got, err := c.LoadTarget("p", ""); err != nil || got.ChangeType != "fix" {
+		t.Fatalf("%+v %v", got, err)
+	}
+	writeTarget(t, c, "p", goodTarget+"PILOT_CHANGE_TYPE=feature\n")
+	_, err := c.LoadTarget("p", "")
 	wantCode(t, err, "TARGET_INVALID")
 }

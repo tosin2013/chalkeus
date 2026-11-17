@@ -43,3 +43,20 @@ func TestItemBodies(t *testing.T) {
 		t.Fatal(s)
 	}
 }
+
+func TestConventionalTitles(t *testing.T) {
+	r := bodyRun(evidence.KindItem)
+	if got := ItemTitle(r, "002"); got != "feat(002): roadmap item 002" {
+		t.Fatal(got)
+	}
+	r.State["readiness"] = map[string]any{"title": "Greeting endpoint", "change_type": "fix"}
+	if got := ItemTitle(r, "002"); got != "fix(002): Greeting endpoint" {
+		t.Fatal(got)
+	}
+	if got := statusTitle(r, "002"); got != "docs(roadmap): 002 verified" {
+		t.Fatal(got)
+	}
+	if got := statusTitle(bodyRun(""), "001"); got != "pilot 20990101T000000Z: 001 verified" {
+		t.Fatal("fixture wording changed: " + got)
+	}
+}

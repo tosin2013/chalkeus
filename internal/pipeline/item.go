@@ -75,6 +75,7 @@ func (p *P) RunItem(item string) int {
 	}
 	t["base_revision"] = res.Commit
 	run.State["readiness"] = map[string]any{"spec_dir": res.SpecDir, "allowed_paths": toAnyList(res.AllowedPaths),
+		"title": res.Title, "change_type": p.Target.ChangeType,
 		"companion_commit": res.CompanionCommit, "hidden_files": res.HiddenFiles, "input_bytes": res.InputBytes}
 	_ = run.Save()
 
