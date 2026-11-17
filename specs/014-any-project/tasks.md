@@ -174,13 +174,13 @@ completes and the audit passes 11/11 (T036, Owner).
   `CreatePVC/DeletePVC` in `internal/k8s/k8s.go`, with fake-clientset tests in
   `internal/k8s/k8s_test.go`. The exec stream is a tar unpacked by the receiver; secrets are
   never logged.
-- [ ] T019 [US1] Write snapshot and replay tests in `internal/fixture/snapshot_test.go`, using
+- [X] T019 [US1] Write snapshot and replay tests in `internal/fixture/snapshot_test.go`, using
   real `git` in a temp dir:
   - `Snapshot(clone, base)` builds a one-commit bundle whose tree equals `base`'s tree;
   - `Replay(clone, base, snapshot, changeBundle)` rebases the change onto `base`, and the
     replayed tree is identical to the graded tree;
   - a conflict-free replay is required, and a mismatch fails with `REPLAY_MISMATCH`.
-- [ ] T020 [US1] Implement `internal/fixture/snapshot.go` (`Snapshot`, `Replay`; uses the
+- [X] T020 [US1] Implement `internal/fixture/snapshot.go` (`Snapshot`, `Replay`; uses the
   existing git helpers).
 - [ ] T021 [US1] Add the input receiver for item runs to `pilot/manifests/worker-job.yaml.tmpl`
   and `pilot/manifests/grader-job.yaml.tmpl`, behind a template switch so fixture rendering is
@@ -193,7 +193,7 @@ completes and the audit passes 11/11 (T036, Owner).
 
 **Prompt, worker, grading**
 
-- [ ] T022 [P] [US1] Add `prompt.BuildItem(spec, plan, tasks, tasksPath, allowedPaths,
+- [X] T022 [P] [US1] Add `prompt.BuildItem(spec, plan, tasks, tasksPath, allowedPaths,
   toolchain, testCommand)` in `internal/prompt/prompt.go`, per R10.
   - It has a generic preamble, no "Python standard library" line, and no induction.
   - `Build` (the fixture) stays unchanged.
@@ -204,7 +204,7 @@ completes and the audit passes 11/11 (T036, Owner).
     `mode:"attempt"`, and `allowed_paths` from readiness;
   - label = item id (namespaces `pilot-w-<nnn>-<n>`);
   - `MakeInputs` (fixture) unchanged.
-- [ ] T024 [P] [US1] Extend `pilot/images/tools/grade.py` per contracts/grading.md:
+- [X] T024 [P] [US1] Extend `pilot/images/tools/grade.py` per contracts/grading.md:
   - optional `meta.mode` (`attempt` | `baseline`), `test_command` (run via `sh -c` from the
     project root), `hidden_mode:"overlay"` (copy `/grading/overlay/` over the project, then
     rerun `test_command`), and `command_timeout_s` (default 180);
@@ -224,7 +224,7 @@ completes and the audit passes 11/11 (T036, Owner).
 
   The fixture keeps `pilot-g-<t>-<n>`. Tests cover rendering and the namespace lifecycle with
   the fake clientset.
-- [ ] T026 [US1] Write `companion.json` evidence in `internal/grader/companion.go`: repository,
+- [X] T026 [US1] Write `companion.json` evidence in `internal/grader/companion.go`: repository,
   commit, file count and file list with SHA-256s, never contents (R9). Test that no file
   content reaches the evidence dir.
 
@@ -252,7 +252,7 @@ completes and the audit passes 11/11 (T036, Owner).
     B.
   - Tests in `internal/pipeline/github_test.go` and `internal/decisions/decisions_test.go` for
     both kinds.
-- [ ] T029 [US1] Generalize the status edit in `internal/reconcile/reconcile.go` (R12):
+- [X] T029 [US1] Generalize the status edit in `internal/reconcile/reconcile.go` (R12):
   - `StatusEdit` accepts `planned|specced|in-progress` → `verified` for exactly one line;
   - `rec["proposed"]` names the old status;
   - the commit message and `publisher.StatusBody` name the item and the old status;
@@ -260,10 +260,10 @@ completes and the audit passes 11/11 (T036, Owner).
 
   Tests in `internal/reconcile/reconcile_test.go` for the three source statuses plus the
   existing vectors.
-- [ ] T030 [P] [US1] Item wording in `internal/publisher/publisher.go`: the PR body names the
+- [X] T030 [P] [US1] Item wording in `internal/publisher/publisher.go`: the PR body names the
   target and item, and the evidence path comes from the run, not the hard-coded 002 path. The
   PR head is `pilot/<run>/<nnn>`. The fixture body is unchanged (test).
-- [ ] T031 [P] [US1] Map GitHub issues by item id in `internal/ghloop/sync.go` (`IssueFor`,
+- [X] T031 [P] [US1] Map GitHub issues by item id in `internal/ghloop/sync.go` (`IssueFor`,
   `DriftReport`) instead of `paths.Tasks`, keeping the fixture mapping. Tests in
   `internal/ghloop/sync_test.go`.
 
@@ -272,7 +272,7 @@ completes and the audit passes 11/11 (T036, Owner).
 - [ ] T032 [US1] Add the P11 check in `internal/checks/checks.go`: no overlay file name or
   SHA-256 from `companion.json` appears in the worker namespace's ConfigMaps, staged-input
   list or `prompt.md`. Tests in `internal/checks/checks_test.go`.
-- [ ] T033 [US1] Implement the item-run audit variants in `internal/audit/audit.go`, per
+- [X] T033 [US1] Implement the item-run audit variants in `internal/audit/audit.go`, per
   contracts/audit-item.md:
   - AU01: only NNN allowed, readiness rows pass, `other_attempts=0`;
   - AU02: the baseline passed before the first attempt, then `fail*` and exactly one `pass`,

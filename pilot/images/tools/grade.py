@@ -4,6 +4,13 @@ Inputs  /in/meta.json {run_id, task, attempt, item_id, base_revision, allowed_pa
         /in/base.bundle, /in/change.bundle (may be absent)
         /grading/test_hidden_<item_id>.py  (grading material: never mounted in a worker)
 Output  stdout frame with grade.json (contracts/grade-report.schema.json)
+
+Item runs (014, specs/014-any-project/contracts/grading.md) add optional meta fields:
+  mode               "attempt" (default) | "baseline": no change bundle; G4 must pass, G5 must fail
+  test_command       run with `sh -c` from the project root for G4 and G5 (else pytest, as the fixture)
+  hidden_mode        "overlay": copy /grading/overlay/ over the project, then run test_command again
+  command_timeout_s  per-command timeout (default 180)
+Without them, grading is exactly the fixture's.
 """
 from __future__ import annotations
 
@@ -36,6 +43,8 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
         return ok
 
     base = meta["base_revision"]
+    if meta.get("mode") == "baseline":
+        return baseline(meta, inp, grading, work, repo)
     change = os.path.join(inp, "change.bundle")
     ok = os.path.exists(change)
     detail = "no change.bundle from worker"
@@ -61,17 +70,20 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
             except Exception:  # noqa: BLE001
                 pass
             if add("G3_tasks_checked", pct == 100, f"tasks percent={pct}"):
-                env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
-                rc, out = run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/"], cwd=repo, env=env)
-                if add("G4_visible_tests", rc == 0, out):
-                    hidden = os.path.join(grading, f"test_hidden_{meta['item_id']}.py")
-                    tdir = os.path.join(work, "hidden")
-                    os.makedirs(tdir, exist_ok=True)
-                    shutil.copy(hidden, tdir)
-                    env["PYTHONPATH"] = os.path.join(repo, "src")
-                    rc, out = run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
-                                   os.path.join(tdir, os.path.basename(hidden))], cwd=tdir, env=env)
-                    add("G5_hidden_tests", rc == 0, out)
+                if meta.get("test_command"):  # an item run (014)
+                    visible_and_hidden(meta, grading, repo, add)
+                else:  # the fixture, unchanged
+                    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+                    rc, out = run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/"], cwd=repo, env=env)
+                    if add("G4_visible_tests", rc == 0, out):
+                        hidden = os.path.join(grading, f"test_hidden_{meta['item_id']}.py")
+                        tdir = os.path.join(work, "hidden")
+                        os.makedirs(tdir, exist_ok=True)
+                        shutil.copy(hidden, tdir)
+                        env["PYTHONPATH"] = os.path.join(repo, "src")
+                        rc, out = run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
+                                       os.path.join(tdir, os.path.basename(hidden))], cwd=tdir, env=env)
+                        add("G5_hidden_tests", rc == 0, out)
     done = {r["id"] for r in results}
     for cid in CHECKS:
         if cid not in done:
@@ -79,6 +91,67 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
     passed = all(r["result"] == "pass" for r in results) and len(results) == 5
     return {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),
             "result": "pass" if passed else "fail", "failure": None,
+            "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
+
+
+def project_tests(meta, repo):
+    """Run the project's own test command from the project root (item runs)."""
+    return run(["sh", "-c", meta["test_command"]], cwd=repo, timeout=int(meta.get("command_timeout_s") or 180))
+
+
+def overlay(grading, repo):
+    """Copy the item's hidden tests over the project; they mirror its layout, and win."""
+    src = os.path.join(grading, "overlay")
+    if not os.path.isdir(src) or not os.listdir(src):
+        return False, "no hidden tests in /grading/overlay"
+    shutil.copytree(src, repo, dirs_exist_ok=True)
+    return True, ""
+
+
+def visible_and_hidden(meta, grading, repo, add):
+    rc, out = project_tests(meta, repo)
+    if add("G4_visible_tests", rc == 0, out):
+        ok, why = overlay(grading, repo)
+        if not ok:
+            add("G5_hidden_tests", False, why)
+            return
+        rc, out = project_tests(meta, repo)
+        add("G5_hidden_tests", rc == 0, out)
+
+
+def baseline(meta, inp, grading, work, repo):
+    """Before any attempt: on the base revision the project's tests must pass and the hidden
+    tests must fail, or the hidden tests can't tell a correct change from no change (FR-007)."""
+    results = []
+
+    def add(cid, result, detail=""):
+        results.append({"id": cid, "result": result, "detail": str(detail)[-4000:]})
+        return result == "pass"
+
+    rc1, o1 = run(["git", "clone", "--quiet", os.path.join(inp, "base.bundle"), repo])
+    rc2, o2 = (run(["git", "checkout", "--quiet", meta["base_revision"]], cwd=repo) if rc1 == 0 else (1, ""))
+    if add("G1_bundle_applies", "pass" if rc2 == 0 else "fail", " | ".join(x for x in (o1, o2) if x)[:2000] or "base checked out"):
+        add("G2_allowed_paths", "skipped", "baseline: no change")
+        add("G3_tasks_checked", "skipped", "baseline: no change")
+        rc, out = project_tests(meta, repo)
+        if add("G4_visible_tests", "pass" if rc == 0 else "fail", out):
+            ok, why = overlay(grading, repo)
+            if not ok:
+                add("G5_hidden_tests", "fail", why)
+            else:
+                rc, out = project_tests(meta, repo)
+                # Here a pass means the hidden tests FAILED on the base, as they must.
+                add("G5_hidden_tests", "pass" if rc != 0 else "fail",
+                    ("hidden tests fail on the base revision (expected)\n" if rc != 0 else
+                     "hidden tests PASS on the base revision: they carry no signal\n") + out)
+    done = {r["id"] for r in results}
+    for cid in CHECKS:
+        if cid not in done:
+            results.append({"id": cid, "result": "skipped", "detail": "earlier check failed"})
+    by = {r["id"]: r["result"] for r in results}
+    passed = by["G1_bundle_applies"] == "pass" and by["G4_visible_tests"] == "pass" and by["G5_hidden_tests"] == "pass"
+    return {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),
+            "mode": "baseline", "result": "pass" if passed else "fail", "failure": None,
             "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
 
 
