@@ -1,7 +1,12 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.15.0 → 1.16.0
+Version change: 1.16.0 → 1.16.1 (this revision)
+Bump rationale: PATCH — C-14 wording: humans may write hidden tests too (as C-12 and 014 say);
+the test author's write access is limited to the companion. Grader evidence now withholds
+hidden-test output (014 contract grading.md), so C-14's "never expose test contents" holds.
+
+Prior: Version change: 1.15.0 → 1.16.0
 Bump rationale: MINOR — a new planned spec (018) and amendments to C-07, C-12 and C-14. No
 existing entry is invalidated: humans still plan and approve, and build workers still never
 see hidden tests.
@@ -491,8 +496,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   2026-11-17; **amended 2026-11-17, Tosin Akinosho**): hidden acceptance tests come from a
   private git repository (the companion) ~~that the agent's side can't read~~. They stay out of
   reach of every build worker, every controller-launched worker session and the publisher,
-  whether the pilot runs on a laptop, a server, for a team or in a cluster. Only the
-  test-author identity has write access, and only to that companion repository
+  whether the pilot runs on a laptop, a server, for a team or in a cluster. Only humans and the
+  test-author identity have write access, the test author only to that companion repository
   (`PILOT_COMPANION_REPO` / `PILOT_COMPANION_PATH`). That write is not a credential for the
   target repository: the publisher remains the only identity that may write the target (C-03).
   The test author never launches, steers or reviews workers. Worker evidence and grader
@@ -1217,4 +1222,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.16.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17
+**Version**: 1.16.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17
