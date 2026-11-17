@@ -20,6 +20,20 @@
   `.specify/memory/roadmap.md`, or any other item's spec folder.
 - **No section, or no glob:** `ITEM_NO_ALLOWED_PATHS`.
 
+## Tests that may change (optional)
+
+```markdown
+## Tests that may change
+
+- `tests/test_tools.py` (the expected error text changes)
+```
+
+- **Used only when the target sets `PILOT_TEST_PATHS`.** The grader's G7 re-runs the base's
+  version of every test file the change edited or deleted; the files listed here are skipped,
+  because the item is meant to change what they expect.
+- **Shape:** as `## Allowed paths`. List only what the spec really changes; the human reviewing
+  the spec decides.
+
 ## Hidden tests (companion repository)
 
 ```text

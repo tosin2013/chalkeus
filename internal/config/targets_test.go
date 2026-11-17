@@ -179,6 +179,17 @@ func TestChangeType(t *testing.T) {
 	wantCode(t, err, "TARGET_INVALID")
 }
 
+func TestTestPaths(t *testing.T) {
+	c := targetCfg(t)
+	writeTarget(t, c, "p", goodTarget+"PILOT_TEST_PATHS=tests/*, src/test/*\n")
+	if got, err := c.LoadTarget("p", ""); err != nil || strings.Join(got.TestPaths, "|") != "tests/*|src/test/*" {
+		t.Fatalf("%+v %v", got, err)
+	}
+	writeTarget(t, c, "p", goodTarget+"PILOT_TEST_PATHS=../x\n")
+	_, err := c.LoadTarget("p", "")
+	wantCode(t, err, "TARGET_INVALID")
+}
+
 func TestCompanionPath(t *testing.T) {
 	c := targetCfg(t)
 	writeTarget(t, c, "p", goodTarget+"PILOT_COMPANION_PATH=/cli-schema-mcp/\n")

@@ -1,6 +1,7 @@
 # Contract: grading for item runs
 
-`grade.py` keeps its frame output and check ids (G1–G5). New `meta.json` fields switch the
+`grade.py` keeps its frame output and check ids (G1–G5); G6 and G7 are added only when
+`test_paths` is set. New `meta.json` fields switch the
 behaviour; the fixture sets none of them, so its grading is unchanged.
 
 | `meta.json` field | Values | Effect |
@@ -11,6 +12,8 @@ behaviour; the fixture sets none of them, so its grading is unchanged.
 | `toolchain` | name | recorded in the report |
 | `spec_sha256` | hex | the SHA-256 of the spec text given to the worker (AU11 item variant) |
 | `command_timeout_s` | int | default 180; from the catalog (600 for each catalog toolchain) |
+| `test_paths` | list of globs | the target's `PILOT_TEST_PATHS`. Adds **G6_tests_changed** (after G3: the change adds or edits at least one matching file) and **G7_existing_tests_kept** (after G4: in a clean checkout of the change, the base's versions of the matching files the change edited or deleted are put back, and `test_command` must pass). The report then has 7 checks. Absent: 5 checks, as before. |
+| `tests_may_change` | list of globs | from the spec's `## Tests that may change`; G7 skips them |
 
 ## Grader pod (item runs)
 

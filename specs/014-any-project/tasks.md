@@ -577,3 +577,14 @@ Setup → Foundational → US2 → US1 → US3 → US4(T056) → Polish
 3. **Then US3 for Java/Maven**, validated on `greeting-service` (T053–T054).
 4. **US4's guard (T004)** is in place from early on, and T056 confirms the fixture at the end.
 5. **One PR per phase or slice; the owner merges.**
+
+## Added during implementation (owner decisions 2026-11-17)
+
+- [X] TNEW-T1 Conventional Commits titles for target PRs and status commits
+  (`PILOT_CHANGE_TYPE`; PR #54).
+- [X] TNEW-T2 One companion repository for many targets (`PILOT_COMPANION_PATH`; roadmap C-14;
+  PR #55).
+- [X] TNEW-T3 Test rules for projects that require tests (`PILOT_TEST_PATHS`): grader G6 (the
+  change adds or edits tests) and G7 (the original versions of edited or deleted test files
+  still pass, in a clean checkout); the spec's optional `## Tests that may change`; prompt
+  guidance. Needs a new tools image (grade.py).

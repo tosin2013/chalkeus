@@ -121,6 +121,19 @@ PILOT_GITHUB_ISSUES=off
   own code through `PYTHONPATH` or your pytest configuration.
 - **Any other language:** bring your own toolchain image (next section), or ask for one with the
   [toolchain image request form](https://github.com/tosin2013/specfoundry/issues/new?template=toolchain-image.yml).
+- **If the project requires tests with every change**, set `PILOT_TEST_PATHS` to its test files
+  (for example `tests/*` or `src/test/*`). The grader then adds two checks:
+  - **G6:** the change must add or edit at least one test file. A change without tests fails,
+    and the agent is told to add them.
+  - **G7:** the change can't pass by weakening a test. The grader puts back the original version
+    of every existing test file the change edited or deleted and runs your tests again; they
+    must still pass. If an item is meant to change what an existing test expects, list that
+    file in the spec under `## Tests that may change`.
+
+  The test paths must also be in the item's `## Allowed paths`, or the agent can't add tests.
+  The project's other gates (coverage, linters) can go in `PILOT_TEST_COMMAND` if they pass on
+  your current code; the baseline check confirms that before any attempt. Either way, your
+  repository's own CI runs on the PR.
 - **PR titles follow [Conventional Commits](https://www.conventionalcommits.org/)**, because many
   projects squash-merge and use the PR title as the changelog entry. The item's PR is
   `feat(<item>): <the item's roadmap title>`; set `PILOT_CHANGE_TYPE` (`fix`, `refactor`, `perf`,
