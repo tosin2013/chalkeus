@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// fakeGH is an in-memory GitHub for loop tests (reference: pilot/tests/ghfake.py): issues,
+// fakeGH is an in-memory GitHub for loop tests (reference: the former Python pilot's tests/ghfake.py): issues,
 // labels, comments and permissions; no network. It implements Reader and Writer.
 type fakeGH struct {
 	issues      []Issue

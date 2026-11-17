@@ -1,5 +1,5 @@
 // Package audit is the evidence-only audit AU01–AU11 and the redaction scan
-// (reference: pilot/specfoundry_pilot/audit.py). Detail strings match the reference byte for
+// (reference: the former Python pilot's audit.py). Detail strings match the reference byte for
 // byte; specs/016-go-pilot/golden/audit-expected.json is the proof.
 package audit
 

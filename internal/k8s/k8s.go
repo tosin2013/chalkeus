@@ -1,5 +1,5 @@
 // Package k8s talks to the pilot cluster through client-go (016 research R3), replacing the
-// reference's kubectl subprocesses (pilot/specfoundry_pilot/k8s.py) with the same semantics.
+// reference's kubectl subprocesses (the former Python pilot's k8s.py) with the same semantics.
 package k8s
 
 import (

@@ -21,6 +21,6 @@
 ## Compatibility
 
 - Records from 002, 003, 006 and 012 have no `kind` and no `github` entries, so they pass
-  unchanged (`pilot/tests/test_committed_evidence.py`).
+  unchanged (`internal/audit/golden_test.go`; `pilot/tests/test_committed_evidence.py` until 016 US5).
 - `github` is a third channel beside `tty` and `harness`. The detail shows the approver, so a
   reviewer can tell who decided.

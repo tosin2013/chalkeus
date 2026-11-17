@@ -10,9 +10,9 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 UID_ARB=1000123
 W="$(mktemp -d)"; trap 'docker rm -f pilot-smoke-proxy >/dev/null 2>&1 || true; docker network rm pilot-smoke >/dev/null 2>&1 || true; rm -rf "$W"' EXIT
 RUN=(docker run --rm --user "${UID_ARB}:0" --read-only --security-opt no-new-privileges --cap-drop ALL)
-frame() { PYTHONPATH="$ROOT/pilot" python3 -c '
+frame() { PYTHONPATH="$ROOT/pilot/images/common" python3 -c '
 import sys, json
-from specfoundry_pilot import frame
+import frame
 files, err = frame.decode(sys.stdin.read(), required=(sys.argv[1],))
 if err: sys.exit(f"bad frame: {err}")
 print(json.dumps(json.loads(files[sys.argv[1]]))[:400])' "$1"; }
@@ -27,7 +27,7 @@ git -C "$W/repo" -c user.name=smoke -c user.email=smoke@invalid commit -qm base
 BASE="$(git -C "$W/repo" rev-parse HEAD)"
 git -C "$W/repo" bundle create -q "$W/in/base.bundle" HEAD
 cp "$W/in/base.bundle" "$W/grade/base.bundle"
-cp "$ROOT/pilot/tests/reference/slugkit/slug.py" "$W/repo/src/slugkit/slug.py"
+cp "$ROOT/pilot/images/tests/reference/slugkit/slug.py" "$W/repo/src/slugkit/slug.py"
 echo 'from .slug import slugify  # noqa: F401' >> "$W/repo/src/slugkit/__init__.py"
 sed -i 's/- \[ \]/- [X]/' "$W/repo/specs/001-slugify/tasks.md"
 git -C "$W/repo" add -A

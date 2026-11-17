@@ -17,16 +17,16 @@ on:
     branches: [main]
     paths:
       - "pilot/images/**"
-      - "pilot/specfoundry_pilot/frame.py"
       - "pilot/pins.env"
       - ".github/workflows/pilot-images.yml"
+      - "!pilot/images/tests/**" # host-side tests of the in-image scripts; not in any image
       - "!pilot/images.lock" # never a trigger (F1); GitHub forbids paths + paths-ignore together
   pull_request:
     paths:
       - "pilot/images/**"
-      - "pilot/specfoundry_pilot/frame.py"
       - "pilot/pins.env"
       - ".github/workflows/pilot-images.yml"
+      - "!pilot/images/tests/**"
   workflow_dispatch: {}
 
 permissions:
@@ -68,7 +68,7 @@ jobs:
           for i in worker tools egress; do
             ctx="$RUNNER_TEMP/ctx-$i"; rm -rf "$ctx"; mkdir -p "$ctx"
             cp -r "pilot/images/$i/." "$ctx/"
-            cp pilot/specfoundry_pilot/frame.py "$ctx/"
+            cp pilot/images/common/frame.py "$ctx/"
           done
 
       - name: Build locally (upstream checksums verified inside the Dockerfiles)

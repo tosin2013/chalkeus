@@ -86,23 +86,7 @@ func TestDocsWordingInGoSources(t *testing.T) {
 	all := docChunks(t, root)
 
 	var msgs []string
-	if py := readTree(t, filepath.Join(root, "pilot/specfoundry_pilot"), ".py", nil); py != "" {
-		for _, c := range all {
-			if strings.Contains(py, c) {
-				msgs = append(msgs, c)
-			}
-		}
-		want := strings.Join(msgs, "\n") + "\n"
-		if raw, _ := os.ReadFile(frozen); string(raw) != want {
-			if os.Getenv("UPDATE_WORDING") == "1" {
-				if err := os.WriteFile(frozen, []byte(want), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			} else {
-				t.Errorf("%s is out of date with the docs; rerun with UPDATE_WORDING=1", frozen)
-			}
-		}
-	} else { // the reference is retired: use the frozen list, and require each entry still quoted
+	{ // the Python reference is retired (016 US5): the frozen list, each entry still quoted in the docs
 		raw, err := os.ReadFile(frozen)
 		if err != nil {
 			t.Fatal(err)

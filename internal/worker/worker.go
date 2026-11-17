@@ -1,5 +1,5 @@
 // Package worker runs one worker attempt: an isolated namespace, inputs, the Job, and frame
-// collection (reference: pilot/specfoundry_pilot/worker.py; FR-005–FR-009c).
+// collection (reference: the former Python pilot's worker.py; FR-005–FR-009c).
 package worker
 
 import (

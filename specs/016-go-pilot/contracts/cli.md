@@ -46,8 +46,9 @@ Errors print `pilot: <message>` to stderr. Usage errors (unknown command or flag
 
 ## Help output
 
-Cobra's format (`Usage:`, `Available Commands:`, `Flags:`). `pilot/tools/docs_check.py` reads it
-to check that the docs name only existing commands and flags.
+Cobra's format (`Usage:`, `Available Commands:`, `Flags:`). The docs check
+(`internal/cli/docs_test.go`, US5) reads the command tree directly to check that the docs name
+only existing commands and flags.
 
 ## Wording
 

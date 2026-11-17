@@ -1,4 +1,4 @@
-// Package gate is the fail-closed gate over spec-status (reference: pilot/specfoundry_pilot/gate.py;
+// Package gate is the fail-closed gate over spec-status (reference: the former Python pilot's gate.py;
 // specs/002-m1-gated-pilot/contracts/gate-decision.schema.json).
 //
 // allow <=> every rule passes; anything else, including any unexpected input, refuses.

@@ -3,8 +3,7 @@
 ## 1. Automated checks (any machine)
 
 ```sh
-PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot   # all pass, incl. approvals and committed evidence
-python3 pilot/tools/docs_check.py                                        # 0 problems
+go test ./...                                                            # all pass, incl. approvals, committed evidence and the docs check
 ```
 
 `test_committed_evidence` audits every committed successful run record and requires it to pass

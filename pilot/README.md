@@ -21,7 +21,8 @@ verified.
 
 ## Prerequisites
 
-- Docker, about 8 GB free RAM, Python 3.12, git, and `gh` logged in as you.
+- Docker, about 8 GB free RAM, Go 1.27 (`pilot/pilot` builds the pilot on first use), git, and
+  `gh` logged in as you.
 - `spec` 0.2.0 on the host (the gate runs there). The worker, tools and egress images are
   pulled by digest from `pilot/images.lock`; they are built by the
   [`pilot-images`](../.github/workflows/pilot-images.yml) workflow from verified upstream releases.
@@ -74,16 +75,16 @@ Commit it after `pilot down`.
 ## Tests
 
 ```sh
-PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot -v
+go test ./...                                                              # the pilot (Go)
+python3 -m unittest discover -s pilot/images/tests -t pilot/images/tests   # in-image scripts
 ```
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `specfoundry_pilot/` | Orchestrator (Python stdlib only); `runner/` holds the pluggable runner (plain Jobs now; Kelos in 003) |
-| `images/` | `worker` (OpenCode), `tools` (grader + publisher), `egress` (tinyproxy) |
+| `pilot` | The command: builds and runs the Go pilot (`cmd/pilot`, `internal/`; the runner is pluggable: plain Jobs, or Kelos in 003) |
+| `images/` | `worker` (OpenCode), `tools` (grader + publisher), `egress` (tinyproxy); `common/frame.py` (both images); `tests/` (the in-image scripts' tests and a reference solution) |
 | `manifests/` | Namespace, Job and proxy templates |
 | `fixture/` | Template of the throwaway repo (roadmap 001 → 002, specs, visible tests) |
 | `grading/` | Hidden acceptance tests: mounted only into grader namespaces |
-| `tests/` | Unit tests, status fixtures, reference solution |

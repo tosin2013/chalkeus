@@ -382,7 +382,7 @@ GitHub.
 
 **Independent test:** quickstart §6.
 
-- [ ] T053 [US5] Remove `pilot/specfoundry_pilot/`, `pilot/tests/`, the Python-only host tools
+- [X] T053 [US5] Remove `pilot/specfoundry_pilot/`, `pilot/tests/`, the Python-only host tools
   (`pilot/tools/app_token.py`, `pilot/tools/golden_audit.py` once its output is committed), and
   the `PILOT_IMPL` Python branch in `pilot/pilot`. Keep `pilot/images/**` scripts, because
   in-image Python stays.
@@ -390,16 +390,34 @@ GitHub.
   update `.github/workflows/pilot-images.yml` (its trigger paths and the `cp` into each build context)
   and the Go `--local-build` context copy. Both the worker and tools images COPY `frame.py`.
   `pilot/images/build_args.py` stays, because the image workflow runs it.
-- [ ] T054 [US5] Update `pilot/tools/docs_check.py` to drop the Python help parser, or port it
+  Done as: `frame.py` moved to `pilot/images/common/frame.py` (the image workflow's paths and
+  `cp`, `images.FramePy`, `smoke.sh`); the tests of in-image scripts and the reference solution
+  moved to `pilot/images/tests/` (run in the Go workflow); `pilot/specfoundry_pilot/`, the rest of
+  `pilot/tests/` and `pilot/tools/` removed; the shim is Go-only. The two Go tests that compared
+  with Python modules now check frozen outputs (`TestHashDirIsStable`, `TestRenderEgressGolden`),
+  captured where they matched Python.
+- [X] T054 [US5] Update `pilot/tools/docs_check.py` to drop the Python help parser, or port it
   into `go test` as `internal/cli/docs_test.go` and remove the Python script. Update
   `.github/workflows/go.yml` and `.github/workflows/docs-check.yml` to match.
-- [ ] T055 [P] [US5] Update the docs to describe the Go pilot: `pilot/README.md` (layout, tests:
+  Done as: ported to `internal/cli/docs_test.go` (`TestDocsCheck`, `TestDocsCheckRules`); D1 reads
+  the Cobra command tree (nested commands, global flags before the subcommand) instead of `--help`.
+  It also checks `CONTRIBUTING.md`, `AGENTS.md` and the pilot skill. `docs-check.yml` runs it;
+  `DOCS_CHECK_FILES` checks other files.
+- [X] T055 [P] [US5] Update the docs to describe the Go pilot: `pilot/README.md` (layout, tests:
   `go test ./...`), `README.md` ("How it's built"), `CONTRIBUTING.md` (toolchain),
   `.claude/skills/pilot/SKILL.md` (paths), and `AGENTS.md`. Then run the docs check.
-- [ ] T056 [US5] Confirm that nothing outside history and evidence refers to the removed code
+  Done as: `README.md`, `CONTRIBUTING.md`, `pilot/README.md`, `AGENTS.md`, the operator guide (Go
+  instead of Python in §4's prerequisites and check), troubleshooting (Source lines name the Go
+  files; the OpenCode ask rule drops the Python pattern). The skill needed no change. Live
+  contracts and quickstart commands in earlier specs updated; plans, tasks and research kept as
+  history.
+- [X] T056 [US5] Confirm that nothing outside history and evidence refers to the removed code
   (`grep -rn "specfoundry_pilot\|python3 -m specfoundry_pilot" --exclude-dir=evidence`).
   Update the harness ask rules in `.claude/settings.json` (drop the `python3 -m
   specfoundry_pilot approve` pattern).
+  Done as: the grep (excluding `specs/` history and evidence) finds only the roadmap's C-13 text
+  and two "former …" comments; the ask rule for `python3 -m specfoundry_pilot approve` removed
+  from `.claude/settings.json`.
 - [ ] T057 [US5] **Owner action:** one more guide walkthrough with the audit at 11/11 after
   retirement. Record it in `specs/016-go-pilot/evidence/README.md`.
 

@@ -108,7 +108,7 @@ If something in this guide fails, see [troubleshooting](troubleshooting.md).
 here:
 
 ```sh
-sudo apt-get update && sudo apt-get install -y ca-certificates curl git python3
+sudo apt-get update && sudo apt-get install -y ca-certificates curl git
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
@@ -139,7 +139,7 @@ cd ~
 
 If `~/.local/bin` isn't on your `PATH` yet, log out and back in (Ubuntu adds it when it exists).
 
-**Go 1.27** (the pilot is being ported to Go; `pilot/pilot` builds the Go version on first use).
+**Go 1.27** (the pilot is written in Go; `pilot/pilot` builds it on first use).
 Verify the checksum published on [go.dev/dl](https://go.dev/dl/) before installing:
 
 ```sh
@@ -165,11 +165,11 @@ kind v0.27.0 and kubectl v1.32.2 into `~/.local/bin`, verifying their checksums.
 **Check everything** before moving on:
 
 ```sh
-docker run --rm hello-world && gh auth status && spec --version && python3 --version
+docker run --rm hello-world && gh auth status && spec --version && ~/.local/go/bin/go version
 ```
 
 You should see Docker's hello message, `Logged in to github.com`, `spec 0.2.0`, and
-`Python 3.12.x`.
+`go version go1.27.4`.
 
 ---
 
@@ -587,7 +587,7 @@ To see what the pods are doing, add `-v`, `-vv` or `-vvv` after any command, for
 This output goes to stderr only. It changes nothing in the evidence, and secret values and your
 provider's hostname are replaced with `***`. At `-vvv` your terminal shows the prompt's
 effect and the code the agent writes, so don't paste it anywhere public without reading it
-first. The verbose levels need the Go pilot (the default after T038, or `PILOT_IMPL=go`).
+first.
 
 If you're still stuck, open an issue at
 [github.com/tosin2013/specfoundry/issues](https://github.com/tosin2013/specfoundry/issues)

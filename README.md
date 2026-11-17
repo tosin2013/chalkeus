@@ -101,14 +101,15 @@ gated by `spec status`, and lands with evidence.
 | [`docs/prd.md`](docs/prd.md) | Product requirements |
 | [`docs/approach.md`](docs/approach.md) | The approach and the research behind it |
 | [`specs/`](specs/) | One folder per roadmap item: spec, plan, tasks, contracts, evidence |
-| [`pilot/`](pilot/) | The pilot orchestrator (Python stdlib), images, manifests, fixture, hidden grading tests |
+| [`pilot/`](pilot/) | The pilot's command (`pilot/pilot`), images, manifests, fixture, hidden grading tests |
 | [`test/isolation/`](test/isolation/) | The M0 isolation suite |
 | [`.github/workflows/pilot-images.yml`](.github/workflows/pilot-images.yml) | Builds the digest-pinned images from verified upstream releases |
 
-Run the unit tests with:
+The pilot is written in Go ([`cmd/pilot`](cmd/pilot), [`internal/`](internal/)). Run the tests
+with:
 
 ```sh
-PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot
+go test ./...
 ```
 
 ## How it compares

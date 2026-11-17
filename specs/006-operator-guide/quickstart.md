@@ -4,7 +4,7 @@
 
 ```sh
 PYTHONPATH=pilot python3 -m unittest pilot.tests.test_docs_check -v
-python3 pilot/tools/docs_check.py          # expect exit 0
+go test -run TestDocsCheck ./internal/cli    # expect ok
 ```
 
 Negative check: put `pilot/pilot run --bogus` in a scratch copy of the guide. Expect exit 1

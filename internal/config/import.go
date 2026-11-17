@@ -16,7 +16,7 @@ import (
 )
 
 // `pilot import-opencode`: reuse an existing host OpenCode setup as the worker's config
-// (reference: pilot/specfoundry_pilot/import_opencode.py). Only the chosen model's provider and
+// (reference: the former Python pilot's import_opencode.py). Only the chosen model's provider and
 // the key files it references are copied; key files are copied with `install -m 600` and never
 // read by the pilot. The model host is never printed.
 

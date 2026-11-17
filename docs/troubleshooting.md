@@ -191,8 +191,7 @@ Operators who pull the published images never see it.
       ```json
       "permission": { "bash": {
         "pilot/pilot approve*": "ask",
-        "./pilot/pilot approve*": "ask",
-        "python3 -m specfoundry_pilot approve*": "ask"
+        "./pilot/pilot approve*": "ask"
       } }
       ```
     - **Any other harness:** no rule is provided. Use a real terminal instead.
@@ -216,7 +215,7 @@ Operators who pull the published images never see it.
 - **Fix:** `pilot/pilot reset-fixture`, then type `y`. This force-resets the fixture repo and
   closes open `pilot/*` PRs.
 - **Confirm:** `pilot/pilot run` gets past this check and shows the gate self-checks.
-- **Source:** `pilot/specfoundry_pilot/pipeline.py` (pre-run check).
+- **Source:** `internal/pipeline/pipeline.go` (pre-run check).
 
 <a id="deadline-or-spend-cap"></a>
 ### Deadline or spend cap: an attempt fails with reason `deadline` or `spend_cap`
@@ -238,7 +237,7 @@ Operators who pull the published images never see it.
   - After `RETRIES_EXHAUSTED`, start over with `pilot/pilot reset-fixture` and then
     `pilot/pilot run`.
 - **Confirm:** a later attempt reaches grading. AU06 passes in the audit.
-- **Source:** `pilot/specfoundry_pilot/worker.py` (failure reasons).
+- **Source:** `internal/worker/worker.go` (failure reasons).
 
 <a id="cost-zero"></a>
 ### Cost shows 0: `Cost (USD)` is `0.0` for every attempt
@@ -268,7 +267,7 @@ Operators who pull the published images never see it.
   review**, then **Merge**, then run `pilot/pilot resume`.
 - **Confirm:** `resume` shows the reconcile proposal and asks
   `Apply '001: planned → verified' to the fixture roadmap? [y/N]`.
-- **Source:** `pilot/specfoundry_pilot/pipeline.py` (resume check).
+- **Source:** `internal/pipeline/pipeline.go` (resume check).
 
 ---
 
@@ -305,7 +304,7 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   bodies. It never closes, reopens or deletes. Fix the rest on GitHub by hand: close an orphan
   or duplicate, or reopen an issue whose item isn't verified.
 - **Confirm:** `pilot/pilot github drift` exits 0.
-- **Source:** `pilot/specfoundry_pilot/ghsync.py`.
+- **Source:** `internal/ghloop/sync.go`.
 
 <a id="github-approval-rejected"></a>
 ### GitHub approval rejected: the run stays paused
@@ -330,7 +329,7 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   decision post. If `publisher_identity` comes up in token mode, approve from the GitHub web UI
   rather than a tool using the token, or switch to a GitHub App.
 - **Confirm:** `pilot/pilot github watch --run <id>` resumes.
-- **Source:** `pilot/specfoundry_pilot/ghapprove.py`.
+- **Source:** `internal/ghloop/approve.go`.
 
 <a id="status-pr-refused"></a>
 ### Status-change PR refused
@@ -349,7 +348,7 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   Run `pilot/pilot reset-fixture`, then start a new run. Next time, merge the status-change PR
   unedited, from an approver's account.
 - **Confirm:** the new run's `reconcile/A-status.json` shows `"ok": true`.
-- **Source:** `pilot/specfoundry_pilot/reconcile.py` (`check_status_pr`).
+- **Source:** `internal/reconcile/reconcile.go` (`CheckStatusPR`).
 
 <a id="github-app"></a>
 ### GitHub App problems
@@ -370,8 +369,7 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   - **`both a publisher token and a GitHub App key exist`:** set `PILOT_PUBLISHER_CREDENTIAL`
     to `token` or `app`.
 - **Confirm:** `pilot/pilot app-token --check` prints `OK`.
-- **Source:** `internal/ghapp/ghapp.go` (reference: `pilot/tools/app_token.py`,
-  `pilot/specfoundry_pilot/ghapp.py`); see
+- **Source:** `internal/ghapp/ghapp.go`; see
   [github-app.md](github-app.md).
 
 ---
@@ -395,4 +393,4 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
 
   Then run `pilot/pilot down` once more, so the teardown checks are recorded.
 - **Confirm:** T01–T03 all pass, and `pilot/pilot audit` shows AU07 passing.
-- **Source:** `pilot/specfoundry_pilot/cluster.py` (teardown checks).
+- **Source:** `internal/cluster/cluster.go` (teardown checks).

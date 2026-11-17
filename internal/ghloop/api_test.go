@@ -12,7 +12,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/secret"
 )
 
-// Cases ported from pilot/tests/test_ghops.py: the writes against a fake GitHub API; the token
+// Cases ported from the former Python pilot's tests/test_ghops.py: the writes against a fake GitHub API; the token
 // never appears in a result or error; there is no merge operation.
 
 type writeAPI struct {

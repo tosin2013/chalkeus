@@ -1,5 +1,5 @@
 // Package evidence is the run evidence record and resumable run state
-// (reference: pilot/specfoundry_pilot/evidence.py; specs/002-m1-gated-pilot/contracts/evidence-record.md).
+// (reference: the former Python pilot's evidence.py; specs/002-m1-gated-pilot/contracts/evidence-record.md).
 package evidence
 
 import (

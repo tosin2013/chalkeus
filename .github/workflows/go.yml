@@ -1,6 +1,6 @@
-# Go pilot CI (spec 016, research R15): vet, lint, vulnerability check, tests (golden audit and
-# shared vectors included), cross-builds; the Python reference suite and the docs check run
-# here too until the Python pilot is retired (016 US5). Read-only; no secrets.
+# Pilot CI (spec 016, research R15): vet, lint, vulnerability check, tests (golden audit, shared
+# vectors and the docs check included), coverage summary, the in-image Python scripts' tests,
+# cross-builds. Read-only; no secrets.
 name: go
 
 on:
@@ -60,10 +60,10 @@ jobs:
             echo '|---|---|'
             awk '/coverage: [0-9.]+% of statements/ {for (i = 1; i <= NF; i++) { if ($i ~ /^github.com\//) p = $i; if ($i == "coverage:") c = $(i + 1) }; sub(/^github.com\/tosin2013\/specfoundry\//, "", p); print "| " p " | " c " |"}' test.out | sort
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Build the pilot binary (the shim's default since T038; docs_check runs its --help)
+      - name: Build the pilot through its shim
         run: pilot/pilot version
-      - name: Python reference suite (until 016 US5)
-        run: PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot
+      - name: Tests of the in-image Python scripts (worker, tools, grading)
+        run: python3 -m unittest discover -s pilot/images/tests -t pilot/images/tests
 
   build:
     runs-on: ubuntu-24.04

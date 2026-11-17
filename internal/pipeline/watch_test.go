@@ -11,7 +11,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/paths"
 )
 
-// Ported from TestWatch in pilot/tests/test_ghapprove.py: `github watch` stops when the run is
+// Ported from TestWatch in the former Python pilot's tests/test_ghapprove.py: `github watch` stops when the run is
 // no longer paused and returns the last resume's code.
 func TestWatchStopsWhenRunIsDone(t *testing.T) {
 	root := t.TempDir()

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// Port of pilot/tests/test_config.py.
+// Port of the former Python pilot's tests/test_config.py.
 
 const pilotEnv = `PILOT_FIXTURE_REPO=owner/foo-pilot-fixture
 PILOT_FIXTURE_BRANCH=main

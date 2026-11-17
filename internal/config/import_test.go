@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// Port of pilot/tests/test_import_opencode.py.
+// Port of the former Python pilot's tests/test_import_opencode.py.
 
 const importHost = "llm.internal.example"
 

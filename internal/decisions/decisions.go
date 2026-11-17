@@ -1,5 +1,5 @@
 // Package decisions handles human decisions with or without a terminal
-// (reference: pilot/specfoundry_pilot/approvals.py; specs/012-agent-approvals, 004). It is not
+// (reference: the former Python pilot's approvals.py; specs/012-agent-approvals, 004). It is not
 // called "approvals" because the project's harness rules deny edits under any approvals/ path.
 //
 // With a terminal, the pilot asks there (channel tty) and any pending approval for the run is

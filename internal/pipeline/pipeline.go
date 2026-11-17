@@ -1,5 +1,5 @@
 // Package pipeline is `pilot run` / `pilot resume`: one governed cycle for fixture tasks A then
-// B (reference: pilot/specfoundry_pilot/pipeline.py). Every human decision fails closed:
+// B (reference: the former Python pilot's pipeline.py). Every human decision fails closed:
 // anything but "y" means no; without a terminal the run pauses at the decision instead.
 //
 //	mode confirmation (FR-023)   -> exit 5, no worker staged (no terminal: paused(awaiting-mode))
@@ -449,7 +449,7 @@ func (p *P) Resume(runID string) int {
 		}
 	}
 	if run.State["impl"] != "go" {
-		p.say("this run was started by the Python pilot; resume it with PILOT_IMPL=python, or reset the fixture and start a new run")
+		p.say("this run was started by the Python pilot, which was removed in 016; reset the fixture and start a new run")
 		return ExitError
 	}
 	imgs, err := images.Load(p.L)

@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-// Port of pilot/tests/test_frame.py, plus a frame produced by the Python frame.py the images use.
+// Port of the former Python pilot's tests/test_frame.py, plus a frame produced by the Python frame.py the images use.
 
 var report = []byte(`{"version": 1}`)
 

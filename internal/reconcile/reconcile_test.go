@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// Port of pilot/tests/test_reconcile.py, plus the shared status-PR vectors (016 FR-011).
+// Port of the former Python pilot's tests/test_reconcile.py, plus the shared status-PR vectors (016 FR-011).
 
 func roadmap(t *testing.T) string {
 	raw, err := os.ReadFile("../../pilot/fixture/.specify/memory/roadmap.md")

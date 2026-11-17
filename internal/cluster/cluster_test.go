@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -34,23 +33,19 @@ func TestVerifyCalico(t *testing.T) {
 	}
 }
 
-func TestRenderEgressMatchesPython(t *testing.T) {
-	if _, err := exec.LookPath("python3"); err != nil {
-		t.Skip("python3 not installed")
-	}
+// testdata/egress-golden.yaml is what the former Python pilot rendered for the same input
+// (frozen when it was removed, 016 US5).
+func TestRenderEgressGolden(t *testing.T) {
 	root, _ := filepath.Abs("../..")
 	got, err := RenderEgress(paths.At(root), "pilot-egress-model", "worker", []string{"api.example.com"}, "img@sha256:x")
 	if err != nil {
 		t.Fatal(err)
 	}
-	cmd := exec.Command("python3", "-c", "import sys;sys.path.insert(0,'pilot');from specfoundry_pilot import infra;"+
-		"sys.stdout.write(infra.render_egress('pilot-egress-model','worker',['api.example.com'],'img@sha256:x'))")
-	cmd.Dir = root
-	want, err := cmd.Output()
+	want, err := os.ReadFile("testdata/egress-golden.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got != string(want) {
-		t.Fatalf("rendered egress differs from Python:\n%s\n---\n%s", got, want)
+		t.Fatalf("rendered egress differs from the golden copy:\n%s\n---\n%s", got, want)
 	}
 }

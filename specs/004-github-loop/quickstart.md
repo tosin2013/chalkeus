@@ -5,8 +5,7 @@ The prerequisites are a machine set up per `docs/operator-guide.md` and the fixt
 ## 1. Automated
 
 ```bash
-PYTHONPATH=pilot python3 -m unittest discover -s pilot/tests -t pilot
-python3 pilot/tools/docs_check.py
+go test ./...
 ```
 
 These use fake GitHub responses: sync idempotence, drift cases, every approval rejection
