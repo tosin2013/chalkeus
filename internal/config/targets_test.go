@@ -155,3 +155,15 @@ func TestOwnToolchainImageKey(t *testing.T) {
 	_, err = c.LoadTarget("r", "")
 	wantCode(t, err, "TARGET_INVALID")
 }
+
+func TestInstallCommandNeedsRegistries(t *testing.T) {
+	c := targetCfg(t)
+	writeTarget(t, c, "p", goodTarget+"PILOT_INSTALL_COMMAND=pip install -r requirements.txt\n")
+	got, err := c.LoadTarget("p", "")
+	if err != nil || got.InstallCommand != "pip install -r requirements.txt" {
+		t.Fatalf("%+v %v", got, err)
+	}
+	writeTarget(t, c, "p", strings.Replace(goodTarget, "PILOT_REGISTRY_HOSTS=repo.maven.apache.org, repo1.example.org\n", "", 1)+"PILOT_INSTALL_COMMAND=pip install x\n")
+	_, err = c.LoadTarget("p", "")
+	wantCode(t, err, "TARGET_INVALID")
+}

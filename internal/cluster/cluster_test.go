@@ -49,3 +49,26 @@ func TestRenderEgressGolden(t *testing.T) {
 		t.Fatalf("rendered egress differs from the golden copy:\n%s\n---\n%s", got, want)
 	}
 }
+
+// 014 R6: a target's worker proxy allows the model host and its registries; the prefetch proxy
+// allows the registries only, for grading-namespace clients.
+func TestTargetProxyRenders(t *testing.T) {
+	root, _ := filepath.Abs("../..")
+	l := paths.At(root)
+	w, err := RenderEgress(l, WorkerProxyNS("pysample"), "worker", []string{"model.example", "pypi.org", "files.pythonhosted.org"}, "e@sha256:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := RenderEgress(l, PrefetchProxyNS("pysample"), "grader", []string{"pypi.org", "files.pythonhosted.org"}, "e@sha256:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"name: pilot-egress-w-pysample", `^model\.example$`, `^pypi\.org$`, "specfoundry.io/role: worker"} {
+		if !strings.Contains(w, want) {
+			t.Errorf("worker proxy lacks %q", want)
+		}
+	}
+	if strings.Contains(r, "model.example") || strings.Contains(r, `model\.example`) || !strings.Contains(r, `^files\.pythonhosted\.org$`) || !strings.Contains(r, "specfoundry.io/role: grader") {
+		t.Errorf("prefetch proxy:\n%s", r)
+	}
+}

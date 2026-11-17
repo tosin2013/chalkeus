@@ -67,6 +67,40 @@ func RenderEgress(l paths.Layout, ns, role string, hosts []string, image string)
 		"NS": ns, "CLIENT_ROLE": role, "IMAGE": image, "CONF": indent(string(conf), 4), "ALLOWLIST": indent(al, 4)})
 }
 
+// TargetProxies are an item run's egress proxies when its target declares registries (014 R6):
+// the worker's (model hosts + registries, since pip, npm and Go all read the one HTTPS_PROXY the
+// agent uses for the model) and the prefetch's (registries only; never the model host).
+type TargetProxies struct{ Worker, Prefetch string }
+
+// WorkerProxyNS and PrefetchProxyNS name a target's proxy namespaces.
+func WorkerProxyNS(target string) string   { return "pilot-egress-w-" + target }
+func PrefetchProxyNS(target string) string { return "pilot-egress-r-" + target }
+
+// EnsureTargetProxies (re)creates a target's two proxies from scratch, so a changed host list
+// always takes effect, and waits until both are ready.
+func EnsureTargetProxies(l paths.Layout, c *k8s.Client, target string, modelHosts, registries []string, image string) (TargetProxies, error) {
+	tp := TargetProxies{Worker: WorkerProxyNS(target), Prefetch: PrefetchProxyNS(target)}
+	for _, p := range []struct {
+		ns, role string
+		hosts    []string
+	}{{tp.Worker, "worker", append(append([]string{}, modelHosts...), registries...)}, {tp.Prefetch, "grader", registries}} {
+		y, err := RenderEgress(l, p.ns, p.role, p.hosts, image)
+		if err != nil {
+			return tp, err
+		}
+		c.DeleteNS(p.ns, true)
+		if err := c.Apply(y); err != nil {
+			return tp, err
+		}
+	}
+	for _, ns := range []string{tp.Worker, tp.Prefetch} {
+		if !c.RolloutStatus(ns, "proxy", 180*time.Second) {
+			return tp, FailOnPull(c, ns, "egress proxy in "+ns+" did not become ready")
+		}
+	}
+	return tp, nil
+}
+
 // FailOnPull fails closed with the image reference when a pull failed (no local-build fallback).
 func FailOnPull(c *k8s.Client, ns, what string) error {
 	if errs := c.PullErrors(ns); len(errs) > 0 {

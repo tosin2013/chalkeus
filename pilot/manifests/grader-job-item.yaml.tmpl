@@ -24,17 +24,23 @@ spec:
           resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 500m, memory: 128Mi}}
           volumeMounts:
             - {name: stage, mountPath: /stage}
+${TOOLCHAIN_INITS}
       containers:
         - name: grader
           image: ${TOOLS_IMAGE}
-          command: [python3, /usr/local/lib/pilot/grade.py]
-          env: [{name: GRADER_IMAGE, value: "${TOOLS_IMAGE}"}, {name: HOME, value: /tmp}]
+          command: [/usr/bin/python3, /usr/local/lib/pilot/grade.py]
+          env:
+            - {name: GRADER_IMAGE, value: "${TOOLS_IMAGE}"}
+            - {name: HOME, value: /tmp}
+${TOOLCHAIN_ENV}
           securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
           resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "${GRADER_CPU}", memory: ${GRADER_MEMORY}}}
           volumeMounts:
             - {name: stage, mountPath: /in, subPath: in, readOnly: true}
             - {name: stage, mountPath: /grading, subPath: grading, readOnly: true}
             - {name: tmp, mountPath: /tmp}
+${TOOLCHAIN_MOUNTS}
       volumes:
         - {name: stage, emptyDir: {sizeLimit: ${INPUT_LIMIT}}}
         - {name: tmp, emptyDir: {sizeLimit: 2Gi}}
+${TOOLCHAIN_VOLUMES}

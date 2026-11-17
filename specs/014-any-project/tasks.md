@@ -348,6 +348,8 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
   - the Node.js 24 LTS tarball (SHA-256 from `SHASUMS256.txt`);
   - `python-build-standalone` 3.13 (SHA-256);
   - Go (SHA-256 from go.dev).
+  Progress (2026-11-17, owner: Python first): Python 3.13 pinned (python-build-standalone 3.13.18, release 20261026);
+  JDK 21 + Maven, Node.js 24 and Go follow.
 - [ ] T038 [US3] Create one image per catalog toolchain: `pilot/images/toolchain-jdk21-maven/`,
   `toolchain-node24/`, `toolchain-python3.13/` and `toolchain-go/`. Each one:
   - has a fetch stage that verifies every tarball against the pins;
@@ -355,16 +357,22 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
     (contracts/toolchain-image.md: `name`, `version_command`, `path`, `env`, `proxy`), files group
     0 and `g=u`, no setuid, and a static copy helper;
   - gets a branch in `pilot/images/build_args.py`.
-- [ ] T039 [US3] Make `.github/workflows/pilot-images.yml` data-driven from
+  Progress (2026-11-17, owner: Python first): `pilot/images/toolchain-python3.13/` done (no strip: it breaks the build's
+  versioned symbols); the other three follow.
+- [X] T039 [US3] Make `.github/workflows/pilot-images.yml` data-driven from
   `pilot/images/toolchains.json` plus `worker`, `tools`, `egress`. That covers the context
   loop, the push loop, `image-digests.json` and the `digest-pr` key list, including the four
   `TOOLCHAIN_*_IMAGE` keys in `pilot/images.lock`.
+  Done as: the image list is the three images plus every catalog toolchain with an image
+  directory; the digest PR adds each `TOOLCHAIN_*_IMAGE` key.
 - [ ] T040 [US3] Extend `pilot/images/smoke.sh`.
   - Every catalog toolchain image passes the contract checks under an arbitrary UID.
   - The tools image grades one tiny offline sample per toolchain, under
     `pilot/images/tests/samples/{maven,npm,pytest,go}/`, with its dependencies pre-seeded,
     through `test_command` and an overlay.
-- [ ] T041 [US3] Write the toolchain contract probe in `internal/toolchain/probe.go`, and the new
+  Progress (2026-11-17, owner: Python first): the toolchain copy + version check as an arbitrary UID runs for every built
+  toolchain image; per-toolchain offline samples follow with the other toolchains.
+- [X] T041 [US3] Write the toolchain contract probe in `internal/toolchain/probe.go`, and the new
   `pilot/manifests/toolchain-probe-job.yaml.tmpl`.
   - After the mode approval, a no-network Job in the run's grading namespace copies the
     toolchain under an arbitrary UID with group 0 and checks: `toolchain.json` parses and
@@ -376,6 +384,9 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
     name, version line, attestation.
   - The `toolchain.json` parsing and rule checks are unit-tested in
     `internal/toolchain/probe_test.go`.
+  Done as: `grader.ProbeToolchain` + `toolchain-probe-job.yaml.tmpl` and `internal/toolchain` (rules,
+  per-role env with `${PILOT_DEPS}`, `setup_command`); evidence `toolchain.json`. Kind smoke test:
+  Python 3.13.18 probed.
 - [ ] T042 [US3] Handle operator-supplied toolchain images (FR-011a, FR-011b).
   - `PILOT_TOOLCHAIN_IMAGE` in the profile (already parsed and checked for a digest) is used
     for the toolchain init container only. The worker and tools images are never replaceable.
@@ -399,7 +410,7 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
 
 **Toolchain wiring**
 
-- [ ] T044 [US3] Add the toolchain init container to item-run worker, prefetch and grader pods,
+- [X] T044 [US3] Add the toolchain init container to item-run worker, prefetch and grader pods,
   in `pilot/manifests/worker-job.yaml.tmpl` and `pilot/manifests/grader-job.yaml.tmpl`. It
   copies `/opt/toolchain` into an emptyDir, and the catalog sets `JAVA_HOME`, `MAVEN_HOME` and
   the PATH prefix. Item-run worker volumes come from the catalog (`/home/worker` 1Gi, `/tmp`
@@ -407,7 +418,10 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
 
 **Registry egress (R6)**
 
-- [ ] T045 [US3] Add the per-target registry proxy in `internal/cluster/infra.go`:
+  Done as: `toolchain.PodBlocks` (copy init, env, mount, volume) in the item worker, prefetch and
+  grader templates; the worker also gets a `setup` init container that runs `/in/setup.sh` (the
+  toolchain's setup and `PILOT_INSTALL_COMMAND`) with its proxy, into `/home/worker/deps`.
+- [X] T045 [US3] Add the per-target registry proxy in `internal/cluster/infra.go`:
   - `EnsureRegistryProxy(target)` renders `pilot/manifests/egress.yaml.tmpl` as
     `pilot-egress-r-<target>`, with an allowlist of exactly `PILOT_REGISTRY_HOSTS` (never the
     model host). It is re-rendered when the hosts change;
@@ -416,6 +430,10 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
   - `down` deletes all `pilot-egress-r-*` and writes teardown row T04.
 
   Tests in `internal/cluster/cluster_test.go`.
+  Done as (design change, R6 amended): two proxies per target, `pilot-egress-w-<target>` for the
+  worker (model host + registries, because pip/npm/Go read the agent's one `HTTPS_PROXY`) and
+  `pilot-egress-r-<target>` for the prefetch (registries only); `worker-ns-item.yaml.tmpl`.
+  `down` removes them with the cluster; T04 rows follow with P06r.
 - [ ] T046 [US3] Generate `settings.xml` with a `<proxy>` for `pilot-egress-r-<target>` and
   pass `MAVEN_ARGS=-s /in/settings.xml`, in `internal/worker/worker.go` and
   `internal/grader/grader.go`, for `proxy: maven-settings` toolchains. OpenCode keeps
@@ -427,7 +445,7 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
 
 **Dependency cache (R7)**
 
-- [ ] T048 [US3] Add the cache PVC and prefetch:
+- [X] T048 [US3] Add the cache PVC and prefetch:
   - in `pilot/manifests/grading-ns.yaml.tmpl`, a PVC `deps` (size from the catalog or
     `PILOT_CACHE_SIZE`, default StorageClass), and a NetworkPolicy letting `role=prefetch`
     pods reach only DNS and `pilot-egress-r-<target>`;
@@ -437,22 +455,31 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
     `-Dmaven.repo.local=/deps`. Its exit code is recorded, not judged. A failure to resolve is
     `PREFETCH_FAILED`;
   - `prefetch.json` evidence (result, duration, bytes).
-- [ ] T049 [US3] Mount the cache in grader Jobs: `/deps` read-only, Maven with `-o -s
+  Done as: PVC `deps` and the prefetch-only egress rule in the grading namespace; `grader.Prefetch`
+  (base snapshot + hidden tests, never agent code; `prefetch.json`). New profile key
+  `PILOT_INSTALL_COMMAND`. Kind smoke test: pyyaml + pytest installed from PyPI.
+- [X] T049 [US3] Mount the cache in grader Jobs: `/deps` read-only, Maven with `-o -s
   /in/settings.xml -Dmaven.repo.local=/tmp/m2 -Dmaven.repo.local.tail=/deps`. Grader resources
   and deadline come from the catalog (2 CPU, 2Gi, 900 s; 600 s per command) or the profile.
   The namespace and PVC are deleted at run end; `down` deletes leftovers and writes teardown
   row T05.
-- [ ] T050 [US3] Add the P12 check in `internal/checks/checks.go`: grader pods in
+  Done as: graders mount `/deps` read-only and run offline (kind smoke test: baseline passed
+  against the cache). The Maven flags arrive with T046.
+- [X] T050 [US3] Add the P12 check in `internal/checks/checks.go`: grader pods in
   `pilot-g-<nnn>` have no egress rule, and the prefetch pod's rule allows only DNS and the
   registry proxy. Extend P07 and P08 to the run-scoped namespace. Make AU04 require P12 and
   AU07 require T04 and T05 for item runs, in `internal/audit/audit.go`. Tests.
+  Done as: `checks.GradingPolicies` / `RunGradingChecks` (P12) after prefetch; AU04 requires P12
+  when the run has a cache. P07/P08 extension and T05 follow.
 - [ ] T051 [US3] Update `docs/targets.md` and `docs/troubleshooting.md`:
   - toolchains and the request form;
   - registry hosts at the mode approval;
   - an attempt can't add dependencies (the human adds them while preparing the item);
   - entries for `TOOLCHAIN_UNAVAILABLE`, `PREFETCH_FAILED` and `BASELINE_*`.
 
-**Validation (Owner)**
+**Validation (Owner)** *(owner decision 2026-11-17: start minimal with `tosin2013/cli-schema-mcp`, a Spec Kit
+project, on the Python 3.13 toolchain; its run also covers T036. `greeting-service` and the other
+targets come later.)*
 
 - [ ] T052 [US3] **Owner action:** prepare the validation repository (quickstart §1).
   - Copy `spring-guides/gs-rest-service` `complete/` (Apache-2.0) into

@@ -120,3 +120,64 @@ func EnvYAML(env [][2]string, indent string) string {
 	}
 	return strings.TrimSuffix(b.String(), "\n")
 }
+
+// Blocks are the YAML snippets an item-run pod template takes for its toolchain (014 R5):
+// the copy init container, the environment, the mount and the volume. All empty for a
+// toolchain built into the worker and tools images (the fixture's python).
+type Blocks struct{ Inits, Env, Mounts, Volumes string }
+
+// BasePath is the worker and tools images' PATH, after which the toolchain's entries go first.
+const BasePath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+// PodBlocks renders a pod's toolchain blocks: image is the toolchain image (digest), spec its
+// checked toolchain.json, deps the role's dependency directory.
+func PodBlocks(image string, spec *Spec, deps string) Blocks {
+	if image == "" || spec == nil {
+		return Blocks{}
+	}
+	return Blocks{
+		Inits: `        - name: toolchain
+          image: ` + image + `
+          command: [cp, -R, /opt/toolchain/., /dest/]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 500m, memory: 256Mi}}
+          volumeMounts:
+            - {name: toolchain, mountPath: /dest}`,
+		Env:     EnvYAML(spec.PodEnv(deps, BasePath), "            "),
+		Mounts:  `            - {name: toolchain, mountPath: ` + Mount + `, readOnly: true}`,
+		Volumes: `        - {name: toolchain, emptyDir: {sizeLimit: 2Gi}}`,
+	}
+}
+
+// SetupInit is the worker's setup init container (014 R7): with the worker's proxy, it checks
+// out the snapshot in a scratch directory and runs /in/setup.sh there (the toolchain's setup and
+// the target's install command), installing into the worker's own dependency directory.
+func SetupInit(toolsImage, proxyURL string, spec *Spec, deps string) string {
+	env := []([2]string){{"HOME", "/home/worker"}, {"HTTPS_PROXY", proxyURL}, {"https_proxy", proxyURL}, {"NO_PROXY", ""}}
+	if spec != nil {
+		env = append(env, spec.PodEnv(deps, BasePath)...)
+	}
+	mounts := `            - {name: inputs, mountPath: /in, readOnly: true}
+            - {name: home, mountPath: /home/worker}
+            - {name: tmp, mountPath: /tmp}`
+	if spec != nil {
+		mounts += "\n            - {name: toolchain, mountPath: " + Mount + ", readOnly: true}"
+	}
+	return `        - name: setup
+          image: ` + toolsImage + `
+          command:
+            - sh
+            - -c
+            - >-
+              set -eu;
+              git clone --quiet /in/base.bundle /tmp/.setup;
+              cd /tmp/.setup;
+              git checkout --quiet "$(/usr/bin/python3 -c 'import json; print(json.load(open("/in/meta.json"))["base_revision"])')";
+              sh /in/setup.sh
+          env:
+` + EnvYAML(env, "            ") + `
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "2", memory: 2Gi}}
+          volumeMounts:
+` + mounts
+}

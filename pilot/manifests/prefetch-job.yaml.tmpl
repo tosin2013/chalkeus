@@ -1,0 +1,59 @@
+# The prefetch Job of an item run (014 R7): once per run, in the run's grading namespace, it
+# installs the project's dependencies into the cache PVC from human-controlled inputs only (the
+# base snapshot plus the hidden tests), never agent code. Its pod alone may reach the target's
+# prefetch proxy (registries only). Graders mount the cache read-only and run offline.
+apiVersion: batch/v1
+kind: Job
+metadata: {name: prefetch, namespace: ${NS}}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: ${DEADLINE}
+  template:
+    metadata: {labels: {app: prefetch, pilot/role: prefetch}}
+    spec:
+      serviceAccountName: grader
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext: {runAsNonRoot: true, runAsUser: 10002, runAsGroup: 10002, fsGroup: 10002, seccompProfile: {type: RuntimeDefault}}
+      initContainers:
+        - name: receiver
+          image: ${TOOLS_IMAGE}
+          command: [sh, -c, "until [ -f /stage/.ready ]; do sleep 1; done"]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 500m, memory: 128Mi}}
+          volumeMounts:
+            - {name: stage, mountPath: /stage}
+${TOOLCHAIN_INITS}
+      containers:
+        - name: prefetch
+          image: ${TOOLS_IMAGE}
+          command:
+            - sh
+            - -c
+            - >-
+              set -eu;
+              git clone --quiet /in/base.bundle /tmp/project;
+              cd /tmp/project;
+              git checkout --quiet "$$(/usr/bin/python3 -c 'import json; print(json.load(open("/in/meta.json"))["base_revision"])')";
+              cp -R /grading/overlay/. /tmp/project/;
+              sh /in/setup.sh
+          env:
+            - {name: HOME, value: /tmp}
+            - {name: HTTPS_PROXY, value: "${PROXY_URL}"}
+            - {name: https_proxy, value: "${PROXY_URL}"}
+            - {name: NO_PROXY, value: ""}
+${TOOLCHAIN_ENV}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "${GRADER_CPU}", memory: ${GRADER_MEMORY}}}
+          volumeMounts:
+            - {name: stage, mountPath: /in, subPath: in, readOnly: true}
+            - {name: stage, mountPath: /grading, subPath: grading, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+            - {name: deps, mountPath: /deps}
+${TOOLCHAIN_MOUNTS}
+      volumes:
+        - {name: stage, emptyDir: {sizeLimit: ${INPUT_LIMIT}}}
+        - {name: tmp, emptyDir: {sizeLimit: 2Gi}}
+        - {name: deps, persistentVolumeClaim: {claimName: deps}}
+${TOOLCHAIN_VOLUMES}

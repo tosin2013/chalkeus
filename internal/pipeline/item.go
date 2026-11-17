@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tosin2013/specfoundry/internal/cluster"
 	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/fixture"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
@@ -15,6 +16,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/images"
 	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/specfoundry/internal/toolchain"
 	"github.com/tosin2013/specfoundry/internal/verbose"
 	"github.com/tosin2013/specfoundry/internal/worker"
 )
@@ -161,15 +163,19 @@ func (p *P) startItem(run *evidence.Run) int {
 	if err != nil {
 		_ = run.Event("prepare", item, nil, "prepare_failed", clip(err.Error(), 300))
 		p.say("could not prepare item %s: %v", item, err)
+		reason := "PREPARE"
+		for _, code := range []string{"TOOLCHAIN_CONTRACT", "TOOLCHAIN_UNAVAILABLE", "PREFETCH_FAILED"} {
+			if strings.Contains(err.Error(), code) {
+				reason = code
+			}
+		}
+		return p.fail(run, reason)
+	}
+	mp, err := p.writeBaselineMeta(run)
+	if err != nil {
 		return p.fail(run, "PREPARE")
 	}
-	meta := p.baselineMeta(run)
-	bdir := filepath.Join(run.Dir, "baseline")
-	_ = os.MkdirAll(bdir, 0o755)
-	mp := filepath.Join(bdir, "meta.json")
-	if err := evidence.WriteJSON(mp, meta); err != nil {
-		return p.fail(run, "PREPARE")
-	}
+	bdir := filepath.Dir(mp)
 	start := time.Now()
 	g := grader.GradeItem(p.L, p.C, p.Runner, run, p.Imgs, item, 0, p.itemGrading(run), mp, bdir)
 	verbose.V(1, "baseline %s: %v after %s", item, g["result"], time.Since(start).Round(time.Second))
@@ -232,7 +238,119 @@ func (p *P) prepareItem(run *evidence.Run) error {
 		run.State["companion"] = map[string]any{"repo": c.Repo, "commit": c.Commit, "file_count": c.FileCount, "files_sha256": c.FilesSHA256}
 		_ = run.Save()
 	}
-	return grader.EnsureNamespace(p.L, p.C, p.itemGrading(run), run.ID)
+	if err := grader.EnsureNamespace(p.L, p.C, p.itemGrading(run), run.ID); err != nil {
+		return err
+	}
+	if err := p.probeToolchain(run); err != nil {
+		return err
+	}
+	if len(p.Target.RegistryHosts) > 0 { // the worker's and the prefetch's proxies (014 R6)
+		if _, err := cluster.EnsureTargetProxies(p.L, p.C, p.Target.Name, p.Cfg.ModelHosts(), p.Target.RegistryHosts, p.Imgs["egress"]); err != nil {
+			return err
+		}
+	}
+	return p.prefetch(run)
+}
+
+// toolchainImage is the run's toolchain image: the target's own, or the catalog's ("" when the
+// toolchain is built into the images).
+func (p *P) toolchainImage() (string, string, error) {
+	if p.Target.ToolchainImage != "" {
+		return p.Target.ToolchainImage, "operator-supplied", nil
+	}
+	cat, err := images.LoadCatalog(p.L)
+	if err != nil {
+		return "", "", err
+	}
+	lock, _ := images.ReadLock(p.L)
+	ref, err := images.ToolchainImage(cat, lock, p.Target.Toolchain)
+	return ref, "catalog", err
+}
+
+// probeToolchain checks the toolchain image against the contract once per run and records it.
+func (p *P) probeToolchain(run *evidence.Run) error {
+	if _, done := run.State["toolchain"]; done {
+		return nil
+	}
+	image, source, err := p.toolchainImage()
+	if err != nil || image == "" {
+		return err
+	}
+	pr, err := grader.ProbeToolchain(p.L, p.C, p.Runner, grader.NS(itemOf(run)), p.Imgs["tools"], image)
+	if err != nil {
+		_ = run.Event("prepare", itemOf(run), nil, "toolchain_refused", clip(err.Error(), 300))
+		return err
+	}
+	rec := map[string]any{"source": source, "image": image, "name": pr.Spec.Name, "version": pr.Version, "spec": pr.Raw,
+		"attestation": "not checked"}
+	run.State["toolchain"] = rec
+	_ = run.Save()
+	_ = evidence.WriteJSON(filepath.Join(run.Dir, "toolchain.json"), rec)
+	_ = run.Event("prepare", itemOf(run), nil, "toolchain_ok", fmt.Sprintf("%s %s (%s)", pr.Spec.Name, pr.Version, source))
+	return nil
+}
+
+// prefetch fills the run's dependency cache once, from the base snapshot and the hidden tests.
+func (p *P) prefetch(run *evidence.Run) error {
+	g := p.itemGrading(run)
+	if !g.Cache {
+		return nil
+	}
+	if c, _ := run.State["cache"].(map[string]any); c["prefetch"] == "pass" {
+		return nil
+	}
+	mp, err := p.writeBaselineMeta(run)
+	if err != nil {
+		return err
+	}
+	proxy := "http://proxy." + cluster.PrefetchProxyNS(p.Target.Name) + ".svc.cluster.local:8888"
+	err = grader.Prefetch(p.L, p.C, p.Runner, run, p.Imgs, g, proxy, p.setupScript(run), mp)
+	res := "pass"
+	if err != nil {
+		res = "fail"
+	}
+	run.State["cache"] = map[string]any{"pvc": "deps", "size": g.CacheSize, "prefetch": res}
+	_ = run.Save()
+	p.checks().RunGradingChecks(run, g.NS, g.PrefetchProxyNS)
+	_ = run.Event("prepare", itemOf(run), nil, "prefetch_"+res, "")
+	return err
+}
+
+func itemOf(run *evidence.Run) string { item, _ := run.State["item"].(string); return item }
+
+// toolchainSpec is the run's checked toolchain.json (nil when built into the images).
+func toolchainSpec(run *evidence.Run) *toolchain.Spec {
+	tc, _ := run.State["toolchain"].(map[string]any)
+	raw, _ := tc["spec"].(string)
+	if raw == "" {
+		return nil
+	}
+	s, err := toolchain.Parse([]byte(raw))
+	if err != nil {
+		return nil
+	}
+	return &s
+}
+
+// setupScript is what the worker's and the prefetch's setup step run ("" if nothing to do).
+func (p *P) setupScript(run *evidence.Run) string {
+	spec := toolchainSpec(run)
+	if p.Target.InstallCommand == "" && (spec == nil || len(spec.SetupCommand) == 0) {
+		return ""
+	}
+	if spec == nil {
+		spec = &toolchain.Spec{}
+	}
+	return spec.SetupScript(p.Target.InstallCommand)
+}
+
+func (p *P) writeBaselineMeta(run *evidence.Run) (string, error) {
+	bdir := filepath.Join(run.Dir, "baseline")
+	if err := os.MkdirAll(bdir, 0o755); err != nil {
+		return "", err
+	}
+	mp := filepath.Join(bdir, "meta.json")
+	return mp, evidence.WriteJSON(mp, p.baselineMeta(run))
 }
 
 // replay puts an item's passing change onto the real base before publishing (014 R4).
@@ -282,9 +400,21 @@ func (p *P) workerItem(run *evidence.Run) *worker.Item {
 	}
 	snap, _ := run.State["snapshot"].(map[string]any)
 	commit, _ := snap["snapshot_commit"].(string)
+	proxyNS := "pilot-egress-model"
+	if len(p.Target.RegistryHosts) > 0 {
+		proxyNS = cluster.WorkerProxyNS(p.Target.Name)
+	}
+	tc, _ := run.State["toolchain"].(map[string]any)
+	image, _ := tc["image"].(string)
+	home := "256Mi"
+	if w := p.catalogEntry().Worker; w != nil && w.Home != "" {
+		home = w.Home
+	}
 	return &worker.Item{SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"), SnapshotCommit: commit,
 		SpecDir: specDir, AllowedPaths: allowed, Toolchain: p.Target.Toolchain, TestCommand: p.Target.TestCommand,
-		CommandTimeout: p.commandTimeout(), InputLimit: p.inputLimit()}
+		CommandTimeout: p.commandTimeout(), InputLimit: p.inputLimit(),
+		ProxyNS: proxyNS, ProxyURL: "http://proxy." + proxyNS + ".svc.cluster.local:8888",
+		ToolchainImage: image, ToolchainSpec: toolchainSpec(run), SetupScript: p.setupScript(run), HomeLimit: home}
 }
 
 // itemGrading is the run's grading setup (catalog defaults, raised by the profile).
@@ -301,8 +431,19 @@ func (p *P) itemGrading(run *evidence.Run) grader.ItemGrading {
 		deadline = p.Target.GraderDeadlineS
 	}
 	ov, _ := os.ReadFile(filepath.Join(p.itemDir(run), "overlay.tar"))
+	tc, _ := run.State["toolchain"].(map[string]any)
+	image, _ := tc["image"].(string)
+	cache, size := len(p.Target.RegistryHosts) > 0 && p.Target.InstallCommand != "", "2Gi"
+	if c := p.catalogEntry().Cache; c != nil && c.Size != "" {
+		size = c.Size
+	}
+	if p.Target.CacheSize != "" {
+		size = p.Target.CacheSize
+	}
 	return grader.ItemGrading{NS: grader.NS(item), SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"),
-		Overlay: ov, DeadlineS: deadline, CPU: cpu, Memory: mem, InputLimit: p.inputLimit()}
+		Overlay: ov, DeadlineS: deadline, CPU: cpu, Memory: mem, InputLimit: p.inputLimit(),
+		ToolchainImage: image, ToolchainSpec: toolchainSpec(run), Cache: cache, CacheSize: size,
+		PrefetchProxyNS: cluster.PrefetchProxyNS(p.Target.Name)}
 }
 
 func (p *P) commandTimeout() int {
