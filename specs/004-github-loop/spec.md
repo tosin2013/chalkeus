@@ -289,6 +289,39 @@ fails on a canary repository, and that P09 and the audit pass.
 - **SC-007**: An operator can set up the GitHub App from the documentation alone, in under 30
   minutes, with 0 outside lookups.
 
+## Evidence
+
+004 was validated on the Go pilot (016 T047, replacing 004's T035–T037). Records are in
+`specs/004-github-loop/evidence/` and `specs/016-go-pilot/evidence/`; the per-check table is in
+`evidence/README.md`.
+
+**Success criteria:**
+
+- **SC-001 (issues, labels, linked PRs, empty drift):** met by `20261116T201149Z`: one issue
+  per roadmap item with its task checklist, `status:*` labels, each task PR `Closes` its issue,
+  drift 0 after reconcile. Later runs (`20261116T231135Z`, `20261117T001332Z`) report one drift
+  entry, issue #19 `closed_but_not_verified`. An earlier run's B PR closed it, and
+  `reset-fixture` does not reopen item issues; it is not caused by those runs.
+- **SC-002 (idempotent sync):** met. Runs log `github_sync created=0 changed=0` on re-sync;
+  unit tests in `internal/ghloop/sync_test.go`.
+- **SC-003 (GitHub-only run, 11/11, `github` channel and approver):** met by
+  `20261116T201149Z` and `20261117T001332Z` (AU09/AU10 `channels=['github']
+  approvers=['tosin2013']`).
+- **SC-004 (every refusal leaves the run unadvanced):** met with an owner decision
+  (2026-11-16). Live: `publisher_identity` (two ❌ replies, run stayed paused) and
+  `STATUS_PR_MERGED_BY_PUBLISHER` (run failed) in `20261116T210522Z`. In CI: wrong step,
+  edited, withdrawn, non-approver, wrong run, stale or merge-commit attempts, edited
+  status-change PR and GitHub unreachable (shared vectors in `contracts/vectors/`,
+  `internal/ghloop`, `internal/pipeline`). A second-account live run is left to contributors
+  (evidence README).
+- **SC-005 (App publishing):** met. PRs authored by `tosins-specfoundry-pilot[bot]` in the App
+  runs (11/11); `pilot/pilot app-token --check` (2026-11-17): installation token expiring in
+  1 hour, push to the fixture, no push to the canary repository.
+- **SC-006 (earlier evidence still passes):** met by the golden audit test over 002, 003, 006
+  and 012 records.
+- **SC-007 (App setup from the docs in under 30 minutes):** not measured. The App was set up
+  from `docs/github-app.md` alone, but not timed.
+
 ## Assumptions
 
 - The target repository is the throwaway fixture repository used since 002. Its roadmap and
