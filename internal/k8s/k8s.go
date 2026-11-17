@@ -698,6 +698,72 @@ func (c *Client) Exec(ns, pod string, timeout time.Duration, cmd ...string) Exec
 	return ExecResult{Code: code, Stdout: so.String(), Stderr: se.String()}
 }
 
+// ExecStdin runs cmd in a pod's container with stdin attached (014 R4: staged uploads).
+func (c *Client) ExecStdin(ns, pod, container string, stdin io.Reader, timeout time.Duration, cmd ...string) ExecResult {
+	req := c.CS.CoreV1().RESTClient().Post().Resource("pods").Name(pod).Namespace(ns).SubResource("exec").
+		VersionedParams(&corev1.PodExecOptions{Container: container, Command: cmd, Stdin: true, Stdout: true, Stderr: true}, scheme.ParameterCodec)
+	ex, err := remotecommand.NewSPDYExecutor(c.cfg, "POST", req.URL())
+	if err != nil {
+		return ExecResult{Code: 1, Stderr: err.Error()}
+	}
+	ctx, cancel := ctxT(timeout)
+	defer cancel()
+	var so, se bytes.Buffer
+	err = ex.StreamWithContext(ctx, remotecommand.StreamOptions{Stdin: stdin, Stdout: &so, Stderr: &se})
+	code := 0
+	if err != nil {
+		code = 1
+		var ce interface{ ExitStatus() int }
+		if errors.As(err, &ce) {
+			code = ce.ExitStatus()
+		}
+		if se.Len() == 0 {
+			se.WriteString(err.Error())
+		}
+	}
+	return ExecResult{Code: code, Stdout: so.String(), Stderr: se.String()}
+}
+
+// ReceiverReady waits until the Job's pod has its init container `container` running, and
+// returns the pod name ("" on timeout or if the pod ended first).
+func (c *Client) ReceiverReady(ns, job, container string, timeout time.Duration) string {
+	end := time.Now().Add(timeout)
+	for time.Now().Before(end) {
+		ctx, cancel := ctxT(30 * time.Second)
+		pods, err := c.CS.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: "job-name=" + job})
+		cancel()
+		if err == nil && len(pods.Items) > 0 {
+			p := pods.Items[0]
+			if p.Status.Phase == corev1.PodSucceeded || p.Status.Phase == corev1.PodFailed {
+				return ""
+			}
+			for _, s := range p.Status.InitContainerStatuses {
+				if s.Name == container && s.State.Running != nil {
+					return p.Name
+				}
+			}
+		}
+		time.Sleep(time.Second)
+	}
+	return ""
+}
+
+// StageInputs hands a tar to a Job's waiting receiver init container: it is unpacked into
+// stageDir and stageDir/.ready is created, which ends the receiver's wait (014 R4). Inputs too
+// large for a ConfigMap (a real repository's snapshot) travel this way.
+func (c *Client) StageInputs(ns, job, container, stageDir string, tar []byte, timeout time.Duration) error {
+	pod := c.ReceiverReady(ns, job, container, timeout)
+	if pod == "" {
+		return fmt.Errorf("stage %s/%s: receiver %q never became ready", ns, job, container)
+	}
+	r := c.ExecStdin(ns, pod, container, bytes.NewReader(tar), timeout,
+		"sh", "-c", "tar -x -f - -C "+stageDir+" && touch "+stageDir+"/.ready")
+	if r.Code != 0 {
+		return fmt.Errorf("stage %s/%s: %s", ns, job, strings.TrimSpace(r.Stderr))
+	}
+	return nil
+}
+
 // DaemonSetReady waits until a daemonset has all pods updated and ready
 // (`kubectl rollout status ds/<name>`).
 func (c *Client) DaemonSetReady(ns, name string, timeout time.Duration) bool {

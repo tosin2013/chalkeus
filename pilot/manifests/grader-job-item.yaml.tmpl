@@ -1,0 +1,40 @@
+# One grading Job of an item run (014; contracts/grading.md): the baseline, or one attempt. It
+# runs in the run's grading namespace (no egress, no secrets). Inputs arrive through the
+# `receiver` init container: /stage/in (bundles, meta.json) and /stage/grading/overlay (the
+# item's hidden tests, read on the operator's machine and never shown to the worker).
+apiVersion: batch/v1
+kind: Job
+metadata: {name: ${JOB}, namespace: ${NS}}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: ${DEADLINE}
+  template:
+    metadata: {labels: {app: grader, pilot/role: grader}}
+    spec:
+      serviceAccountName: grader
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext: {runAsNonRoot: true, runAsUser: 10002, runAsGroup: 10002, fsGroup: 10002, seccompProfile: {type: RuntimeDefault}}
+      initContainers:
+        - name: receiver
+          image: ${TOOLS_IMAGE}
+          command: [sh, -c, "until [ -f /stage/.ready ]; do sleep 1; done"]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 500m, memory: 128Mi}}
+          volumeMounts:
+            - {name: stage, mountPath: /stage}
+      containers:
+        - name: grader
+          image: ${TOOLS_IMAGE}
+          command: [python3, /usr/local/lib/pilot/grade.py]
+          env: [{name: GRADER_IMAGE, value: "${TOOLS_IMAGE}"}, {name: HOME, value: /tmp}]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "${GRADER_CPU}", memory: ${GRADER_MEMORY}}}
+          volumeMounts:
+            - {name: stage, mountPath: /in, subPath: in, readOnly: true}
+            - {name: stage, mountPath: /grading, subPath: grading, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: stage, emptyDir: {sizeLimit: ${INPUT_LIMIT}}}
+        - {name: tmp, emptyDir: {sizeLimit: 2Gi}}

@@ -55,7 +55,9 @@ func itemRecord(t *testing.T, mutate func(d string, ev *[]map[string]any, prs *[
 		lines = append(append(lines, raw...), '\n')
 	}
 	_ = os.WriteFile(filepath.Join(d, "events.jsonl"), lines, 0o644)
-	_ = os.WriteFile(filepath.Join(d, "checks/results.jsonl"), nil, 0o644)
+	if _, err := os.Stat(filepath.Join(d, "checks/results.jsonl")); err != nil {
+		_ = os.WriteFile(filepath.Join(d, "checks/results.jsonl"), nil, 0o644)
+	}
 	wj("prs.json", prs)
 	return d
 }
@@ -71,6 +73,23 @@ func itemResults(t *testing.T, d string) map[string]string {
 		out[r.ID] = r.Result + " " + r.Detail
 	}
 	return out
+}
+
+func TestItemAU04NeedsP11(t *testing.T) {
+	rows := func(p11 string) string {
+		return itemResults(t, itemRecord(t, func(d string, _ *[]map[string]any, _ *[]map[string]any) {
+			lines := `{"id": "P04", "result": "pass"}` + "\n" + `{"id": "P09", "result": "pass"}` + "\n" + p11
+			_ = os.WriteFile(filepath.Join(d, "checks/results.jsonl"), []byte(lines), 0o644)
+		}))["AU04"]
+	}
+	if r := rows(`{"id": "P11", "result": "pass"}` + "\n"); r[:4] != "pass" {
+		t.Fatal(r)
+	}
+	for _, p11 := range []string{"", `{"id": "P11", "result": "fail"}` + "\n"} {
+		if r := rows(p11); r[:4] != "fail" {
+			t.Fatalf("%q: %s", p11, r)
+		}
+	}
 }
 
 func TestItemVariantsPass(t *testing.T) {

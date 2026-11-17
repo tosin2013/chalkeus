@@ -35,6 +35,9 @@ instead.
 | A `/approve` reply on GitHub didn't resume the run | [GitHub approval rejected](#github-approval-rejected) |
 | The run fails with `STATUS_PR_EDITED`, `STATUS_PR_NOT_APPROVER` or `STATUS_PR_MERGED_BY_PUBLISHER` | [Status-change PR refused](#status-pr-refused) |
 | `GitHub App: NOT OK`, or `GitHub App token: …` | [GitHub App problems](#github-app) |
+| An item run refuses with `ITEM_…`, `INPUT_TOO_LARGE`, `OPEN_ITEM_PR` or `TOOLCHAIN_UNAVAILABLE` | [Item not prepared](#item-not-ready) |
+| An item run fails with `BASELINE_SUITE_FAILS` or `BASELINE_HIDDEN_PASSES` | [Baseline fails](#item-baseline) |
+| An item run fails with `PREPARE` or `REPLAY_MISMATCH`, or `target … needs its own publisher token` | [Item run setup](#item-setup) |
 
 ---
 
@@ -373,6 +376,58 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   [github-app.md](github-app.md).
 
 ---
+
+## Your own repositories (targets)
+
+<a id="item-not-ready"></a>
+### Item not prepared: the run refuses with exit 10
+
+- **Symptom:** `pilot/pilot run --target <name> --item NNN` prints `readiness NNN: refuse [...]`
+  and `item NNN is not prepared`, then exits 10. No worker starts.
+- **Cause:** one of the readiness rules failed. Its code is first in the list.
+- **Fix:** see the table in [targets](targets.md#3-check-that-an-item-is-ready). Each code names
+  what to add or change in the target or its companion repository. `TOOLCHAIN_UNAVAILABLE`
+  means the profile names a toolchain with no published image: bring your own image or ask for
+  one ([targets](targets.md#your-own-toolchain-image)).
+- **Confirm:** `pilot/pilot gate --target <name> --item NNN` prints `"decision": "allow"`.
+- **Source:** `internal/readiness/readiness.go`.
+
+<a id="item-baseline"></a>
+### Baseline fails: `BASELINE_SUITE_FAILS` or `BASELINE_HIDDEN_PASSES`
+
+- **Symptom:** after you approve the mode, the run prints `baseline for item NNN failed` and
+  fails. No worker has run, so no model spend was used.
+- **Cause:** on the unchanged code, either:
+  - the project's own test command fails (`BASELINE_SUITE_FAILS`), so a change can't be judged
+    against it; or
+  - the hidden tests already pass (`BASELINE_HIDDEN_PASSES`), so they can't tell a correct change
+    from no change.
+- **Fix:** for the first, make `PILOT_TEST_COMMAND` pass on the target's branch. For the second,
+  make the item's hidden tests in `items/NNN/` test the new behaviour, so they fail today.
+  `<run>/baseline/grade.json` shows the output.
+- **Confirm:** a new run prints `baseline NNN: pass`.
+- **Source:** `pilot/images/tools/grade.py` (baseline mode), `internal/grader/item.go`.
+
+<a id="item-setup"></a>
+### Item run setup: `PREPARE`, `REPLAY_MISMATCH`, or a missing target token
+
+- **Symptom:** the run fails with `PREPARE` (it couldn't clone the target or the companion
+  repository), or with `REPLAY_MISMATCH` while publishing. Or it stops at the start with
+  `target "<name>" needs its own publisher token in …/targets/<name>.publisher.env`.
+- **Cause:**
+  - `PREPARE`: your git access can't read the target or the companion repository.
+  - `REPLAY_MISMATCH`: the graded change couldn't be replayed onto the real base unchanged, so
+    nothing is published that wasn't graded.
+  - Missing token: in token mode, each target needs its own fine-grained token. The fixture's
+    token is scoped to the fixture only.
+- **Fix:**
+  - `PREPARE`: check `git clone` of both repositories works for you.
+  - `REPLAY_MISMATCH`: start a new run, and open an issue if it repeats.
+  - Missing token: store a token for that repository only (contents and pull requests: write)
+    in `~/.config/specfoundry/targets/<name>.publisher.env` as `PILOT_SCM_TOKEN=…`, mode 0600. Or
+    use the GitHub App, installed on the target.
+- **Confirm:** the run gets past the step that failed.
+- **Source:** `internal/pipeline/item.go`, `internal/fixture/snapshot.go`, `internal/cli/run.go`.
 
 ## Teardown
 

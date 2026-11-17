@@ -204,3 +204,24 @@ func TestCreateSecretWaitsForQuota(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestReceiverReady(t *testing.T) {
+	cs := fake.NewSimpleClientset(&corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "worker-abc", Namespace: "pilot-w-002-1", Labels: map[string]string{"job-name": "worker"}},
+		Status: corev1.PodStatus{Phase: corev1.PodPending, InitContainerStatuses: []corev1.ContainerStatus{
+			{Name: "receiver", State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}}}},
+	}, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "done-x", Namespace: "ended", Labels: map[string]string{"job-name": "worker"}},
+		Status:     corev1.PodStatus{Phase: corev1.PodFailed},
+	})
+	c := &Client{CS: cs}
+	if got := c.ReceiverReady("pilot-w-002-1", "worker", "receiver", 2*time.Second); got != "worker-abc" {
+		t.Fatal(got)
+	}
+	if got := c.ReceiverReady("ended", "worker", "receiver", 2*time.Second); got != "" {
+		t.Fatal("a pod that already ended can't receive")
+	}
+	if got := c.ReceiverReady("pilot-w-002-1", "worker", "other", 1500*time.Millisecond); got != "" {
+		t.Fatal(got)
+	}
+}

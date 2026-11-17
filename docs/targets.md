@@ -2,8 +2,10 @@
 
 The fixture shows the pilot's guarantees on two built-in items. A **target** is one of your own
 repositories. You prepare its items with Spec Kit; the pilot then runs only items that are
-prepared, under the same guarantees. This page covers what works today: configuring targets
-and checking whether an item is ready. Running an item is being built (roadmap item 014).
+prepared, under the same guarantees. This page covers configuring targets, checking whether an item
+is ready, and running it (roadmap item 014). Until 014's next step adds the other toolchains and
+dependency downloads, use `PILOT_TOOLCHAIN=python`: the built-in Python 3.11 with pytest, for a
+project whose tests need no packages installed.
 
 ## 1. Prepare the repository
 
@@ -120,3 +122,49 @@ first failing rule's code:
 | `ITEM_NO_HIDDEN_TESTS` | Add `items/<NNN>/` to the companion repository, or check that your git access can read it |
 | `INPUT_TOO_LARGE` | The snapshot exceeds `PILOT_MAX_INPUT_MB` |
 | `OPEN_ITEM_PR` | A pilot PR for this item is still open; merge or close it |
+
+## 4. Run the item
+
+With the cluster up (`pilot/pilot up`):
+
+```sh
+pilot/pilot run --target greeting --item 002
+```
+
+The run follows the fixture's steps, for one item:
+
+1. **Readiness:** the checks above. A refusal exits 10, and nothing starts.
+2. **Mode approval.** The mode is shown with the target, item, toolchain and the hosts the
+   worker may reach (`model host(s) N` and your registries). Approve it in the terminal, through
+   your agent's harness, or on GitHub with `/approve mode` if GitHub approvals are on for the
+   target (`PILOT_GITHUB_APPROVALS=on` in its profile).
+3. **Prepare.** The pilot snapshots the target at the checked commit (one commit, no history)
+   and reads the item's hidden tests from the companion repository. The hidden tests go only to
+   the grader; the evidence keeps their names and hashes in `companion.json`, never their
+   contents.
+4. **Baseline.** On the unchanged code, your test command must pass and the hidden tests must
+   fail. Otherwise the run stops before any model spend.
+5. **Attempts.** The agent works on the snapshot. Each attempt is graded on:
+   - the allowed paths;
+   - the item's tasks being ticked;
+   - your test command;
+   - the same command with the hidden tests copied in.
+
+   A failed attempt waits for your retry approval, as for the fixture.
+6. **Draft PR.** The passing change is replayed onto the real base revision, exactly as graded,
+   and opened as a draft PR on the target by the publisher. **You review and merge it.**
+7. **Status change.** After your merge, `pilot/pilot resume --run <id>` (or the watcher) proposes
+   the item's one-line roadmap change to `verified`. Approve it in the terminal, or merge the
+   status-change PR on GitHub.
+8. **Audit.** The run ends with the audit. Item runs use the item-run versions of AU01, AU02,
+   AU03 and AU11 (only this item, the baseline, one PR, no induction), and AU04 also requires
+   that no hidden test reached the worker (P11).
+
+`pilot/pilot resume` and `pilot/pilot approve` take only `--run`: a paused run always continues
+against the target it started with. If that target's profile now names another repository, the
+pilot refuses to continue.
+
+**Publishing credential:**
+- **GitHub App:** install it on the target too; the pilot mints a token for that repository only.
+- **Token mode:** give each target its own fine-grained token in
+  `~/.config/specfoundry/targets/<name>.publisher.env` (`PILOT_SCM_TOKEN=…`, mode 0600).

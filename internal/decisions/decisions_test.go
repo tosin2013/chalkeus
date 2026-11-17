@@ -111,3 +111,28 @@ func TestGitHubChannelNote(t *testing.T) {
 		t.Fatalf("%v", d)
 	}
 }
+
+// 014: an item run's merge step and terminal status approval use its item, not A.
+func TestItemRunPendingSteps(t *testing.T) {
+	r := makeRun(t, "paused(awaiting-merge)", map[string]any{"task": "002"})
+	r.State["kind"], r.State["item"] = "item", "002"
+	if p := PendingStep(r); p == nil || p.Step != "merge" || p.Task != "002" {
+		t.Fatalf("%+v", p)
+	}
+	if code, msg := Record(r, "mode", "harness", "", nil); code != 4 || !strings.Contains(msg, "merge 002's PR") {
+		t.Fatalf("%d %s", code, msg)
+	}
+	_ = os.MkdirAll(filepath.Join(r.Dir, "reconcile"), 0o755)
+	_ = evidence.WriteJSON(filepath.Join(r.Dir, "reconcile", "002.json"), map[string]any{"reason": "DECLINED",
+		"proposed": "specced→verified", "merge_commit": "abc", "item_id": "002"})
+	p := PendingStep(r)
+	if p == nil || p.Step != "reconcile" || p.Task != "002" || !strings.Contains(Describe(p), "to the target's roadmap") {
+		t.Fatalf("%+v %s", p, Describe(p))
+	}
+	m := makeRun(t, "paused(awaiting-mode)", nil)
+	m.State["proposed_mode"] = map[string]any{"name": "step-by-step"}
+	m.State["proposed_target"] = "target g (me/g@main), item 002, toolchain node24, registries: registry.npmjs.org"
+	if d := Describe(PendingStep(m)); !strings.HasSuffix(d, "; target g (me/g@main), item 002, toolchain node24, registries: registry.npmjs.org") {
+		t.Fatal(d)
+	}
+}

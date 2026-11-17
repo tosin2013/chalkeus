@@ -42,7 +42,7 @@ import (
 
 // Exit codes (identical to the reference).
 const (
-	ExitOK, ExitFail, ExitError, ExitAwaitMerge, ExitDeclined, ExitAwaitRetry = 0, 1, 2, 4, 5, 6
+	ExitOK, ExitFail, ExitError, ExitAwaitMerge, ExitDeclined, ExitAwaitRetry, ExitRefuse = 0, 1, 2, 4, 5, 6, 10
 )
 
 // P holds one invocation's collaborators.
@@ -60,6 +60,35 @@ type P struct {
 	GH *ghloop.Loop
 	// EnsureWatcher starts the run's detached watcher (nil: watcher.Ensure; replaced in tests).
 	EnsureWatcher func(run *evidence.Run) (pid int, started bool, err error)
+	// Target is the repository this invocation acts on (014): the fixture unless an item run.
+	Target config.Target
+}
+
+// item reports whether this invocation is an item run of a real target (014).
+func (p *P) item() bool { return p.Target.Repo != "" && !p.Target.Fixture }
+
+// repo and branch are the target's for an item run, else the fixture's.
+func (p *P) repo() string {
+	if p.item() {
+		return p.Target.Repo
+	}
+	return p.Cfg.Repo()
+}
+
+func (p *P) branch() string {
+	if p.item() {
+		return p.Target.Branch
+	}
+	return p.Cfg.Branch()
+}
+
+// mergeTask is the task whose PR a paused run awaits: A for the fixture, the item for an item run.
+func mergeTask(run *evidence.Run) string {
+	if run.Kind() == evidence.KindItem {
+		item, _ := run.State["item"].(string)
+		return item
+	}
+	return "A"
 }
 
 func (p *P) say(format string, a ...any) { fmt.Fprintf(p.Out, format+"\n", a...) }
@@ -89,7 +118,13 @@ func (p *P) confirmMode(run *evidence.Run) (bool, string) {
 	mode := p.ModeOf()
 	run.State["proposed_mode"] = mode
 	_ = run.Save()
-	p.say("Run mode for this pilot: %s\n  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.", modeJSON(mode))
+	p.say("Run mode for this pilot: %s", modeJSON(mode))
+	if extra := p.modeExtra(run); extra != "" { // an item run's target, toolchain and egress (014)
+		p.say("%s", extra)
+		run.State["proposed_target"] = p.modeExtraGitHub(run) // for the GitHub decision post (no model host count)
+		_ = run.Save()
+	}
+	p.say("  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.")
 	ok, ch := decisions.Decide(run, "mode", "Confirm this mode and start staging workers? [y/N] ", nil, nil, func(s string) { p.say("%s", s) })
 	decisions.Note(run, "mode", nil, nil, ok, ch, "", "")
 	p.githubTerminal(run, "mode", ok, ch)
@@ -146,7 +181,7 @@ func (p *P) gateTask(run *evidence.Run, task string) gate.Decision {
 func anyList(v any) []any { x, _ := v.([]any); return x }
 
 func (p *P) cloneAt(rev string) (string, error) {
-	dir, _, err := fixture.FreshClone(p.Cfg.Repo(), p.Cfg.Branch(), 0)
+	dir, _, err := fixture.FreshClone(p.repo(), p.branch(), 0)
 	if err != nil {
 		return "", err
 	}
@@ -168,6 +203,7 @@ func (p *P) pause(run *evidence.Run, state string, pending map[string]any) {
 }
 
 func (p *P) fail(run *evidence.Run, reason string) int {
+	p.dropGrading(run)
 	_ = run.SetRunState("failed", reason)
 	_, _ = run.WriteSummary()
 	p.say("run %s FAILED: %s", run.ID, reason)
@@ -192,6 +228,9 @@ func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 		} else {
 			wd := worker.Deps{L: p.L, C: p.C, Runner: p.Runner,
 				Checks: func(task string, n int, ns string) { p.checks().RunWorkerChecks(run, p.Imgs, task, n, ns) }}
+			if run.Kind() == evidence.KindItem {
+				wd.Item = p.workerItem(run)
+			}
 			verbose.V(1, "attempt %s/%d: starting the worker", task, n)
 			started := time.Now()
 			att = worker.RunAttempt(wd, run, p.Cfg, p.Imgs, task, n, clone, base)
@@ -200,7 +239,13 @@ func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 		}
 		if att["state"] == "collected" {
 			started := time.Now()
-			g := grader.Grade(p.L, p.C, p.Runner, run, p.Imgs, task, n)
+			var g map[string]any
+			if run.Kind() == evidence.KindItem {
+				adir, _ := run.AttemptDir(task, n)
+				g = grader.GradeItem(p.L, p.C, p.Runner, run, p.Imgs, task, n, p.itemGrading(run), filepath.Join(adir, "meta.json"), adir)
+			} else {
+				g = grader.Grade(p.L, p.C, p.Runner, run, p.Imgs, task, n)
+			}
 			logGrade(task, n, g, time.Since(started))
 			att["result"] = g["result"]
 			if g["result"] == "pass" {
@@ -281,7 +326,10 @@ func asInt(v any) int {
 }
 
 func (p *P) publisherDeps(run *evidence.Run) (publisher.Deps, error) {
-	d := publisher.Deps{L: p.L, C: p.C, Runner: p.Runner, Repo: p.Cfg.Repo(), Branch: p.Cfg.Branch(), Closes: p.closes(run)}
+	d := publisher.Deps{L: p.L, C: p.C, Runner: p.Runner, Repo: p.repo(), Branch: p.branch(), Closes: p.closes(run)}
+	if p.item() { // the cluster's scm-token was set at `up` for the fixture: put the target's in (014)
+		d.RefreshSecret = p.refreshSecret
+	}
 	if p.Creds.App { // App installation tokens cannot call GET /user; the host passes the bot login (004 US4)
 		login, err := p.Creds.BotLogin()
 		if err != nil {
@@ -298,6 +346,9 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 	t["state"] = "publishing"
 	_ = run.Save()
 	deps, err := p.publisherDeps(run)
+	if err == nil && run.Kind() == evidence.KindItem {
+		err = p.replay(run, task, n)
+	}
 	var pr map[string]any
 	if err == nil {
 		pr, err = deps.Publish(run, p.Imgs, task, n)
@@ -324,6 +375,14 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 		t["state"] = "awaiting-merge"
 		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
 		p.say("\nTask A draft PR: %v\nReview and merge it on GitHub yourself, then run: pilot/pilot resume", pr["url"])
+		p.ensureWatcher(run)
+		return ExitOK
+	}
+	if run.Kind() == evidence.KindItem {
+		p.dropGrading(run) // grading is over once the item's PR is open
+		t["state"] = "awaiting-merge"
+		p.pause(run, "awaiting-merge", map[string]any{"task": task})
+		p.say("\nItem %s draft PR: %v\nReview and merge it on GitHub yourself, then run: pilot/pilot resume --run %s", task, pr["url"], run.ID)
 		p.ensureWatcher(run)
 		return ExitOK
 	}
@@ -470,6 +529,9 @@ func (p *P) Resume(runID string) int {
 			return p.modeNotConfirmed(run, ch)
 		}
 		_ = run.Save()
+		if run.Kind() == evidence.KindItem {
+			return p.startItem(run)
+		}
 		return p.runTask(run, "A", 1)
 	case "paused(awaiting-retry)":
 		task, _ := pend["task"].(string)
@@ -502,21 +564,22 @@ func (p *P) reconcileA(run *evidence.Run) int {
 	if err != nil {
 		pausedAt = time.Now().UTC()
 	}
-	tA := run.Task("A")
+	task := mergeTask(run)
+	tA := run.Task(task)
 	n := asInt(tA["passing_attempt"])
 	channel := ""
 	ask := func(q string) string {
-		ok, ch := decisions.Decide(run, "reconcile", q, "A", nil, func(s string) { p.say("%s", s) })
-		decisions.Note(run, "reconcile", "A", nil, ok, ch, "", "")
+		ok, ch := decisions.Decide(run, "reconcile", q, task, nil, func(s string) { p.say("%s", s) })
+		decisions.Note(run, "reconcile", task, nil, ok, ch, "", "")
 		channel = ch
 		if ok {
 			return "y"
 		}
 		return ""
 	}
-	adir, _ := run.AttemptDir("A", n)
+	adir, _ := run.AttemptDir(task, n)
 	base, _ := tA["base_revision"].(string)
-	rec, cleanup, err := reconcile.ForFixture(p.Cfg.Repo(), p.Cfg.Branch(), run.Dir, run.ID, "A", adir, base, ask, func(s string) { p.say("%s", s) })
+	rec, cleanup, err := reconcile.ForFixture(p.repo(), p.branch(), run.Dir, run.ID, task, adir, base, ask, func(s string) { p.say("%s", s) })
 	if err != nil {
 		return p.fail(run, "RECONCILE_SETUP")
 	}
@@ -530,23 +593,30 @@ func (p *P) reconcileA(run *evidence.Run) int {
 		}
 	}
 	pr, _ := tA["pr"].(map[string]any)
-	code, r := rec.Run("A", paths.Tasks["A"], asInt(pr["number"]), changed)
+	if p.item() {
+		rec.Where = p.repo() + "'s roadmap"
+	}
+	code, r := rec.Run(task, run.ItemOf(task), asInt(pr["number"]), changed)
 	cleanup()
-	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", "A.json"), r)
+	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", task+".json"), r)
 	reason, _ := r["reason"].(string)
 	evName := "reconcile_applied"
 	if reason != "" {
 		evName = "reconcile_" + reason
 	}
 	applied, _ := r["applied_commit"].(string)
-	_ = run.Event("reconcile", "A", n, evName, applied)
+	_ = run.Event("reconcile", task, n, evName, applied)
 	switch code {
 	case ExitAwaitMerge:
-		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
-		p.say("A's PR is not merged yet. Merge it on GitHub, then run `pilot resume` again.")
+		p.pause(run, "awaiting-merge", map[string]any{"task": task})
+		if task == "A" {
+			p.say("A's PR is not merged yet. Merge it on GitHub, then run `pilot resume` again.") // the guide quotes this
+		} else {
+			p.say("%s's PR is not merged yet. Merge it on GitHub, then run `pilot resume` again.", task)
+		}
 		return ExitAwaitMerge
 	case ExitDeclined:
-		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
+		p.pause(run, "awaiting-merge", map[string]any{"task": task})
 		if channel == "none" {
 			p.say("waiting for your approval of the status change; roadmap unchanged. %s", decisions.Hint(run, "reconcile"))
 		} else {
@@ -558,11 +628,14 @@ func (p *P) reconcileA(run *evidence.Run) int {
 		return p.fail(run, "RECONCILE_"+reason)
 	}
 	wait := int(time.Now().UTC().Sub(pausedAt).Seconds())
-	_ = run.Event("reconcile", "A", nil, "merge_wait_seconds", strconv.Itoa(wait))
+	_ = run.Event("reconcile", task, nil, "merge_wait_seconds", strconv.Itoa(wait))
 	tA["state"] = "verified"
 	_ = run.Save()
-	_ = run.Event("status", "A", nil, "task_verified", applied)
+	_ = run.Event("status", task, nil, "task_verified", applied)
 	p.githubRefresh(run, false)
+	if run.Kind() == evidence.KindItem { // one item: nothing follows its verification (014)
+		return p.finish(run)
+	}
 	if d := p.gateTask(run, "B"); d.Decision != "allow" {
 		return p.fail(run, "B_STILL_BLOCKED")
 	}

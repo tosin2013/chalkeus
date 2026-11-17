@@ -280,3 +280,15 @@ func TestStoreKeyRefusesEmptyAndFailedCheck(t *testing.T) {
 		t.Fatal("key printed")
 	}
 }
+
+// 014: a target's App token is minted for, and cached apart for, that repository only.
+func TestTargetTokenPaths(t *testing.T) {
+	cfg := &config.Config{Values: map[string]string{"PILOT_FIXTURE_REPO": "me/x-pilot-fixture"}, ConfigDir: "/c"}
+	if a := (App{Cfg: cfg}); a.EnvPath() != "/c/app-token.env" || a.repo() != "me/x-pilot-fixture" {
+		t.Fatal(a.EnvPath())
+	}
+	a := App{Cfg: cfg, Repo: "me/greeting.service"}
+	if a.EnvPath() != "/c/app-token-me_greeting_service.env" || a.InfoPath() != "/c/app-token-me_greeting_service.json" || a.repo() != "me/greeting.service" {
+		t.Fatal(a.EnvPath(), a.InfoPath())
+	}
+}

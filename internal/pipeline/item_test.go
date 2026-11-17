@@ -1,0 +1,81 @@
+package pipeline
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/tosin2013/specfoundry/internal/config"
+	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/specfoundry/internal/paths"
+)
+
+func itemP(t *testing.T) (*P, *evidence.Run) {
+	t.Helper()
+	p, r, _ := newP(t)
+	root, _ := filepath.Abs("../..")
+	p.L = paths.At(root)
+	p.L.Build = t.TempDir()
+	p.Target = config.Target{Name: "greeting", Repo: "me/greeting-service", Branch: "main", Toolchain: "python",
+		TestCommand: "python3 -m pytest -q", RegistryHosts: []string{"pypi.org"}, MaxInputMB: 50}
+	r.SetItemRun(map[string]any{"name": "greeting", "repo": "me/greeting-service"}, "002")
+	r.State["readiness"] = map[string]any{"spec_dir": "specs/002-x", "allowed_paths": []any{"app.py", "specs/002-x/tasks.md"}}
+	r.State["snapshot"] = map[string]any{"base_revision": "b0", "snapshot_commit": "s0"}
+	return p, r
+}
+
+func TestItemModeText(t *testing.T) {
+	p, r := itemP(t)
+	got := p.modeExtra(r)
+	want := "  target greeting (me/greeting-service@main), item 002, toolchain python\n  egress: model host(s) 1 (from pilot.env); registries: pypi.org"
+	if got != want {
+		t.Fatalf("%q", got)
+	}
+	p.Target.ToolchainImage = "quay.io/me/tc@sha256:" + strings.Repeat("a", 64)
+	if !strings.Contains(p.modeExtra(r), "toolchain python (operator-supplied quay.io/me/tc@sha256:") {
+		t.Error(p.modeExtra(r))
+	}
+	fixture, fr, _ := newP(t)
+	if fixture.modeExtra(fr) != "" {
+		t.Error("the fixture's mode text must not change")
+	}
+}
+
+func TestItemRunInputs(t *testing.T) {
+	p, r := itemP(t)
+	w := p.workerItem(r)
+	if w.SnapshotCommit != "s0" || w.SpecDir != "specs/002-x" || strings.Join(w.AllowedPaths, ",") != "app.py,specs/002-x/tasks.md" ||
+		w.TestCommand != "python3 -m pytest -q" || w.CommandTimeout != 300 || w.InputLimit != "116Mi" {
+		t.Fatalf("%+v", w)
+	}
+	g := p.itemGrading(r)
+	if g.NS != "pilot-g-002" || g.CPU != "1" || g.Memory != "1Gi" || g.DeadlineS != 600 {
+		t.Fatalf("%+v", g)
+	}
+	p.Target.Toolchain = "node24"
+	p.Target.GraderMemory = "4Gi"
+	if g := p.itemGrading(r); g.CPU != "2" || g.Memory != "4Gi" || g.DeadlineS != 900 {
+		t.Fatalf("catalog defaults raised by the profile: %+v", g)
+	}
+	m := p.baselineMeta(r)
+	if m["mode"] != "baseline" || m["attempt"] != 0 || m["base_revision"] != "s0" || m["hidden_mode"] != "overlay" {
+		t.Fatal(m)
+	}
+	if mergeTask(r) != "002" {
+		t.Fatal(mergeTask(r))
+	}
+	_, fr, _ := newP(t)
+	if mergeTask(fr) != "A" {
+		t.Fatal("the fixture's merge task is A")
+	}
+}
+
+func TestReplayNeedsTheRunsClone(t *testing.T) {
+	p, r := itemP(t)
+	adir, _ := r.AttemptDir("002", 1)
+	_ = os.WriteFile(filepath.Join(adir, "change.bundle"), []byte("x"), 0o644)
+	if err := p.replay(r, "002", 1); err == nil || !strings.Contains(err.Error(), "target clone is gone") {
+		t.Fatal(err)
+	}
+}
