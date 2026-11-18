@@ -188,6 +188,20 @@ repository in `pilot.env`.
 `pilot/pilot reset-fixture` only ever acts on the fixture. With `--target` naming any other
 target it refuses with `NOT_A_FIXTURE`, because it force-pushes.
 
+### AI-driven apps
+
+specfoundry builds AI-driven apps like any other: the worker codes with its own model, and the
+grader checks the change with your deterministic tests, offline. Write hidden tests for the code
+around the model (how prompts are built, how tools are wired, how structured output is parsed,
+retries and guardrails) with a **fake model** or recorded responses; Spring AI, LangChain4j and
+most SDKs let tests swap one in.
+
+Judging what a live model actually does ("is the answer good?", "does retrieval find the right
+document?") is **evaluation**, not grading: it is probabilistic and depends on the model version.
+That belongs to your own evaluation tools and CI, which you can read before you merge the PR.
+specfoundry doesn't run live-model evaluations, and its graders have no model access (roadmap
+C-16).
+
 ### Hidden tests: who can see what, and why
 
 A build worker sees only the item's spec and tasks and a snapshot of the target repository, and

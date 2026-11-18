@@ -2,11 +2,14 @@
 SYNC IMPACT REPORT
 ==================
 Version change: 1.18.2 → 1.19.0 (this revision)
-Bump rationale: MINOR — Q13 resolved (specs half: the controller plans with the human) and a
-material scope change to 017 (Java/Maven first, Node later).
+Bump rationale: MINOR — Q13 resolved (specs half: the controller plans with the human), a new
+decision (C-16, deterministic grading only), and a material scope change to 017 (Java/Maven
+first, Node later).
 Changes this revision (owner decisions 2026-11-18):
   - Q13: humans and the controller (the agent/harness driving the work) plan together; the
     human approves and merges. Build workers never plan; the test author stays separate.
+  - C-16 (new): specfoundry grades deterministically; evaluating live model behaviour is not
+    its lane (AI apps are graded on the code around the model, with a fake model).
   - 017: the first greenfield validation is a new Java/Maven repository (a small Spring Boot
     REST service: 001 scaffold, 002 a real endpoint); Node.js follows. Spec-first: the
     planning PR (constitution, roadmap, specs, the approved pom.xml and CI) comes before any
@@ -602,6 +605,16 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   for teams and **expected** in enterprise environments, where review alone doesn't scale and
   separation of duties (who wrote the tests vs. who wrote the code) is often required. Evidence
   records the level; the audit reports it and never fails a run for using a lower level.
+
+- **C-16 — specfoundry grades deterministically; evaluating model behaviour is not its lane**
+  (owner decision 2026-11-18): an item is `verified` when its deterministic acceptance tests pass,
+  offline. For AI-driven apps that covers everything around the model (prompt construction,
+  tool and function wiring, parsing structured output, retries, guardrails), tested with a fake
+  model or recorded responses. Judging live model behaviour ("is the answer good?", "does
+  retrieval find the right document?", "does the model call the right tool?") is evaluation: it is
+  probabilistic and model-dependent, and belongs to the project's own evaluation tools and CI,
+  which a human can read before merging. specfoundry neither runs live-model evaluations nor gives
+  graders model access for them.
 
 - **C-15 — Developer mode is a labelled sandbox** (owner decision 2026-11-17): while
   specfoundry itself is being developed, an explicit flag (`--dev`, never a default) may relax
