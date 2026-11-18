@@ -318,7 +318,7 @@ completes and the audit passes 11/11 (T036, Owner).
   `go test ./internal/cli -run TestDocsCheck` must pass.
   Done as: `docs/targets.md` §4 (running an item), troubleshooting (item not prepared, baseline,
   item setup), operator guide §13, pilot skill (commands; agents never touch hidden tests).
-- [ ] T036 [US1] **Owner action:** a Python sample target, run end to end on kind.
+- [X] T036 [US1] **Owner action:** a Python sample target, run end to end on kind.
   1. Create a small public Python repository with a test suite.
   2. Create its private companion repository with `items/001/` (failing tests on the base).
   3. Add `targets/pysample.env`.
@@ -328,8 +328,8 @@ completes and the audit passes 11/11 (T036, Owner).
   Progress (2026-11-18): done on a real Python project instead of a sample (owner decision
   2026-11-17): `cli-schema-mcp` item 006, run `20261118T030513Z` (Python 3.13 toolchain, PyPI through the
   registries proxy, dependency cache, offline graders, hidden tests from the shared companion):
-  attempt 1 passed, owner merged #43 and the status PR #44, audit 10/10. Remaining: `pilot/pilot
-  down` and the 11/11 audit (owner's call). Record: `specs/018-test-author/evidence/20261118T030513Z/`.
+  attempt 1 passed, owner merged #43 and the status PR #44; after `pilot/pilot down` (owner's
+  request, 2026-11-18: T01–T03 pass) the audit is **11/11**. Record: `specs/018-test-author/evidence/20261118T030513Z/`.
 
 **Checkpoint:** US1 and US2 work on the existing toolchain; the fixture is unchanged.
 
