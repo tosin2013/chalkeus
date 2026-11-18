@@ -1,7 +1,20 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.18.1 → 1.18.2 (this revision)
+Version change: 1.18.2 → 1.19.0 (this revision)
+Bump rationale: MINOR — Q13 resolved (specs half: the controller plans with the human) and a
+material scope change to 017 (Java/Maven first, Node later).
+Changes this revision (owner decisions 2026-11-18):
+  - Q13: humans and the controller (the agent/harness driving the work) plan together; the
+    human approves and merges. Build workers never plan; the test author stays separate.
+  - 017: the first greenfield validation is a new Java/Maven repository (a small Spring Boot
+    REST service: 001 scaffold, 002 a real endpoint); Node.js follows. Spec-first: the
+    planning PR (constitution, roadmap, specs, the approved pom.xml and CI) comes before any
+    build; workers never change .github/.
+Specs affected: 017 (scope)
+Open questions added/resolved: Q13 resolved (specs half)
+
+Prior: Version change: 1.18.1 → 1.18.2 (this revision)
 Bump rationale: PATCH — status transitions and a missing Spec dir link, after the first real
 item run succeeded (run 20261118T030513Z, cli-schema-mcp item 006).
 Changes this revision (owner, 2026-11-18):
@@ -1132,25 +1145,35 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 - **Description:** Start a project from an empty repository: the roadmap's first item is a
   scaffold, and every later item grows the project like a brownfield one.
-- **Outcome:** On a new, empty **Node.js** repository whose constitution and roadmap a human
-  wrote, the pilot runs item 001 (a human-specified scaffold: layout, package manifest, test
+- **Outcome:** On a new, empty ~~**Node.js**~~ **Java/Maven** repository (Node.js follows;
+  owner decision 2026-11-18) whose constitution and roadmap a human wrote ~~,~~ (with the
+  controller, Q13), the pilot runs item 001 (a human-specified scaffold: layout, package manifest, test
   runner, CI), grades it against acceptance tests the human wrote, and publishes a draft PR.
   After the human merges it and approves `verified`, the next items run as in 014.
 - **Scope (in):**
   - grading an item when the repository has no tests or build of its own yet (only the hidden
     acceptance tests, and the scaffold's own tests once it exists);
-  - a Node.js toolchain for the worker and grader, and npm registry egress, through 014's
-    per-repo mechanisms;
+  - ~~a Node.js toolchain for the worker and grader, and npm registry egress,~~ the JDK 21 +
+    Maven toolchain (Maven Central egress) first, then Node.js 24 (npm), through 014's per-repo
+    mechanisms;
   - guidance for writing a scaffold item's spec and acceptance tests;
-  - the validation on a new Node.js repository with at least the scaffold and one dependent
-    item.
+  - the validation on a new ~~Node.js~~ Java/Maven repository (a small Spring Boot REST
+    service) with at least the scaffold and one dependent item; a Node.js greenfield follows.
 - **Scope (out):** generating the constitution, roadmap or specs (humans plan, C-12); project
   templates as a product; languages beyond the ones 014 and 017 validate.
 - **Depends on:** 014
 - **Governed by:** C-01, C-04, C-07, C-08, C-12, C-14
 - **Addresses:** docs/prd.md §4 loop, F1
-- **Notes:** Owner decision 2026-11-15; resolves Q11. The Node.js repository is chosen when 017
-  is specified. Planning still comes first: an empty repository gets its constitution, roadmap,
+- **Notes:** Owner decision 2026-11-15; resolves Q11. ~~The Node.js repository is chosen when
+  017 is specified.~~ **Amended 2026-11-18 (owner):** Java first, Node later; the first
+  repository is a new, small Spring Boot REST service (001 scaffold, 002 a real endpoint),
+  planned by the owner with the controller (Q13). It also gives the JDK 21 + Maven toolchain its
+  first real end-to-end run.
+  **Spec-first (owner, 2026-11-18):** the greenfield repository is planned before anything is
+  built: its constitution, roadmap and item specs are the guide and reference. The scaffold's
+  dependencies are defined in its approved spec, and the planning PR commits a matching
+  `pom.xml`, so the offline cache is filled only from human-approved inputs (014 R7). CI also
+  comes in the planning PR: `.github/` stays protected, and workers never change it. Planning still comes first: an empty repository gets its constitution, roadmap,
   ~~and the scaffold's spec, tasks and acceptance tests from a human before any agent runs.~~
   and the scaffold's spec and tasks from a human before any build worker runs. Acceptance
   tests may be written by that human or drafted by the test author (018); a human merges them
@@ -1329,8 +1352,14 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   **Tests half resolved 2026-11-17 (owner decision, Tosin Akinosho):** agents may draft hidden
   acceptance tests only through the separate test-author role (018, C-12, C-14). A human reviews
   and merges them into the companion repository. Build workers never write or see them.
-  **Still open:** whether agents may draft specs or tasks for a human to approve, and what
-  tooling helps (for example migration analysis reports in brownfield upgrades).
+  ~~**Still open:** whether agents may draft specs or tasks for a human to approve, and what
+  tooling helps (for example migration analysis reports in brownfield upgrades).~~
+  **Specs half resolved 2026-11-18 (owner decision):** humans and the **controller** (the
+  agent or harness driving the work, for example the session running `pilot` commands) plan
+  together: the controller may draft a project's constitution, roadmap, specs and tasks with the
+  human, and the human approves and merges them. Build workers still never plan, and the test
+  author (018) stays a separate session from the controller (C-14). Still open: what tooling
+  helps (for example migration analysis reports in brownfield upgrades).
 
 ## Cross-Cutting Notes
 
@@ -1389,4 +1418,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.18.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
+**Version**: 1.19.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
