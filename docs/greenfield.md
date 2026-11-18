@@ -135,7 +135,10 @@ approving the mode to an open PR, with 20 hidden tests
 Item 003 (Problem Details errors) needed no planning fix: no earlier test checked an error
 body. It passed on its first attempt, 8 minutes from approving the mode to recorded verified
 ([run record](../specs/018-test-author/evidence/20261118T210446Z/)), and the run closed its
-tracking issue when it ended.
+tracking issue when it ended. Item 004 (persistence in embedded H2) followed the same way:
+first attempt, 11 minutes ([run record](../specs/018-test-author/evidence/20261118T212846Z/)).
+Its spec kept the class the earlier tests use (`ProductStore`) and changed only what backs it,
+so every existing test still passed unedited and checked that clients saw no change.
 
 **When you review hidden tests**, check that each one tests behaviour. A test that searches the
 item's source for a literal string (such as `problem+json`) can fail a correct item that writes
