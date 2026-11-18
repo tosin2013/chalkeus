@@ -67,7 +67,16 @@ func (e *ReplayMismatch) Error() string {
 // commits on top of base, keeping authors, dates and messages. Each recreated commit gets the
 // original commit's tree, which is valid because the snapshot's tree equals base's tree. It
 // writes a base..replayed bundle to out and returns the replayed head.
-func Replay(clone, base, snapshot, changeBundle, out string) (string, error) {
+//
+// subject, when set, becomes the first line of the last commit's message, with the worker's
+// message and trailers kept below it: GitHub uses a one-commit PR's commit message, not its
+// title, for a squash merge, so the commit must carry the PR's Conventional Commits title too.
+func Replay(clone, base, snapshot, changeBundle, out string, trailers ...string) (string, error) {
+	return ReplayAs(clone, base, snapshot, changeBundle, out, "", trailers...)
+}
+
+// ReplayAs is Replay with the last commit's subject replaced (see Replay).
+func ReplayAs(clone, base, snapshot, changeBundle, out, subject string, trailers ...string) (string, error) {
 	if _, err := gitEnv(clone, nil, "fetch", "-q", changeBundle, "HEAD:refs/pilot/change"); err != nil {
 		return "", err
 	}
@@ -82,7 +91,8 @@ func Replay(clone, base, snapshot, changeBundle, out string) (string, error) {
 		return "", fmt.Errorf("the change has no commits on top of the snapshot")
 	}
 	parent := base
-	for _, c := range strings.Fields(revs) {
+	commits := strings.Fields(revs)
+	for i, c := range commits {
 		meta, err := gitEnv(clone, nil, "show", "-s", "--format=%an%x00%ae%x00%aI%x00%cn%x00%ce%x00%cI%x00%B", c)
 		if err != nil {
 			return "", err
@@ -93,7 +103,14 @@ func Replay(clone, base, snapshot, changeBundle, out string) (string, error) {
 		}
 		env := []string{"GIT_AUTHOR_NAME=" + f[0], "GIT_AUTHOR_EMAIL=" + f[1], "GIT_AUTHOR_DATE=" + f[2],
 			"GIT_COMMITTER_NAME=" + f[3], "GIT_COMMITTER_EMAIL=" + f[4], "GIT_COMMITTER_DATE=" + f[5]}
-		next, err := gitEnv(clone, env, "commit-tree", mustTree(clone, c), "-p", parent, "-m", f[6])
+		msg := f[6]
+		if i == len(commits)-1 && subject != "" {
+			msg = subject + "\n\n" + strings.TrimSpace(msg) + "\n"
+			if len(trailers) > 0 {
+				msg += "\n" + strings.Join(trailers, "\n") + "\n"
+			}
+		}
+		next, err := gitEnv(clone, env, "commit-tree", mustTree(clone, c), "-p", parent, "-m", msg)
 		if err != nil {
 			return "", err
 		}
