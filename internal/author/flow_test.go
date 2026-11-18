@@ -181,6 +181,11 @@ func TestStartRefusals(t *testing.T) {
 	if _, err := Start(context.Background(), w.env, "006", false); code(err) != "ITEM_OPEN_QUESTIONS" {
 		t.Fatalf("%v", err)
 	}
+	w.res = readiness.Result{Decision: "refuse", Reasons: []string{"INPUT_TOO_LARGE"},
+		Rules: []readiness.Rule{{ID: "spec", Result: "pass"}, {ID: "INPUT_TOO_LARGE", Result: "fail", Detail: "snapshot is 61 MB, over PILOT_MAX_INPUT_MB=50"}}}
+	if _, err := Start(context.Background(), w.env, "006", false); code(err) != "INPUT_TOO_LARGE" || !strings.Contains(err.Error(), "61 MB") {
+		t.Fatalf("the refusal must carry the rule's detail: %v", err)
+	}
 }
 
 // draftAndCheck starts a draft, writes a test and a map, and runs check with a fake baseline.
