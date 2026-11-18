@@ -1,0 +1,37 @@
+{
+  "attempt": 0,
+  "checks": [
+    {
+      "detail": "base checked out",
+      "id": "G1_bundle_applies",
+      "result": "pass"
+    },
+    {
+      "detail": "baseline: no change",
+      "id": "G2_allowed_paths",
+      "result": "skipped"
+    },
+    {
+      "detail": "baseline: no change",
+      "id": "G3_tasks_checked",
+      "result": "skipped"
+    },
+    {
+      "detail": "ved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public org.springframework.http.ResponseEntity<dev.stockroom.product.Product> dev.stockroom.product.ProductController.create(dev.stockroom.product.CreateProductRequest): [Field error in object 'createProductRequest' on field 'stock': rejected value [-1]; codes [PositiveOrZero.createProductRequest.stock,PositiveOrZero.stock,PositiveOrZero.java.lang.Integer,PositiveOrZero]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [createProductRequest.stock,stock]; arguments []; default message [stock]]; default message [must be greater than or equal to 0]] ]\n2026-11-18T21:07:20.714Z  WARN 79 --- [stockroom] [           main] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public org.springframework.http.ResponseEntity<dev.stockroom.product.Product> dev.stockroom.product.ProductController.create(dev.stockroom.product.CreateProductRequest): [Field error in object 'createProductRequest' on field 'name': rejected value [AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]; codes [Size.createProductRequest.name,Size.name,Size.java.lang.String,Size]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [createProductRequest.name,name]; arguments []; default message [name],100,0]; default message [size must be between 0 and 100]] ]\n[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.347 s -- in dev.stockroom.product.ProductControllerTests\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  8.539 s\n[INFO] Finished at: 2026-11-18T21:07:20Z\n[INFO] ------------------------------------------------------------------------\nMockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3\nWARNING: A Java agent has been loaded dynamically (/deps/m2/net/bytebuddy/byte-buddy-agent/1.18.15/byte-buddy-agent-1.18.15.jar)\nWARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning\nWARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information\nWARNING: Dynamic loading of agents will be disallowed by default in a future release\nOpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended\n",
+      "id": "G4_visible_tests",
+      "result": "pass"
+    },
+    {
+      "detail": "hidden tests fail on the base revision (expected)\nexit=1 output_lines=38 output_sha256=b0d88a4ae7d277cd7ce7b2b206be8133e4d6fddb73baf0fba0687b95f564eaaf (output withheld: hidden tests)",
+      "id": "G5_hidden_tests",
+      "result": "pass"
+    }
+  ],
+  "failure": null,
+  "grader_image": "ghcr.io/tosin2013/specfoundry-pilot-tools@sha256:8133e292e0835f6edbc0c73ffd6c38dd729557fb62138dc04a1518e05476a901",
+  "mode": "baseline",
+  "result": "pass",
+  "run_id": "20261118T210446Z",
+  "task": "003",
+  "version": 1
+}

@@ -1,0 +1,28 @@
+[
+  {
+    "attempt": 1,
+    "author": "tosins-specfoundry-pilot[bot]",
+    "closes": 4,
+    "created": true,
+    "draft": true,
+    "head": "pilot/20261118T210446Z/003",
+    "kind": "task",
+    "number": 17,
+    "operator_login": "tosin2013",
+    "publisher_identity": "tosins-specfoundry-pilot[bot]",
+    "task": "003",
+    "url": "https://github.com/tosin2013/stockroom/pull/17"
+  },
+  {
+    "author": "tosins-specfoundry-pilot[bot]",
+    "base_revision": "fa6c63d80a622a2e1595c324e257661d8409c658",
+    "created": true,
+    "draft": true,
+    "head": "pilot/20261118T210446Z/status-003",
+    "kind": "status",
+    "number": 18,
+    "publisher_identity": "tosins-specfoundry-pilot[bot]",
+    "task": "003",
+    "url": "https://github.com/tosin2013/stockroom/pull/18"
+  }
+]
