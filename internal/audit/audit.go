@@ -570,7 +570,13 @@ func itemAU04(d string, base evidence.CheckRow) evidence.CheckRow {
 		}
 		ok = ok && p12 > 0
 	}
-	return row("AU04", ok, base.Description+"; no hidden test reached a worker (P11, 014)", fmt.Sprintf("%s p11_rows=%d p12_rows=%d", base.Detail, n, p12))
+	// The security level (roadmap C-14, 018) is reported, never a failure.
+	level, _ := st["security_level"].(string)
+	if level == "" {
+		level = "unrecorded"
+	}
+	return row("AU04", ok, base.Description+"; no hidden test reached a worker (P11, 014)",
+		fmt.Sprintf("%s p11_rows=%d p12_rows=%d security_level=%s", base.Detail, n, p12, level))
 }
 
 // itemAU01: only the item was gated allow, its readiness passed, and no other task has events

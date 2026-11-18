@@ -42,7 +42,7 @@ func TestTargetsListsFixtureAndProfiles(t *testing.T) {
 	}
 	for _, want := range []string{
 		"fixture\to/x-pilot-fixture@main\ttoolchain=python\t(pilot.env)\n",
-		"pysample\tme/pysample@main\ttoolchain=python\tregistries=pypi.org,files.pythonhosted.org\tcompanion=me/pysample-acceptance\n",
+		"pysample\tme/pysample@main\ttoolchain=python\tregistries=pypi.org,files.pythonhosted.org\tcompanion=me/pysample-acceptance\tlevel=minimal\n",
 		"broken\tinvalid: TARGET_INVALID:",
 		"java\tinvalid: TOOLCHAIN_UNAVAILABLE:", // no toolchain image is locked yet
 	} {

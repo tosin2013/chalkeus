@@ -247,7 +247,7 @@ func (d *docsChecker) defaultFiles(t *testing.T) []string {
 		t.Fatal(err)
 	}
 	sort.Strings(files)
-	for _, f := range []string{"README.md", "CONTRIBUTING.md", "AGENTS.md", "pilot/README.md", ".claude/skills/pilot/SKILL.md"} {
+	for _, f := range []string{"README.md", "CONTRIBUTING.md", "AGENTS.md", "pilot/README.md", ".claude/skills/pilot/SKILL.md", ".claude/skills/test-author/SKILL.md"} {
 		files = append(files, filepath.Join(d.root, f))
 	}
 	return files

@@ -56,7 +56,8 @@ func TestLoadTargetGood(t *testing.T) {
 	want := Target{Name: "greeting", Repo: "me/greeting-service", Branch: "main", Toolchain: "jdk21-maven",
 		TestCommand: "mvn -B test", RegistryHosts: []string{"repo.maven.apache.org", "repo1.example.org"},
 		CompanionRepo: "me/greeting-service-acceptance", GithubIssues: "off", GithubApprovals: "on", MaxInputMB: 50, ChangeType: "feat",
-		PublisherEnv: filepath.Join(c.TargetsDir(), "greeting.publisher.env")}
+		PublisherEnv: filepath.Join(c.TargetsDir(), "greeting.publisher.env"), SecurityLevel: LevelMinimal,
+		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env")}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\n got %+v\nwant %+v", got, want)
 	}
@@ -205,4 +206,33 @@ func TestCompanionPath(t *testing.T) {
 		_, err := c.LoadTarget("p", "")
 		wantCode(t, err, "TARGET_INVALID")
 	}
+}
+
+func TestSecurityLevel(t *testing.T) {
+	c := targetCfg(t)
+	writeTarget(t, c, "p", goodTarget)
+	if got, err := c.LoadTarget("p", ""); err != nil || got.SecurityLevel != LevelMinimal {
+		t.Fatalf("default must be minimal: %+v %v", got, err)
+	}
+	writeTarget(t, c, "p", goodTarget+"PILOT_SECURITY_LEVEL=recommended\n")
+	got, err := c.LoadTarget("p", "")
+	if err != nil || got.SecurityLevel != LevelRecommended {
+		t.Fatalf("%+v %v", got, err)
+	}
+	if _, err := got.AuthorToken(); err == nil {
+		t.Fatal("no author.env: the token must be refused")
+	}
+	if err := os.WriteFile(got.AuthorEnv, []byte("PILOT_AUTHOR_TOKEN=tok\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if tok, err := got.AuthorToken(); err != nil || tok != "tok" {
+		t.Fatalf("%q %v", tok, err)
+	}
+	_ = os.Chmod(got.AuthorEnv, 0o644)
+	if _, err := got.AuthorToken(); err == nil {
+		t.Fatal("a world-readable author.env must be refused")
+	}
+	writeTarget(t, c, "p", goodTarget+"PILOT_SECURITY_LEVEL=max\n")
+	_, err = c.LoadTarget("p", "")
+	wantCode(t, err, "TARGET_INVALID")
 }

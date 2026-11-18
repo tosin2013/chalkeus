@@ -14,6 +14,7 @@ behaviour; the fixture sets none of them, so its grading is unchanged.
 | `command_timeout_s` | int | default 180; from the catalog (600 for each catalog toolchain) |
 | `test_paths` | list of globs | the target's `PILOT_TEST_PATHS`. Adds **G6_tests_changed** (after G3: the change adds or edits at least one matching file) and **G7_existing_tests_kept** (after G4: in a clean checkout of the change, the base's versions of the matching files the change edited or deleted are put back, and `test_command` must pass). The report then has 7 checks. Absent: 5 checks, as before. |
 | *(G5 detail)* | — | For item runs, G5 (attempt and baseline) records only `exit=<n> output_lines=<n> output_sha256=<hex>`, never the output: test runners print failing assertions and source lines, and grade evidence may be shared (C-14). The fixture's G5 keeps its full output (its hidden test is public). |
+| `author_check` | bool | 018 `pilot author check` only: the baseline's hidden-test output goes to a second frame file, `hidden_output.txt`, which the CLI prints to the test author and never stores; `grade.json` keeps the withheld summary |
 | `tests_may_change` | list of globs | from the spec's `## Tests that may change`; G7 skips them |
 
 ## Grader pod (item runs)

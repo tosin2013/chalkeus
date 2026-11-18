@@ -17,6 +17,9 @@ Item runs (014, specs/014-any-project/contracts/grading.md) add optional meta fi
                                                edited or deleted still pass against the changed
                                                code (an agent can't weaken a test to pass)
   tests_may_change   globs of existing tests the item's spec says may change (skipped by G7)
+  author_check       true for `pilot author check` (018): the baseline's hidden-test output is
+                     returned in a separate frame file, hidden_output.txt, for the test author's
+                     own terminal; grade.json keeps only the withheld summary
 Without them, grading is exactly the fixture's.
 """
 from __future__ import annotations
@@ -31,6 +34,7 @@ import tempfile
 
 CHECKS = ["G1_bundle_applies", "G2_allowed_paths", "G3_tasks_checked", "G4_visible_tests", "G5_hidden_tests"]
 TEST_CHECKS = ["G6_tests_changed", "G7_existing_tests_kept"]
+AUTHOR_OUTPUT: list = []  # author_check only: the hidden tests' output, never put in grade.json
 
 
 def matches(path, globs):
@@ -208,6 +212,8 @@ def baseline(meta, inp, grading, work, repo):
                 add("G5_hidden_tests", "fail", why)
             else:
                 rc, out = project_tests(meta, repo)
+                if meta.get("author_check"):
+                    AUTHOR_OUTPUT.append(out)
                 # Here a pass means the hidden tests FAILED on the base, as they must.
                 add("G5_hidden_tests", "pass" if rc != 0 else "fail",
                     ("hidden tests fail on the base revision (expected)\n" if rc != 0 else
@@ -234,10 +240,17 @@ def main() -> int:
                   "attempt": int(meta.get("attempt", 1)), "result": "fail", "failure": "grader_error",
                   "grader_image": os.environ.get("GRADER_IMAGE", "unknown"),
                   "checks": [{"id": c, "result": "skipped", "detail": f"grader crashed: {e}"[:400]} for c in CHECKS]}
-    out = os.path.join(tempfile.mkdtemp(), "grade.json")
+    tmp = tempfile.mkdtemp()
+    out = os.path.join(tmp, "grade.json")
     with open(out, "w") as f:
         json.dump(report, f)
-    frame.main(["emit", f"grade.json={out}"])
+    files = [f"grade.json={out}"]
+    if meta.get("author_check") and AUTHOR_OUTPUT:
+        hidden = os.path.join(tmp, "hidden_output.txt")
+        with open(hidden, "w") as f:
+            f.write(AUTHOR_OUTPUT[-1])
+        files.append(f"hidden_output.txt={hidden}")
+    frame.main(["emit", *files])
     return 0
 
 

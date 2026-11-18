@@ -54,7 +54,7 @@ func runTargets(cmd *cobra.Command, _ []string) error {
 		if regs == "" {
 			regs = "-"
 		}
-		fmt.Fprintf(out, "%s\t%s@%s\ttoolchain=%s\tregistries=%s\tcompanion=%s\n", t.Name, t.Repo, t.Branch, t.Toolchain, regs, companionRef(t))
+		fmt.Fprintf(out, "%s\t%s@%s\ttoolchain=%s\tregistries=%s\tcompanion=%s\tlevel=%s\n", t.Name, t.Repo, t.Branch, t.Toolchain, regs, companionRef(t), t.SecurityLevel)
 	}
 	return nil
 }
