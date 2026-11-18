@@ -1,0 +1,14 @@
+{
+  "closed": true,
+  "decisions": [
+    {
+      "at": "2026-11-18T23:03:09Z",
+      "comment_id": 6994202089,
+      "marker": "<!-- specfoundry:decision run=20261118T230306Z step=mode task=- n=- -->",
+      "n": null,
+      "step": "mode",
+      "task": null
+    }
+  ],
+  "issue": 32
+}

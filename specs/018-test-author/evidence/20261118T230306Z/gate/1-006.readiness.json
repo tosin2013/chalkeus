@@ -1,0 +1,70 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/006-paging/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/006-paging/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "src/main/java/dev/stockroom/*, src/main/resources/*, src/test/java/dev/stockroom/*, specs/006-paging/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@ec23b45ad9fc"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "1505280 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "f683e574b83466e0a84a0323a7220e0689667e71",
+  "spec_dir": "specs/006-paging",
+  "title": "Paging and filtering",
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/main/resources/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/006-paging/tasks.md"
+  ],
+  "spec_sha256": "c413a48721ce2f0e76470446b699e6663a69ba253b60fe0717712d6d5c78bcc8",
+  "mapping": {
+    "present": true,
+    "stale": false,
+    "uncovered": [
+      "FR-005",
+      "FR-006"
+    ],
+    "valid": true
+  },
+  "companion_commit": "ec23b45ad9fc1c42d61331f00118160eeec19ad9",
+  "hidden_files": 1,
+  "input_bytes": 1505280
+}

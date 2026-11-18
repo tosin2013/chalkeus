@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-18T22:46:11Z",
+  "decision": "allow",
+  "input": {
+    "fixture_commit": "3a69ce9b6950059b1d9ab26b9c1170338ac4cd59",
+    "fixture_repo": "tosin2013/stockroom",
+    "spec_status_exit": 0,
+    "spec_status_json_sha256": "9c72856d873b4f553a14e10dd705c41c5f90d1ba7f9510e85464fae3fac25af3",
+    "spec_version": "spec 0.3.0"
+  },
+  "item_id": "007",
+  "reasons": [
+    "OK"
+  ],
+  "seq": 1,
+  "task": "007",
+  "version": 1
+}

@@ -1,0 +1,29 @@
+{
+  "pilot_env": {
+    "PILOT_APPROVERS": "tosin2013",
+    "PILOT_APP_ID": "5778430",
+    "PILOT_APP_INSTALLATION_ID": "182433248",
+    "PILOT_FIXTURE_BRANCH": "main",
+    "PILOT_FIXTURE_REPO": "tosin2013/craz3-pilot-fixture",
+    "PILOT_GITHUB_APPROVALS": "on",
+    "PILOT_GITHUB_ISSUES": "off",
+    "PILOT_MODEL": "litellm/claude-sonnet-4-6",
+    "PILOT_MODEL_EGRESS_HOSTS": "sha256:f7255209538f063d",
+    "PILOT_PROVIDER_CAP_DECLARED": "false",
+    "PILOT_PUBLISHER_CREDENTIAL": "app",
+    "PILOT_SPEND_CAP_USD": "1.00",
+    "PILOT_TOKEN_CAP": "2000000",
+    "RETRY_LIMIT": "2"
+  },
+  "secret_files": {
+    "opencode/litellm_api_key": {
+      "sha256": "a424faf1a68c970369e49f3723d3a2b8fa4685fe9205c7e21e116696d2807087"
+    },
+    "opencode/opencode.json": {
+      "sha256": "1facb0728ac05e926a2e1adbe7f9fa2df92d5082332c9ff939ac07bf444726a0"
+    },
+    "targets/stockroom.publisher.env": {
+      "sha256": null
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "attestation": "not checked",
+  "image": "ghcr.io/tosin2013/specfoundry-pilot-toolchain-jdk21-maven@sha256:76ca4a8117412f86280e0508721818a0b278920fd32768b215486be5b5bada95",
+  "name": "jdk21-maven",
+  "source": "catalog",
+  "spec": "{\n  \"name\": \"jdk21-maven\",\n  \"version_command\": [\"mvn\", \"-v\"],\n  \"path\": [\"/opt/toolchain/bin\", \"/opt/toolchain/maven/bin\", \"/opt/toolchain/jdk/bin\"],\n  \"env\": {\"JAVA_HOME\": \"/opt/toolchain/jdk\"},\n  \"proxy\": \"maven-settings\"\n}\n",
+  "version": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)"
+}

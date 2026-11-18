@@ -149,6 +149,16 @@ merged it and planned the fix as a new item, 007, with tests that check every co
 response ([stockroom#27](https://github.com/tosin2013/stockroom/pull/27)). A flaw found in review
 becomes a roadmap item like any other.
 
+Item 007 (the fix) passed on its first attempt: its hidden tests fired 50 reservations at once,
+three rounds each, and failed on the 005 code every time before passing on the fix
+([run record](../specs/018-test-author/evidence/20261118T224610Z/)). Item 006 (paging and
+filtering) followed ([run record](../specs/018-test-author/evidence/20261118T230306Z/)); one of
+its requirements, paging in the database query, had no hidden test, so it was checked in review.
+
+**Stockroom's roadmap finished at 7 of 7 items verified**, each on its first attempt, each item
+taking about 10 minutes from approving the mode to recorded verified. Every change arrived by a
+pull request the owner merged.
+
 **When you review hidden tests**, check that each one tests behaviour. A test that searches the
 item's source for a literal string (such as `problem+json`) can fail a correct item that writes
 the same thing another way (`MediaType.APPLICATION_PROBLEM_JSON`); the grader already requires
