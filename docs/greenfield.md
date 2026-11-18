@@ -112,4 +112,24 @@ Each next item repeats steps 4 and 5. A `planned` item first gets its spec and t
 or draft them with your agent, and merge them. From the scaffold on, the project grows like any
 existing one.
 
+**When an item changes what an earlier test expects**, say so in its spec. Stockroom's 001 had a
+test that `/api/products` doesn't exist yet; 002 adds that endpoint. The grader puts back the
+original version of every existing test a change edits and runs it again (check G7), so that
+test would have failed every attempt of 002. Listing the file in 002's spec fixed it
+([stockroom#11](https://github.com/tosin2013/stockroom/pull/11)):
+
+```markdown
+## Tests that may change
+
+- `src/test/java/dev/stockroom/StockroomApplicationTests.java`: its
+  `productsEndpointDoesNotExistYet` test expects `404`; this item adds that endpoint.
+```
+
+The test author warns about this when it drafts the item's hidden tests. Planning files are
+yours, so make the change in a small PR before the run.
+
+Stockroom's item 002 (the products API) then passed on its first attempt, 5 minutes from
+approving the mode to an open PR, with 20 hidden tests
+([run record](../specs/018-test-author/evidence/20261118T171710Z/)).
+
 `pilot/pilot doctor --target <name>` shows the whole roadmap and what each item still needs.

@@ -1,0 +1,10 @@
+{"description": "only the prepared item was allowed and attempted (014 FR-002)", "detail": "item=002 readiness=8/8 other_attempts=0", "id": "AU01", "requirement": "audit", "result": "pass"}
+{"description": "baseline passed, then failed attempts and exactly one final pass (014 FR-007)", "detail": "baseline=pass order=['pass']", "id": "AU02", "requirement": "audit", "result": "pass"}
+{"description": "exactly 1 draft task PR (plus at most 1 status PR) on the target, by the publisher identity (014)", "detail": "repo=tosin2013/stockroom task_prs=1 status_prs=1", "id": "AU03", "requirement": "audit", "result": "pass"}
+{"description": "no worker/grader held an SCM credential (P04, P09) (SC-004); no hidden test reached a worker (P11, 014)", "detail": "rows=2 p11_rows=1 p12_rows=1 security_level=minimal", "id": "AU04", "requirement": "audit", "result": "pass"}
+{"description": "gate fail-closed matrix passed (SC-005)", "detail": "rows=4", "id": "AU05", "requirement": "audit", "result": "pass"}
+{"description": "every attempt within its spend cap (SC-008)", "detail": "over=[]", "id": "AU06", "requirement": "audit", "result": "pass"}
+{"description": "no secrets in the evidence record", "detail": "hits=[]", "id": "AU08", "requirement": "audit", "result": "pass"}
+{"description": "every retry confirmed by the operator (FR-017)", "detail": "unconfirmed=[] channels=[]", "id": "AU09", "requirement": "audit", "result": "pass"}
+{"description": "mode confirmed before any worker staged (FR-023)", "detail": "mode_seq=10 first_attempt=14 channels=['github'] approvers=['tosin2013']", "id": "AU10", "requirement": "audit", "result": "pass"}
+{"description": "no induction; every attempt got the item's spec unaltered (014)", "detail": "attempts=1 []", "id": "AU11", "requirement": "audit", "result": "pass"}

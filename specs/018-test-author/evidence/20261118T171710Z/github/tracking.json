@@ -1,0 +1,13 @@
+{
+  "decisions": [
+    {
+      "at": "2026-11-18T17:17:14Z",
+      "comment_id": 6985981379,
+      "marker": "<!-- specfoundry:decision run=20261118T171710Z step=mode task=- n=- -->",
+      "n": null,
+      "step": "mode",
+      "task": null
+    }
+  ],
+  "issue": 12
+}

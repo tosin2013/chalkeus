@@ -1,0 +1,25 @@
+{
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/002-products-api/tasks.md"
+  ],
+  "attempt": 1,
+  "base_revision": "c1b34f75197081f611d745d3486e5e47c0be688f",
+  "command_timeout_s": 600,
+  "hidden_mode": "overlay",
+  "induction": null,
+  "item_id": "002",
+  "mode": "attempt",
+  "run_id": "20261118T171710Z",
+  "spec_sha256": "a27d35f258ae2175b187804c4e567e75d63c5e51dc90f8d8e1d9527730bf6b7a",
+  "task": "002",
+  "test_command": "mvn -B test",
+  "test_paths": [
+    "src/test/*"
+  ],
+  "tests_may_change": [
+    "src/test/java/dev/stockroom/StockroomApplicationTests.java"
+  ],
+  "toolchain": "jdk21-maven"
+}

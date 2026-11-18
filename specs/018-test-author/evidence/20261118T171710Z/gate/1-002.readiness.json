@@ -1,0 +1,69 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/002-products-api/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/002-products-api/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "src/main/java/dev/stockroom/*, src/test/java/dev/stockroom/*, specs/002-products-api/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@cf06b8123067"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "1372160 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "f4d5720f3b4b1aa891d1d00431a6443bbaf4cdca",
+  "spec_dir": "specs/002-products-api",
+  "title": "Products API",
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/002-products-api/tasks.md"
+  ],
+  "tests_may_change": [
+    "src/test/java/dev/stockroom/StockroomApplicationTests.java"
+  ],
+  "spec_sha256": "25a3216e0dd6e91cc7822350eb604933d7631206ee005bc4d94cd755c552f117",
+  "mapping": {
+    "present": true,
+    "stale": true,
+    "uncovered": [],
+    "valid": true
+  },
+  "companion_commit": "cf06b81230670b5990b30e570593b54803082a1d",
+  "hidden_files": 1,
+  "input_bytes": 1372160
+}

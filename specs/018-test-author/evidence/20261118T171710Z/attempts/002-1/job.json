@@ -1,0 +1,39 @@
+{
+  "container_terminated": {
+    "containerID": "containerd://2c1ad07dc8eafd216434b164b0a5f1c9aabc15093ff8cba9afd83404cfee4899",
+    "exitCode": 0,
+    "finishedAt": "2026-11-18T17:23:57Z",
+    "reason": "Completed",
+    "startedAt": "2026-11-18T17:22:34Z"
+  },
+  "job_status": {
+    "completionTime": "2026-11-18T17:23:59Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-18T17:23:59Z",
+        "lastTransitionTime": "2026-11-18T17:23:59Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-11-18T17:23:59Z",
+        "lastTransitionTime": "2026-11-18T17:23:59Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-11-18T17:22:07Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "outcome": "Complete",
+  "pod": "worker-77t4r",
+  "pod_phase": "Succeeded",
+  "pod_reason": null
+}

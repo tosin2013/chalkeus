@@ -131,6 +131,9 @@ As an owner, I repeat the loop on a new Node.js 24 repository with npm.
   cache step runs them, they fail, and the cache is filled from that run.
 - **A project with no tests at all yet**: the project's own test command must still succeed on
   the planning tree (Maven reports no tests), so the baseline can tell "no tests" from "broken".
+- **A later item changes what an earlier item's test expects** (Stockroom 002 adds the endpoint
+  001 tested as missing): the later item's spec lists that file under `## Tests that may
+  change`, or G7 fails every attempt.
 - **A dependency the plan forgot**: the grader is offline, so an attempt that needs it fails; the
   fix is a planning change merged by the owner, never an agent edit to the build file.
 - **The pilot's evidence folder** is shared by item runs (today `specs/018-test-author/evidence/`);
@@ -178,6 +181,8 @@ As an owner, I repeat the loop on a new Node.js 24 repository with npm.
 - **SC-002**: The scaffold's baseline fails on the hidden tests for a missing-code reason, and the
   cache step passes. *(Met in the same run.)*
 - **SC-003**: A dependent item (002) runs to `verified` with no configuration change after 001.
+  *(Met 2026-11-18: run 20261118T171710Z, first attempt; one planning fix first, stockroom#11,
+  declaring the 001 test that 002 changes.)*
 - **SC-004**: A Node.js scaffold runs to `verified`.
 - **SC-005**: Each recorded run's audit passes 11/11 after `down`.
 
