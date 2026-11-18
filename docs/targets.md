@@ -268,6 +268,10 @@ pilot/pilot doctor --target greeting --item 002 --baseline # plus, on the cluste
   set.
 - **GitHub:** your token reads the target and the companion; the test author's identity for the
   level; a warning if the target's branch isn't protected (or can't be checked).
+- **Roadmap** (every run of `doctor`): the target's progress (verified items out of active
+  ones), `spec status`'s own findings (for example `SS_STATUS_AHEAD_OF_TASKS`), and for each item
+  what the pilot needs next: `done`, `ready to run`, or what's missing (dependencies, a spec,
+  tasks, allowed paths, hidden tests). It never fails `doctor`; use it to pick the next item.
 - **Item:** every readiness rule, with each failure's detail (for example the snapshot size), and
   the hidden tests' coverage.
 - **`--baseline`:** the project's tests pass on today's code with no network (the check that

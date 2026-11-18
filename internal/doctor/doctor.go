@@ -104,5 +104,5 @@ func (r *Report) Print(w io.Writer) {
 	for _, x := range r.Rows {
 		n[x.Status]++
 	}
-	fmt.Fprintf(w, "doctor: %d pass, %d warn, %d fail, %d skipped\n", n[Pass], n[Warn], n[Fail], n[Skip])
+	fmt.Fprintf(w, "doctor: %d pass, %d warn, %d fail, %d skipped, %d info\n", n[Pass], n[Warn], n[Fail], n[Skip], n[Info])
 }

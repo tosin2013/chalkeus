@@ -147,6 +147,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	} else {
 		r.Add("github", "branch protection", doctor.Pass, t.Branch+" is protected")
 	}
+	doctorRoadmap(&r, t)
 	if item == "" {
 		return doctorExit(&r)
 	}
@@ -246,4 +247,25 @@ func doctorExit(r *doctor.Report) error {
 		return Code(ExitFail)
 	}
 	return nil
+}
+
+// doctorRoadmap adds the target's roadmap: every active item and what the pilot needs next.
+func doctorRoadmap(r *doctor.Report, t config.Target) {
+	dir, _, err := fixture.FreshClone(t.Repo, t.Branch, 1)
+	if err != nil {
+		r.Add("roadmap", "clone", doctor.Warn, "could not clone "+t.Repo+": "+err.Error())
+		return
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
+	_, stdout := gate.ExecStatus{}.Status(dir)
+	cdir, _, cerr := fixture.FreshClone(t.CompanionRepo, "", 1)
+	if cerr == nil {
+		defer func() { _ = os.RemoveAll(cdir) }()
+	}
+	r.Roadmap(stdout, dir, func(item string) string {
+		if cerr != nil {
+			return ""
+		}
+		return filepath.Join(cdir, filepath.FromSlash(t.CompanionItemDir(item)))
+	})
 }
