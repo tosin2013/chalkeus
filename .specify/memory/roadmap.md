@@ -1,7 +1,35 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.19.0 → 1.19.1 (this revision)
+Version change: 1.19.1 → 1.20.0 (this revision)
+Bump rationale: MINOR — a scope addition to 018 (opt-in auto-draft, the test author as its own
+Job on kind and minikube), a note on 010, and a new planned item (021 Step mode). Nothing
+existing is invalidated: humans still review and merge every hidden-tests PR and approve every
+run, and build-worker isolation is unchanged.
+Changes this revision (owner discussion 2026-11-18, Tosin Akinosho):
+  - 018: auto-draft, opt-in and off by default (`PILOT_AUTHOR_AUTO`). When an item becomes
+    ready (its spec and tasks are merged and its companion folder is empty), the test author
+    is started automatically instead of by hand. Only drafting is automatic: the companion PR
+    is still reviewed and merged by a human, and runs are still approved by a human. This
+    replaces the 018 spec assumption "drafting is never triggered automatically" for targets
+    that opt in.
+  - 018: the test author may run as its own Job in its own namespace on kind and minikube in
+    laptop mode, not only in cluster mode (011). It shares no storage with workers (C-08) and
+    has its own egress role (C-07). The separate headless session stays as the no-cluster
+    option.
+  - 010: note that a merged spec-and-tasks PR is a natural event to start auto-draft.
+  - 021 (new, planned): step mode. The pilot works through an item's automatic steps on its
+    own and waits at each human gate (tests PR merge, mode approval, item PR merge, status PR
+    merge), so the owner can step away and answer from GitHub. It runs `doctor --baseline` and
+    posts the result to the tracking issue before asking for the mode.
+  - 021: an opt-in standing mode approval per target (attempts, retries, spend cap, deadline
+    within set limits). When set, a clean `doctor` result starts the run without a
+    `/approve mode` comment. This amends "a human approves every run" for targets that opt in;
+    the three merges stay human (C-04).
+Specs affected: 018 (scope), 010 (note), 021 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.19.0 → 1.19.1
 Bump rationale: PATCH — a status transition and a Spec dir link.
 Changes this revision (2026-11-18):
   - 017: planned → specced; Spec dir specs/017-greenfield/ (written guide-first, after
@@ -887,7 +915,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Depends on:** 004
 - **Governed by:** C-01, C-02, C-04
 - **Addresses:** docs/prd.md F6
-- **Notes:** Proposed in the 003 Kelos review (owner decision 2026-11-13).
+- **Notes:** Proposed in the 003 Kelos review (owner decision 2026-11-13). A merged
+  spec-and-tasks PR is a natural event to start 018's opt-in auto-draft of hidden tests
+  (2026-11-18); it proposes a draft, not a run, and a human still merges the tests.
 
 ### 011 — Cluster mode: specfoundry Kubernetes operator  [status: planned]
 
@@ -1230,7 +1260,18 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - the output is a pull request to the companion repository, which a human merges (C-04);
   - evidence records the author identity and the companion commit;
   - a new grader check: every hidden test maps to an acceptance criterion in the item's spec,
-    and criteria with no test are flagged.
+    and criteria with no test are flagged;
+  - **amended 2026-11-18 (auto-draft, opt-in):** with `PILOT_AUTHOR_AUTO=on` for a target, the
+    test author starts on its own when an item becomes ready (spec and tasks merged, companion
+    folder empty). It is off by default. Only drafting is automatic: a human still reviews and
+    merges the companion PR (C-04) and still approves every run. Triggers: a GitHub Actions
+    workflow on the target's merge (a companion-only token, the recommended level), or the
+    pilot on the laptop, or the operator in cluster mode (011). In every case the author is a
+    separate process with its own identity, never the driving session;
+  - **amended 2026-11-18 (Job on laptop clusters):** in laptop mode the test author may also
+    run as its own Job in its own namespace on kind or minikube, with its own egress role
+    (C-07) and no storage shared with workers (C-08), so strict-style isolation is available
+    before 011. A separate headless agent session stays as the no-cluster option.
 - **Scope (out):** build workers writing or seeing hidden tests; the test author launching,
   steering or reviewing workers; the test author touching worker branches; the test author
   writing specs, tasks or the roadmap (the specs and tasks half of Q13 stays open).
@@ -1301,6 +1342,40 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   full suite once at the end); a per-attempt breakdown of tokens by step (files read, test runs,
   largest inputs) in the evidence; a lower token cap for small items in the mode. The grader
   itself spends no tokens.
+
+### 021 — Step mode: run unattended, wait at each human gate  [status: planned]
+
+- **Description:** Let the pilot carry an item, and then the next ready item, through every
+  automatic step on its own, stopping at each human decision, so the owner can leave it running
+  and answer from GitHub.
+- **Outcome:** After the owner merges an item's spec and tasks, the pilot drafts hidden tests
+  (018 auto-draft) and waits for the tests PR merge; runs `doctor --baseline` and posts the
+  result to the tracking issue; waits for `/approve mode` (or uses a standing approval); builds
+  and grades; waits for the item PR merge; opens the status PR and waits for its merge; then
+  moves to the next ready item. Every wait is a comment or a merge on GitHub, nothing runs while
+  it waits, and it resumes when the owner answers. A failing `doctor` stops the item and says
+  what to fix.
+- **Scope (in):**
+  - a step-mode loop for laptop mode, started per target, that survives the owner being away
+    (no terminal input needed at any gate);
+  - `doctor --baseline` run automatically before the mode gate, with its findings on the
+    tracking issue;
+  - an opt-in **standing mode approval** per target: a bounded mode (attempts, retries, spend
+    cap, deadline) the owner sets once; when it is set and `doctor` is clean, the run starts
+    without a `/approve mode` comment. Off by default. Every run started this way is recorded as
+    started under the standing approval;
+  - picking the next item only from `spec status` readiness (C-01, C-02);
+  - the same loop in cluster mode through the operator (011).
+- **Scope (out):** auto-merging any PR (C-04): the tests PR, the item PR and the status PR stay
+  human merges; a standing approval without a spend cap or deadline; skipping the gate or
+  `doctor`; step mode in developer mode counting as evidence (C-15).
+- **Depends on:** 018, 010
+- **Governed by:** C-01, C-02, C-04, C-11, C-12
+- **Notes:** Owner decision 2026-11-18 (Tosin Akinosho), after the Stockroom runs: "if I wanted
+  to step away from the computer and leave it running it could do it by steps." Stockroom shows
+  why the merges stay human: item 005 passed every check, and only reading the PR found the
+  stale stock figure (now item 007). The spend budget (009) should land before standing
+  approvals are used beyond a single item.
 
 ## Open Questions
 
