@@ -1,0 +1,66 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/006-bundled-short-flags/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/006-bundled-short-flags/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "cli_schema_mcp/src/tools/validate_command_tool.py, tests/test_tools.py, specs/006-bundled-short-flags/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@9d7b468e84d9"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "64808960 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "f822d9839a051a3a7a54916cd820f6f92989989c",
+  "spec_dir": "specs/006-bundled-short-flags",
+  "title": "validate_command accepts bundled short flags",
+  "allowed_paths": [
+    "cli_schema_mcp/src/tools/validate_command_tool.py",
+    "tests/test_tools.py",
+    "specs/006-bundled-short-flags/tasks.md"
+  ],
+  "spec_sha256": "9aef0ed64eb67d9da2691034d080a278685fb0f3263babf8d90ab0ff9d1937a2",
+  "mapping": {
+    "present": true,
+    "stale": false,
+    "uncovered": [],
+    "valid": true
+  },
+  "companion_commit": "9d7b468e84d964834d5b851a416a0e395066a350",
+  "hidden_files": 1,
+  "input_bytes": 64808960
+}

@@ -1,0 +1,46 @@
+{
+  "attempt": 1,
+  "checks": [
+    {
+      "detail": "The bundle contains this ref:\n27c48fa5bd1ddbc4d3137ddd16a96b856f1973b9 HEAD\nThe bundle requires this ref:\nf53825648ad1ce243abdeee97c411ad568196464 \nThe bundle uses this hash algorithm: sha1\n/in/change.bundle is okay\n",
+      "id": "G1_bundle_applies",
+      "result": "pass"
+    },
+    {
+      "detail": "changed=['cli_schema_mcp/src/tools/validate_command_tool.py', 'specs/006-bundled-short-flags/tasks.md', 'tests/test_tools.py'] disallowed=[]",
+      "id": "G2_allowed_paths",
+      "result": "pass"
+    },
+    {
+      "detail": "tasks percent=100",
+      "id": "G3_tasks_checked",
+      "result": "pass"
+    },
+    {
+      "detail": "test files added or edited: ['tests/test_tools.py']",
+      "id": "G6_tests_changed",
+      "result": "pass"
+    },
+    {
+      "detail": "\n  It will be compatible before version 2.0.0.\n    from authlib.jose import JsonWebKey, JsonWebToken\n\ntests/test_main.py::TestMain::test_main_keyboard_interrupt\n  /deps/venv/lib/python3.13/site-packages/uvicorn/server.py:86: RuntimeWarning: coroutine 'Server.serve' was never awaited\n    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())\n  Enable tracemalloc to get traceback where the object was allocated.\n  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n================================ tests coverage ================================\n_______________ coverage: platform linux, python 3.13.18-final-0 _______________\n\nName                                                 Stmts   Miss  Cover\n------------------------------------------------------------------------\ncli_schema_mcp/__init__.py                               1      0   100%\ncli_schema_mcp/src/__init__.py                           0      0   100%\ncli_schema_mcp/src/api.py                              141     78    45%\ncli_schema_mcp/src/main.py                              57      2    96%\ncli_schema_mcp/src/mcp.py                               27      0   100%\ncli_schema_mcp/src/oauth/__init__.py                     0      0   100%\ncli_schema_mcp/src/oauth/controller.py                 206     39    81%\ncli_schema_mcp/src/oauth/handler.py                     52      0   100%\ncli_schema_mcp/src/oauth/introspection.py               67      0   100%\ncli_schema_mcp/src/oauth/models.py                      64      0   100%\ncli_schema_mcp/src/oauth/routes.py                      42     19    55%\ncli_schema_mcp/src/oauth/service.py                    165      0   100%\ncli_schema_mcp/src/schema_registry.py                   87      2    98%\ncli_schema_mcp/src/settings.py                          69      2    97%\ncli_schema_mcp/src/storage/__init__.py                   0      0   100%\ncli_schema_mcp/src/storage/storage_service.py          205     47    77%\ncli_schema_mcp/src/tools/__init__.py                     0      0   100%\ncli_schema_mcp/src/tools/detect_version_tool.py         61     20    67%\ncli_schema_mcp/src/tools/get_download_info_tool.py      67      5    93%\ncli_schema_mcp/src/tools/get_flags_tool.py              21      3    86%\ncli_schema_mcp/src/tools/list_subcommands_tool.py       23      4    83%\ncli_schema_mcp/src/tools/list_supported_tool.py         13      0   100%\ncli_schema_mcp/src/tools/validate_command_tool.py       71      6    92%\ncli_schema_mcp/utils/__init__.py                         0      0   100%\ncli_schema_mcp/utils/pylogger.py                        43      0   100%\n------------------------------------------------------------------------\nTOTAL                                                 1482    227    85%\nRequired test coverage of 80% reached. Total coverage: 84.68%\n379 passed, 3 warnings in 5.30s\n",
+      "id": "G4_visible_tests",
+      "result": "pass"
+    },
+    {
+      "detail": "the original versions of ['tests/test_tools.py'] still pass\n\n  It will be compatible before version 2.0.0.\n    from authlib.jose import JsonWebKey, JsonWebToken\n\ntests/test_main.py::TestMain::test_main_keyboard_interrupt\n  /deps/venv/lib/python3.13/site-packages/uvicorn/server.py:86: RuntimeWarning: coroutine 'Server.serve' was never awaited\n    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())\n  Enable tracemalloc to get traceback where the object was allocated.\n  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n================================ tests coverage ================================\n_______________ coverage: platform linux, python 3.13.18-final-0 _______________\n\nName                                                 Stmts   Miss  Cover\n------------------------------------------------------------------------\ncli_schema_mcp/__init__.py                               1      0   100%\ncli_schema_mcp/src/__init__.py                           0      0   100%\ncli_schema_mcp/src/api.py                              141     78    45%\ncli_schema_mcp/src/main.py                              57      2    96%\ncli_schema_mcp/src/mcp.py                               27      0   100%\ncli_schema_mcp/src/oauth/__init__.py                     0      0   100%\ncli_schema_mcp/src/oauth/controller.py                 206     39    81%\ncli_schema_mcp/src/oauth/handler.py                     52      0   100%\ncli_schema_mcp/src/oauth/introspection.py               67      0   100%\ncli_schema_mcp/src/oauth/models.py                      64      0   100%\ncli_schema_mcp/src/oauth/routes.py                      42     19    55%\ncli_schema_mcp/src/oauth/service.py                    165      0   100%\ncli_schema_mcp/src/schema_registry.py                   87      2    98%\ncli_schema_mcp/src/settings.py                          69      2    97%\ncli_schema_mcp/src/storage/__init__.py                   0      0   100%\ncli_schema_mcp/src/storage/storage_service.py          205     47    77%\ncli_schema_mcp/src/tools/__init__.py                     0      0   100%\ncli_schema_mcp/src/tools/detect_version_tool.py         61     20    67%\ncli_schema_mcp/src/tools/get_download_info_tool.py      67      5    93%\ncli_schema_mcp/src/tools/get_flags_tool.py              21      3    86%\ncli_schema_mcp/src/tools/list_subcommands_tool.py       23      4    83%\ncli_schema_mcp/src/tools/list_supported_tool.py         13      0   100%\ncli_schema_mcp/src/tools/validate_command_tool.py       71     11    85%\ncli_schema_mcp/utils/__init__.py                         0      0   100%\ncli_schema_mcp/utils/pylogger.py                        43      0   100%\n------------------------------------------------------------------------\nTOTAL                                                 1482    232    84%\nRequired test coverage of 80% reached. Total coverage: 84.35%\n371 passed, 3 warnings in 5.05s\n",
+      "id": "G7_existing_tests_kept",
+      "result": "pass"
+    },
+    {
+      "detail": "exit=0 output_lines=45 output_sha256=1263a23c43d679990fc2adf32dce2f013ab92a8dd1fd513815194bf457d37cf9 (output withheld: hidden tests)",
+      "id": "G5_hidden_tests",
+      "result": "pass"
+    }
+  ],
+  "failure": null,
+  "grader_image": "ghcr.io/tosin2013/specfoundry-pilot-tools@sha256:7954ba3b1a970776ab5d8793c0dc7fb9f75527c041617a5769d3a002d30f2fe6",
+  "result": "pass",
+  "run_id": "20261118T030513Z",
+  "task": "006",
+  "version": 1
+}

@@ -1,0 +1,14 @@
+{
+  "repo": "tosin2013/specfoundry-acceptance",
+  "commit": "9d7b468e84d964834d5b851a416a0e395066a350",
+  "dir": "cli-schema-mcp/items/006",
+  "item": "006",
+  "file_count": 1,
+  "files_sha256": "83a9e3cb0d9833769ee340d0c6d7899996a133a61e0789cfbfb37ae2e50e1598",
+  "files": [
+    {
+      "path": "tests/test_acceptance_006_bundled_short_flags.py",
+      "sha256": "5f4d79fd7968de4e7fd377a8ef8a8a499bb4f46fad8dff570007a52e906ec445"
+    }
+  ]
+}

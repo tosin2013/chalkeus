@@ -1,0 +1,157 @@
+# An item run's worker namespace (014 R6): as worker-ns.yaml.tmpl, but its one egress proxy is
+# pilot-egress-w-cli-schema-mcp: the model proxy, or the target's worker proxy (model host + registries).
+# One worker attempt's namespace (FR-005, FR-006). Also used for the probe twin (same policies).
+apiVersion: v1
+kind: Namespace
+metadata: {name: pilot-w-006-1, labels: {specfoundry.io/role: worker, specfoundry.io/run: "20261118T030513Z"}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: worker, namespace: pilot-w-006-1}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata: {name: worker-quota, namespace: pilot-w-006-1}
+spec:
+  hard:
+    pods: "1"
+    count/secrets: "1"
+    count/configmaps: "2"
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+---
+apiVersion: v1
+kind: LimitRange
+metadata: {name: worker-limits, namespace: pilot-w-006-1}
+spec:
+  limits:
+    - type: Container
+      default: {cpu: 500m, memory: 256Mi}
+      defaultRequest: {cpu: 100m, memory: 64Mi}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny-all, namespace: pilot-w-006-1}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-egress-dns-and-proxy, namespace: pilot-w-006-1}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: pilot-egress-w-cli-schema-mcp}}
+          podSelector: {matchLabels: {app: proxy}}
+      ports: [{protocol: TCP, port: 8888}]
+
+---
+# The worker Job for one attempt of an item run (014; contracts/worker-io.md). Unlike the
+# fixture's worker-job.yaml.tmpl, its inputs (a repository snapshot can exceed a ConfigMap's
+# 1 MiB) arrive through the `receiver` init container: the pilot streams a tar into /stage, then
+# creates /stage/.ready, and the worker starts with /in read-only.
+apiVersion: batch/v1
+kind: Job
+metadata: {name: worker, namespace: pilot-w-006-1}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 1200
+  template:
+    metadata: {labels: {app: worker}}
+    spec:
+      serviceAccountName: worker
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: receiver
+          image: ghcr.io/tosin2013/specfoundry-pilot-tools@sha256:7954ba3b1a970776ab5d8793c0dc7fb9f75527c041617a5769d3a002d30f2fe6
+          command: [sh, -c, "until [ -f /stage/.ready ]; do sleep 1; done"]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 500m, memory: 128Mi}}
+          volumeMounts:
+            - {name: inputs, mountPath: /stage}
+        - name: toolchain
+          image: ghcr.io/tosin2013/specfoundry-pilot-toolchain-python3.13@sha256:7c57d4e8e2856afdf8ee0d4989567ceea38f5ae61710fa500e08a6c54d11a6a7
+          command: [cp, -R, /opt/toolchain/., /dest/]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 500m, memory: 256Mi}}
+          volumeMounts:
+            - {name: toolchain, mountPath: /dest}
+        - name: setup
+          image: ghcr.io/tosin2013/specfoundry-pilot-tools@sha256:7954ba3b1a970776ab5d8793c0dc7fb9f75527c041617a5769d3a002d30f2fe6
+          command:
+            - sh
+            - -c
+            - >-
+              set -eu;
+              git clone --quiet /in/base.bundle /tmp/.setup;
+              cd /tmp/.setup;
+              git checkout --quiet "$(/usr/bin/python3 -c 'import json; print(json.load(open("/in/meta.json"))["base_revision"])')";
+              sh /in/setup.sh
+          env:
+            - {name: HOME, value: "/home/worker"}
+            - {name: HTTPS_PROXY, value: "http://proxy.pilot-egress-w-cli-schema-mcp.svc.cluster.local:8888"}
+            - {name: https_proxy, value: "http://proxy.pilot-egress-w-cli-schema-mcp.svc.cluster.local:8888"}
+            - {name: NO_PROXY, value: ""}
+            - {name: PILOT_DEPS, value: "/home/worker/deps"}
+            - {name: PIP_DISABLE_PIP_VERSION_CHECK, value: "1"}
+            - {name: PIP_NO_INPUT, value: "1"}
+            - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+            - {name: VIRTUAL_ENV, value: "/home/worker/deps/venv"}
+            - {name: PATH, value: "/home/worker/deps/venv/bin:/opt/toolchain/python/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "2", memory: 2Gi}}
+          volumeMounts:
+            - {name: inputs, mountPath: /in, readOnly: true}
+            - {name: home, mountPath: /home/worker}
+            - {name: tmp, mountPath: /tmp}
+            - {name: toolchain, mountPath: /opt/toolchain, readOnly: true}
+      containers:
+        - name: worker
+          image: ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:10b21815a9654f8ee46c6ff825e231d24865f090e324260f2a895e99bf55ee6a
+          env:
+            - {name: PILOT_MODEL, value: "litellm/claude-sonnet-4-6"}
+            - {name: PILOT_SPEND_CAP_USD, value: "1.00"}
+            - {name: PILOT_TOKEN_CAP, value: "2000000"}
+            - {name: HTTPS_PROXY, value: "http://proxy.pilot-egress-w-cli-schema-mcp.svc.cluster.local:8888"}
+            - {name: https_proxy, value: "http://proxy.pilot-egress-w-cli-schema-mcp.svc.cluster.local:8888"}
+            - {name: NO_PROXY, value: ""}
+            - {name: PILOT_DEPS, value: "/home/worker/deps"}
+            - {name: PIP_DISABLE_PIP_VERSION_CHECK, value: "1"}
+            - {name: PIP_NO_INPUT, value: "1"}
+            - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+            - {name: VIRTUAL_ENV, value: "/home/worker/deps/venv"}
+            - {name: PATH, value: "/home/worker/deps/venv/bin:/opt/toolchain/python/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "2", memory: 2Gi}}
+          volumeMounts:
+            - {name: inputs, mountPath: /in, readOnly: true}
+            - {name: work, mountPath: /work}
+            - {name: home, mountPath: /home/worker}
+            - {name: model-key, mountPath: /home/worker/.config/opencode, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+            - {name: toolchain, mountPath: /opt/toolchain, readOnly: true}
+      volumes:
+        - {name: inputs, emptyDir: {sizeLimit: 216Mi}}
+        - {name: work, emptyDir: {sizeLimit: 1Gi}}
+        - {name: home, emptyDir: {sizeLimit: 1Gi}}
+        - {name: model-key, secret: {secretName: model-key, defaultMode: 0440}}
+        - {name: tmp, emptyDir: {sizeLimit: 1Gi}}
+        - {name: toolchain, emptyDir: {sizeLimit: 2Gi}}

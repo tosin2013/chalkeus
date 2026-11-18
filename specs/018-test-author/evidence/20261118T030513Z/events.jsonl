@@ -1,0 +1,36 @@
+{"at": "2026-11-18T03:05:14Z", "attempt": null, "detail": "tosin2013/cli-schema-mcp", "event": "run_started", "seq": 1, "stage": "run", "task": null}
+{"at": "2026-11-18T03:05:16Z", "attempt": null, "detail": "seq=1 OK", "event": "gate_allow", "seq": 2, "stage": "gate", "task": "006"}
+{"at": "2026-11-18T03:05:19Z", "attempt": null, "detail": "created=0 changed=0", "event": "github_sync", "seq": 3, "stage": "github", "task": null}
+{"at": "2026-11-18T03:05:19Z", "attempt": null, "detail": "step=mode approved=false channel=none", "event": "approval_channel", "seq": 4, "stage": "approval", "task": null}
+{"at": "2026-11-18T03:05:19Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_declined", "seq": 5, "stage": "mode", "task": null}
+{"at": "2026-11-18T03:05:19Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-mode)", "seq": 6, "stage": "run", "task": null}
+{"at": "2026-11-18T03:05:20Z", "attempt": null, "detail": "step=mode issue=42 comment=6967767350", "event": "decision_posted", "seq": 7, "stage": "github", "task": null}
+{"at": "2026-11-18T03:08:24Z", "attempt": null, "detail": "step=mode channel=github approver=tosin2013 comment=6967813475", "event": "approval_recorded", "seq": 8, "stage": "approval", "task": null}
+{"at": "2026-11-18T03:08:24Z", "attempt": null, "detail": "paused(awaiting-mode)", "event": "run_resumed", "seq": 9, "stage": "run", "task": null}
+{"at": "2026-11-18T03:08:24Z", "attempt": null, "detail": "step=mode approved=true channel=github approver=tosin2013 comment=6967813475", "event": "approval_channel", "seq": 10, "stage": "approval", "task": null}
+{"at": "2026-11-18T03:08:24Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_confirmed", "seq": 11, "stage": "mode", "task": null}
+{"at": "2026-11-18T03:08:40Z", "attempt": null, "detail": "python3.13 Python 3.13.18 (catalog)", "event": "toolchain_ok", "seq": 12, "stage": "prepare", "task": "006"}
+{"at": "2026-11-18T03:10:26Z", "attempt": null, "detail": "", "event": "prefetch_pass", "seq": 13, "stage": "prepare", "task": "006"}
+{"at": "2026-11-18T03:10:56Z", "attempt": 0, "detail": "", "event": "baseline_pass", "seq": 14, "stage": "baseline", "task": "006"}
+{"at": "2026-11-18T03:10:58Z", "attempt": 1, "detail": "ns=pilot-w-006-1 induction=None", "event": "attempt_created", "seq": 15, "stage": "attempt", "task": "006"}
+{"at": "2026-11-18T03:10:59Z", "attempt": 1, "detail": "ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:10b21815a9654f8ee46c6ff825e231d24865f090e324260f2a895e99bf55ee6a", "event": "attempt_running", "seq": 16, "stage": "attempt", "task": "006"}
+{"at": "2026-11-18T03:14:13Z", "attempt": 1, "detail": "", "event": "attempt_collected", "seq": 17, "stage": "attempt", "task": "006"}
+{"at": "2026-11-18T03:14:13Z", "attempt": 1, "detail": "pilot-g-006", "event": "grade_started", "seq": 18, "stage": "grade", "task": "006"}
+{"at": "2026-11-18T03:14:52Z", "attempt": 1, "detail": "", "event": "grade_pass", "seq": 19, "stage": "grade", "task": "006"}
+{"at": "2026-11-18T03:14:52Z", "attempt": 1, "detail": "c2ee443a91c62602fb9f983d48ddba67ceb501b6", "event": "change_replayed", "seq": 20, "stage": "publish", "task": "006"}
+{"at": "2026-11-18T03:14:52Z", "attempt": 1, "detail": "pilot/20261118T030513Z/006", "event": "publish_started", "seq": 21, "stage": "publish", "task": "006"}
+{"at": "2026-11-18T03:15:05Z", "attempt": 1, "detail": "https://github.com/tosin2013/cli-schema-mcp/pull/43", "event": "pr_opened", "seq": 22, "stage": "publish", "task": "006"}
+{"at": "2026-11-18T03:15:05Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 23, "stage": "run", "task": null}
+{"at": "2026-11-18T03:17:53Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 24, "stage": "run", "task": null}
+{"at": "2026-11-18T03:17:55Z", "attempt": 1, "detail": "0ba5a2cb60b306f4a9186d0c395231e6f291a908", "event": "reconcile_proposed", "seq": 25, "stage": "reconcile", "task": "006"}
+{"at": "2026-11-18T03:17:55Z", "attempt": null, "detail": "pilot/20261118T030513Z/status-006", "event": "status_pr_started", "seq": 26, "stage": "publish", "task": "006"}
+{"at": "2026-11-18T03:18:08Z", "attempt": null, "detail": "https://github.com/tosin2013/cli-schema-mcp/pull/44", "event": "status_pr_opened", "seq": 27, "stage": "publish", "task": "006"}
+{"at": "2026-11-18T03:18:08Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 28, "stage": "run", "task": null}
+{"at": "2026-11-18T03:22:43Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 29, "stage": "run", "task": null}
+{"at": "2026-11-18T03:22:44Z", "attempt": null, "detail": "pr=44 ok=true reason=None", "event": "status_pr_checked", "seq": 30, "stage": "reconcile", "task": "006"}
+{"at": "2026-11-18T03:22:44Z", "attempt": null, "detail": "step=reconcile approved=true channel=github approver=tosin2013 pr=44", "event": "approval_channel", "seq": 31, "stage": "approval", "task": "006"}
+{"at": "2026-11-18T03:22:44Z", "attempt": null, "detail": "9a99243fc33ae1e16bef2d3516299d30bf0141f3", "event": "task_verified", "seq": 32, "stage": "status", "task": "006"}
+{"at": "2026-11-18T03:22:48Z", "attempt": null, "detail": "created=0 changed=1", "event": "github_sync", "seq": 33, "stage": "github", "task": null}
+{"at": "2026-11-18T03:22:50Z", "attempt": null, "detail": "created=0 changed=0", "event": "github_sync", "seq": 34, "stage": "github", "task": null}
+{"at": "2026-11-18T03:22:52Z", "attempt": null, "detail": "10/10", "event": "audit_done", "seq": 35, "stage": "audit", "task": null}
+{"at": "2026-11-18T03:22:52Z", "attempt": null, "detail": "", "event": "run_succeeded", "seq": 36, "stage": "run", "task": null}

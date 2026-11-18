@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-18T03:22:52Z",
+  "drift": [
+    {
+      "issue": 34,
+      "item": "001",
+      "kind": "open_but_verified"
+    },
+    {
+      "issue": 35,
+      "item": "002",
+      "kind": "open_but_verified"
+    }
+  ]
+}

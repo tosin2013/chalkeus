@@ -1,0 +1,136 @@
+{
+  "cache": {
+    "prefetch": "pass",
+    "pvc": "deps",
+    "size": "2Gi"
+  },
+  "companion": {
+    "commit": "9d7b468e84d964834d5b851a416a0e395066a350",
+    "dir": "cli-schema-mcp/items/006",
+    "file_count": 1,
+    "files_sha256": "83a9e3cb0d9833769ee340d0c6d7899996a133a61e0789cfbfb37ae2e50e1598",
+    "repo": "tosin2013/specfoundry-acceptance"
+  },
+  "created": "2026-11-18T03:05:13Z",
+  "event_seq": 36,
+  "gate_seq": 1,
+  "impl": "go",
+  "item": "006",
+  "kind": "item",
+  "mode": {
+    "name": "step-by-step",
+    "retry_limit": 2,
+    "spend_cap_usd": 1.0,
+    "token_cap": 2000000,
+    "worker_deadline_s": 1200
+  },
+  "paused_at": "2026-11-18T03:18:08Z",
+  "pending": {
+    "status_base": "0ba5a2cb60b306f4a9186d0c395231e6f291a908",
+    "status_pr": 44,
+    "task": "006"
+  },
+  "proposed_mode": {
+    "name": "step-by-step",
+    "retry_limit": 2,
+    "spend_cap_usd": 1.0,
+    "token_cap": 2000000,
+    "worker_deadline_s": 1200
+  },
+  "proposed_target": "target cli-schema-mcp (tosin2013/cli-schema-mcp@main), item 006, toolchain python3.13, registries: pypi.org, files.pythonhosted.org, security level: minimal, hidden tests: 1 file(s), every criterion covered",
+  "publisher_login": "tosins-specfoundry-pilot[bot]",
+  "readiness": {
+    "allowed_paths": [
+      "cli_schema_mcp/src/tools/validate_command_tool.py",
+      "tests/test_tools.py",
+      "specs/006-bundled-short-flags/tasks.md"
+    ],
+    "change_type": "fix",
+    "companion_commit": "9d7b468e84d964834d5b851a416a0e395066a350",
+    "hidden_files": 1,
+    "input_bytes": 64808960,
+    "mapping": {
+      "present": true,
+      "stale": false,
+      "uncovered": [],
+      "valid": true
+    },
+    "spec_dir": "specs/006-bundled-short-flags",
+    "spec_sha256": "9aef0ed64eb67d9da2691034d080a278685fb0f3263babf8d90ab0ff9d1937a2",
+    "tests_may_change": [],
+    "title": "validate_command accepts bundled short flags"
+  },
+  "reason": null,
+  "run_id": "20261118T030513Z",
+  "security_level": "minimal",
+  "snapshot": {
+    "base_revision": "f822d9839a051a3a7a54916cd820f6f92989989c",
+    "bytes": 1416675,
+    "snapshot_commit": "f53825648ad1ce243abdeee97c411ad568196464"
+  },
+  "state": "succeeded",
+  "target": {
+    "branch": "main",
+    "name": "cli-schema-mcp",
+    "repo": "tosin2013/cli-schema-mcp",
+    "toolchain": "python3.13"
+  },
+  "tasks": {
+    "006": {
+      "attempts": [
+        {
+          "base_revision": "f53825648ad1ce243abdeee97c411ad568196464",
+          "changed_paths": [
+            "cli_schema_mcp/src/tools/validate_command_tool.py",
+            "specs/006-bundled-short-flags/tasks.md",
+            "tests/test_tools.py"
+          ],
+          "harness_exit": 0,
+          "image": "ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:10b21815a9654f8ee46c6ff825e231d24865f090e324260f2a895e99bf55ee6a",
+          "induction": null,
+          "n": 1,
+          "namespace": "pilot-w-006-1",
+          "reason": null,
+          "result": "pass",
+          "spend": {
+            "cap_mode": "token-fallback",
+            "cap_usd": 1.0,
+            "cost_usd": 0.0,
+            "stopped_by_cap": false,
+            "token_cap": 2000000,
+            "tokens": 238130
+          },
+          "state": "passed"
+        }
+      ],
+      "base_revision": "f822d9839a051a3a7a54916cd820f6f92989989c",
+      "gate_seqs": [
+        1
+      ],
+      "passing_attempt": 1,
+      "pr": {
+        "attempt": 1,
+        "author": "tosins-specfoundry-pilot[bot]",
+        "closes": 37,
+        "created": true,
+        "draft": true,
+        "head": "pilot/20261118T030513Z/006",
+        "kind": "task",
+        "number": 43,
+        "operator_login": "tosin2013",
+        "publisher_identity": "tosins-specfoundry-pilot[bot]",
+        "task": "006",
+        "url": "https://github.com/tosin2013/cli-schema-mcp/pull/43"
+      },
+      "state": "verified"
+    }
+  },
+  "toolchain": {
+    "attestation": "not checked",
+    "image": "ghcr.io/tosin2013/specfoundry-pilot-toolchain-python3.13@sha256:7c57d4e8e2856afdf8ee0d4989567ceea38f5ae61710fa500e08a6c54d11a6a7",
+    "name": "python3.13",
+    "source": "catalog",
+    "spec": "{\n  \"name\": \"python3.13\",\n  \"version_command\": [\"python3\", \"--version\"],\n  \"path\": [\"${PILOT_DEPS}/venv/bin\", \"/opt/toolchain/python/bin\"],\n  \"env\": {\"PYTHONDONTWRITEBYTECODE\": \"1\", \"PIP_DISABLE_PIP_VERSION_CHECK\": \"1\", \"PIP_NO_INPUT\": \"1\",\n          \"VIRTUAL_ENV\": \"${PILOT_DEPS}/venv\"},\n  \"setup_command\": [\"sh\", \"-c\", \"[ -x \\\"$PILOT_DEPS/venv/bin/python\\\" ] || python3 -m venv \\\"$PILOT_DEPS/venv\\\"\"],\n  \"proxy\": \"env\"\n}\n",
+    "version": "Python 3.13.18"
+  }
+}

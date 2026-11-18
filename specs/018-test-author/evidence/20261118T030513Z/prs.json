@@ -1,0 +1,28 @@
+[
+  {
+    "attempt": 1,
+    "author": "tosins-specfoundry-pilot[bot]",
+    "closes": 37,
+    "created": true,
+    "draft": true,
+    "head": "pilot/20261118T030513Z/006",
+    "kind": "task",
+    "number": 43,
+    "operator_login": "tosin2013",
+    "publisher_identity": "tosins-specfoundry-pilot[bot]",
+    "task": "006",
+    "url": "https://github.com/tosin2013/cli-schema-mcp/pull/43"
+  },
+  {
+    "author": "tosins-specfoundry-pilot[bot]",
+    "base_revision": "0ba5a2cb60b306f4a9186d0c395231e6f291a908",
+    "created": true,
+    "draft": true,
+    "head": "pilot/20261118T030513Z/status-006",
+    "kind": "status",
+    "number": 44,
+    "publisher_identity": "tosins-specfoundry-pilot[bot]",
+    "task": "006",
+    "url": "https://github.com/tosin2013/cli-schema-mcp/pull/44"
+  }
+]

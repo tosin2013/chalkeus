@@ -1,0 +1,8 @@
+{
+  "attestation": "not checked",
+  "image": "ghcr.io/tosin2013/specfoundry-pilot-toolchain-python3.13@sha256:7c57d4e8e2856afdf8ee0d4989567ceea38f5ae61710fa500e08a6c54d11a6a7",
+  "name": "python3.13",
+  "source": "catalog",
+  "spec": "{\n  \"name\": \"python3.13\",\n  \"version_command\": [\"python3\", \"--version\"],\n  \"path\": [\"${PILOT_DEPS}/venv/bin\", \"/opt/toolchain/python/bin\"],\n  \"env\": {\"PYTHONDONTWRITEBYTECODE\": \"1\", \"PIP_DISABLE_PIP_VERSION_CHECK\": \"1\", \"PIP_NO_INPUT\": \"1\",\n          \"VIRTUAL_ENV\": \"${PILOT_DEPS}/venv\"},\n  \"setup_command\": [\"sh\", \"-c\", \"[ -x \\\"$PILOT_DEPS/venv/bin/python\\\" ] || python3 -m venv \\\"$PILOT_DEPS/venv\\\"\"],\n  \"proxy\": \"env\"\n}\n",
+  "version": "Python 3.13.18"
+}

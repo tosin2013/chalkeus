@@ -1,0 +1,18 @@
+{
+  "allowed_paths": [
+    "cli_schema_mcp/src/tools/validate_command_tool.py",
+    "tests/test_tools.py",
+    "specs/006-bundled-short-flags/tasks.md"
+  ],
+  "attempt": 0,
+  "base_revision": "f53825648ad1ce243abdeee97c411ad568196464",
+  "command_timeout_s": 600,
+  "hidden_mode": "overlay",
+  "induction": null,
+  "item_id": "006",
+  "mode": "baseline",
+  "run_id": "20261118T030513Z",
+  "task": "006",
+  "test_command": "PYTHONPATH=. python -m pytest -q -p no:cacheprovider --cov=cli_schema_mcp --cov-fail-under=80 tests && bandit -q -r cli_schema_mcp -ll",
+  "toolchain": "python3.13"
+}

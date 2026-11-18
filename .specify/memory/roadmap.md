@@ -1,7 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.18.0 → 1.18.1 (this revision)
+Version change: 1.18.1 → 1.18.2 (this revision)
+Bump rationale: PATCH — status transitions and a missing Spec dir link, after the first real
+item run succeeded (run 20261118T030513Z, cli-schema-mcp item 006).
+Changes this revision (owner, 2026-11-18):
+  - 014: planned → in-progress, and its Spec dir (specs/014-any-project/) linked so spec status
+    reads its tasks; the Python path is validated on a real target, the Java/Maven path and the
+    remaining US3 tasks are not.
+  - 018: specced → implemented (25/25 tasks; first use on cli-schema-mcp 006). `verified` is the
+    owner's call after a debrief.
+Specs affected: 014 (status, spec dir), 018 (status)
+
+Prior: Version change: 1.18.0 → 1.18.1 (this revision)
 Bump rationale: PATCH — a backlog note on 020 (token use ideas); no scope or status change.
 Specs affected: 020 (note)
 
@@ -924,7 +935,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   path). Decide the form and name before speccing. **2026-11-15:** form decided by C-13 (one Go
   binary); the name is still Q7. Dependency changed from 012 to 016 (2026-11-15).
 
-### 014 — Any project, any item  [status: planned]
+### 014 — Any project, any item  [status: in-progress]
 
 - **Description:** Run one chosen, prepared roadmap item of a real repository, not just the
   fixture's two items.
@@ -946,6 +957,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     (018) may draft them for a human to review and merge (C-12, owner decision 2026-11-17).
 - **Scope (out):** parallel runs (015); writing specs or plans; choosing items automatically.
 - **Depends on:** 004, 016 (and 005 for the OpenShift EAP validation)
+- **Spec dir:** specs/014-any-project/
 - **Governed by:** C-01, C-02, C-04, C-09, C-12, C-14
 - **Addresses:** docs/prd.md §4 loop, F1, F8, F9
 - **Notes:** Owner decision 2026-11-15. The fixture stays the regression test. Pairs with 013
@@ -1138,7 +1150,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   cluster profile (kind, minikube, plain Kubernetes and OpenShift), using an on-demand Node.js
   image off OpenShift and a UBI Node.js image on OpenShift.
 
-### 018 — Test author  [status: specced]
+### 018 — Test author  [status: implemented]
 
 - **Description:** A separate test-author agent drafts an item's hidden acceptance tests.
   Humans still plan and approve. Build workers never write or see those tests.
@@ -1368,4 +1380,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.18.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
+**Version**: 1.18.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18

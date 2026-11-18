@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-18T03:05:15Z",
+  "decision": "allow",
+  "input": {
+    "fixture_commit": "f822d9839a051a3a7a54916cd820f6f92989989c",
+    "fixture_repo": "tosin2013/cli-schema-mcp",
+    "spec_status_exit": 1,
+    "spec_status_json_sha256": "a2b981fe36de7a896c62f1789e764915da553ca9ad9e69ff4323caca54430136",
+    "spec_version": "spec 0.3.0"
+  },
+  "item_id": "006",
+  "reasons": [
+    "OK"
+  ],
+  "seq": 1,
+  "task": "006",
+  "version": 1
+}
