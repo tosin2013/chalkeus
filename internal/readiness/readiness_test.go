@@ -3,6 +3,7 @@ package readiness
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -74,6 +75,7 @@ type world struct {
 	headsErr          error
 	cloneFails        map[string]bool
 	companionPath     string
+	skipHidden        bool
 }
 
 func newWorld() *world {
@@ -108,6 +110,7 @@ func (w *world) check(t *testing.T, item string, maxMB int) (Result, string) {
 			return dst, strings.TrimSpace(string(head)), nil
 		},
 		OpenPRHeads: func(string) ([]string, error) { return w.heads, w.headsErr },
+		SkipHidden:  w.skipHidden,
 	}
 	tg := config.Target{Name: "t", Repo: "me/target", Branch: "main", CompanionRepo: "me/target-acceptance", CompanionPath: w.companionPath, MaxInputMB: maxMB}
 	res, err := Check(d, tg, item, 3, out)
@@ -217,5 +220,39 @@ func TestSharedCompanionPath(t *testing.T) {
 	w.companion = map[string]string{"other/items/002/tests/test_y.py": "y", "items/002/z.py": "z"}
 	if res, _ := w.check(t, "002", 50); res.Decision != "refuse" || !contains(res.Reasons, "ITEM_NO_HIDDEN_TESTS") {
 		t.Fatalf("another target's tests must not count: %+v", res)
+	}
+}
+
+// 018: the leak path. A hidden test's content already in the target refuses the run.
+func TestHiddenTestsInTarget(t *testing.T) {
+	w := newWorld()
+	w.target["src/test/java/Copied.java"] = w.companion["items/002/src/test/java/AcceptanceTest.java"]
+	if res, _ := w.check(t, "002", 50); res.Decision != "refuse" || !contains(res.Reasons, "HIDDEN_TESTS_IN_TARGET") {
+		t.Fatalf("%+v", res)
+	}
+}
+
+// 018: the test author's readiness doesn't need hidden tests, and reports what is there.
+func TestSkipHiddenForTheAuthor(t *testing.T) {
+	w := newWorld()
+	w.skipHidden = true
+	w.companion = map[string]string{"items/003/x.java": "x"}
+	if res, _ := w.check(t, "002", 50); res.Decision != "allow" || res.HiddenFiles != 0 || res.SpecSHA256 == "" {
+		t.Fatalf("%+v", res)
+	}
+}
+
+// 018: the coverage map is reported, never refused, and not counted as a hidden test.
+func TestMappingReport(t *testing.T) {
+	w := newWorld()
+	w.companion["items/002/"+MapFile] = `{"spec_sha256":"old","uncovered":["US1-AS2"]}`
+	res, _ := w.check(t, "002", 50)
+	if res.Decision != "allow" || res.HiddenFiles != 1 || res.Mapping["present"] != true || res.Mapping["stale"] != true ||
+		fmt.Sprint(res.Mapping["uncovered"]) != "[US1-AS2]" {
+		t.Fatalf("%+v", res)
+	}
+	delete(w.companion, "items/002/"+MapFile)
+	if res, _ := w.check(t, "002", 50); res.Mapping["present"] != false {
+		t.Fatalf("%+v", res.Mapping)
 	}
 }

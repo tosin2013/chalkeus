@@ -39,6 +39,8 @@ instead.
 | An item run fails with `BASELINE_SUITE_FAILS` or `BASELINE_HIDDEN_PASSES` | [Baseline fails](#item-baseline) |
 | An item run fails with `PREPARE` or `REPLAY_MISMATCH`, or `target … needs its own publisher token` | [Item run setup](#item-setup) |
 | An item run fails with `TOOLCHAIN_CONTRACT` or `PREFETCH_FAILED` | [Toolchain or dependencies](#item-toolchain) |
+| A run refuses with `HIDDEN_TESTS_IN_TARGET` | [Hidden tests in the target](#hidden-in-target) |
+| `pilot/pilot author` refuses or fails (`COMPANION_NOT_EMPTY`, `DRAFT_PR_OPEN`, `AUTHOR_CAN_WRITE_TARGET`, `LEVEL_NEEDS_CLUSTER_MODE`, `DRAFT_*`, `MAP_INVALID`) | [Test author](#test-author) |
 
 ---
 
@@ -429,6 +431,42 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
     use the GitHub App, installed on the target.
 - **Confirm:** the run gets past the step that failed.
 - **Source:** `internal/pipeline/item.go`, `internal/fixture/snapshot.go`, `internal/cli/run.go`.
+
+<a id="hidden-in-target"></a>
+### Hidden tests in the target: `HIDDEN_TESTS_IN_TARGET`
+
+- **Symptom:** `pilot/pilot gate` or `run` refuses with `HIDDEN_TESTS_IN_TARGET`, naming a
+  hidden-test file and where its copy is in the target.
+- **Cause:** a file in the target repository has exactly the content of a hidden test. A build
+  worker would see it in its snapshot, so the run can't be trusted.
+- **Fix:** remove the copy from the target (by pull request), find out how it got there (an
+  agent, a script, a copy-paste), and consider the `recommended` security level so the test
+  author's identity can't write the target.
+- **Confirm:** `pilot/pilot gate --target <name> --item NNN` allows.
+- **Source:** `internal/readiness/readiness.go` (`hiddenInTarget`).
+
+<a id="test-author"></a>
+### Test author: `pilot/pilot author` refuses or fails
+
+- **Symptom:** a test-author command exits 10 (refused) or 1 (the draft's check failed).
+- **Cause and fix, by code:**
+  - `COMPANION_NOT_EMPTY`: the item already has hidden tests; review them, or start with
+    `--replace` to propose new ones (still only a pull request).
+  - `DRAFT_PR_OPEN`: a draft pull request is open on the companion; review or close it.
+  - `AUTHOR_CAN_WRITE_TARGET`: at the `recommended` level, the token in `targets/<name>.author.env`
+    can push to the target; give it access to the companion only.
+  - `LEVEL_NEEDS_CLUSTER_MODE`: `strict` needs cluster mode, which isn't built yet; use
+    `minimal` or `recommended`.
+  - `DRAFT_EMPTY`, `DRAFT_OUTSIDE_FOLDER`: put regular test files under the workspace's `draft/`.
+  - `MAP_INVALID`: fix `draft/.acceptance-map.json` as the message says.
+  - `DRAFT_HIDDEN_PASSES`: the drafted tests already pass on today's code; they must fail until
+    the spec is implemented.
+  - `DRAFT_SUITE_FAILS`: with the drafted tests added, the project's own tests fail; the tests may
+    break the build or need a dependency the project doesn't declare.
+  - `DRAFT_NOT_CHECKED`: run `check` again; the draft changed since its last passing check.
+- **Confirm:** `pilot/pilot author status --target <name> --item NNN` shows `checked(pass)`, then
+  `submitted`.
+- **Source:** `internal/author/`.
 
 <a id="item-toolchain"></a>
 ### Toolchain or dependencies: `TOOLCHAIN_CONTRACT` or `PREFETCH_FAILED`

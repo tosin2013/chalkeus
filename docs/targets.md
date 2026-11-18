@@ -45,8 +45,9 @@ For each item you want the pilot to build:
     command compiles and runs it. Your editor won't resolve the tests' imports while you browse
     the companion on its own; that's expected.
   - Give access to the companion only to the people who write hidden tests, and never open it
-    in a coding agent: an agent that sees the tests can write code that passes them without
-    doing what the spec asks.
+    in the coding agent that runs the pilot: an agent that sees the tests can write code that
+    passes them without doing what the spec asks. A separate test-author session may draft them
+    for you (see "Drafting hidden tests with the test author" below).
   - The pilot reads them on your machine with your own git access, and gives them only to the
     grader. The agent never sees them.
   - They must fail on the current code.
@@ -178,6 +179,46 @@ repository in `pilot.env`.
 
 `pilot/pilot reset-fixture` only ever acts on the fixture. With `--target` naming any other
 target it refuses with `NOT_A_FIXTURE`, because it force-pushes.
+
+### Hidden tests: who can see what, and why
+
+A build worker sees only the item's spec and tasks and a snapshot of the target repository, and
+it has no route to GitHub. The one realistic way it could learn the hidden tests is if they
+**land in the target repository**: an agent copies them there by mistake or because a file
+tricked it (a prompt injection), or a bug carries them over. The next run's snapshot would then
+contain them. The pilot refuses such a run (`HIDDEN_TESTS_IN_TARGET`), and the **security level**
+in the target's profile decides who may write the target and read the companion:
+
+| `PILOT_SECURITY_LEVEL` | For | The test author's identity | What keeps tests out of the target |
+|---|---|---|---|
+| `minimal` (default) | one developer on a laptop | your own git access | branch protection on the target, your review of every PR, the skill's rules, the `HIDDEN_TESTS_IN_TARGET` check |
+| `recommended` | teams | a token that can write **only** the companion, in `targets/<name>.author.env` as `PILOT_AUTHOR_TOKEN` (mode 0600) | GitHub itself: that identity can't write the target |
+| `strict` | enterprise, cluster mode | a separate GitHub App, companion only, in its own Job | as recommended, plus enforced network limits (arrives with cluster mode) |
+
+Build-worker isolation is the same at every level. Separate identities are recommended for
+teams and expected in enterprise environments, where review alone doesn't scale and who wrote
+the tests versus who wrote the code must be clear. Each run records its level, and the audit
+reports it. At the minimal level, **protect the target's main branch** so changes arrive only by
+reviewed pull request.
+
+### Drafting hidden tests with the test author
+
+Instead of writing an item's hidden tests yourself, you can have a **separate** agent session
+draft them. Open a new session (not the one that runs the pilot), load the test-author skill
+(`.claude/skills/test-author/`), and give it the target and item. It runs:
+
+```sh
+pilot/pilot author start --target greeting --item 002    # checks the item; prints a workspace
+pilot/pilot author check --target greeting --item 002    # on the cluster: your tests pass, the drafted tests fail
+pilot/pilot author submit --target greeting --item 002   # opens a pull request on the companion
+pilot/pilot author status --target greeting --item 002   # where the draft stands
+```
+
+- The pull request touches only the item's folder in the companion and includes a coverage
+  table: which acceptance criteria of the spec each test covers, and which are uncovered.
+- **You review and merge it.** Merging is the approval; the pilot never merges.
+- The draft's evidence records names, hashes and results, never the tests' contents.
+- The test author never runs `run`, `resume` or `approve`, and never writes the target.
 
 ## 3. Check that an item is ready
 

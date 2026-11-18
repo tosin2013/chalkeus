@@ -2,12 +2,15 @@ package readiness
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/tosin2013/specfoundry/internal/config"
@@ -22,6 +25,9 @@ type Deps struct {
 	Clone func(repo, branch string) (dir, commit string, err error)
 	// OpenPRHeads lists the head branches of the target repository's open pull requests.
 	OpenPRHeads func(repo string) ([]string, error)
+	// SkipHidden is the test author's readiness (018 `author start`): an empty companion folder
+	// doesn't refuse; HiddenFiles reports how many files are already there.
+	SkipHidden bool
 }
 
 // Rule is one readiness rule's outcome, recorded in gate/<seq>-<NNN>.readiness.json.
@@ -33,18 +39,20 @@ type Rule struct {
 
 // Result is the readiness decision. On allow it carries what the run needs next.
 type Result struct {
-	Decision        string        `json:"decision"` // allow | refuse
-	Reasons         []string      `json:"reasons"`
-	Rules           []Rule        `json:"rules"`
-	Gate            gate.Decision `json:"-"`
-	Commit          string        `json:"commit,omitempty"`
-	SpecDir         string        `json:"spec_dir,omitempty"`
-	Title           string        `json:"title,omitempty"` // the item's roadmap title
-	AllowedPaths    []string      `json:"allowed_paths,omitempty"`
-	TestsMayChange  []string      `json:"tests_may_change,omitempty"`
-	CompanionCommit string        `json:"companion_commit,omitempty"`
-	HiddenFiles     int           `json:"hidden_files,omitempty"`
-	InputBytes      int64         `json:"input_bytes,omitempty"`
+	Decision        string         `json:"decision"` // allow | refuse
+	Reasons         []string       `json:"reasons"`
+	Rules           []Rule         `json:"rules"`
+	Gate            gate.Decision  `json:"-"`
+	Commit          string         `json:"commit,omitempty"`
+	SpecDir         string         `json:"spec_dir,omitempty"`
+	Title           string         `json:"title,omitempty"` // the item's roadmap title
+	AllowedPaths    []string       `json:"allowed_paths,omitempty"`
+	TestsMayChange  []string       `json:"tests_may_change,omitempty"`
+	SpecSHA256      string         `json:"spec_sha256,omitempty"`
+	Mapping         map[string]any `json:"mapping,omitempty"` // the test author's coverage map (018): present, uncovered, stale
+	CompanionCommit string         `json:"companion_commit,omitempty"`
+	HiddenFiles     int            `json:"hidden_files,omitempty"`
+	InputBytes      int64          `json:"input_bytes,omitempty"`
 }
 
 var (
@@ -134,6 +142,7 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		return done("ITEM_TASKS_MISSING", specDir+"/tasks.md is missing")
 	}
 	rule("tasks", true, specDir+"/tasks.md")
+	res.SpecSHA256 = sha256Hex(spec)
 
 	// 3. Open questions: spec markers, and unresolved roadmap open questions naming the item.
 	if strings.Contains(string(spec), clarifyMarker) {
@@ -166,12 +175,23 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		return done("ITEM_NO_HIDDEN_TESTS", "companion repository "+t.CompanionRepo+" could not be read with your git access")
 	}
 	defer func() { _ = os.RemoveAll(cdir) }()
-	n := countFiles(filepath.Join(cdir, filepath.FromSlash(t.CompanionItemDir(item))))
-	if n == 0 {
-		return done("ITEM_NO_HIDDEN_TESTS", t.CompanionRepo+" has no files under "+t.CompanionItemDir(item)+"/")
-	}
+	itemDir := filepath.Join(cdir, filepath.FromSlash(t.CompanionItemDir(item)))
+	n := countFiles(itemDir)
 	res.CompanionCommit, res.HiddenFiles = ccommit, n
-	rule("hidden_tests", true, fmt.Sprintf("%d file(s) at %s@%s", n, t.CompanionRepo, short(ccommit)))
+	if d.SkipHidden {
+		rule("hidden_tests", true, fmt.Sprintf("skipped (test author): %d file(s) already at %s", n, t.CompanionItemDir(item)))
+	} else {
+		if n == 0 {
+			return done("ITEM_NO_HIDDEN_TESTS", t.CompanionRepo+" has no files under "+t.CompanionItemDir(item)+"/")
+		}
+		rule("hidden_tests", true, fmt.Sprintf("%d file(s) at %s@%s", n, t.CompanionRepo, short(ccommit)))
+	}
+	// The one realistic way a worker could learn hidden tests is finding them in the target
+	// repository (018, roadmap C-14): refuse if any hidden test's content is already there.
+	if leaked := hiddenInTarget(itemDir, dir); len(leaked) > 0 {
+		return done("HIDDEN_TESTS_IN_TARGET", "the target already contains hidden test content: "+strings.Join(leaked, ", "))
+	}
+	res.Mapping = mappingReport(itemDir, res.SpecSHA256)
 
 	// 6. Input size: the snapshot the pods receive.
 	size, err := treeBytes(dir)
@@ -274,10 +294,13 @@ func openQuestionsNaming(roadmap, item string) string {
 	return ""
 }
 
+// MapFile is the test author's coverage map (018, grader.MapFile): not a hidden test.
+const MapFile = ".acceptance-map.json"
+
 func countFiles(dir string) int {
 	n := 0
 	_ = filepath.WalkDir(dir, func(_ string, e os.DirEntry, err error) error {
-		if err == nil && !e.IsDir() {
+		if err == nil && !e.IsDir() && e.Name() != MapFile {
 			n++
 		}
 		return nil
@@ -330,4 +353,69 @@ func writeRecord(outDir string, seq int, item string, res Result) error {
 		return err
 	}
 	return evidence.WriteJSON(filepath.Join(outDir, fmt.Sprintf("%d-%s.readiness.json", seq, item)), res)
+}
+
+func sha256Hex(b []byte) string {
+	h := sha256.Sum256(b)
+	return hex.EncodeToString(h[:])
+}
+
+// hiddenInTarget lists hidden-test files (map excluded) whose content appears in any file of the
+// target checkout (.git excluded).
+func hiddenInTarget(itemDir, targetDir string) []string {
+	hidden := map[string]string{}
+	_ = filepath.WalkDir(itemDir, func(p string, e os.DirEntry, err error) error {
+		if err == nil && e.Type().IsRegular() && e.Name() != MapFile {
+			if raw, err := os.ReadFile(p); err == nil && len(raw) > 0 {
+				rel, _ := filepath.Rel(itemDir, p)
+				hidden[sha256Hex(raw)] = filepath.ToSlash(rel)
+			}
+		}
+		return nil
+	})
+	if len(hidden) == 0 {
+		return nil
+	}
+	var leaked []string
+	_ = filepath.WalkDir(targetDir, func(p string, e os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if e.IsDir() && e.Name() == ".git" {
+			return filepath.SkipDir
+		}
+		if e.Type().IsRegular() {
+			if raw, err := os.ReadFile(p); err == nil {
+				if name, ok := hidden[sha256Hex(raw)]; ok {
+					rel, _ := filepath.Rel(targetDir, p)
+					leaked = append(leaked, name+" (as "+filepath.ToSlash(rel)+")")
+				}
+			}
+		}
+		return nil
+	})
+	sort.Strings(leaked)
+	return leaked
+}
+
+// mappingReport reads the test author's coverage map (018), if any: whether it is present, the
+// uncovered criteria it lists, and whether it was written for another version of the spec. It
+// never refuses.
+func mappingReport(itemDir, specSHA string) map[string]any {
+	raw, err := os.ReadFile(filepath.Join(itemDir, MapFile))
+	if err != nil {
+		return map[string]any{"present": false}
+	}
+	var m struct {
+		SpecSHA256 string   `json:"spec_sha256"`
+		Uncovered  []string `json:"uncovered"`
+	}
+	if json.Unmarshal(raw, &m) != nil {
+		return map[string]any{"present": true, "valid": false}
+	}
+	unc := make([]any, 0, len(m.Uncovered))
+	for _, u := range m.Uncovered {
+		unc = append(unc, u)
+	}
+	return map[string]any{"present": true, "valid": true, "uncovered": unc, "stale": m.SpecSHA256 != specSHA}
 }

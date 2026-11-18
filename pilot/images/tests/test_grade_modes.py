@@ -248,3 +248,19 @@ class HiddenOutputWithheld(Modes):
         self.assertEqual(r["result"], "pass")
         self.assertNotIn(self.MARK, json.dumps(r))
         self.assertIn("fail on the base revision (expected)", self.detail(r))
+
+
+class AuthorCheck(HiddenOutputWithheld):
+    """018: with author_check, the baseline keeps the hidden output for the author only."""
+
+    def test_output_kept_for_the_author_not_in_the_report(self):
+        grade.AUTHOR_OUTPUT.clear()
+        r = self.run_grade(self.meta(mode="baseline", author_check=True))
+        self.assertEqual(r["result"], "pass")
+        self.assertNotIn(self.MARK, json.dumps(r))
+        self.assertTrue(grade.AUTHOR_OUTPUT and self.MARK in grade.AUTHOR_OUTPUT[-1])
+
+    def test_no_output_kept_without_the_flag(self):
+        grade.AUTHOR_OUTPUT.clear()
+        self.run_grade(self.meta(mode="baseline"))
+        self.assertEqual(grade.AUTHOR_OUTPUT, [])

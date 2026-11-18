@@ -76,7 +76,9 @@ func (p *P) RunItem(item string) int {
 	t["base_revision"] = res.Commit
 	run.State["readiness"] = map[string]any{"spec_dir": res.SpecDir, "allowed_paths": toAnyList(res.AllowedPaths),
 		"title": res.Title, "change_type": p.Target.ChangeType, "tests_may_change": toAnyList(res.TestsMayChange),
-		"companion_commit": res.CompanionCommit, "hidden_files": res.HiddenFiles, "input_bytes": res.InputBytes}
+		"companion_commit": res.CompanionCommit, "hidden_files": res.HiddenFiles, "input_bytes": res.InputBytes,
+		"spec_sha256": res.SpecSHA256, "mapping": res.Mapping}
+	run.State["security_level"] = p.Target.SecurityLevel // roadmap C-14; reported, never a failure
 	_ = run.Save()
 
 	if p.issuesOn() { // 004: mirror the target's roadmap only when the profile opted in
@@ -136,8 +138,8 @@ func (p *P) modeExtra(run *evidence.Run) string {
 		tc += " (operator-supplied " + p.Target.ToolchainImage + ")"
 	}
 	item, _ := run.State["item"].(string)
-	return fmt.Sprintf("  target %s (%s@%s), item %s, toolchain %s\n  egress: model host(s) %d (from pilot.env); registries: %s",
-		p.Target.Name, p.Target.Repo, p.Target.Branch, item, tc, len(p.Cfg.ModelHosts()), regs)
+	return fmt.Sprintf("  target %s (%s@%s), item %s, toolchain %s\n  egress: model host(s) %d (from pilot.env); registries: %s\n  security level: %s; hidden tests: %s",
+		p.Target.Name, p.Target.Repo, p.Target.Branch, item, tc, len(p.Cfg.ModelHosts()), regs, p.Target.SecurityLevel, coverage(run))
 }
 
 // modeExtraGitHub is modeExtra's text for the GitHub decision post: target, item, toolchain and
@@ -152,7 +154,8 @@ func (p *P) modeExtraGitHub(run *evidence.Run) string {
 		tc += " (operator-supplied " + p.Target.ToolchainImage + ")"
 	}
 	item, _ := run.State["item"].(string)
-	return fmt.Sprintf("target %s (%s@%s), item %s, toolchain %s, registries: %s", p.Target.Name, p.Target.Repo, p.Target.Branch, item, tc, regs)
+	return fmt.Sprintf("target %s (%s@%s), item %s, toolchain %s, registries: %s, security level: %s, hidden tests: %s",
+		p.Target.Name, p.Target.Repo, p.Target.Branch, item, tc, regs, p.Target.SecurityLevel, coverage(run))
 }
 
 // startItem prepares the item's inputs, runs the baseline, then the first attempt.
@@ -351,7 +354,11 @@ func (p *P) writeBaselineMeta(run *evidence.Run) (string, error) {
 		return "", err
 	}
 	mp := filepath.Join(bdir, "meta.json")
-	return mp, evidence.WriteJSON(mp, p.baselineMeta(run))
+	meta := p.baselineMeta(run)
+	if run.State["author_check"] == true { // 018: the author sees its own tests' output
+		meta["author_check"] = true
+	}
+	return mp, evidence.WriteJSON(mp, meta)
 }
 
 // replay puts an item's passing change onto the real base before publishing (014 R4).
@@ -482,4 +489,30 @@ func toAnyList(xs []string) []any {
 		out[i] = x
 	}
 	return out
+}
+
+// coverage describes the hidden tests' coverage map (018) for the mode approval: uncovered
+// criteria, a map written for an older spec, or no map (hand-written tests). Never a refusal.
+func coverage(run *evidence.Run) string {
+	r, _ := run.State["readiness"].(map[string]any)
+	n, _ := r["hidden_files"].(int)
+	if f, ok := r["hidden_files"].(float64); ok {
+		n = int(f)
+	}
+	m, _ := r["mapping"].(map[string]any)
+	switch {
+	case m == nil || m["present"] != true:
+		return fmt.Sprintf("%d file(s), no coverage map", n)
+	case m["valid"] != true:
+		return fmt.Sprintf("%d file(s), coverage map unreadable", n)
+	}
+	unc := anyList(m["uncovered"])
+	s := fmt.Sprintf("%d file(s), every criterion covered", n)
+	if len(unc) > 0 {
+		s = fmt.Sprintf("%d file(s), uncovered criteria: %v", n, unc)
+	}
+	if m["stale"] == true {
+		s += " (map written for an older version of the spec)"
+	}
+	return s
 }

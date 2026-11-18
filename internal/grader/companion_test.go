@@ -69,3 +69,15 @@ func TestOverlaySharedCompanion(t *testing.T) {
 		t.Fatalf("%+v %v", c, err)
 	}
 }
+
+func TestOverlaySkipsTheMap(t *testing.T) {
+	comp := t.TempDir()
+	for p, body := range map[string]string{"items/002/tests/test_a.py": "a", "items/002/" + MapFile: "{}"} {
+		_ = os.MkdirAll(filepath.Join(comp, filepath.Dir(p)), 0o755)
+		_ = os.WriteFile(filepath.Join(comp, p), []byte(body), 0o644)
+	}
+	_, c, err := Overlay(comp, "me/acc", "abc", "items/002", "002")
+	if err != nil || c.FileCount != 1 || c.Files[0].Path != "tests/test_a.py" {
+		t.Fatalf("%+v %v", c, err)
+	}
+}

@@ -36,6 +36,10 @@ type ItemGrading struct {
 	Cache           bool
 	CacheSize       string
 	PrefetchProxyNS string
+	// HiddenOutput, when set (018 `author check` only), receives the hidden tests' output from
+	// the grader's hidden_output.txt frame file. It is for the test author's terminal; it is never
+	// written to evidence.
+	HiddenOutput *[]byte
 }
 
 // Deps is where the cache PVC is mounted: read-write in the prefetch Job, read-only in graders,
@@ -187,6 +191,9 @@ func GradeItem(l paths.Layout, c *k8s.Client, rn runner.Runner, run *evidence.Ru
 			}
 			fail(f, nil)
 			return
+		}
+		if g.HiddenOutput != nil {
+			*g.HiddenOutput = files["hidden_output.txt"]
 		}
 		if err := evidence.Decode(files["grade.json"], &report); err != nil {
 			fail("bad_frame", nil)

@@ -17,6 +17,10 @@ import (
 // host with the operator's own access; only this package turns it into the grader's overlay.
 // The evidence keeps names and hashes, never contents, so nothing hidden reaches the record.
 
+// MapFile is the test author's coverage map in an item's companion folder (018). It is not a
+// test: it never goes into the grader overlay and isn't counted.
+const MapFile = ".acceptance-map.json"
+
 // CompanionFile is one hidden-test file as recorded in companion.json.
 type CompanionFile struct {
 	Path   string `json:"path"`
@@ -44,7 +48,7 @@ func Overlay(companionDir, repo, commit, dir, item string) ([]byte, Companion, e
 		if err != nil {
 			return err
 		}
-		if d.Type().IsRegular() {
+		if d.Type().IsRegular() && d.Name() != MapFile {
 			rel, _ := filepath.Rel(root, p)
 			files = append(files, filepath.ToSlash(rel))
 		}

@@ -44,7 +44,33 @@ type Target struct {
 	CacheSize       string // optional override
 	MaxInputMB      int
 	PublisherEnv    string // token mode: targets/<name>.publisher.env
+	SecurityLevel   string // minimal (default) | recommended | strict (roadmap C-14; 018)
+	AuthorEnv       string // targets/<name>.author.env: the test author's companion-only token (recommended level)
 	Fixture         bool
+}
+
+// Security levels (roadmap C-14): who may write the target and read the companion.
+const (
+	LevelMinimal     = "minimal"
+	LevelRecommended = "recommended"
+	LevelStrict      = "strict"
+)
+
+// AuthorToken reads PILOT_AUTHOR_TOKEN from the target's author.env (mode 0600), the test
+// author's companion-only credential at the recommended level. Never printed.
+func (t Target) AuthorToken() (string, error) {
+	if err := CheckMode(t.AuthorEnv); err != nil {
+		return "", targetErr("TARGET_MODE", "%s", err.Error())
+	}
+	raw, err := os.ReadFile(t.AuthorEnv)
+	if err != nil {
+		return "", targetErr("TARGET_INVALID", "the recommended level needs %s with PILOT_AUTHOR_TOKEN (a token that can write only the companion)", t.AuthorEnv)
+	}
+	tok := strings.TrimSpace(ParseEnv(string(raw))["PILOT_AUTHOR_TOKEN"])
+	if tok == "" {
+		return "", targetErr("TARGET_INVALID", "%s has no PILOT_AUTHOR_TOKEN", t.AuthorEnv)
+	}
+	return tok, nil
 }
 
 var companionPathRE = regexp.MustCompile(`^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$`)
@@ -133,6 +159,7 @@ func (c *Config) LoadTarget(name, origin string) (Target, error) {
 		return Target{}, err
 	}
 	t.PublisherEnv = filepath.Join(dir, name+".publisher.env")
+	t.AuthorEnv = filepath.Join(dir, name+".author.env")
 	if err := c.checkCanary(t, origin); err != nil {
 		return Target{}, err
 	}
@@ -191,6 +218,13 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 			return Target{}, invalid("PILOT_TEST_PATHS", "entries must be relative globs inside the repository, got "+g)
 		}
 		t.TestPaths = append(t.TestPaths, g)
+	}
+	t.SecurityLevel = strings.TrimSpace(v["PILOT_SECURITY_LEVEL"])
+	if t.SecurityLevel == "" {
+		t.SecurityLevel = LevelMinimal
+	}
+	if t.SecurityLevel != LevelMinimal && t.SecurityLevel != LevelRecommended && t.SecurityLevel != LevelStrict {
+		return Target{}, invalid("PILOT_SECURITY_LEVEL", "must be minimal, recommended or strict")
 	}
 	if t.ChangeType == "" {
 		t.ChangeType = "feat"

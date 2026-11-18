@@ -13,6 +13,7 @@
 | 3 | `ITEM_OPEN_QUESTIONS` | `[NEEDS CLARIFICATION` in `spec.md`; an error diagnostic on the item; or an unresolved roadmap open question that names `NNN` |
 | 4 | `ITEM_NO_ALLOWED_PATHS` / `ITEM_PATHS_TOO_WIDE` | see [item-spec.md](item-spec.md) |
 | 5 | `ITEM_NO_HIDDEN_TESTS` | `items/NNN/` is missing or empty in the companion repository; or the companion repository can't be read |
+| 5a | `HIDDEN_TESTS_IN_TARGET` | a hidden-test file's content already exists in the target checkout (018): the one realistic path by which a worker could see hidden tests |
 | 6 | `INPUT_TOO_LARGE` | the snapshot bundle exceeds `PILOT_MAX_INPUT_MB` |
 | 7 | `OPEN_ITEM_PR` | an open `pilot/*/<NNN>` PR exists on the target |
 | — | `BASELINE_SUITE_FAILS` | after approval: the project's test command fails on the base revision |

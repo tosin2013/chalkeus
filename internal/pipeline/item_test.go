@@ -18,7 +18,7 @@ func itemP(t *testing.T) (*P, *evidence.Run) {
 	p.L = paths.At(root)
 	p.L.Build = t.TempDir()
 	p.Target = config.Target{Name: "greeting", Repo: "me/greeting-service", Branch: "main", Toolchain: "python",
-		TestCommand: "python3 -m pytest -q", RegistryHosts: []string{"pypi.org"}, MaxInputMB: 50}
+		TestCommand: "python3 -m pytest -q", RegistryHosts: []string{"pypi.org"}, MaxInputMB: 50, SecurityLevel: "minimal"}
 	r.SetItemRun(map[string]any{"name": "greeting", "repo": "me/greeting-service"}, "002")
 	r.State["readiness"] = map[string]any{"spec_dir": "specs/002-x", "allowed_paths": []any{"app.py", "specs/002-x/tasks.md"}}
 	r.State["snapshot"] = map[string]any{"base_revision": "b0", "snapshot_commit": "s0"}
@@ -28,10 +28,21 @@ func itemP(t *testing.T) (*P, *evidence.Run) {
 func TestItemModeText(t *testing.T) {
 	p, r := itemP(t)
 	got := p.modeExtra(r)
-	want := "  target greeting (me/greeting-service@main), item 002, toolchain python\n  egress: model host(s) 1 (from pilot.env); registries: pypi.org"
+	want := "  target greeting (me/greeting-service@main), item 002, toolchain python\n  egress: model host(s) 1 (from pilot.env); registries: pypi.org" +
+		"\n  security level: minimal; hidden tests: 0 file(s), no coverage map"
 	if got != want {
 		t.Fatalf("%q", got)
 	}
+	r.State["readiness"].(map[string]any)["hidden_files"] = 2
+	r.State["readiness"].(map[string]any)["mapping"] = map[string]any{"present": true, "valid": true, "uncovered": []any{"US2-AS1"}, "stale": true}
+	if c := coverage(r); c != "2 file(s), uncovered criteria: [US2-AS1] (map written for an older version of the spec)" {
+		t.Fatal(c)
+	}
+	r.State["readiness"].(map[string]any)["mapping"] = map[string]any{"present": true, "valid": true, "uncovered": []any{}}
+	if c := coverage(r); c != "2 file(s), every criterion covered" {
+		t.Fatal(c)
+	}
+	delete(r.State["readiness"].(map[string]any), "mapping")
 	p.Target.ToolchainImage = "quay.io/me/tc@sha256:" + strings.Repeat("a", 64)
 	if !strings.Contains(p.modeExtra(r), "toolchain python (operator-supplied quay.io/me/tc@sha256:") {
 		t.Error(p.modeExtra(r))
