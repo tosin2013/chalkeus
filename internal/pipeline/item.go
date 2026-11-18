@@ -495,10 +495,7 @@ func toAnyList(xs []string) []any {
 // criteria, a map written for an older spec, or no map (hand-written tests). Never a refusal.
 func coverage(run *evidence.Run) string {
 	r, _ := run.State["readiness"].(map[string]any)
-	n, _ := r["hidden_files"].(int)
-	if f, ok := r["hidden_files"].(float64); ok {
-		n = int(f)
-	}
+	n := asInt(r["hidden_files"]) // int when fresh, json.Number after a resume
 	m, _ := r["mapping"].(map[string]any)
 	switch {
 	case m == nil || m["present"] != true:

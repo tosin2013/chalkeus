@@ -49,7 +49,14 @@ func (p *P) ItemBaseline(dir, id, item string, res readiness.Result, overlay []b
 	if err := os.WriteFile(filepath.Join(in, "overlay.tar"), overlay, 0o600); err != nil {
 		return nil, nil, err
 	}
-	defer p.dropGrading(run)
+	// Wait for the grading namespace to be gone before returning, so a check run right after
+	// this one doesn't meet a namespace that is still terminating (found by the first test
+	// author session).
+	defer func() {
+		if p.C != nil {
+			p.C.DeleteNS(grader.NS(item), true)
+		}
+	}()
 	if err := p.prepareItem(run); err != nil {
 		return nil, nil, err
 	}

@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,7 +34,7 @@ func TestItemModeText(t *testing.T) {
 	if got != want {
 		t.Fatalf("%q", got)
 	}
-	r.State["readiness"].(map[string]any)["hidden_files"] = 2
+	r.State["readiness"].(map[string]any)["hidden_files"] = json.Number("2") // as read back from run.json on resume
 	r.State["readiness"].(map[string]any)["mapping"] = map[string]any{"present": true, "valid": true, "uncovered": []any{"US2-AS1"}, "stale": true}
 	if c := coverage(r); c != "2 file(s), uncovered criteria: [US2-AS1] (map written for an older version of the spec)" {
 		t.Fatal(c)
