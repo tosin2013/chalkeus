@@ -153,8 +153,8 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 	specDir = strings.TrimSuffix(strings.TrimPrefix(specDir, "./"), "/")
 	var spec []byte
 	specOK := false
-	switch {
-	case specDir == "":
+	switch specDir {
+	case "":
 		if fail("ITEM_SPEC_MISSING", "item "+item+" has no Spec dir on the roadmap") {
 			return finish()
 		}
