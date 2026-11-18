@@ -118,9 +118,11 @@ cp -r /src/. /work/ && cd /work
     }
     install="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["install"])' "$sample/sample.json")"
     tests="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["test"])' "$sample/sample.json")"
-    if out="$(step online "$install" 2>&1)" && out="$(step offline "$tests" 2>&1)"; then
+    phase=install
+    if out="$(step online "$install" 2>&1)" && phase=tests && out="$(step offline "$tests" 2>&1)"; then
       echo "  PASS toolchain $name offline sample: install online, tests offline with read-only deps"
-    else echo "  FAIL toolchain $name offline sample: $(printf %s "$out" | tail -5)"; fail=1; fi
+    else # name the step, and show the first errors (Maven's last lines are only its help footer)
+      echo "  FAIL toolchain $name offline sample, $phase step: $( { printf '%s\n' "$out" | grep -m8 -E 'ERROR|Error|error' || true; printf '%s\n' "$out" | tail -5; } )"; fail=1; fi
     docker volume rm -f "$deps" >/dev/null
   fi
   docker volume rm -f "$vol" >/dev/null
