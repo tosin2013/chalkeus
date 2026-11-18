@@ -7,6 +7,9 @@ is ready, and running it (roadmap item 014). Today you can use `PILOT_TOOLCHAIN=
 packages installed from PyPI, or the built-in `python` (Python 3.11 with pytest) for a project
 whose tests need no packages. The other toolchains follow.
 
+Starting from an empty repository? Plan it first, then build it item by item:
+[greenfield.md](greenfield.md).
+
 ## 1. Prepare the repository
 
 For each item you want the pilot to build:

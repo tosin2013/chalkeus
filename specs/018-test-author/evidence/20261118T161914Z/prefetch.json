@@ -1,0 +1,7 @@
+{
+  "at": "2026-11-18T16:24:41Z",
+  "log_tail": "[ERROR] COMPILATION ERROR : \n[ERROR] /tmp/project/src/test/java/dev/stockroom/ScaffoldAcceptanceTests.java:[32,27] cannot find symbol\n  symbol: class StockroomApplication\n[ERROR] /tmp/project/src/test/java/dev/stockroom/ScaffoldAcceptanceTests.java:[118,32] cannot find symbol\n  symbol:   class StockroomApplication\n  location: class dev.stockroom.ScaffoldAcceptanceTests\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.15.0:testCompile (default-testCompile) on project stockroom: Compilation failure: Compilation failure: \n[ERROR] /tmp/project/src/test/java/dev/stockroom/ScaffoldAcceptanceTests.java:[32,27] cannot find symbol\n[ERROR]   symbol: class StockroomApplication\n[ERROR] /tmp/project/src/test/java/dev/stockroom/ScaffoldAcceptanceTests.java:[118,32] cannot find symbol\n[ERROR]   symbol:   class StockroomApplication\n[ERROR]   location: class dev.stockroom.ScaffoldAcceptanceTests\n[ERROR] -> [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException\npilot-maven-prefetch: the tests do not build on the unchanged code; resolving the test runner with a probe test\n",
+  "outcome": "Complete",
+  "result": "pass",
+  "seconds": 31
+}

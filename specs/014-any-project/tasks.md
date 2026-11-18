@@ -515,6 +515,11 @@ targets come later.)*
   3. Check by hand that no hidden-test name is in prompts or the PR.
 
   Copy the records to `specs/014-any-project/evidence/`.
+  Progress (2026-11-18): Stockroom (017's greenfield Java target) ran item 001 end to end on
+  `jdk21-maven`: mode approval with `repo.maven.apache.org` → prefetch → baseline → attempt 1
+  passed → draft PR #9 merged → status PR #10 merged; audit 10/10 before `down`
+  (run 20261118T161914Z). For the owner to decide whether Stockroom replaces greeting-service
+  for T052–T054.
 - [ ] T054 [US3] **Owner action:** quickstart §5. Run item 002, then 003 (unblocked by 002).
   Then run the fixture with no configuration edit between runs (SC-007). Record them.
 
