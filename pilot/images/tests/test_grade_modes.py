@@ -279,3 +279,31 @@ class AuthorOutputLength(Modes):
         out = grade.AUTHOR_OUTPUT[-1]
         self.assertGreater(len(out), 3000)
         self.assertIn("FIRST_MARK", out)
+
+
+class ParsedOutputNotCut(Modes):
+    """A real project's spec status JSON is far over 3000 characters (cli-schema-mcp: ~10 KB);
+    the grader must parse all of it, and see every changed file."""
+
+    def test_large_spec_status_output(self):
+        filler = ",".join('{"id": "9%02d", "tasks": {"percent": 0}}' % i for i in range(90))
+        fake = Path(self.tmp, "bin", "spec")
+        fake.write_text("#!/bin/sh\necho '{\"items\": [" + filler + ", {\"id\": \"002\", \"tasks\": {\"percent\": 100}}]}'\n")
+        self.assertGreater(len(filler), 3000)
+        self.change(SHOUT)
+        r = self.run_grade(self.meta())
+        self.assertEqual(self.results(r)["G3_tasks_checked"], "pass", r["checks"])
+
+    def test_every_changed_file_seen(self):
+        files = {f"src/pkg/module_with_a_long_name_{i:03d}.py": "x = 1\n" for i in range(120)}
+        files["app.py"] = SHOUT
+        for rel, body in files.items():
+            write(self.repo, rel, body)
+        write(self.repo, "aaa_not_allowed.txt", "sneaky\n")
+        sh(self.repo, "add", "-A")
+        sh(self.repo, "commit", "-qm", "pilot: change")
+        sh(self.repo, "bundle", "create", "-q", str(self.inp / "change.bundle"), f"{self.base}..HEAD")
+        r = self.run_grade(self.meta(allowed_paths=["app.py", "src/*", "specs/002-shout/tasks.md"]))
+        detail = next(c["detail"] for c in r["checks"] if c["id"] == "G2_allowed_paths")
+        self.assertEqual(self.results(r)["G2_allowed_paths"], "fail")
+        self.assertIn("aaa_not_allowed.txt", detail)
