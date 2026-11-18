@@ -140,6 +140,15 @@ first attempt, 11 minutes ([run record](../specs/018-test-author/evidence/202611
 Its spec kept the class the earlier tests use (`ProductStore`) and changed only what backs it,
 so every existing test still passed unedited and checked that clients saw no change.
 
+**Your review still matters when every check passes.** Item 005 (reservations) passed on its
+first attempt ([run record](../specs/018-test-author/evidence/20261118T220113Z/)): stock was never
+oversold, and 20 concurrent reservations of a stock of 10 gave exactly ten successes. Reading the
+PR showed a flaw the tests didn't cover: the reported remaining stock came from a read taken
+before the atomic update, so concurrent reservations could report a stale figure. The owner
+merged it and planned the fix as a new item, 007, with tests that check every concurrent
+response ([stockroom#27](https://github.com/tosin2013/stockroom/pull/27)). A flaw found in review
+becomes a roadmap item like any other.
+
 **When you review hidden tests**, check that each one tests behaviour. A test that searches the
 item's source for a literal string (such as `problem+json`) can fail a correct item that writes
 the same thing another way (`MediaType.APPLICATION_PROBLEM_JSON`); the grader already requires
