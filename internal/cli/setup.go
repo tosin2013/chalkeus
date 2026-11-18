@@ -197,13 +197,39 @@ func runImportOpenCode(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	from, _ := cmd.Flags().GetString("from")
-	if from == "~" || strings.HasPrefix(from, "~/") {
-		home, _ := os.UserHomeDir()
-		from = filepath.Join(home, strings.TrimPrefix(from, "~"))
+	home, _ := os.UserHomeDir()
+	expand := func(p string) string {
+		if p == "~" || strings.HasPrefix(p, "~/") {
+			return filepath.Join(home, strings.TrimPrefix(p, "~"))
+		}
+		return p
 	}
+	from, _ := cmd.Flags().GetString("from")
+	from = expand(from)
 	model, _ := cmd.Flags().GetString("model")
 	repo, _ := cmd.Flags().GetString("fixture-repo")
 	force, _ := cmd.Flags().GetBool("force")
+	if login, _ := cmd.Flags().GetBool("from-login"); login {
+		// The OpenCode login (an API key added with /connect or `opencode auth login`).
+		authFile, _ := cmd.Flags().GetString("auth-file")
+		if authFile == "" {
+			data := os.Getenv("XDG_DATA_HOME")
+			if data == "" {
+				data = filepath.Join(home, ".local", "share")
+			}
+			authFile = filepath.Join(data, "opencode", "auth.json")
+		}
+		cache := os.Getenv("XDG_CACHE_HOME")
+		if cache == "" {
+			cache = filepath.Join(home, ".cache")
+		}
+		baseURL, _ := cmd.Flags().GetString("base-url")
+		src, cleanup, err := config.LoginSource(expand(authFile), from, filepath.Join(cache, "opencode"), model, baseURL)
+		defer cleanup()
+		if err != nil {
+			return err
+		}
+		from = src
+	}
 	return config.RunImport(from, model, repo, l.Root, force, cmd.OutOrStdout())
 }

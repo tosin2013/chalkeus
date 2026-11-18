@@ -1,7 +1,23 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.17.0 → 1.17.1 (this revision)
+Version change: 1.17.1 → 1.18.0 (this revision)
+Bump rationale: MINOR — a new planned spec (020 Model profiles and usage), a scope addition to
+008 (each harness's login import), and Q5 partly amended (OpenCode's own services may be named
+as the quick start).
+Changes this revision (owner decisions 2026-11-18, after the first cli-schema-mcp run's model
+key was blocked by the provider for heavy use):
+  - Q5: OpenCode's own services (for example OpenCode Go) may be named in the docs as the quick
+    start; other providers stay operator configuration.
+  - 008: scope gains `import-<harness>` for each harness's login (Claude Code, Codex), API keys
+    first; subscription logins only where the vendor's terms allow automated use.
+  - Delivered now (no new entry): `import-opencode --from-login` and a `model key` check in
+    `pilot doctor` (one tiny request with the worker's key and model).
+  - 020 (new): Model profiles and usage, planned.
+Specs affected: 008 (scope), 020 (new)
+Open questions added/resolved: Q5 partly amended
+
+Prior: Version change: 1.17.0 → 1.17.1
 Bump rationale: PATCH — a clarification of 014's scope: a read-only preflight (`pilot doctor`)
 that reports every readiness problem at once. No decision or entry changes.
 Specs affected: 014 (note)
@@ -787,6 +803,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Addresses:** docs/prd.md §2 (harness-agnostic), N2
 - **Notes:** Proposed in the 003 Kelos review (owner decision 2026-11-13). Under C-12 an
   event can only *propose*; a human still releases the item (015).
+  **Amended 2026-11-18 (owner):** scope gains each harness's own login import
+  (`import-claude-code`, `import-codex`), like `import-opencode --from-login`: one credential
+  copied at mode 0600, the worker's only egress the provider's API host, `doctor` checking the
+  key. API keys first; subscription logins only where the vendor's terms allow automated use.
 
 ### 009 — Period spend budget at the gate  [status: planned]
 
@@ -1187,6 +1207,25 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Notes:** Owner decision 2026-11-17: "a devmode option that is a flag to the project when
   developing".
 
+### 020 — Model profiles and usage  [status: planned]
+
+- **Description:** Named model profiles and usage tracking, so a run can balance cost and
+  capability while coding.
+- **Outcome:** The mode the human approves says which model profile each attempt uses (for
+  example a cheap default first, a stronger model for retries). Each run reports tokens and cost
+  by model, attempt and item, and a subscription's usage limit is tracked like a budget; before an
+  attempt, the pilot checks what is left (with 009) and pauses rather than start work it can't
+  finish.
+- **Scope (in):** model profiles in `pilot.env` (each a provider, model and key file); a
+  per-attempt profile in the mode; usage in evidence and `pilot status`; subscription limits as
+  token budgets; integration with 009's budget check and 007's telemetry.
+- **Scope (out):** switching models inside an attempt (the harness's job); provider billing
+  integrations; automatic model choice without the human seeing it in the mode.
+- **Depends on:** 009, 014
+- **Governed by:** C-01, C-02, C-10
+- **Notes:** Owner decision 2026-11-18, after the first `cli-schema-mcp` run's key was blocked
+  by its provider for heavy use.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -1204,6 +1243,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   default to $1 per attempt with a 2M-token fallback when the provider reports no cost.
   Still open: provider choice for shared use, and USD accounting (declaring model
   prices).
+  **Amended 2026-11-18 (owner):** OpenCode's own services (for example OpenCode Go) may be
+  named in the docs as a quick start, because OpenCode is already the harness; other providers
+  stay operator configuration. `pilot import-opencode --from-login` imports an OpenCode API-key
+  login (never a subscription OAuth login), and `pilot doctor` checks the model key with one tiny
+  request before any run.
 - Q6 — Which spec delivers operator observability (C-10): metrics, traces and events for
   gate decisions, attempts, spend and run duration to an operator-run collector? Candidates:
   a new entry after 003, or folded into 004/005. **Resolved 2026-11-13:** entry 007.
@@ -1314,4 +1358,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.17.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17
+**Version**: 1.18.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18

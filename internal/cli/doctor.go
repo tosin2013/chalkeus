@@ -77,6 +77,21 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	} else {
 		r.Add("cluster", "model host", doctor.Pass, fmt.Sprintf("%d host(s) configured", len(hosts)))
 	}
+	// The model key: one tiny request from this machine with the worker's model (a blocked key
+	// used to show up only after every attempt had failed).
+	if probe, err := cfg.ProbeModel(ctx); err != nil {
+		r.Add("cluster", "model key", doctor.Fail, err.Error())
+	} else {
+		switch {
+		case probe.Status >= 200 && probe.Status < 300:
+			r.Add("cluster", "model key", doctor.Pass, "the provider accepts the worker's key (provider "+probe.Provider+")")
+		case probe.Status == 401 || probe.Status == 403:
+			r.Add("cluster", "model key", doctor.Fail, fmt.Sprintf("the provider rejected the worker's key (%d): %s. Fix or replace the key, then run `pilot/pilot import-opencode` again",
+				probe.Status, probe.Message))
+		default:
+			r.Add("cluster", "model key", doctor.Warn, fmt.Sprintf("couldn't confirm the key: the provider answered %d to a one-token test request", probe.Status))
+		}
+	}
 	upOK := false
 	if _, err := os.Stat(l.UpOK); err != nil {
 		r.Add("cluster", "pilot up", doctor.Fail, "`pilot/pilot up` has not completed")
