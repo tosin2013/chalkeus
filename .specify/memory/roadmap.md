@@ -1,7 +1,11 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.17.1 → 1.18.0 (this revision)
+Version change: 1.18.0 → 1.18.1 (this revision)
+Bump rationale: PATCH — a backlog note on 020 (token use ideas); no scope or status change.
+Specs affected: 020 (note)
+
+Prior: Version change: 1.17.1 → 1.18.0 (this revision)
 Bump rationale: MINOR — a new planned spec (020 Model profiles and usage), a scope addition to
 008 (each harness's login import), and Q5 partly amended (OpenCode's own services may be named
 as the quick start).
@@ -1225,6 +1229,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Governed by:** C-01, C-02, C-10
 - **Notes:** Owner decision 2026-11-18, after the first `cli-schema-mcp` run's key was blocked
   by its provider for heavy use.
+  **Backlog (owner, 2026-11-18), best done once clusters are up (011):** the first real attempt
+  on `cli-schema-mcp` used ~326k tokens. Ideas to cut that: prompt guidance per item (which
+  files not to open, such as large data folders; run only the relevant tests while working, the
+  full suite once at the end); a per-attempt breakdown of tokens by step (files read, test runs,
+  largest inputs) in the evidence; a lower token cap for small items in the mode. The grader
+  itself spends no tokens.
 
 ## Open Questions
 
@@ -1358,4 +1368,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.18.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
+**Version**: 1.18.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
