@@ -1,0 +1,24 @@
+{
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/main/resources/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/005-reservations/tasks.md"
+  ],
+  "attempt": 1,
+  "base_revision": "2edcca44a45dfeef7fe9b6c60df20d8f551a69e3",
+  "command_timeout_s": 600,
+  "hidden_mode": "overlay",
+  "induction": null,
+  "item_id": "005",
+  "mode": "attempt",
+  "run_id": "20261118T220113Z",
+  "spec_sha256": "ff41765f6cc7015d9dbf484dbb3598a95e6bfee4fd806ab650efd097e4a25dd5",
+  "task": "005",
+  "test_command": "mvn -B test",
+  "test_paths": [
+    "src/test/*"
+  ],
+  "tests_may_change": [],
+  "toolchain": "jdk21-maven"
+}
