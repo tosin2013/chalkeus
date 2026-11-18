@@ -196,7 +196,7 @@ missing id fails `MAP_INVALID`; after merge, `gate` reports `uncovered=[]`.
   Done as (2026-11-18): a separate session with the test-author skill drafted 14 hidden tests
   for `cli-schema-mcp` item 006 (one file, every criterion covered; `DRAFT_OK`); the owner merged
   `specfoundry-acceptance` PR #1. Run `20261118T030513Z` then passed attempt 1 on all seven grader checks; the
-  owner merged `cli-schema-mcp` PR #43 and the status PR #44; audit 10/10 (AU07 needs `down`).
+  owner merged `cli-schema-mcp` PR #43 and the status PR #44; audit 11/11 after `down`.
   Evidence: `specs/018-test-author/evidence/20261118T030513Z/`. Earlier runs `20261118T015314Z` (provider
   blocked the model key) and `20261118T024058Z` (the grader's 3000-character cut, fixed in #70)
   stay on disk, not committed.
