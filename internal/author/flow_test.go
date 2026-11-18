@@ -215,14 +215,14 @@ func TestCheckAndSubmit(t *testing.T) {
 	if _, err := Submit(context.Background(), w.env, "006"); err == nil {
 		t.Fatal("submit without a draft must fail")
 	}
-	d, err := draftAndCheck(t, w, "hidden_passes")
+	_, err := draftAndCheck(t, w, "hidden_passes")
 	if code(err) != CodeDraftHiddenPasses {
 		t.Fatalf("%v", err)
 	}
 	if _, err := Submit(context.Background(), w.env, "006"); code(err) != CodeDraftNotChecked {
 		t.Fatalf("a failed check can't be submitted: %v", err)
 	}
-	d, err = draftAndCheck(t, w, "pass")
+	d, err := draftAndCheck(t, w, "pass")
 	if err != nil || d.State != "checked(pass)" || !strings.Contains(w.out.String(), marker) {
 		t.Fatalf("the author sees its own output: %v\n%s", err, w.out)
 	}
