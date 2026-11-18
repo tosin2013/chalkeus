@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-18T18:35:15Z",
+  "base": "2be4d4ca82f8604ce78edd6aee960207fd6d8ff8",
+  "changed": [
+    ".specify/memory/roadmap.md"
+  ],
+  "head": "51f2789107c3986cde167516e64a3913a74ac894",
+  "merge_commit": "12464bf1a8cf5e6778b3d1c35dd633fac84d7d02",
+  "merged_by": "tosin2013",
+  "ok": true,
+  "pr": 14,
+  "reason": null
+}

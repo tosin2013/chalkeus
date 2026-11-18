@@ -1,0 +1,36 @@
+{"at": "2026-11-18T17:17:10Z", "attempt": null, "detail": "tosin2013/stockroom", "event": "run_started", "seq": 1, "stage": "run", "task": null}
+{"at": "2026-11-18T17:17:11Z", "attempt": null, "detail": "seq=1 OK", "event": "gate_allow", "seq": 2, "stage": "gate", "task": "002"}
+{"at": "2026-11-18T17:17:13Z", "attempt": null, "detail": "created=0 changed=1", "event": "github_sync", "seq": 3, "stage": "github", "task": null}
+{"at": "2026-11-18T17:17:13Z", "attempt": null, "detail": "step=mode approved=false channel=none", "event": "approval_channel", "seq": 4, "stage": "approval", "task": null}
+{"at": "2026-11-18T17:17:13Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_declined", "seq": 5, "stage": "mode", "task": null}
+{"at": "2026-11-18T17:17:13Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-mode)", "seq": 6, "stage": "run", "task": null}
+{"at": "2026-11-18T17:17:14Z", "attempt": null, "detail": "step=mode issue=12 comment=6985981379", "event": "decision_posted", "seq": 7, "stage": "github", "task": null}
+{"at": "2026-11-18T17:20:02Z", "attempt": null, "detail": "step=mode channel=github approver=tosin2013 comment=6986052609", "event": "approval_recorded", "seq": 8, "stage": "approval", "task": null}
+{"at": "2026-11-18T17:20:03Z", "attempt": null, "detail": "paused(awaiting-mode)", "event": "run_resumed", "seq": 9, "stage": "run", "task": null}
+{"at": "2026-11-18T17:20:03Z", "attempt": null, "detail": "step=mode approved=true channel=github approver=tosin2013 comment=6986052609", "event": "approval_channel", "seq": 10, "stage": "approval", "task": null}
+{"at": "2026-11-18T17:20:03Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_confirmed", "seq": 11, "stage": "mode", "task": null}
+{"at": "2026-11-18T17:20:16Z", "attempt": null, "detail": "jdk21-maven Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5) (catalog)", "event": "toolchain_ok", "seq": 12, "stage": "prepare", "task": "002"}
+{"at": "2026-11-18T17:21:26Z", "attempt": null, "detail": "", "event": "prefetch_pass", "seq": 13, "stage": "prepare", "task": "002"}
+{"at": "2026-11-18T17:22:07Z", "attempt": 0, "detail": "", "event": "baseline_pass", "seq": 14, "stage": "baseline", "task": "002"}
+{"at": "2026-11-18T17:22:07Z", "attempt": 1, "detail": "ns=pilot-w-002-1 induction=None", "event": "attempt_created", "seq": 15, "stage": "attempt", "task": "002"}
+{"at": "2026-11-18T17:22:09Z", "attempt": 1, "detail": "ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:9d12a8625aca5767d9b4b3396b3980bc0dbce7229f5cf52f4108f617011abd4c", "event": "attempt_running", "seq": 16, "stage": "attempt", "task": "002"}
+{"at": "2026-11-18T17:24:06Z", "attempt": 1, "detail": "", "event": "attempt_collected", "seq": 17, "stage": "attempt", "task": "002"}
+{"at": "2026-11-18T17:24:06Z", "attempt": 1, "detail": "pilot-g-002", "event": "grade_started", "seq": 18, "stage": "grade", "task": "002"}
+{"at": "2026-11-18T17:24:51Z", "attempt": 1, "detail": "", "event": "grade_pass", "seq": 19, "stage": "grade", "task": "002"}
+{"at": "2026-11-18T17:24:51Z", "attempt": 1, "detail": "7f8e61062533849d7fe39ef07a8e841114f95318", "event": "change_replayed", "seq": 20, "stage": "publish", "task": "002"}
+{"at": "2026-11-18T17:24:51Z", "attempt": 1, "detail": "pilot/20261118T171710Z/002", "event": "publish_started", "seq": 21, "stage": "publish", "task": "002"}
+{"at": "2026-11-18T17:25:01Z", "attempt": 1, "detail": "https://github.com/tosin2013/stockroom/pull/13", "event": "pr_opened", "seq": 22, "stage": "publish", "task": "002"}
+{"at": "2026-11-18T17:25:01Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 23, "stage": "run", "task": null}
+{"at": "2026-11-18T18:30:11Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 24, "stage": "run", "task": null}
+{"at": "2026-11-18T18:30:12Z", "attempt": 1, "detail": "2be4d4ca82f8604ce78edd6aee960207fd6d8ff8", "event": "reconcile_proposed", "seq": 25, "stage": "reconcile", "task": "002"}
+{"at": "2026-11-18T18:30:12Z", "attempt": null, "detail": "pilot/20261118T171710Z/status-002", "event": "status_pr_started", "seq": 26, "stage": "publish", "task": "002"}
+{"at": "2026-11-18T18:30:22Z", "attempt": null, "detail": "https://github.com/tosin2013/stockroom/pull/14", "event": "status_pr_opened", "seq": 27, "stage": "publish", "task": "002"}
+{"at": "2026-11-18T18:30:22Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 28, "stage": "run", "task": null}
+{"at": "2026-11-18T18:35:14Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 29, "stage": "run", "task": null}
+{"at": "2026-11-18T18:35:15Z", "attempt": null, "detail": "pr=14 ok=true reason=None", "event": "status_pr_checked", "seq": 30, "stage": "reconcile", "task": "002"}
+{"at": "2026-11-18T18:35:15Z", "attempt": null, "detail": "step=reconcile approved=true channel=github approver=tosin2013 pr=14", "event": "approval_channel", "seq": 31, "stage": "approval", "task": "002"}
+{"at": "2026-11-18T18:35:15Z", "attempt": null, "detail": "12464bf1a8cf5e6778b3d1c35dd633fac84d7d02", "event": "task_verified", "seq": 32, "stage": "status", "task": "002"}
+{"at": "2026-11-18T18:35:17Z", "attempt": null, "detail": "created=0 changed=1", "event": "github_sync", "seq": 33, "stage": "github", "task": null}
+{"at": "2026-11-18T18:35:18Z", "attempt": null, "detail": "created=0 changed=0", "event": "github_sync", "seq": 34, "stage": "github", "task": null}
+{"at": "2026-11-18T18:35:19Z", "attempt": null, "detail": "10/10", "event": "audit_done", "seq": 35, "stage": "audit", "task": null}
+{"at": "2026-11-18T18:35:19Z", "attempt": null, "detail": "", "event": "run_succeeded", "seq": 36, "stage": "run", "task": null}
