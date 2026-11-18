@@ -41,10 +41,13 @@ def matches(path, globs):
     return any(fnmatch.fnmatch(path, g) for g in globs or [])
 
 
-def run(cmd, cwd=None, env=None, timeout=180):
+AUTHOR_OUTPUT_LIMIT = 200_000  # 018: the test author sees enough to tell why each of its tests fails
+
+
+def run(cmd, cwd=None, env=None, timeout=180, limit=3000):
     try:
         r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
-        return r.returncode, (r.stdout + r.stderr)[-3000:]
+        return r.returncode, (r.stdout + r.stderr)[-limit:]
     except subprocess.TimeoutExpired:
         return 124, "timeout"
 
@@ -112,9 +115,9 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
             "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
 
 
-def project_tests(meta, repo):
+def project_tests(meta, repo, limit=3000):
     """Run the project's own test command from the project root (item runs)."""
-    return run(["sh", "-c", meta["test_command"]], cwd=repo, timeout=int(meta.get("command_timeout_s") or 180))
+    return run(["sh", "-c", meta["test_command"]], cwd=repo, timeout=int(meta.get("command_timeout_s") or 180), limit=limit)
 
 
 def overlay(grading, repo):
@@ -211,7 +214,7 @@ def baseline(meta, inp, grading, work, repo):
             if not ok:
                 add("G5_hidden_tests", "fail", why)
             else:
-                rc, out = project_tests(meta, repo)
+                rc, out = project_tests(meta, repo, AUTHOR_OUTPUT_LIMIT if meta.get("author_check") else 3000)
                 if meta.get("author_check"):
                     AUTHOR_OUTPUT.append(out)
                 # Here a pass means the hidden tests FAILED on the base, as they must.

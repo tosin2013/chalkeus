@@ -264,3 +264,18 @@ class AuthorCheck(HiddenOutputWithheld):
         grade.AUTHOR_OUTPUT.clear()
         self.run_grade(self.meta(mode="baseline"))
         self.assertEqual(grade.AUTHOR_OUTPUT, [])
+
+
+class AuthorOutputLength(Modes):
+    """018: the author's output isn't cut to the last 3000 characters."""
+
+    def test_long_output_kept_whole(self):
+        long_test = ("import unittest\nclass H(unittest.TestCase):\n" +
+                     "".join(f"    def test_{i}(self):\n        self.fail('FIRST_MARK' if {i} == 0 else 'x' * 200)\n" for i in range(40)))
+        write(self.grading, "overlay/tests/test_hidden.py", long_test)
+        grade.AUTHOR_OUTPUT.clear()
+        r = self.run_grade(self.meta(mode="baseline", author_check=True))
+        self.assertEqual(r["result"], "pass")
+        out = grade.AUTHOR_OUTPUT[-1]
+        self.assertGreater(len(out), 3000)
+        self.assertIn("FIRST_MARK", out)
