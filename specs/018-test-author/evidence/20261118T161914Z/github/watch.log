@@ -1,0 +1,42 @@
+approved by @tosin2013 on GitHub: start the run in this mode: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}; target stockroom (tosin2013/stockroom@main), item 001, toolchain jdk21-maven, registries: repo.maven.apache.org, security level: minimal, hidden tests: 1 file(s), uncovered criteria: [FR-006]. Now run: pilot/pilot resume --run 20261118T161914Z
+Run mode for this pilot: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}
+  target stockroom (tosin2013/stockroom@main), item 001, toolchain jdk21-maven
+  egress: model host(s) 1 (from pilot.env); registries: repo.maven.apache.org
+  security level: minimal; hidden tests: 1 file(s), uncovered criteria: [FR-006]
+  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.
+Confirm this mode and start staging workers? [y/N] y  (approved on GitHub by @tosin2013)
+  PASS P12   014 R7   graders have no egress; only the prefetch pod reaches DNS and its registries-only proxy
+  baseline 001: pass (the project's tests pass and the hidden tests fail on the base)
+  PASS P01   FR-005   worker namespace has exactly 1 pod with 1 container
+  PASS P02   FR-006   SA and pod automount off; no token file
+  PASS P03   FR-006   default-deny netpol, quota pods=1 secrets=1, Job deadline
+  PASS P04   FR-007   only Secret is model-key; no SCM-like secret keys or env names
+  PASS P05   FR-007   no grading material in the worker namespace
+  PASS P11   014 FR-008 no hidden-test file reaches the worker (ConfigMaps, staged inputs, prompt)
+  PASS P06   FR-009b  model host via proxy reachable; github.com via proxy and direct internet blocked; control reaches github.com
+  PASS P07   FR-010   worker-policy pod cannot reach the grader stand-in; control can
+  PASS P08   FR-010   worker SA cannot create/patch/exec in its grader namespace
+  PASS P09   FR-013   only pilot-publish holds an SCM credential
+  PASS P10   S6       pilot pods digest-pinned, non-root, no privilege escalation
+
+Item 001 draft PR: https://github.com/tosin2013/stockroom/pull/9
+Review and merge it on GitHub yourself, then run: pilot/pilot resume --run 20261118T161914Z
+Reconcile proposal for task 001 (item 001), PR #9 merged (22bfef4fdaa3a7b1cc74badfc55041dc57645e77), tasks 100%, graded tree matches:
+- ### 001 — Scaffold  [status: specced]
++ ### 001 — Scaffold  [status: verified]
+
+Status-change PR: https://github.com/tosin2013/stockroom/pull/10
+It changes only item 001 to `verified`. Merging it on GitHub approves the status change; then run `pilot resume` (or `pilot github watch`).
+github drift: 0 difference(s)
+  PASS AU01 only the prepared item was allowed and attempted (014 FR-002)
+  PASS AU02 baseline passed, then failed attempts and exactly one final pass (014 FR-007)
+  PASS AU03 exactly 1 draft task PR (plus at most 1 status PR) on the target, by the publisher identity (014)
+  PASS AU04 no worker/grader held an SCM credential (P04, P09) (SC-004); no hidden test reached a worker (P11, 014)
+  PASS AU05 gate fail-closed matrix passed (SC-005)
+  PASS AU06 every attempt within its spend cap (SC-008)
+  PASS AU08 no secrets in the evidence record
+  PASS AU09 every retry confirmed by the operator (FR-017)
+  PASS AU10 mode confirmed before any worker staged (FR-023)
+  PASS AU11 no induction; every attempt got the item's spec unaltered (014)
+run 20261118T161914Z succeeded. Evidence: specs/018-test-author/evidence/20261118T161914Z
+run 20261118T161914Z is succeeded; stopped watching

@@ -1,0 +1,16 @@
+{
+  "applied_commit": null,
+  "approved": false,
+  "at": "2026-11-18T16:30:52Z",
+  "channel": "github",
+  "item_id": "001",
+  "merge_commit": "22bfef4fdaa3a7b1cc74badfc55041dc57645e77",
+  "mismatched_paths": [],
+  "pr": 9,
+  "pr_merged": true,
+  "proposed": "specced\u2192verified",
+  "reason": null,
+  "task": "001",
+  "tasks_percent": 100,
+  "tree_matches_graded": true
+}

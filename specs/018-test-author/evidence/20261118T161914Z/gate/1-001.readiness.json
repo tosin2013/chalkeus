@@ -1,0 +1,69 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/001-scaffold/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/001-scaffold/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "src/main/java/dev/stockroom/*, src/main/resources/*, src/test/java/dev/stockroom/*, specs/001-scaffold/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@4ee1433b739a"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "1361920 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "98bb91680d19810b5113385855bfbe4e38674c69",
+  "spec_dir": "specs/001-scaffold",
+  "title": "Scaffold",
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/main/resources/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/001-scaffold/tasks.md"
+  ],
+  "spec_sha256": "dce3e4f26aba2f0bd2f5675ee31e3cda7cc3bd8fa0c7b0a0225ad3cc86c2bba4",
+  "mapping": {
+    "present": true,
+    "stale": false,
+    "uncovered": [
+      "FR-006"
+    ],
+    "valid": true
+  },
+  "companion_commit": "4ee1433b739a50ec1c4a02f65fe8c5499fcf5998",
+  "hidden_files": 1,
+  "input_bytes": 1361920
+}
