@@ -1,7 +1,15 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.18.2 → 1.19.0 (this revision)
+Version change: 1.19.0 → 1.19.1 (this revision)
+Bump rationale: PATCH — a status transition and a Spec dir link.
+Changes this revision (2026-11-18):
+  - 017: planned → specced; Spec dir specs/017-greenfield/ (written guide-first, after
+    docs/greenfield.md and Stockroom's first run, 20261118T161914Z: item 001 verified).
+Specs affected: 017
+Open questions added/resolved: none
+
+Prior: Version change: 1.18.2 → 1.19.0
 Bump rationale: MINOR — Q13 resolved (specs half: the controller plans with the human), a new
 decision (C-16, deterministic grading only), and a material scope change to 017 (Java/Maven
 first, Node later).
@@ -1154,7 +1162,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   decision (see 004).
 - **Spec dir:** specs/016-go-pilot/
 
-### 017 — Greenfield bootstrap  [status: planned]
+### 017 — Greenfield bootstrap  [status: specced]
 
 - **Description:** Start a project from an empty repository: the roadmap's first item is a
   scaffold, and every later item grows the project like a brownfield one.
@@ -1177,6 +1185,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Depends on:** 014
 - **Governed by:** C-01, C-04, C-07, C-08, C-12, C-14
 - **Addresses:** docs/prd.md §4 loop, F1
+- **Spec dir:** specs/017-greenfield/
 - **Notes:** Owner decision 2026-11-15; resolves Q11. ~~The Node.js repository is chosen when
   017 is specified.~~ **Amended 2026-11-18 (owner):** Java first, Node later; the first
   repository is a new, small Spring Boot REST service (001 scaffold, 002 a real endpoint),
@@ -1431,4 +1440,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.19.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
+**Version**: 1.19.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
