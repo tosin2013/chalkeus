@@ -182,7 +182,8 @@ As an owner, I repeat the loop on a new Node.js 24 repository with npm.
   cache step passes. *(Met in the same run.)*
 - **SC-003**: A dependent item (002) runs to `verified` with no configuration change after 001.
   *(Met 2026-11-18: run 20261118T171710Z, first attempt; one planning fix first, stockroom#11,
-  declaring the 001 test that 002 changes.)*
+  declaring the 001 test that 002 changes.)* Item 003 followed with no planning fix (run
+  20261118T210446Z, first attempt, 8 minutes from mode approval to verified).
 - **SC-004**: A Node.js scaffold runs to `verified`.
 - **SC-005**: Each recorded run's audit passes 11/11 after `down`.
 

@@ -1,0 +1,67 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/003-problem-details/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/003-problem-details/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "src/main/java/dev/stockroom/*, src/main/resources/*, src/test/java/dev/stockroom/*, specs/003-problem-details/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@2acc249bee8f"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "1402880 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "3616008dd3303f5428832aba113d38f2dd50e439",
+  "spec_dir": "specs/003-problem-details",
+  "title": "Problem Details errors",
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/main/resources/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/003-problem-details/tasks.md"
+  ],
+  "spec_sha256": "9384dbdfa9fe61c171066b9849c64ecfd9a007a2b0638d278c1b2e21432183dc",
+  "mapping": {
+    "present": true,
+    "stale": false,
+    "uncovered": [],
+    "valid": true
+  },
+  "companion_commit": "2acc249bee8f58df6788aa98d46439be418068b8",
+  "hidden_files": 1,
+  "input_bytes": 1402880
+}
