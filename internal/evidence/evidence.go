@@ -348,7 +348,15 @@ func (r *Run) WriteSummary() (string, error) {
 	out := []string{title + r.ID, "", head, ""}
 	if len(ev) > 0 {
 		t0, e0 := time.Parse(TimeFormat, pyStr(ev[0]["at"]))
-		t1, e1 := time.Parse(TimeFormat, pyStr(ev[len(ev)-1]["at"]))
+		// The run ends at its last run_succeeded or run_failed event; an audit after that
+		// (for example after `down`) adds events but must not stretch the elapsed time.
+		end := ev[len(ev)-1]
+		for _, e := range ev {
+			if n := pyStr(e["event"]); n == "run_succeeded" || n == "run_failed" {
+				end = e
+			}
+		}
+		t1, e1 := time.Parse(TimeFormat, pyStr(end["at"]))
 		if e0 == nil && e1 == nil {
 			wait := 0
 			for _, e := range ev {
