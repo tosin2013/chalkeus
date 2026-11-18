@@ -39,6 +39,7 @@ instead.
 | An item run fails with `BASELINE_SUITE_FAILS` or `BASELINE_HIDDEN_PASSES` | [Baseline fails](#item-baseline) |
 | An item run fails with `PREPARE` or `REPLAY_MISMATCH`, or `target … needs its own publisher token` | [Item run setup](#item-setup) |
 | An item run fails with `TOOLCHAIN_CONTRACT` or `PREFETCH_FAILED` | [Toolchain or dependencies](#item-toolchain) |
+| Every attempt fails at `G1_bundle_applies` with `harness_error`, 0 tokens, and the worker log shows `provider.auth` / 401 | [Model key rejected](#model-key) |
 | A run refuses with `HIDDEN_TESTS_IN_TARGET` | [Hidden tests in the target](#hidden-in-target) |
 | `pilot/pilot author` refuses or fails (`COMPANION_NOT_EMPTY`, `DRAFT_PR_OPEN`, `AUTHOR_CAN_WRITE_TARGET`, `LEVEL_NEEDS_CLUSTER_MODE`, `DRAFT_*`, `MAP_INVALID`) | [Test author](#test-author) |
 
@@ -431,6 +432,23 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
     use the GitHub App, installed on the target.
 - **Confirm:** the run gets past the step that failed.
 - **Source:** `internal/pipeline/item.go`, `internal/fixture/snapshot.go`, `internal/cli/run.go`.
+
+<a id="model-key"></a>
+### Model key rejected
+
+- **Symptom:** each attempt ends after a few seconds with `harness_error`, 0 tokens and no
+  change, so grading fails at `G1_bundle_applies`. The attempt's `report.json` log shows
+  `provider.auth` with status 401 (for example "Key is blocked").
+- **Cause:** the model provider refuses the worker's key: blocked (for example after heavy
+  use), expired, revoked or wrong. The pilot uses its own copy of the key in
+  `~/.config/specfoundry/opencode/`, so fixing the key in your own OpenCode setup doesn't fix the
+  pilot's.
+- **Fix:** get the key unblocked or a new one, then copy it in again: `pilot/pilot
+  import-opencode` (or `--from-login`), or replace the key file in
+  `~/.config/specfoundry/opencode/` (mode 0600).
+- **Confirm:** `pilot/pilot doctor --target <name>` shows `PASS model key`. Each new attempt
+  reads the key file again, so a paused run can then retry.
+- **Source:** `internal/config/probe.go`, `internal/config/import_login.go`.
 
 <a id="hidden-in-target"></a>
 ### Hidden tests in the target: `HIDDEN_TESTS_IN_TARGET`

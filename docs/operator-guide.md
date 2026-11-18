@@ -205,6 +205,29 @@ never prints your key or your provider's host. It refuses a config with a litera
 
 Then continue to section 6.
 
+### If you logged in with OpenCode (`/connect`)
+
+If you connected your provider in OpenCode with an **API key** (`/connect` in the TUI, or
+`opencode auth login`), import that login instead:
+
+```sh
+pilot/pilot import-opencode --from-login --model <provider>/<model> --fixture-repo <you>/<you>-pilot-fixture
+```
+
+The pilot copies only that provider's key into its own folder (mode 0600, never printed) and
+takes the API endpoint from your OpenCode config or OpenCode's provider catalog; pass
+`--base-url https://…` if it doesn't know one. A subscription (OAuth) login is refused: the
+pilot runs unattended, so it uses API keys only.
+
+### Check the key
+
+```sh
+pilot/pilot doctor --target <name>
+```
+
+Its `model key` row sends one tiny request (a few tokens) with the worker's key and model. A
+blocked, expired or wrong key shows here as a failure, before any run.
+
 ### Otherwise, write it by hand
 
 ```sh
