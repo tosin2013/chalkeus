@@ -44,6 +44,17 @@ def matches(path, globs):
 AUTHOR_OUTPUT_LIMIT = 200_000  # 018: the test author sees enough to tell why each of its tests fails
 
 
+def run_full(cmd, cwd=None, timeout=180):
+    """For output the grader parses (file lists, spec status JSON): the whole stdout, never cut.
+    run() keeps only an output's tail for evidence; parsing a tail silently drops data (a large
+    project's spec status JSON, or files in a large change)."""
+    try:
+        r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)
+        return r.returncode, r.stdout, r.stderr[-1000:]
+    except subprocess.TimeoutExpired:
+        return 124, "", "timeout"
+
+
 def run(cmd, cwd=None, env=None, timeout=180, limit=3000):
     try:
         r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
@@ -77,18 +88,22 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
         ok = rc6 == 0
         detail = " | ".join(x for x in (o1, o2, o3, o4, o5, o6) if x)[:2000] or "fast-forward from base"
     if add("G1_bundle_applies", ok, detail):
-        rc, out = run(["git", "diff", "--name-only", base, "HEAD"], cwd=repo)
+        rc, out, _ = run_full(["git", "diff", "--name-only", base, "HEAD"], cwd=repo)
         changed = [p for p in out.splitlines() if p]
         bad = [p for p in changed if not any(fnmatch.fnmatch(p, g) for g in meta["allowed_paths"])]
         if add("G2_allowed_paths", rc == 0 and not bad and bool(changed), f"changed={changed} disallowed={bad}"):
-            rc, out = run(["spec", "status", "--json", "--root", repo])
-            pct = None
+            rc, out, err = run_full(["spec", "status", "--json", "--root", repo])
+            pct, why = None, ""
             try:
-                item = next(i for i in json.loads(out if rc in (0, 1) else "{}")["items"] if i["id"] == meta["item_id"])
-                pct = (item.get("tasks") or {}).get("percent")
-            except Exception:  # noqa: BLE001
-                pass
-            if add("G3_tasks_checked", pct == 100, f"tasks percent={pct}"):
+                items = json.loads(out if rc in (0, 1) else "{}")["items"]
+                item = next((i for i in items if i["id"] == meta["item_id"]), None)
+                if item is None:
+                    why = f" (item {meta['item_id']} not in spec status output)"
+                else:
+                    pct = (item.get("tasks") or {}).get("percent")
+            except Exception as e:  # noqa: BLE001
+                why = f" (spec status unreadable: rc={rc} {type(e).__name__}; {err.strip()[:200]})"
+            if add("G3_tasks_checked", pct == 100, f"tasks percent={pct}{why}"):
                 if meta.get("test_command"):  # an item run (014)
                     if not meta.get("test_paths") or tests_changed(meta, repo, base, add):
                         visible_and_hidden(meta, grading, repo, add, work, base)
@@ -131,7 +146,7 @@ def overlay(grading, repo):
 
 def changes(repo, base):
     """(status, path) pairs of the change against the base: A added, M modified, D deleted."""
-    rc, out = run(["git", "diff", "--name-status", "--no-renames", base, "HEAD"], cwd=repo)
+    rc, out, _ = run_full(["git", "diff", "--name-status", "--no-renames", base, "HEAD"], cwd=repo)
     pairs = []
     for line in out.splitlines() if rc == 0 else []:
         parts = line.split("\t", 1)
