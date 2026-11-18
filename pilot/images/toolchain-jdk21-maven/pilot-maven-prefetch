@@ -1,0 +1,31 @@
+#!/bin/sh
+# pilot-maven-prefetch: fill the Maven cache for offline grading (014 R7). Run from the project root.
+# 1. Run the project's test phase with test failures ignored. The hidden tests take part, so every
+#    plugin and dependency the grader needs is downloaded, including the test-runner provider,
+#    which Maven only fetches when tests actually run.
+# 2. If that fails (typically: the hidden tests use classes the item has not written yet, so they
+#    don't compile on the unchanged code), run it again on a scratch copy whose test sources are
+#    one trivial pilot-owned JUnit test. Step 1 already resolved the test classpath; this run
+#    fetches the test-runner pieces. Only the project's own pom files decide what is fetched.
+set -eu
+if mvn -q -Dmaven.test.failure.ignore=true test; then
+  exit 0
+fi
+echo "pilot-maven-prefetch: the tests do not build on the unchanged code; resolving the test runner with a probe test" >&2
+probe="$(mktemp -d)/project"
+cp -R . "$probe"
+cd "$probe"
+find . -path '*/src/test/java' -type d -prune | while IFS= read -r dir; do
+  rm -rf "$dir"
+  mkdir -p "$dir/pilotprobe"
+  cat > "$dir/pilotprobe/PilotProbeTest.java" <<'JAVA'
+package pilotprobe;
+
+class PilotProbeTest {
+    @org.junit.jupiter.api.Test
+    void probe() {
+    }
+}
+JAVA
+done
+mvn -q -Dmaven.test.failure.ignore=true test

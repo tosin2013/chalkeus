@@ -611,3 +611,14 @@ Setup → Foundational → US2 → US1 → US3 → US4(T056) → Polish
   `INPUT_TOO_LARGE` only in a later session): a read-only preflight reporting every problem at
   once; readiness gains an all-rules mode (`readiness.Deps.AllRules`); runs and `author start`
   still stop at the first failure.
+- [X] TNEW-T5 Maven prefetch when the hidden tests don't compile on the base (found preparing
+  `stockroom`, 017's greenfield target, 2026-11-18). Maven downloads its test-runner provider
+  (`surefire-junit-platform`) only when tests run, so `dependency:go-offline` is not enough, and
+  the documented `mvn -Dmaven.test.failure.ignore=true test` fails outright (`PREFETCH_FAILED`)
+  when the hidden tests use classes the item has not written yet. Done as: `pilot-maven-prefetch`
+  in the `jdk21-maven` toolchain image (`/opt/toolchain/bin`, on its `path`): it runs the test
+  phase with the hidden tests, and if that fails, again on a scratch copy whose test sources are
+  one trivial pilot-owned JUnit test; only the project's poms decide what is fetched. The
+  `jdk21-maven` offline sample now carries a hidden test that doesn't compile on the sample, so
+  the smoke test covers the fallback. Checked locally on Stockroom (Spring Boot 4.1.2): prefetch
+  passes, the baseline fails on compilation (not resolution), and the item's tests pass offline.
