@@ -10,7 +10,9 @@ Changes this revision (owner, 2026-11-18):
     remaining US3 tasks are not.
   - 018: specced → implemented (25/25 tasks; first use on cli-schema-mcp 006). `verified` is the
     owner's call after a debrief.
-Specs affected: 014 (status, spec dir), 018 (status)
+  - 011 note: the spec-status Go library (tosin2013/spec-status#65) is worked on first when 011
+    starts; `pilot doctor` and the CLI gate move to it afterwards.
+Specs affected: 011 (note), 014 (status, spec dir), 018 (status)
 
 Prior: Version change: 1.18.0 → 1.18.1 (this revision)
 Bump rationale: PATCH — a backlog note on 020 (token use ideas); no scope or status change.
@@ -884,7 +886,14 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   GitHub App token scoped to that repository's contents; graders still hold no SCM credential,
   and runs record the companion's repository, commit and folder exactly as in laptop mode.
   The test-author Job (018) is the only cluster identity that may write the companion, and it
-  runs in its own namespace; the operator's grader path stays read-only. Cluster mode defaults
+  runs in its own namespace; the operator's grader path stays read-only.
+  **spec-status library (owner decision 2026-11-18):** when 011 starts, the spec-status
+  developers work on the Go library (tosin2013/spec-status#65) first, so the operator evaluates
+  the gate in-process instead of running the `spec` CLI in a container; the CLI container image
+  is the fallback. Afterwards, `pilot doctor` and the CLI's gate move to the same library. The
+  grader keeps the CLI inside its isolated image. The CLI and the library come from one pinned
+  spec-status release and must give the same answer for the same roadmap (the audit relies on
+  it). Cluster mode defaults
   to the **strict** level (C-14).
 
 ### 012 — Working with an agent: pilot skill and harness approvals  [status: verified]
