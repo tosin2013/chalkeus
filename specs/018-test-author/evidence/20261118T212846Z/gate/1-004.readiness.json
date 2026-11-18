@@ -1,0 +1,67 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/004-persistence/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/004-persistence/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "src/main/java/dev/stockroom/*, src/main/resources/*, src/test/java/dev/stockroom/*, specs/004-persistence/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@387cd64f66fe"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "1423360 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "2e65a557700872991e541ef0c657e0266a5470ce",
+  "spec_dir": "specs/004-persistence",
+  "title": "Persistence",
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/main/resources/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/004-persistence/tasks.md"
+  ],
+  "spec_sha256": "5f107615fdf179ad3bd30a4588621b62fc190a952a99e0af094070b737922470",
+  "mapping": {
+    "present": true,
+    "stale": false,
+    "uncovered": [],
+    "valid": true
+  },
+  "companion_commit": "387cd64f66fe76a58328b0390000005a6b7b45c3",
+  "hidden_files": 1,
+  "input_bytes": 1423360
+}
