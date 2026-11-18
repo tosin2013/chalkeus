@@ -80,6 +80,20 @@ func TestSnapshotThenReplay(t *testing.T) {
 	if msg := sh(t, repo, "log", "-1", "--format=%s", head); msg != "pilot: change 2" {
 		t.Fatal(msg)
 	}
+	// An item run's commit carries the PR's Conventional Commits title (squash merges use it).
+	head2, err := ReplayAs(repo, base, snap, change, filepath.Join(t.TempDir(), "r2.bundle"), "fix(006): bundled flags", "Specfoundry-Run: R1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if msg := sh(t, repo, "log", "-1", "--format=%B", head2); !strings.HasPrefix(msg, "fix(006): bundled flags\n\npilot: change 2") || !strings.Contains(msg, "Specfoundry-Run: R1") {
+		t.Fatalf("%q", msg)
+	}
+	if m := sh(t, repo, "log", "-1", "--format=%s", head2+"~1"); m != "pilot: change 1" {
+		t.Fatalf("only the last commit is retitled: %q", m)
+	}
+	if got := sh(t, repo, "rev-parse", head2+"^{tree}"); got != graded {
+		t.Fatal("the tree must not change")
+	}
 	// The publisher's view: a fresh clone at base accepts the base..replayed bundle.
 	p := filepath.Join(t.TempDir(), "p")
 	sh(t, "", "clone", "-q", repo, p)

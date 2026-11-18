@@ -139,8 +139,16 @@ PILOT_GITHUB_ISSUES=off
   projects squash-merge and use the PR title as the changelog entry. The item's PR is
   `feat(<item>): <the item's roadmap title>`; set `PILOT_CHANGE_TYPE` (`fix`, `refactor`, `perf`,
   `test`, `docs`, `build`, `ci`, `style` or `chore`) when the item isn't a feature. The
-  status-change PR and its commit are `docs(roadmap): <item> verified`. The run id is in each
-  PR's branch name and body.
+  status-change PR and its commit are `docs(roadmap): <item> verified`. The item's commit
+  carries the same title as its PR, because GitHub squash-merges a one-commit PR with the
+  commit's message; the worker's message and a `Specfoundry-Run: <run id>` trailer follow. The
+  run id is also in each PR's branch name and body.
+- **Authorship and sign-off.** The pilot's commits are authored by its publisher identity (your
+  GitHub App or token), which is the truth: you didn't write the code. The pilot never adds
+  `Signed-off-by` or `Co-authored-by` for you, because a sign-off is your own statement. If your
+  project wants a human sign-off on every change (for example a DCO policy), turn on **Settings →
+  General → Require contributors to sign off on web-based commits** in the target repository:
+  when you squash-merge a pilot PR in the web interface, GitHub adds **your** `Signed-off-by`.
 - **Optional keys** may only raise the toolchain's defaults: `PILOT_GRADER_MEMORY`,
   `PILOT_GRADER_DEADLINE_S` and `PILOT_CACHE_SIZE`. `PILOT_MAX_INPUT_MB` (default 50) limits
   the repository snapshot.

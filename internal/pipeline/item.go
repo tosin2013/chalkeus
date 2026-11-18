@@ -15,6 +15,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/grader"
 	"github.com/tosin2013/specfoundry/internal/images"
 	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/specfoundry/internal/publisher"
 	"github.com/tosin2013/specfoundry/internal/readiness"
 	"github.com/tosin2013/specfoundry/internal/toolchain"
 	"github.com/tosin2013/specfoundry/internal/verbose"
@@ -375,7 +376,10 @@ func (p *P) replay(run *evidence.Run, task string, n int) error {
 	if _, err := os.Stat(filepath.Join(clone, ".git")); err != nil {
 		return fmt.Errorf("the run's target clone is gone (%s); start a new run", clone)
 	}
-	head, err := fixture.Replay(clone, base, commit, filepath.Join(adir, "change.bundle"), out)
+	// The PR's Conventional Commits title goes on the commit too: GitHub squash-merges a one-commit
+	// PR with the commit's message, which becomes the target's changelog entry.
+	head, err := fixture.ReplayAs(clone, base, commit, filepath.Join(adir, "change.bundle"), out,
+		publisher.ItemTitle(run, task), "Specfoundry-Run: "+run.ID)
 	if err != nil {
 		return err
 	}
