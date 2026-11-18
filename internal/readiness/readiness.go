@@ -25,6 +25,9 @@ type Deps struct {
 	Clone func(repo, branch string) (dir, commit string, err error)
 	// OpenPRHeads lists the head branches of the target repository's open pull requests.
 	OpenPRHeads func(repo string) ([]string, error)
+	// AllRules is `pilot doctor`: evaluate every rule and record every failure instead of stopping
+	// at the first (the decision is still refuse if any rule fails).
+	AllRules bool
 	// SkipHidden is the test author's readiness (018 `author start`): an empty companion folder
 	// doesn't refuse; HiddenFiles reports how many files are already there.
 	SkipHidden bool
@@ -84,15 +87,29 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		res.Rules = append(res.Rules, Rule{ID: id, Result: r, Detail: detail})
 		return ok
 	}
-	done := func(code, detail string) (Result, error) {
-		if code != "" {
+	failed := false
+	// fail records a refusal. It reports whether to stop: always for a run (fail closed at the
+	// first problem), never with AllRules (doctor), which collects every problem.
+	fail := func(code, detail string) bool {
+		failed = true
+		if d.AllRules {
+			res.Reasons = append(res.Reasons, code)
+		} else {
 			res.Reasons = append([]string{code}, res.Reasons...)
-			rule(code, false, detail)
+		}
+		rule(code, false, detail)
+		return !d.AllRules
+	}
+	finish := func() (Result, error) {
+		if !failed {
+			res.Decision, res.Reasons = "allow", []string{"OK"}
 		}
 		return res, writeRecord(outDir, seq, item, res)
 	}
+	skip := func(id, why string) { res.Rules = append(res.Rules, Rule{ID: id, Result: "skipped", Detail: why}) }
 	if !itemIDRE.MatchString(item) {
-		return done("ITEM_NOT_ON_ROADMAP", fmt.Sprintf("item %q is not a roadmap id (NNN)", item))
+		fail("ITEM_NOT_ON_ROADMAP", fmt.Sprintf("item %q is not a roadmap id (NNN)", item))
+		return finish()
 	}
 
 	// 0. The gate, on a fresh clone of the target's branch.
@@ -101,7 +118,8 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		res.Gate = gate.Refused(d.Src, item, item, seq, t.Repo, "UNEVALUABLE:clone_failed")
 		res.Reasons = res.Gate.Reasons
 		rule("gate", false, "clone of "+t.Repo+"@"+t.Branch+" failed")
-		return res, writeRecord(outDir, seq, item, res)
+		failed = true
+		return finish()
 	}
 	defer func() { _ = os.RemoveAll(dir) }()
 	res.Commit = commit
@@ -113,112 +131,158 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 	}
 	res.Gate = g
 	if g.Decision != "allow" {
+		failed = true
 		res.Reasons = append(res.Reasons, g.Reasons...)
 		rule("gate", false, strings.Join(g.Reasons, ","))
 		for _, r := range g.Reasons {
 			if r == "ITEM_MISSING" || r == "INACTIVE" {
-				return done("ITEM_NOT_ON_ROADMAP", "item "+item+" is not an active item of "+t.Repo+"'s roadmap")
+				fail("ITEM_NOT_ON_ROADMAP", "item "+item+" is not an active item of "+t.Repo+"'s roadmap")
+				return finish()
 			}
 		}
-		return done("", "")
+		if !d.AllRules {
+			return finish()
+		}
+	} else {
+		rule("gate", true, "allow")
 	}
-	rule("gate", true, "allow")
 	doc, itemDoc := statusItem(stdout, item)
 
 	// 2. Spec and tasks.
 	specDir, _ := itemDoc["spec_dir"].(string)
 	specDir = strings.TrimSuffix(strings.TrimPrefix(specDir, "./"), "/")
-	if specDir == "" {
-		return done("ITEM_SPEC_MISSING", "item "+item+" has no Spec dir on the roadmap")
+	var spec []byte
+	specOK := false
+	switch {
+	case specDir == "":
+		if fail("ITEM_SPEC_MISSING", "item "+item+" has no Spec dir on the roadmap") {
+			return finish()
+		}
+	default:
+		res.SpecDir = specDir
+		res.Title, _ = itemDoc["title"].(string)
+		if spec, err = os.ReadFile(filepath.Join(dir, specDir, "spec.md")); err != nil {
+			if fail("ITEM_SPEC_MISSING", specDir+"/spec.md is missing") {
+				return finish()
+			}
+		} else {
+			specOK = true
+			rule("spec", true, specDir+"/spec.md")
+			res.SpecSHA256 = sha256Hex(spec)
+		}
+		if _, err := os.Stat(filepath.Join(dir, specDir, "tasks.md")); err != nil {
+			if fail("ITEM_TASKS_MISSING", specDir+"/tasks.md is missing") {
+				return finish()
+			}
+		} else {
+			rule("tasks", true, specDir+"/tasks.md")
+		}
 	}
-	res.SpecDir = specDir
-	res.Title, _ = itemDoc["title"].(string)
-	spec, err := os.ReadFile(filepath.Join(dir, specDir, "spec.md"))
-	if err != nil {
-		return done("ITEM_SPEC_MISSING", specDir+"/spec.md is missing")
-	}
-	rule("spec", true, specDir+"/spec.md")
-	if _, err := os.Stat(filepath.Join(dir, specDir, "tasks.md")); err != nil {
-		return done("ITEM_TASKS_MISSING", specDir+"/tasks.md is missing")
-	}
-	rule("tasks", true, specDir+"/tasks.md")
-	res.SpecSHA256 = sha256Hex(spec)
 
 	// 3. Open questions: spec markers, and unresolved roadmap open questions naming the item.
-	if strings.Contains(string(spec), clarifyMarker) {
-		return done("ITEM_OPEN_QUESTIONS", specDir+"/spec.md still has [NEEDS CLARIFICATION] markers")
-	}
 	roadmap := ".specify/memory/roadmap.md"
 	if src, ok := doc["source"].(map[string]any); ok {
 		if p, ok := src["path"].(string); ok && p != "" {
 			roadmap = p
 		}
 	}
-	if q := openQuestionsNaming(filepath.Join(dir, roadmap), item); q != "" {
-		return done("ITEM_OPEN_QUESTIONS", "roadmap open question names "+item+": "+q)
+	questionsOK := true
+	if specOK && strings.Contains(string(spec), clarifyMarker) {
+		questionsOK = false
+		if fail("ITEM_OPEN_QUESTIONS", specDir+"/spec.md still has [NEEDS CLARIFICATION] markers") {
+			return finish()
+		}
 	}
-	rule("open_questions", true, "none")
+	if q := openQuestionsNaming(filepath.Join(dir, roadmap), item); q != "" {
+		questionsOK = false
+		if fail("ITEM_OPEN_QUESTIONS", "roadmap open question names "+item+": "+q) {
+			return finish()
+		}
+	}
+	if questionsOK {
+		rule("open_questions", true, "none")
+	}
 
 	// 4. Allowed paths.
-	allowed, err := AllowedPaths(string(spec), specDir, otherSpecDirs(doc, item))
-	if err != nil {
+	if !specOK {
+		skip("allowed_paths", "needs the spec")
+	} else if allowed, err := AllowedPaths(string(spec), specDir, otherSpecDirs(doc, item)); err != nil {
 		r := err.(*Refusal)
-		return done(r.Code, r.Detail)
+		if fail(r.Code, r.Detail) {
+			return finish()
+		}
+	} else {
+		res.AllowedPaths = allowed
+		res.TestsMayChange = TestsMayChange(string(spec))
+		rule("allowed_paths", true, strings.Join(allowed, ", "))
 	}
-	res.AllowedPaths = allowed
-	res.TestsMayChange = TestsMayChange(string(spec))
-	rule("allowed_paths", true, strings.Join(allowed, ", "))
 
 	// 5. Hidden tests in the companion repository (read with the operator's own access).
-	cdir, ccommit, err := d.Clone(t.CompanionRepo, "")
-	if err != nil {
-		return done("ITEM_NO_HIDDEN_TESTS", "companion repository "+t.CompanionRepo+" could not be read with your git access")
-	}
-	defer func() { _ = os.RemoveAll(cdir) }()
-	itemDir := filepath.Join(cdir, filepath.FromSlash(t.CompanionItemDir(item)))
-	n := countFiles(itemDir)
-	res.CompanionCommit, res.HiddenFiles = ccommit, n
-	if d.SkipHidden {
-		rule("hidden_tests", true, fmt.Sprintf("skipped (test author): %d file(s) already at %s", n, t.CompanionItemDir(item)))
-	} else {
-		if n == 0 {
-			return done("ITEM_NO_HIDDEN_TESTS", t.CompanionRepo+" has no files under "+t.CompanionItemDir(item)+"/")
+	if cdir, ccommit, err := d.Clone(t.CompanionRepo, ""); err != nil {
+		if fail("ITEM_NO_HIDDEN_TESTS", "companion repository "+t.CompanionRepo+" could not be read with your git access") {
+			return finish()
 		}
-		rule("hidden_tests", true, fmt.Sprintf("%d file(s) at %s@%s", n, t.CompanionRepo, short(ccommit)))
+	} else {
+		defer func() { _ = os.RemoveAll(cdir) }()
+		itemDir := filepath.Join(cdir, filepath.FromSlash(t.CompanionItemDir(item)))
+		n := countFiles(itemDir)
+		res.CompanionCommit, res.HiddenFiles = ccommit, n
+		switch {
+		case d.SkipHidden:
+			rule("hidden_tests", true, fmt.Sprintf("skipped (test author): %d file(s) already at %s", n, t.CompanionItemDir(item)))
+		case n == 0:
+			if fail("ITEM_NO_HIDDEN_TESTS", t.CompanionRepo+" has no files under "+t.CompanionItemDir(item)+"/") {
+				return finish()
+			}
+		default:
+			rule("hidden_tests", true, fmt.Sprintf("%d file(s) at %s@%s", n, t.CompanionRepo, short(ccommit)))
+		}
+		// The one realistic way a worker could learn hidden tests is finding them in the target
+		// repository (018, roadmap C-14): refuse if any hidden test's content is already there.
+		if leaked := hiddenInTarget(itemDir, dir); len(leaked) > 0 {
+			if fail("HIDDEN_TESTS_IN_TARGET", "the target already contains hidden test content: "+strings.Join(leaked, ", ")) {
+				return finish()
+			}
+		}
+		res.Mapping = mappingReport(itemDir, res.SpecSHA256)
 	}
-	// The one realistic way a worker could learn hidden tests is finding them in the target
-	// repository (018, roadmap C-14): refuse if any hidden test's content is already there.
-	if leaked := hiddenInTarget(itemDir, dir); len(leaked) > 0 {
-		return done("HIDDEN_TESTS_IN_TARGET", "the target already contains hidden test content: "+strings.Join(leaked, ", "))
-	}
-	res.Mapping = mappingReport(itemDir, res.SpecSHA256)
 
 	// 6. Input size: the snapshot the pods receive.
-	size, err := treeBytes(dir)
-	if err != nil {
-		return done("INPUT_TOO_LARGE", "could not measure the snapshot: "+err.Error())
+	if size, err := treeBytes(dir); err != nil {
+		if fail("INPUT_TOO_LARGE", "could not measure the snapshot: "+err.Error()) {
+			return finish()
+		}
+	} else {
+		res.InputBytes = size
+		if limit := int64(t.MaxInputMB) << 20; size > limit {
+			if fail("INPUT_TOO_LARGE", fmt.Sprintf("snapshot is %d MB, over PILOT_MAX_INPUT_MB=%d", size>>20, t.MaxInputMB)) {
+				return finish()
+			}
+		} else {
+			rule("input_size", true, fmt.Sprintf("%d bytes", size))
+		}
 	}
-	res.InputBytes = size
-	if limit := int64(t.MaxInputMB) << 20; size > limit {
-		return done("INPUT_TOO_LARGE", fmt.Sprintf("snapshot is %d MB, over PILOT_MAX_INPUT_MB=%d", size>>20, t.MaxInputMB))
-	}
-	rule("input_size", true, fmt.Sprintf("%d bytes", size))
 
 	// 7. No open pilot PR for this item on the target.
 	heads, err := d.OpenPRHeads(t.Repo)
+	openPR := ""
 	if err != nil {
-		return done("OPEN_ITEM_PR", "could not list open PRs on "+t.Repo+": "+err.Error())
-	}
-	itemHead := regexp.MustCompile(`^pilot/[^/]+/` + item + `$`)
-	for _, h := range heads {
-		if itemHead.MatchString(h) {
-			return done("OPEN_ITEM_PR", "an open PR from "+h+" exists; merge or close it first")
+		openPR = "could not list open PRs on " + t.Repo + ": " + err.Error()
+	} else {
+		itemHead := regexp.MustCompile(`^pilot/[^/]+/` + item + `$`)
+		for _, h := range heads {
+			if itemHead.MatchString(h) {
+				openPR = "an open PR from " + h + " exists; merge or close it first"
+				break
+			}
 		}
 	}
-	rule("open_pr", true, "none")
-
-	res.Decision, res.Reasons = "allow", []string{"OK"}
-	return res, writeRecord(outDir, seq, item, res)
+	if openPR != "" {
+		fail("OPEN_ITEM_PR", openPR)
+	} else {
+		rule("open_pr", true, "none")
+	}
+	return finish()
 }
 
 func statusItem(stdout, item string) (map[string]any, map[string]any) {

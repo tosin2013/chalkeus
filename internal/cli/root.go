@@ -26,7 +26,7 @@ func NewRoot(version string) *cobra.Command {
 		versionCmd(version),
 		upCmd(), downCmd(), publisherTokenCmd(), importOpencodeCmd(), resetFixtureCmd(),
 		runCmd(), resumeCmd(), approveCmd(), gateCmd(), auditCmd(), statusCmd(),
-		githubCmd(), appKeyCmd(), appTokenCmd(), targetsCmd(), authorCmd(),
+		githubCmd(), appKeyCmd(), appTokenCmd(), targetsCmd(), authorCmd(), doctorCmd(),
 	)
 	return root
 }

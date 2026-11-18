@@ -1,7 +1,13 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.16.1 → 1.17.0 (this revision)
+Version change: 1.17.0 → 1.17.1 (this revision)
+Bump rationale: PATCH — a clarification of 014's scope: a read-only preflight (`pilot doctor`)
+that reports every readiness problem at once. No decision or entry changes.
+Specs affected: 014 (note)
+Open questions added/resolved: none
+
+Prior: Version change: 1.16.1 → 1.17.0 (this revision)
 Bump rationale: MINOR — a new decision (C-15 developer mode), a new planned spec (019), and
 material scope changes to C-14 (security levels) and 018 (skill, laptop session). Nothing
 existing is invalidated: build workers' isolation is unchanged at every level and in dev mode.
@@ -969,6 +975,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     repository with the hidden tests) live in operator-side profiles,
     `~/.config/specfoundry/targets/<name>.env`. The target repository declares nothing. In
     cluster mode (011) the same fields become a cluster resource.
+  - **Preflight (owner decision 2026-11-18):** `pilot doctor --target <name> [--item NNN]
+    [--baseline]` reports every problem with a target and item in one pass (profile, cluster,
+    GitHub access, every readiness rule, coverage; optionally the project's tests offline on the
+    cluster), so problems surface before anyone prepares tests. It changes nothing; runs still
+    fail closed at their own checks.
   - **Hidden tests (owner decision 2026-11-17, C-14):** one private companion repository
     may serve all targets, in any languages; each target names its folder
     (`PILOT_COMPANION_PATH`). The companion is storage only; the pilot copies one item's folder
@@ -1303,4 +1314,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.17.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17
+**Version**: 1.17.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-17

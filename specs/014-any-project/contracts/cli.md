@@ -10,6 +10,7 @@ Every existing command, flag, exit code and message is unchanged when `--target`
 | `pilot resume --run <id>` / `approve --run <id> <step>` | unchanged flags; the target comes from `run.json` |
 | `pilot audit [--run <id>]` | dispatches on the run's `kind` |
 | `pilot gate --target <name> --item NNN` | readiness only (no cluster), with the same reason codes; `gate {A\|B}` is unchanged for the fixture |
+| `pilot doctor --target <name> [--item NNN] [--baseline]` | added 2026-11-18: read-only preflight. Profile, cluster, GitHub access, every readiness rule (no stop at the first failure), coverage; `--baseline` runs the item's baseline on the cluster without showing hidden-test output. Exit 0, or 1 if any check fails |
 | `pilot github sync\|drift\|watch [--target <name>]` | acts on the target's repository and roadmap |
 | `pilot app-token --check [--target <name>]` | probes the App on the target's repository (canary: this checkout) |
 | `pilot targets` | lists configured targets: name, repository, toolchain, registries, companion; no secrets |

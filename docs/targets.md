@@ -240,6 +240,33 @@ first failing rule's code:
 | `ITEM_NO_HIDDEN_TESTS` | Add `items/<NNN>/` to the companion repository, or check that your git access can read it |
 | `INPUT_TOO_LARGE` | The snapshot exceeds `PILOT_MAX_INPUT_MB` |
 | `OPEN_ITEM_PR` | A pilot PR for this item is still open; merge or close it |
+| `HIDDEN_TESTS_IN_TARGET` | A hidden test's content is already in the target; remove it (see [hidden tests: who can see what](#hidden-tests-who-can-see-what-and-why)) |
+
+### Check everything at once: `pilot/pilot doctor`
+
+`gate` stops at the first problem. Before you prepare tests or start a run, `doctor` lists
+**every** problem in one pass, and changes nothing:
+
+```sh
+pilot/pilot doctor --target greeting                       # profile, cluster, GitHub access
+pilot/pilot doctor --target greeting --item 002            # plus every readiness rule for the item
+pilot/pilot doctor --target greeting --item 002 --baseline # plus, on the cluster, offline:
+                                                           # the install and test commands pass today
+```
+
+- **Profile:** the target's file, modes, keys and pinned toolchain; the test author's token at
+  the recommended level.
+- **Cluster:** `pilot/pilot up` completed, its images match `pilot/images.lock`, a model host is
+  set.
+- **GitHub:** your token reads the target and the companion; the test author's identity for the
+  level; a warning if the target's branch isn't protected (or can't be checked).
+- **Item:** every readiness rule, with each failure's detail (for example the snapshot size), and
+  the hidden tests' coverage.
+- **`--baseline`:** the project's tests pass on today's code with no network (the check that
+  catches a test suite needing a database or the internet), and the hidden tests, if any, fail.
+  It never shows hidden-test output.
+
+Exit 0 means no failures (warnings allowed); exit 1 means at least one failure.
 
 ## 4. Run the item
 
