@@ -1,0 +1,2 @@
+{"name": "pilot-node-sample", "version": "1.0.0", "private": true,
+ "scripts": {"test": "node --test"}, "dependencies": {"semver": "7.6.3"}}

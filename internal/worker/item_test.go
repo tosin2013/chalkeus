@@ -113,7 +113,7 @@ func TestItemWorkerJobRenders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b := toolchain.PodBlocks("tc@sha256:1", &spec, WorkerDeps)
+	b := toolchain.PodBlocks("tc@sha256:1", &spec, WorkerDeps, false)
 	y = render(b, b.Inits+"\n"+toolchain.SetupInit("t@sha256:0", "http://p:8888", &spec, WorkerDeps))
 	for _, want := range []string{"name: toolchain", "image: tc@sha256:1", "name: setup", "sh /in/setup.sh",
 		`{name: VIRTUAL_ENV, value: "/home/worker/deps/venv"}`, "{name: toolchain, mountPath: /opt/toolchain, readOnly: true}"} {

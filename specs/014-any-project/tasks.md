@@ -206,12 +206,13 @@ completes and the audit passes 11/11 (T036, Owner).
   - It has a generic preamble, no "Python standard library" line, and no induction.
   - `Build` (the fixture) stays unchanged.
   - Tests in `internal/prompt/prompt_test.go`, including the fixture's byte-identical output.
-- [ ] T023 [US1] Add `worker.MakeItemInputs` in `internal/worker/worker.go`:
+- [X] T023 [US1] Add `worker.MakeItemInputs` in `internal/worker/worker.go`:
   - the snapshot bundle via `ExecStream` instead of the inputs ConfigMap;
   - `meta.json` gains `test_command`, `hidden_mode:"overlay"`, `spec_sha256`, `toolchain`,
     `mode:"attempt"`, and `allowed_paths` from readiness;
   - label = item id (namespaces `pilot-w-<nnn>-<n>`);
   - `MakeInputs` (fixture) unchanged.
+  Done as: `worker.MakeItemInputs` (in the code since US1; the box was not ticked).
 - [X] T024 [P] [US1] Extend `pilot/images/tools/grade.py` per contracts/grading.md:
   - optional `meta.mode` (`attempt` | `baseline`), `test_command` (run via `sh -c` from the
     project root), `hidden_mode:"overlay"` (copy `/grading/overlay/` over the project, then
@@ -346,7 +347,7 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
 
 **Toolchain image (R5)**
 
-- [ ] T037 [US3] Add pins to `pilot/pins.env` for the catalog toolchains (owner decision
+- [X] T037 [US3] Add pins to `pilot/pins.env` for the catalog toolchains (owner decision
   2026-11-17), each with linux amd64 and arm64 checksums from the upstream release:
   - Eclipse Temurin 21 (SHA-256);
   - Apache Maven 3.9.x (SHA-512 from the Apache `.sha512`);
@@ -355,7 +356,10 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
   - Go (SHA-256 from go.dev).
   Progress (2026-11-17, owner: Python first): Python 3.13 pinned (python-build-standalone 3.13.18, release 20261026);
   JDK 21 + Maven, Node.js 24 and Go follow.
-- [ ] T038 [US3] Create one image per catalog toolchain: `pilot/images/toolchain-jdk21-maven/`,
+  Done as (2026-11-18): Node.js 24 (v24.22.3), Go (go1.27.4), Temurin JDK 21 (21.0.13+9) and Maven
+  3.9.16 pinned with linux amd64 and arm64 checksums (Maven: one SHA-512); Python's arm64 pin
+  follows with the multi-arch image work.
+- [X] T038 [US3] Create one image per catalog toolchain: `pilot/images/toolchain-jdk21-maven/`,
   `toolchain-node24/`, `toolchain-python3.13/` and `toolchain-go/`. Each one:
   - has a fetch stage that verifies every tarball against the pins;
   - has a final stage that holds only `/opt/toolchain/` with its `toolchain.json`
@@ -364,19 +368,25 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
   - gets a branch in `pilot/images/build_args.py`.
   Progress (2026-11-17, owner: Python first): `pilot/images/toolchain-python3.13/` done (no strip: it breaks the build's
   versioned symbols); the other three follow.
+  Done as (2026-11-18): `toolchain-node24/`, `toolchain-go/`, `toolchain-jdk21-maven/`, each
+  picking its asset for `TARGETARCH` and verifying it against the upstream checksum file and the pin;
+  built and smoke-tested locally (CI builds amd64 for now).
 - [X] T039 [US3] Make `.github/workflows/pilot-images.yml` data-driven from
   `pilot/images/toolchains.json` plus `worker`, `tools`, `egress`. That covers the context
   loop, the push loop, `image-digests.json` and the `digest-pr` key list, including the four
   `TOOLCHAIN_*_IMAGE` keys in `pilot/images.lock`.
   Done as: the image list is the three images plus every catalog toolchain with an image
   directory; the digest PR adds each `TOOLCHAIN_*_IMAGE` key.
-- [ ] T040 [US3] Extend `pilot/images/smoke.sh`.
+- [X] T040 [US3] Extend `pilot/images/smoke.sh`.
   - Every catalog toolchain image passes the contract checks under an arbitrary UID.
   - The tools image grades one tiny offline sample per toolchain, under
     `pilot/images/tests/samples/{maven,npm,pytest,go}/`, with its dependencies pre-seeded,
     through `test_command` and an overlay.
   Progress (2026-11-17, owner: Python first): the toolchain copy + version check as an arbitrary UID runs for every built
   toolchain image; per-toolchain offline samples follow with the other toolchains.
+  Done as (2026-11-18): `pilot/images/toolchain-samples/` (python3.13, node24, go, jdk21-maven):
+  install online into a deps volume, then the tests offline with the deps read-only, as an
+  arbitrary UID with a read-only root; all four pass locally with the full smoke test.
 - [X] T041 [US3] Write the toolchain contract probe in `internal/toolchain/probe.go`, and the new
   `pilot/manifests/toolchain-probe-job.yaml.tmpl`.
   - After the mode approval, a no-network Job in the run's grading namespace copies the
@@ -439,10 +449,14 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
   worker (model host + registries, because pip/npm/Go read the agent's one `HTTPS_PROXY`) and
   `pilot-egress-r-<target>` for the prefetch (registries only); `worker-ns-item.yaml.tmpl`.
   `down` removes them with the cluster; T04 rows follow with P06r.
-- [ ] T046 [US3] Generate `settings.xml` with a `<proxy>` for `pilot-egress-r-<target>` and
+- [X] T046 [US3] Generate `settings.xml` with a `<proxy>` for `pilot-egress-r-<target>` and
   pass `MAVEN_ARGS=-s /in/settings.xml`, in `internal/worker/worker.go` and
   `internal/grader/grader.go`, for `proxy: maven-settings` toolchains. OpenCode keeps
   `HTTPS_PROXY` (the model proxy). Tests.
+  Done as (2026-11-18): `toolchain.RoleEnv` sets `MAVEN_ARGS` per role (online: the generated
+  `/in/settings.xml` and `<deps>/m2`; grader: `-o`, `/tmp/m2` chained to the read-only cache);
+  `toolchain.MavenSettings` writes the proxy entries (no credentials); staged for the worker and
+  the prefetch. Checked with the offline Maven sample.
 - [ ] T047 [US3] Add the P06r check in `internal/checks/checks.go`: a declared registry is
   reachable through the registry proxy from a probe pod in the worker policy, and
   `example.invalid` is refused. Copy the registry proxy's refusals into the attempt's

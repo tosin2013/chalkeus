@@ -1,0 +1,1 @@
+{"install": "pip install -q -r requirements.txt", "test": "python -m pytest -q -p no:cacheprovider tests"}

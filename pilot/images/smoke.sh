@@ -85,9 +85,44 @@ for root, _, files in os.walk("/opt/toolchain"):
         p = os.path.join(root, f)
         if os.path.isfile(p) and not os.path.islink(p) and os.stat(p).st_mode & 0o6000:
             sys.exit("setuid file: " + p)
-print(subprocess.run(t["version_command"], env=env, capture_output=True, text=True, check=True).stdout.strip())' 2>&1)"; then
+print(subprocess.run(t["version_command"], env=env, capture_output=True, text=True, check=True).stdout.strip().splitlines()[0])' 2>&1)"; then
     echo "  PASS toolchain $tc: $v"
   else echo "  FAIL toolchain $tc: ${v:-copy failed}"; fail=1; fi
+  # The offline sample (T040): install with the network into a deps volume (the prefetch), then the
+  # tests with no network and the deps read-only (the grader), as an arbitrary UID.
+  name="$(docker run --rm -v "$vol":/opt/toolchain:ro "$TOOLS" python3 -c 'import json; print(json.load(open("/opt/toolchain/toolchain.json"))["name"])' 2>/dev/null || true)"
+  sample="$ROOT/pilot/images/toolchain-samples/$name"
+  if [ -n "$name" ] && [ -f "$sample/sample.json" ]; then
+    deps="pilot-smoke-deps-$RANDOM"; docker volume create "$deps" >/dev/null
+    docker run --rm --user 0:0 -v "$deps":/deps "$TOOLS" chmod 0777 /deps >/dev/null 2>&1 || true
+    step() { # step <online|offline> <command>
+      local net=() mode=rw; [ "$1" = offline ] && { net=(--network none); mode=ro; }
+      "${RUN[@]}" "${net[@]}" -v "$vol":/opt/toolchain:ro -v "$deps":/deps:"$mode" -v "$sample":/src:ro \
+        --tmpfs /tmp:exec,mode=1777 --tmpfs /work:exec,mode=1777 -e HOME=/tmp -e PILOT_DEPS=/deps -e ROLE="$1" \
+        "$TOOLS" bash -c '
+set -e
+eval "$(python3 -c "
+import json, os, shlex
+t = json.load(open(\"/opt/toolchain/toolchain.json\"))
+print(\"export PATH=\" + shlex.quote(\":\".join(p.replace(\"\${PILOT_DEPS}\", \"/deps\") for p in t[\"path\"])) + \":\$PATH\")
+for k, v in t.get(\"env\", {}).items():
+    print(\"export \" + k + \"=\" + shlex.quote(v.replace(\"\${PILOT_DEPS}\", \"/deps\")))
+if t.get(\"proxy\") == \"maven-settings\":  # as internal/toolchain RoleEnv, minus the settings file
+    a = \"-B -o -Dmaven.repo.local=/tmp/m2 -Dmaven.repo.local.tail=/deps/m2\" if os.environ[\"ROLE\"] == \"offline\" else \"-B -Dmaven.repo.local=/deps/m2\"
+    print(\"export MAVEN_ARGS=\" + shlex.quote(a))
+if os.environ[\"ROLE\"] == \"online\" and t.get(\"setup_command\"):
+    print(\"(cd /work && \" + \" \".join(shlex.quote(x) for x in t[\"setup_command\"]) + \")\")
+")"
+cp -r /src/. /work/ && cd /work
+'"$2"
+    }
+    install="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["install"])' "$sample/sample.json")"
+    tests="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["test"])' "$sample/sample.json")"
+    if out="$(step online "$install" 2>&1)" && out="$(step offline "$tests" 2>&1)"; then
+      echo "  PASS toolchain $name offline sample: install online, tests offline with read-only deps"
+    else echo "  FAIL toolchain $name offline sample: $(printf %s "$out" | tail -5)"; fail=1; fi
+    docker volume rm -f "$deps" >/dev/null
+  fi
   docker volume rm -f "$vol" >/dev/null
 done
 

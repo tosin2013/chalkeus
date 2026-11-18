@@ -61,3 +61,33 @@ func TestContractRules(t *testing.T) {
 		t.Fatal(s.SetupScript(""))
 	}
 }
+
+func TestMavenRoleEnvAndSettings(t *testing.T) {
+	s := Spec{Name: "jdk21-maven", Proxy: "maven-settings", Path: []string{"/opt/toolchain/maven/bin"}}
+	get := func(env [][2]string, k string) string {
+		for _, kv := range env {
+			if kv[0] == k {
+				return kv[1]
+			}
+		}
+		return ""
+	}
+	if a := get(s.RoleEnv("/home/worker/deps", "/usr/bin", false), "MAVEN_ARGS"); a != "-B -s /in/settings.xml -Dmaven.repo.local=/home/worker/deps/m2" {
+		t.Fatal(a)
+	}
+	if a := get(s.RoleEnv("/deps", "/usr/bin", true), "MAVEN_ARGS"); a != "-B -o -Dmaven.repo.local=/tmp/m2 -Dmaven.repo.local.tail=/deps/m2" {
+		t.Fatal(a)
+	}
+	if a := get((Spec{Proxy: "env"}).RoleEnv("/deps", "/usr/bin", true), "MAVEN_ARGS"); a != "" {
+		t.Fatal("only maven-settings toolchains get MAVEN_ARGS")
+	}
+	x := MavenSettings("http://proxy.pilot-egress-r-t.svc.cluster.local:8888")
+	for _, want := range []string{"<protocol>https</protocol><host>proxy.pilot-egress-r-t.svc.cluster.local</host><port>8888</port>", "<protocol>http</protocol>"} {
+		if !strings.Contains(x, want) {
+			t.Errorf("missing %q in\n%s", want, x)
+		}
+	}
+	if strings.Contains(x, "password") || strings.Contains(x, "username") {
+		t.Fatal("no credentials in settings.xml")
+	}
+}

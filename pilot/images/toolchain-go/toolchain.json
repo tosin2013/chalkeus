@@ -1,0 +1,8 @@
+{
+  "name": "go",
+  "version_command": ["go", "version"],
+  "path": ["/opt/toolchain/go/bin"],
+  "env": {"GOPATH": "${PILOT_DEPS}/go", "GOMODCACHE": "${PILOT_DEPS}/go/pkg/mod", "GOCACHE": "/tmp/go-build",
+          "GOTOOLCHAIN": "local", "GOTELEMETRY": "off", "GOFLAGS": "-modcacherw"},
+  "proxy": "env"
+}

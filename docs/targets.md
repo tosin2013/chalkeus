@@ -120,6 +120,24 @@ PILOT_GITHUB_ISSUES=off
 
   The packages go into a virtual environment the pilot creates; your tests must find the project's
   own code through `PYTHONPATH` or your pytest configuration.
+
+  The other catalog toolchains, as tested offline in `pilot/images/toolchain-samples/`:
+
+  | `PILOT_TOOLCHAIN` | `PILOT_REGISTRY_HOSTS` | `PILOT_INSTALL_COMMAND` | `PILOT_TEST_COMMAND` |
+  |---|---|---|---|
+  | `node24` | `registry.npmjs.org` | `npm ci` | `npm ci --offline && npm test` |
+  | `go` | `proxy.golang.org,sum.golang.org` | `go mod download` | `go test ./...` |
+  | `jdk21-maven` | `repo.maven.apache.org` | `mvn -q -Dmaven.test.failure.ignore=true test` | `mvn test` |
+
+  - **Node:** packages are cached in the dependency cache (`npm_config_cache`), and `npm ci
+    --offline` rebuilds `node_modules` from it in the grader. Commit your `package-lock.json`.
+  - **Go:** the module cache is the dependency cache; `GOTOOLCHAIN=local`, so a `toolchain` line
+    newer than the image's Go fails instead of downloading another Go.
+  - **Maven:** the pilot sets `MAVEN_ARGS` for each role: a generated `settings.xml` pointing at
+    the target's proxy while installing, and `-o` with the cache chained read-only
+    (`maven.repo.local.tail`) in the grader. The install command runs the test phase with
+    failures ignored, because the hidden tests (which fail by design) are part of the prefetch and
+    the test-runner plugins only download when tests run.
 - **Any other language:** bring your own toolchain image (next section), or ask for one with the
   [toolchain image request form](https://github.com/tosin2013/specfoundry/issues/new?template=toolchain-image.yml).
 - **If the project requires tests with every change**, set `PILOT_TEST_PATHS` to its test files

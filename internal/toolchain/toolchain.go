@@ -131,7 +131,41 @@ const BasePath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 // PodBlocks renders a pod's toolchain blocks: image is the toolchain image (digest), spec its
 // checked toolchain.json, deps the role's dependency directory.
-func PodBlocks(image string, spec *Spec, deps string) Blocks {
+// RoleEnv is PodEnv plus what the toolchain's proxy kind needs in this role (014 T046). For
+// maven-settings toolchains, MAVEN_ARGS (read by Maven 3.9+):
+//   - online (worker, its setup step, prefetch): the generated /in/settings.xml (the role's proxy)
+//     and the dependency directory as the local repository;
+//   - offline (grader): -o, a writable local repository in /tmp chained to the read-only cache
+//     (maven.repo.local.tail), and no settings: graders have no egress.
+func (s Spec) RoleEnv(deps, basePath string, offline bool) [][2]string {
+	env := s.PodEnv(deps, basePath)
+	if s.Proxy != "maven-settings" {
+		return env
+	}
+	args := "-B -s /in/settings.xml -Dmaven.repo.local=" + deps + "/m2"
+	if offline {
+		args = "-B -o -Dmaven.repo.local=/tmp/m2 -Dmaven.repo.local.tail=" + deps + "/m2"
+	}
+	return append(env, [2]string{"MAVEN_ARGS", args})
+}
+
+// MavenSettings is the settings.xml for a maven-settings toolchain: one https and one http proxy
+// entry pointing at the role's egress proxy (proxyURL, http://host:port). No credentials.
+func MavenSettings(proxyURL string) string {
+	host, port := proxyURL, "8888"
+	host = strings.TrimPrefix(strings.TrimPrefix(host, "http://"), "https://")
+	if h, p, ok := strings.Cut(strings.TrimSuffix(host, "/"), ":"); ok {
+		host, port = h, p
+	}
+	entry := func(id, proto string) string {
+		return "    <proxy><id>" + id + "</id><active>true</active><protocol>" + proto + "</protocol><host>" + host +
+			"</host><port>" + port + "</port></proxy>\n"
+	}
+	return "<settings xmlns=\"http://maven.apache.org/SETTINGS/1.0.0\">\n  <proxies>\n" + entry("pilot-https", "https") +
+		entry("pilot-http", "http") + "  </proxies>\n</settings>\n"
+}
+
+func PodBlocks(image string, spec *Spec, deps string, offline bool) Blocks {
 	if image == "" || spec == nil {
 		return Blocks{}
 	}
@@ -143,7 +177,7 @@ func PodBlocks(image string, spec *Spec, deps string) Blocks {
           resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 500m, memory: 256Mi}}
           volumeMounts:
             - {name: toolchain, mountPath: /dest}`,
-		Env:     EnvYAML(spec.PodEnv(deps, BasePath), "            "),
+		Env:     EnvYAML(spec.RoleEnv(deps, BasePath, offline), "            "),
 		Mounts:  `            - {name: toolchain, mountPath: ` + Mount + `, readOnly: true}`,
 		Volumes: `        - {name: toolchain, emptyDir: {sizeLimit: 2Gi}}`,
 	}
@@ -155,7 +189,7 @@ func PodBlocks(image string, spec *Spec, deps string) Blocks {
 func SetupInit(toolsImage, proxyURL string, spec *Spec, deps string) string {
 	env := []([2]string){{"HOME", "/home/worker"}, {"HTTPS_PROXY", proxyURL}, {"https_proxy", proxyURL}, {"NO_PROXY", ""}}
 	if spec != nil {
-		env = append(env, spec.PodEnv(deps, BasePath)...)
+		env = append(env, spec.RoleEnv(deps, BasePath, false)...)
 	}
 	mounts := `            - {name: inputs, mountPath: /in, readOnly: true}
             - {name: home, mountPath: /home/worker}

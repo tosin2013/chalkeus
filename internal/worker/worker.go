@@ -230,7 +230,7 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 		if d.Item != nil {
 			it := d.Item
 			tmpl, vars["TOOLS_IMAGE"], vars["INPUT_LIMIT"] = "worker-job-item.yaml.tmpl", imgs["tools"], it.InputLimit
-			b := toolchain.PodBlocks(it.ToolchainImage, it.ToolchainSpec, WorkerDeps)
+			b := toolchain.PodBlocks(it.ToolchainImage, it.ToolchainSpec, WorkerDeps, false)
 			inits := b.Inits
 			if it.SetupScript != "" {
 				inits = strings.TrimPrefix(inits+"\n"+toolchain.SetupInit(imgs["tools"], it.ProxyURL, it.ToolchainSpec, WorkerDeps), "\n")
@@ -392,6 +392,11 @@ func stageInputs(d Deps, idir, ns string) error {
 	}
 	if d.Item.SetupScript != "" {
 		if err := t.AddBytes("setup.sh", []byte(d.Item.SetupScript)); err != nil {
+			return err
+		}
+	}
+	if s := d.Item.ToolchainSpec; s != nil && s.Proxy == "maven-settings" { // T046: Maven reaches registries through the worker's proxy
+		if err := t.AddBytes("settings.xml", []byte(toolchain.MavenSettings(d.Item.ProxyURL))); err != nil {
 			return err
 		}
 	}

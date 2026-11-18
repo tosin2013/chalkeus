@@ -47,6 +47,17 @@ def build_args(image: str, pins: dict | None = None) -> dict:
         repo, tag = split_release(p["PYTHON313_RELEASE"])
         return {"DEBIAN_BASE": p["DEBIAN_BASE"], "PYTHON313_REPO": repo, "PYTHON313_TAG": tag,
                 "PYTHON313_ASSET": p["PYTHON313_ASSET"], "PYTHON313_ASSET_SHA256": p["PYTHON313_ASSET_SHA256"]}
+    if image == "toolchain-node24":
+        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "NODE24_VERSION": p["NODE24_VERSION"],
+                "NODE24_SHA256_AMD64": p["NODE24_SHA256_AMD64"], "NODE24_SHA256_ARM64": p["NODE24_SHA256_ARM64"]}
+    if image == "toolchain-go":
+        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "GO_VERSION": p["GO_VERSION"],
+                "GO_SHA256_AMD64": p["GO_SHA256_AMD64"], "GO_SHA256_ARM64": p["GO_SHA256_ARM64"]}
+    if image == "toolchain-jdk21-maven":
+        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "TEMURIN21_RELEASE": p["TEMURIN21_RELEASE"],
+                "TEMURIN21_FILE_VERSION": p["TEMURIN21_FILE_VERSION"],
+                "TEMURIN21_SHA256_AMD64": p["TEMURIN21_SHA256_AMD64"], "TEMURIN21_SHA256_ARM64": p["TEMURIN21_SHA256_ARM64"],
+                "MAVEN_VERSION": p["MAVEN_VERSION"], "MAVEN_SHA512": p["MAVEN_SHA512"]}
     raise SystemExit(f"unknown image {image!r}")
 
 
