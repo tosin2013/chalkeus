@@ -325,6 +325,11 @@ completes and the audit passes 11/11 (T036, Owner).
   4. Run `pilot/pilot run --target pysample --item 001` → approve → merge → status PR → `down`
      → audit 11/11.
   5. Record it in `specs/014-any-project/evidence/README.md`.
+  Progress (2026-11-18): done on a real Python project instead of a sample (owner decision
+  2026-11-17): `cli-schema-mcp` item 006, run `20261118T030513Z` (Python 3.13 toolchain, PyPI through the
+  registries proxy, dependency cache, offline graders, hidden tests from the shared companion):
+  attempt 1 passed, owner merged #43 and the status PR #44, audit 10/10. Remaining: `pilot/pilot
+  down` and the 11/11 audit (owner's call). Record: `specs/018-test-author/evidence/20261118T030513Z/`.
 
 **Checkpoint:** US1 and US2 work on the existing toolchain; the fixture is unchanged.
 

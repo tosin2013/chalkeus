@@ -1,0 +1,39 @@
+{
+  "container_terminated": {
+    "containerID": "containerd://0984d9bc39fd2840c67c3a455bc23e896b8aac886287b56b06d9ec29ba061122",
+    "exitCode": 0,
+    "finishedAt": "2026-11-18T03:14:02Z",
+    "reason": "Completed",
+    "startedAt": "2026-11-18T03:12:32Z"
+  },
+  "job_status": {
+    "completionTime": "2026-11-18T03:14:05Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-18T03:14:05Z",
+        "lastTransitionTime": "2026-11-18T03:14:05Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-11-18T03:14:05Z",
+        "lastTransitionTime": "2026-11-18T03:14:05Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-11-18T03:10:58Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "outcome": "Complete",
+  "pod": "worker-c58vm",
+  "pod_phase": "Succeeded",
+  "pod_reason": null
+}
