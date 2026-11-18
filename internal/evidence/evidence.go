@@ -348,12 +348,13 @@ func (r *Run) WriteSummary() (string, error) {
 	out := []string{title + r.ID, "", head, ""}
 	if len(ev) > 0 {
 		t0, e0 := time.Parse(TimeFormat, pyStr(ev[0]["at"]))
-		// The run ends at its last run_succeeded or run_failed event; an audit after that
-		// (for example after `down`) adds events but must not stretch the elapsed time.
+		// An audit only reads the record, so a later `pilot audit` (its audit_done event) must
+		// not stretch the elapsed time; teardown still counts, as in the committed records.
 		end := ev[len(ev)-1]
-		for _, e := range ev {
-			if n := pyStr(e["event"]); n == "run_succeeded" || n == "run_failed" {
-				end = e
+		for i := len(ev) - 1; i > 0; i-- {
+			if pyStr(ev[i]["event"]) != "audit_done" {
+				end = ev[i]
+				break
 			}
 		}
 		t1, e1 := time.Parse(TimeFormat, pyStr(end["at"]))
