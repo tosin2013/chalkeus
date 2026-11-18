@@ -22,6 +22,7 @@ import (
 // A minimal in-memory GitHub for the pipeline's 004 hooks.
 type miniGH struct {
 	comments map[int][]ghloop.Comment
+	closed   []int
 	next     int
 	cid      int64
 	fail     bool
@@ -58,7 +59,10 @@ func (m *miniGH) Comment(_ context.Context, _ string, n int, body string) (int64
 	m.comments[n] = append(m.comments[n], ghloop.Comment{ID: m.cid, Body: body, Author: "pub-bot", CreatedAt: "t", UpdatedAt: "t"})
 	return m.cid, nil
 }
-func (m *miniGH) CloseIssue(context.Context, string, int) error { return nil }
+func (m *miniGH) CloseIssue(_ context.Context, _ string, n int) error {
+	m.closed = append(m.closed, n)
+	return nil
+}
 
 func withGitHub(t *testing.T, p *P) *miniGH {
 	t.Helper()
@@ -244,5 +248,35 @@ func TestWatcherRefusesSingleAccountCasesThenAccepts(t *testing.T) {
 	}
 	if strings.Join(reasons, ",") != "wrong_step,edited,withdrawn,<nil>" {
 		t.Fatalf("approvals.jsonl reasons %v", reasons)
+	}
+}
+
+func TestRunEndClosesTheTrackingIssue(t *testing.T) {
+	p, r, out := newP(t)
+	m := withGitHub(t, p)
+	p.modeNotConfirmed(r, "none") // creates tracking issue #1
+	p.githubClose(r, "failed (AUDIT)")
+	p.githubClose(r, "failed (AUDIT)") // a second end (resume, watcher) closes nothing more
+	if fmt.Sprint(m.closed) != "[1]" {
+		t.Fatalf("closed %v; %q", m.closed, out.String())
+	}
+	last := m.comments[1][len(m.comments[1])-1].Body
+	if !strings.Contains(last, "failed (AUDIT)") || !strings.Contains(last, r.ID) {
+		t.Fatal(last)
+	}
+	ev, _ := r.Events()
+	if ev[len(ev)-1]["event"] != "tracking_closed" {
+		t.Fatal(ev[len(ev)-1])
+	}
+}
+
+func TestRunEndWithoutGitHubApprovalsTouchesNoIssue(t *testing.T) {
+	p, r, _ := newP(t)
+	p.githubClose(r, "succeeded") // the fixture config has GitHub approvals off
+	ev, _ := r.Events()
+	for _, e := range ev {
+		if strings.HasPrefix(fmt.Sprint(e["event"]), "tracking_") {
+			t.Fatal(e)
+		}
 	}
 }
