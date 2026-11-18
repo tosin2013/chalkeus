@@ -41,7 +41,14 @@ func Start(ctx context.Context, e Env, item string, replace bool) (*Draft, error
 		return nil, err
 	}
 	if res.Decision != "allow" {
-		return nil, refuse(res.Reasons[0], "item %s is not ready to draft tests for: %s", item, strings.Join(res.Reasons, ", "))
+		detail := strings.Join(res.Reasons, ", ")
+		for _, r := range res.Rules { // the failing rule's own detail, e.g. the snapshot size
+			if r.Result == "fail" && r.Detail != "" {
+				detail = r.Detail
+				break
+			}
+		}
+		return nil, refuse(res.Reasons[0], "item %s is not ready to draft tests for: %s", item, detail)
 	}
 	if res.HiddenFiles > 0 && !replace {
 		return nil, refuse(CodeCompanionNotEmpty, "%s already has %d file(s) under %s/; pass --replace to propose replacing them (still only a pull request)",
