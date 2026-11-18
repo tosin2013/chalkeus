@@ -206,6 +206,7 @@ func (p *P) fail(run *evidence.Run, reason string) int {
 	p.dropGrading(run)
 	_ = run.SetRunState("failed", reason)
 	_, _ = run.WriteSummary()
+	p.githubClose(run, "failed ("+reason+")")
 	p.say("run %s FAILED: %s", run.ID, reason)
 	return ExitFail
 }
@@ -404,6 +405,7 @@ func (p *P) finish(run *evidence.Run) int {
 	}
 	_ = run.SetRunState("succeeded", nil)
 	_, _ = run.WriteSummary()
+	p.githubClose(run, "succeeded")
 	rel, _ := filepath.Rel(p.L.Root, run.Dir)
 	p.say("run %s succeeded. Evidence: %s", run.ID, rel)
 	return ExitOK

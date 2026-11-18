@@ -36,6 +36,7 @@ var DecisionMarker = regexp.MustCompile(`<!-- specfoundry:decision run=(\S+) ste
 type Tracking struct {
 	Issue     any              `json:"issue"` // nil until created
 	Decisions []map[string]any `json:"decisions"`
+	Closed    bool             `json:"closed,omitempty"` // the run ended and the issue was closed
 }
 
 func trackingFile(run *evidence.Run) string { return filepath.Join(run.Dir, "github", "tracking.json") }
@@ -53,7 +54,11 @@ func LoadTracking(run *evidence.Run) Tracking {
 }
 
 func saveTracking(run *evidence.Run, t Tracking) error {
-	return evidence.WriteJSON(trackingFile(run), map[string]any{"issue": t.Issue, "decisions": t.Decisions})
+	m := map[string]any{"issue": t.Issue, "decisions": t.Decisions}
+	if t.Closed {
+		m["closed"] = true
+	}
+	return evidence.WriteJSON(trackingFile(run), m)
 }
 
 // TrackingIssue is the tracking issue number, or 0.
@@ -173,6 +178,30 @@ func (l *Loop) MarkAnswered(run *evidence.Run, step string, approved bool) {
 		yn = "yes"
 	}
 	_, _ = w.Comment(l.ctx(), l.Repo, issue, fmt.Sprintf("Decision `%s` was answered at the operator's terminal (%s); approvals here no longer apply.", step, yn))
+}
+
+// CloseTracking posts the run's outcome on its tracking issue and closes it, once. It is called
+// only when a run ends (succeeded or failed); a paused run keeps its issue open for approvals.
+func (l *Loop) CloseTracking(run *evidence.Run, outcome, evidencePath string) error {
+	t := LoadTracking(run)
+	issue, _ := num(t.Issue)
+	if issue == 0 || t.Closed {
+		return nil
+	}
+	w, err := l.W()
+	if err != nil {
+		return err
+	}
+	body := fmt.Sprintf("Run `%s` %s. Evidence: `%s`.\n\nThis run has ended, so this issue is closed; "+
+		"approvals here no longer apply.", run.ID, outcome, evidencePath)
+	if _, err := w.Comment(l.ctx(), l.Repo, issue, body); err != nil {
+		return err
+	}
+	if err := w.CloseIssue(l.ctx(), l.Repo, issue); err != nil {
+		return err
+	}
+	t.Closed = true
+	return saveTracking(run, t)
 }
 
 // LogEntry is one candidate comment's verdict.

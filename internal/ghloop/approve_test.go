@@ -306,3 +306,51 @@ func TestEveryRefusalReasonHasAnExplanation(t *testing.T) {
 		}
 	}
 }
+
+func TestCloseTrackingPostsOutcomeAndClosesOnce(t *testing.T) {
+	a := setupApprove(t)
+	if err := a.l.CloseTracking(a.run, "succeeded", "specs/x/evidence/20261116T101500Z"); err != nil {
+		t.Fatal(err)
+	}
+	if a.f.issue(a.issue).State != "closed" {
+		t.Fatalf("issue not closed: %+v", a.f.issue(a.issue))
+	}
+	last := a.f.comments[a.issue][len(a.f.comments[a.issue])-1].Body
+	for _, want := range []string{"Run `20261116T101500Z` succeeded", "specs/x/evidence/20261116T101500Z", "approvals here no longer apply"} {
+		if !strings.Contains(last, want) {
+			t.Errorf("closing comment lacks %q: %s", want, last)
+		}
+	}
+	if !LoadTracking(a.run).Closed {
+		t.Error("tracking.json does not record the close")
+	}
+	// Idempotent: a second call (a resumed watcher, a re-run of finish) posts nothing more.
+	if err := a.l.CloseTracking(a.run, "succeeded", "x"); err != nil {
+		t.Fatal(err)
+	}
+	if a.f.count("close-issue") != 1 || a.f.count("comment") != 2 {
+		t.Fatal(a.f.ops)
+	}
+}
+
+func TestCloseTrackingWithoutIssueDoesNothing(t *testing.T) {
+	f := newFake("pub-bot", nil)
+	run := testRun(t, "20261116T101600Z", map[string]any{"state": "failed"})
+	if err := f.loop("alice").CloseTracking(run, "failed (X)", "x"); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.ops) != 0 {
+		t.Fatal(f.ops)
+	}
+}
+
+func TestCloseTrackingErrorLeavesItOpenForARetry(t *testing.T) {
+	a := setupApprove(t)
+	a.f.fail = "close-issue"
+	if err := a.l.CloseTracking(a.run, "succeeded", "x"); err == nil {
+		t.Fatal("want an error")
+	}
+	if LoadTracking(a.run).Closed {
+		t.Fatal("recorded closed although closing failed")
+	}
+}

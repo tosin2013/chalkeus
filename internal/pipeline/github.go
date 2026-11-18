@@ -114,6 +114,24 @@ func (p *P) rel(path string) string {
 	return path
 }
 
+// githubClose closes the run's tracking issue when the run ends, with its outcome. A GitHub
+// error is reported and recorded, never fatal: the run's result stands.
+func (p *P) githubClose(run *evidence.Run, outcome string) {
+	if !p.approvalsOn() || ghloop.TrackingIssue(run) == 0 {
+		return
+	}
+	l, err := p.loop()
+	if err == nil {
+		err = l.CloseTracking(run, outcome, p.rel(run.Dir))
+	}
+	if err != nil {
+		p.say("  (could not close the tracking issue: %v)", err)
+		_ = run.Event("github", nil, nil, "tracking_close_failed", clip(err.Error(), 200))
+		return
+	}
+	_ = run.Event("github", nil, nil, "tracking_closed", fmt.Sprintf("issue=%d", ghloop.TrackingIssue(run)))
+}
+
 // githubTerminal notes under the tracking issue that the terminal answered.
 func (p *P) githubTerminal(run *evidence.Run, step string, ok bool, ch string) {
 	if p.approvalsOn() && ch == "tty" {

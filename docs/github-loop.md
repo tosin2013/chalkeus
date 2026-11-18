@@ -22,7 +22,9 @@ whenever it drifts.
   issue.
 - **A drift report.** It lists anything on GitHub that disagrees with the roadmap.
 - **With approvals on, also:**
-  - one tracking issue per run, where the pilot posts each decision it waits for;
+  - one tracking issue per run, where the pilot posts each decision it waits for. When the run
+    ends (succeeded or failed), the pilot posts the outcome there and closes the issue; a paused
+    run keeps it open;
   - a status-change PR after A's merge; your merge of it approves the roadmap change.
 
 ## 2. Turn it on
