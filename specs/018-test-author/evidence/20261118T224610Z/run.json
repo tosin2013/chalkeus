@@ -1,0 +1,139 @@
+{
+  "cache": {
+    "prefetch": "pass",
+    "pvc": "deps",
+    "size": "2Gi"
+  },
+  "companion": {
+    "commit": "ec23b45ad9fc1c42d61331f00118160eeec19ad9",
+    "dir": "stockroom/items/007",
+    "file_count": 1,
+    "files_sha256": "2206b4394a293075dd252c11c4e0d920b0df8f5784ccc6b58b1fed071b59d249",
+    "repo": "tosin2013/specfoundry-acceptance"
+  },
+  "created": "2026-11-18T22:46:10Z",
+  "event_seq": 37,
+  "gate_seq": 1,
+  "impl": "go",
+  "item": "007",
+  "kind": "item",
+  "mode": {
+    "name": "step-by-step",
+    "retry_limit": 2,
+    "spend_cap_usd": 1.0,
+    "token_cap": 2000000,
+    "worker_deadline_s": 1200
+  },
+  "paused_at": "2026-11-18T22:59:15Z",
+  "pending": {
+    "status_base": "0d839a2d3b3172461aac1afd5a1354ff467983cb",
+    "status_pr": 31,
+    "task": "007"
+  },
+  "proposed_mode": {
+    "name": "step-by-step",
+    "retry_limit": 2,
+    "spend_cap_usd": 1.0,
+    "token_cap": 2000000,
+    "worker_deadline_s": 1200
+  },
+  "proposed_target": "target stockroom (tosin2013/stockroom@main), item 007, toolchain jdk21-maven, registries: repo.maven.apache.org, security level: minimal, hidden tests: 1 file(s), uncovered criteria: [FR-004]",
+  "publisher_login": "tosins-specfoundry-pilot[bot]",
+  "readiness": {
+    "allowed_paths": [
+      "src/main/java/dev/stockroom/*",
+      "src/test/java/dev/stockroom/*",
+      "specs/007-reservation-stock/tasks.md"
+    ],
+    "change_type": "feat",
+    "companion_commit": "ec23b45ad9fc1c42d61331f00118160eeec19ad9",
+    "hidden_files": 1,
+    "input_bytes": 1495040,
+    "mapping": {
+      "present": true,
+      "stale": false,
+      "uncovered": [
+        "FR-004"
+      ],
+      "valid": true
+    },
+    "spec_dir": "specs/007-reservation-stock",
+    "spec_sha256": "50e19152134d1861926103c5fa2e7b542624c41aa7ad3a667b443b833fced896",
+    "tests_may_change": [],
+    "title": "Reservations report the stock they left"
+  },
+  "reason": null,
+  "run_id": "20261118T224610Z",
+  "security_level": "minimal",
+  "snapshot": {
+    "base_revision": "3a69ce9b6950059b1d9ab26b9c1170338ac4cd59",
+    "bytes": 371339,
+    "snapshot_commit": "927f64a7ac1565c5b2c9f76f534e628e30e62624"
+  },
+  "state": "succeeded",
+  "target": {
+    "branch": "main",
+    "name": "stockroom",
+    "repo": "tosin2013/stockroom",
+    "toolchain": "jdk21-maven"
+  },
+  "tasks": {
+    "007": {
+      "attempts": [
+        {
+          "base_revision": "927f64a7ac1565c5b2c9f76f534e628e30e62624",
+          "changed_paths": [
+            "specs/007-reservation-stock/tasks.md",
+            "src/main/java/dev/stockroom/product/ProductStore.java",
+            "src/test/java/dev/stockroom/product/ReservationConcurrencyTests.java",
+            "src/test/java/dev/stockroom/product/StockReservedCollector.java"
+          ],
+          "harness_exit": 0,
+          "image": "ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:cf0d98fad772bf09ac6a5cc095eddbee7987900d69171eb6877efb3117911ca9",
+          "induction": null,
+          "n": 1,
+          "namespace": "pilot-w-007-1",
+          "reason": null,
+          "result": "pass",
+          "spend": {
+            "cap_mode": "token-fallback",
+            "cap_usd": 1.0,
+            "cost_usd": 0.0,
+            "stopped_by_cap": false,
+            "token_cap": 2000000,
+            "tokens": 510006
+          },
+          "state": "passed"
+        }
+      ],
+      "base_revision": "3a69ce9b6950059b1d9ab26b9c1170338ac4cd59",
+      "gate_seqs": [
+        1
+      ],
+      "passing_attempt": 1,
+      "pr": {
+        "attempt": 1,
+        "author": "tosins-specfoundry-pilot[bot]",
+        "closes": 28,
+        "created": true,
+        "draft": true,
+        "head": "pilot/20261118T224610Z/007",
+        "kind": "task",
+        "number": 30,
+        "operator_login": "tosin2013",
+        "publisher_identity": "tosins-specfoundry-pilot[bot]",
+        "task": "007",
+        "url": "https://github.com/tosin2013/stockroom/pull/30"
+      },
+      "state": "verified"
+    }
+  },
+  "toolchain": {
+    "attestation": "not checked",
+    "image": "ghcr.io/tosin2013/specfoundry-pilot-toolchain-jdk21-maven@sha256:76ca4a8117412f86280e0508721818a0b278920fd32768b215486be5b5bada95",
+    "name": "jdk21-maven",
+    "source": "catalog",
+    "spec": "{\n  \"name\": \"jdk21-maven\",\n  \"version_command\": [\"mvn\", \"-v\"],\n  \"path\": [\"/opt/toolchain/bin\", \"/opt/toolchain/maven/bin\", \"/opt/toolchain/jdk/bin\"],\n  \"env\": {\"JAVA_HOME\": \"/opt/toolchain/jdk\"},\n  \"proxy\": \"maven-settings\"\n}\n",
+    "version": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)"
+  }
+}

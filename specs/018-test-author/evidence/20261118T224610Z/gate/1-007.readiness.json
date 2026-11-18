@@ -1,0 +1,68 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/007-reservation-stock/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/007-reservation-stock/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "src/main/java/dev/stockroom/*, src/test/java/dev/stockroom/*, specs/007-reservation-stock/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@ec23b45ad9fc"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "1495040 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "3a69ce9b6950059b1d9ab26b9c1170338ac4cd59",
+  "spec_dir": "specs/007-reservation-stock",
+  "title": "Reservations report the stock they left",
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/007-reservation-stock/tasks.md"
+  ],
+  "spec_sha256": "50e19152134d1861926103c5fa2e7b542624c41aa7ad3a667b443b833fced896",
+  "mapping": {
+    "present": true,
+    "stale": false,
+    "uncovered": [
+      "FR-004"
+    ],
+    "valid": true
+  },
+  "companion_commit": "ec23b45ad9fc1c42d61331f00118160eeec19ad9",
+  "hidden_files": 1,
+  "input_bytes": 1495040
+}
