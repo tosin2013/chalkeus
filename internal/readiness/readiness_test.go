@@ -76,6 +76,7 @@ type world struct {
 	cloneFails        map[string]bool
 	companionPath     string
 	skipHidden        bool
+	allRules          bool
 }
 
 func newWorld() *world {
@@ -111,6 +112,7 @@ func (w *world) check(t *testing.T, item string, maxMB int) (Result, string) {
 		},
 		OpenPRHeads: func(string) ([]string, error) { return w.heads, w.headsErr },
 		SkipHidden:  w.skipHidden,
+		AllRules:    w.allRules,
 	}
 	tg := config.Target{Name: "t", Repo: "me/target", Branch: "main", CompanionRepo: "me/target-acceptance", CompanionPath: w.companionPath, MaxInputMB: maxMB}
 	res, err := Check(d, tg, item, 3, out)
@@ -254,5 +256,26 @@ func TestMappingReport(t *testing.T) {
 	delete(w.companion, "items/002/"+MapFile)
 	if res, _ := w.check(t, "002", 50); res.Mapping["present"] != false {
 		t.Fatalf("%+v", res.Mapping)
+	}
+}
+
+// doctor: every failing rule is reported, not only the first; runs still stop at the first.
+func TestAllRulesReportsEveryProblem(t *testing.T) {
+	w := newWorld()
+	w.companion = map[string]string{"items/003/x.java": "x"}
+	w.heads = []string{"pilot/20990101T000000Z/002"}
+	res, _ := w.check(t, "002", 0) // no hidden tests, too large, an open item PR
+	if res.Decision != "refuse" || len(res.Reasons) != 1 || res.Reasons[0] != "ITEM_NO_HIDDEN_TESTS" {
+		t.Fatalf("a run must stop at the first problem: %v", res.Reasons)
+	}
+	w.allRules = true
+	res, _ = w.check(t, "002", 0)
+	if res.Decision != "refuse" || strings.Join(res.Reasons, ",") != "ITEM_NO_HIDDEN_TESTS,INPUT_TOO_LARGE,OPEN_ITEM_PR" {
+		t.Fatalf("doctor must list every problem: %v", res.Reasons)
+	}
+	w2 := newWorld()
+	w2.allRules = true
+	if res, _ := w2.check(t, "002", 50); res.Decision != "allow" {
+		t.Fatalf("a prepared item still allows in all-rules mode: %v", res.Reasons)
 	}
 }

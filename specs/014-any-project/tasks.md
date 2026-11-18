@@ -588,3 +588,7 @@ Setup → Foundational → US2 → US1 → US3 → US4(T056) → Polish
   change adds or edits tests) and G7 (the original versions of edited or deleted test files
   still pass, in a clean checkout); the spec's optional `## Tests that may change`; prompt
   guidance. Needs a new tools image (grade.py).
+- [X] TNEW-T4 `pilot doctor` (owner decision 2026-11-18, after `cli-schema-mcp` 006 hit
+  `INPUT_TOO_LARGE` only in a later session): a read-only preflight reporting every problem at
+  once; readiness gains an all-rules mode (`readiness.Deps.AllRules`); runs and `author start`
+  still stop at the first failure.
