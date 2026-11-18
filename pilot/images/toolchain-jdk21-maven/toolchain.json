@@ -1,7 +1,7 @@
 {
   "name": "jdk21-maven",
   "version_command": ["mvn", "-v"],
-  "path": ["/opt/toolchain/maven/bin", "/opt/toolchain/jdk/bin"],
+  "path": ["/opt/toolchain/bin", "/opt/toolchain/maven/bin", "/opt/toolchain/jdk/bin"],
   "env": {"JAVA_HOME": "/opt/toolchain/jdk"},
   "proxy": "maven-settings"
 }

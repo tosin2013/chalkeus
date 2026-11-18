@@ -1,1 +1,1 @@
-{"install": "mvn -q -Dmaven.test.failure.ignore=true test", "test": "mvn test"}
+{"install": "cp -R hidden/. . && rm -rf hidden && pilot-maven-prefetch", "test": "rm -rf hidden && mvn test"}

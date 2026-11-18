@@ -29,6 +29,8 @@ RUN set -eu; case "${TARGETARCH:-amd64}" in amd64) a=x64; sum="${TEMURIN21_SHA25
     echo "$(cut -d' ' -f1 "${m}.sha512")  ${m}" | sha512sum -c -; echo "${MAVEN_SHA512}  ${m}" | sha512sum -c -; \
     mkdir -p /opt/toolchain/maven && tar -xzf "${m}" -C /opt/toolchain/maven --strip-components=1
 COPY toolchain.json /opt/toolchain/toolchain.json
+# The Maven prefetch helper (PILOT_INSTALL_COMMAND=pilot-maven-prefetch): see the script.
+COPY pilot-maven-prefetch /opt/toolchain/bin/pilot-maven-prefetch
 RUN find /opt/toolchain -perm /6000 -type f -exec chmod ug-s {} + \
  && chgrp -R 0 /opt/toolchain && chmod -R g=u /opt/toolchain
 
