@@ -1,0 +1,8 @@
+{
+  "name": "node24",
+  "version_command": ["node", "--version"],
+  "path": ["/opt/toolchain/node/bin"],
+  "env": {"npm_config_cache": "${PILOT_DEPS}/npm-cache", "npm_config_update_notifier": "false",
+          "npm_config_fund": "false", "npm_config_audit": "false"},
+  "proxy": "env"
+}

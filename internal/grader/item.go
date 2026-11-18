@@ -79,7 +79,7 @@ spec:
 
 // podVars are a grading pod's toolchain and cache template variables.
 func (g ItemGrading) podVars(readOnlyCache bool) map[string]string {
-	b := toolchain.PodBlocks(g.ToolchainImage, g.ToolchainSpec, Deps)
+	b := toolchain.PodBlocks(g.ToolchainImage, g.ToolchainSpec, Deps, readOnlyCache) // read-only cache = an offline grader
 	mounts, volumes := b.Mounts, b.Volumes
 	if g.Cache && readOnlyCache {
 		mounts = strings.TrimPrefix(mounts+"\n            - {name: deps, mountPath: "+Deps+", readOnly: true}", "\n")
@@ -264,6 +264,11 @@ func Prefetch(l paths.Layout, c *k8s.Client, rn runner.Runner, run *evidence.Run
 	if err := t.AddBytes("in/setup.sh", []byte(setupScript)); err != nil {
 		return err
 	}
+	if g.ToolchainSpec != nil && g.ToolchainSpec.Proxy == "maven-settings" { // T046: the registries-only proxy
+		if err := t.AddBytes("in/settings.xml", []byte(toolchain.MavenSettings(proxyURL))); err != nil {
+			return err
+		}
+	}
 	if err := t.AddTar("grading/overlay", g.Overlay); err != nil {
 		return err
 	}
@@ -274,7 +279,7 @@ func Prefetch(l paths.Layout, c *k8s.Client, rn runner.Runner, run *evidence.Run
 	vars := g.podVars(false)
 	vars["TOOLCHAIN_ENV"] = toolchain.EnvYAML(nil, "")
 	if g.ToolchainSpec != nil {
-		vars["TOOLCHAIN_ENV"] = toolchain.EnvYAML(g.ToolchainSpec.PodEnv(Deps, toolchain.BasePath), "            ")
+		vars["TOOLCHAIN_ENV"] = toolchain.EnvYAML(g.ToolchainSpec.RoleEnv(Deps, toolchain.BasePath, false), "            ")
 	}
 	for k, v := range map[string]string{"NS": g.NS, "DEADLINE": fmt.Sprint(g.DeadlineS), "TOOLS_IMAGE": imgs["tools"],
 		"GRADER_CPU": g.CPU, "GRADER_MEMORY": g.Memory, "INPUT_LIMIT": g.InputLimit, "PROXY_URL": proxyURL} {
@@ -318,7 +323,7 @@ type ProbeResult struct {
 // grading namespace: no network, no secrets. Any failed check is TOOLCHAIN_CONTRACT.
 func ProbeToolchain(l paths.Layout, c *k8s.Client, rn runner.Runner, ns, toolsImage, image string) (ProbeResult, error) {
 	var pr ProbeResult
-	blocks := toolchain.PodBlocks(image, &toolchain.Spec{}, Deps)
+	blocks := toolchain.PodBlocks(image, &toolchain.Spec{}, Deps, true)
 	y, err := k8s.Render(filepath.Join(l.Manifests, "toolchain-probe-job.yaml.tmpl"), map[string]string{
 		"NS": ns, "TOOLS_IMAGE": toolsImage, "TOOLCHAIN_INITS": blocks.Inits})
 	if err != nil {
