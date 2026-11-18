@@ -183,11 +183,13 @@ missing id fails `MAP_INVALID`; after merge, `gate` reports `uncovered=[]`.
   entries for each new code
 - [X] T023 [P] `specs/014-any-project/contracts/grading.md`: `author_check` meta field and the
   `hidden_output.txt` frame file
-- [ ] T024 Run `go vet ./... && go test ./...` and the image tests; kind smoke test of
+- [X] T024 Run `go vet ./... && go test ./...` and the image tests; kind smoke test of
   `author check` with a sample Python project and a drafted test that fails on the base
-  Progress (2026-11-18): `go vet ./...`, `go test ./...` and the image tests pass. The kind smoke
-  test of `author check` needs the new tools image (`grade.py` `author_check`): after this PR's
-  digest PR is merged and `pilot/pilot up` re-run.
+  Done as (2026-11-18): `go vet ./...`, `go test ./...` and the image tests pass in CI (#62).
+  Kind smoke test with the pinned tools image from #63, on a throwaway Python sample (not a real
+  item; the session that drives runs never runs `pilot/pilot author`): toolchain probe, prefetch,
+  baseline with `author_check` passed; the author's `hidden_output.txt` (853 bytes) carried the
+  hidden test's marker; `grade.json` did not.
 - [ ] T025 **Owner action:** first use (quickstart): a separate session drafts item 006's tests
   for `cli-schema-mcp`; the owner reviews and merges the companion PR; `pilot/pilot gate
   --target cli-schema-mcp --item 006` allows
