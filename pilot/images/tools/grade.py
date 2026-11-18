@@ -166,10 +166,13 @@ def tests_changed(meta, repo, base, add):
 def existing_tests_kept(meta, repo, work, base, add):
     """G7: put back the base's version of every test file the change edited or deleted (except
     those the spec says may change), and run the project's tests against the changed code."""
-    touched = [p for st, p in changes(repo, base)
-               if st in ("M", "D") and matches(p, meta["test_paths"]) and not matches(p, meta.get("tests_may_change"))]
+    edited = [p for st, p in changes(repo, base) if st in ("M", "D") and matches(p, meta["test_paths"])]
+    allowed = [p for p in edited if matches(p, meta.get("tests_may_change"))]
+    touched = [p for p in edited if p not in allowed]
     if not touched:
-        return add("G7_existing_tests_kept", True, "no existing test file was edited or deleted")
+        return add("G7_existing_tests_kept", True,
+                   f"existing test files edited or deleted: only {allowed}, which the spec says may change"
+                   if allowed else "no existing test file was edited or deleted")
     # A clean checkout of the change (no build output or bytecode left by G4), then the base's
     # versions of the touched test files on top.
     orig = os.path.join(work, "original-tests")

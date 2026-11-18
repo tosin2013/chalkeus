@@ -211,6 +211,9 @@ class TestRules(Modes):
         self.change_files({"app.py": changed, "tests/test_visible.py": new})
         r = self.run_grade(self.tmeta(tests_may_change=["tests/test_visible.py"]))
         self.assertEqual(r["result"], "pass", r["checks"])
+        g7 = next(c["detail"] for c in r["checks"] if c["id"] == "G7_existing_tests_kept")
+        self.assertIn("which the spec says may change", g7)
+        self.assertIn("tests/test_visible.py", g7)
 
     def test_extending_an_existing_test_file_passes(self):
         extended = (Path(self.repo, "tests/test_visible.py").read_text() +
