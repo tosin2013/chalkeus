@@ -35,6 +35,7 @@ func TestTargetsListsFixtureAndProfiles(t *testing.T) {
 		"pysample": "PILOT_TARGET_REPO=me/pysample\nPILOT_TOOLCHAIN=python\nPILOT_TEST_COMMAND=python3 -m pytest -q\nPILOT_COMPANION_REPO=me/pysample-acceptance\nPILOT_REGISTRY_HOSTS=pypi.org,files.pythonhosted.org\n",
 		"broken":   "PILOT_TARGET_REPO=nope\n",
 		"java":     "PILOT_TARGET_REPO=me/j\nPILOT_TOOLCHAIN=jdk21-maven\nPILOT_TEST_COMMAND=mvn -B test\nPILOT_COMPANION_REPO=me/j-acceptance\n",
+		"cobol":    "PILOT_TARGET_REPO=me/c\nPILOT_TOOLCHAIN=cobol\nPILOT_TEST_COMMAND=make test\nPILOT_COMPANION_REPO=me/c-acceptance\n",
 	})
 	code, out, errs := run("targets")
 	if code != 0 {
@@ -44,7 +45,8 @@ func TestTargetsListsFixtureAndProfiles(t *testing.T) {
 		"fixture\to/x-pilot-fixture@main\ttoolchain=python\t(pilot.env)\n",
 		"pysample\tme/pysample@main\ttoolchain=python\tregistries=pypi.org,files.pythonhosted.org\tcompanion=me/pysample-acceptance\tlevel=minimal\n",
 		"broken\tinvalid: TARGET_INVALID:",
-		"java\tinvalid: TOOLCHAIN_UNAVAILABLE:", // no toolchain image is locked yet
+		"java\tme/j@main\ttoolchain=jdk21-maven\t", // a catalog toolchain with a locked image
+		"cobol\tinvalid: TOOLCHAIN_UNAVAILABLE:",   // not in the catalog
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
