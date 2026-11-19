@@ -29,7 +29,10 @@ and the pilot only uses them after a human reviews and merges your pull request
    - test behaviour the spec states, through the project's public interfaces, not its internals;
    - use only the project's test framework and dependencies it already declares (the grader is
      offline);
-   - not depend on anything outside the project (network, clock, other files of yours).
+   - not depend on anything outside the project (network, clock, other files of yours);
+   - live in files whose paths `spec.md`, `plan.md` and `tasks.md` don't mention (those name the
+     build worker's own files; add a suffix such as `AcceptanceTests`). `check` refuses a draft
+     that reuses one (`DRAFT_PATH_IN_SPEC`).
 4. Write `draft/.acceptance-map.json`:
    ```json
    {"version": 1, "spec_sha256": "<from criteria.json>",

@@ -3,6 +3,7 @@ package author
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -160,5 +161,31 @@ func TestPassRetriesAfterAnInfrastructureFailure(t *testing.T) {
 	we.Job = job
 	if out, err := Pass(context.Background(), we); err != nil || out != PassOpened {
 		t.Fatalf("the next pass drafts again: %s %v\n%s", out, err, w.out)
+	}
+}
+
+// DRAFT_PATH_IN_SPEC gets the second Job, told to rename its files.
+func TestPassRetriesAPathCollision(t *testing.T) {
+	w, we, prompts := watchWorld(t, "pass")
+	first := true
+	job := we.Job
+	we.Job = func(ctx context.Context, d *Draft, a int, p string) JobRecord {
+		r := job(ctx, d, a, p)
+		if first { // the first draft reuses the path the tasks name
+			first = false
+			tasks := filepath.Join(d.Workspace, "tasks.md")
+			_ = os.Chmod(tasks, 0o644)
+			_ = os.WriteFile(tasks, []byte("- [ ] T001 Add tests in `tests/test_bundled.py`\n"), 0o444)
+		} else {
+			_ = os.Chmod(filepath.Join(d.Workspace, "tasks.md"), 0o644)
+			_ = os.WriteFile(filepath.Join(d.Workspace, "tasks.md"), []byte("- [ ] T001\n"), 0o444)
+		}
+		return r
+	}
+	if out, err := Pass(context.Background(), we); err != nil || out != PassOpened {
+		t.Fatalf("%s %v\n%s", out, err, w.out)
+	}
+	if len(*prompts) != 2 || !strings.Contains((*prompts)[1], "failed its check: DRAFT_PATH_IN_SPEC") {
+		t.Fatal("the second Job is told to rename")
 	}
 }

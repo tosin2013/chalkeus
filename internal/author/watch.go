@@ -209,7 +209,7 @@ func (w WatchEnv) draft(ctx context.Context, item, specSHA string) (string, erro
 			code = e.Code
 		}
 		fmt.Fprintf(w.Out, "draft %s: attempt %d %s\n", item, n, code)
-		if code != CodeDraftHiddenPasses && code != CodeDraftSuiteFails {
+		if code != CodeDraftHiddenPasses && code != CodeDraftSuiteFails && code != CodeDraftPathInSpec {
 			break
 		}
 		feedbackCode, feedbackOut = code, d.lastOutput

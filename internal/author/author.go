@@ -20,8 +20,12 @@ const (
 	CodeDraftSuiteFails    = "DRAFT_SUITE_FAILS"
 	CodeDraftOK            = "DRAFT_OK"
 	CodeDraftGraderError   = "DRAFT_GRADER_ERROR"
-	exitFail, exitError    = 1, 2
-	exitRefuse             = 10
+	// CodeDraftPathInSpec: a drafted file reuses a path the item's spec, plan or tasks name. Those
+	// are the build worker's own files: the worker would see the hidden test's path (P11), and
+	// the grader's overlay would replace the worker's file of that name.
+	CodeDraftPathInSpec = "DRAFT_PATH_IN_SPEC"
+	exitFail, exitError = 1, 2
+	exitRefuse          = 10
 )
 
 // failCodes are results (exit 1); every other code is a refusal (exit 10).
