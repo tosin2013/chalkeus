@@ -42,6 +42,10 @@ func (p *P) issuesOn() bool {
 	return p.Cfg.GithubIssues()
 }
 
+// GitHubLoop is the target's GitHub loop for step mode (021): the same reads and
+// publisher-credential writes a run uses.
+func (p *P) GitHubLoop() (*ghloop.Loop, error) { return p.loop() }
+
 // loop returns the run's GitHub loop (operator reads, publisher-credential writes).
 func (p *P) loop() (*ghloop.Loop, error) {
 	if p.GH != nil {

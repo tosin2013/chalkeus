@@ -280,3 +280,9 @@ func TestRunEndWithoutGitHubApprovalsTouchesNoIssue(t *testing.T) {
 		}
 	}
 }
+
+func TestStartedBy(t *testing.T) {
+	if StartedBy("step") != "step" || StartedBy("") != "" || StartedBy("anything; rm -rf") != "" {
+		t.Fatal("only step is recorded")
+	}
+}

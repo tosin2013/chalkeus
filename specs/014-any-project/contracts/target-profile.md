@@ -37,6 +37,8 @@ PILOT_GITHUB_ISSUES=off
 PILOT_GITHUB_APPROVALS=on
 # optional (024): let `pilot author watch` draft hidden tests for this target's ready items
 # PILOT_AUTHOR_AUTO=on  PILOT_AUTHOR_INTERVAL_S=120  PILOT_AUTHOR_AUTO_ATTEMPTS=2
+# optional (021): the label that proposes an item to `pilot step`, and its polling interval
+# PILOT_PROPOSE_LABEL=pilot/go  PILOT_STEP_INTERVAL_S=120
 # optional, may only raise the toolchain defaults:
 # PILOT_GRADER_MEMORY=3Gi  PILOT_GRADER_DEADLINE_S=1200  PILOT_CACHE_SIZE=4Gi  PILOT_MAX_INPUT_MB=80
 ```

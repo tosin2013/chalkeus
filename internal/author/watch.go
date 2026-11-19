@@ -54,6 +54,8 @@ type WatchEnv struct {
 	Status   func() (string, error) // spec status --json of the target's branch (a fresh clone)
 	Job      func(ctx context.Context, d *Draft, attempt int, prompt string) JobRecord
 	Baseline Baseline
+	// Only limits a pass to one item ("" = every candidate); step mode (021) drafts one item.
+	Only string
 }
 
 // Outcome of one watcher pass.
@@ -75,6 +77,9 @@ func Pass(ctx context.Context, w WatchEnv) (string, error) {
 		return "", err
 	}
 	for _, c := range cands {
+		if w.Only != "" && c.ID != w.Only {
+			continue
+		}
 		if ctx.Err() != nil {
 			return PassStopped, nil
 		}
