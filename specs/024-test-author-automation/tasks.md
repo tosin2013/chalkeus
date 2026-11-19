@@ -8,15 +8,15 @@ contracts/author-watch.md, quickstart.md)
 
 ## Phase 1: Setup
 
-- [ ] T001 Add profile keys `PILOT_AUTHOR_AUTO` (`on`/`off`, default `off`), `PILOT_AUTHOR_INTERVAL_S` (default 120) and `PILOT_AUTHOR_AUTO_ATTEMPTS` (default 2, 1–3) to `config.Target` in `internal/config/targets.go`, with validation tests in `internal/config/targets_test.go`; document them in `specs/014-any-project/contracts/target-profile.md`
+- [X] T001 Add profile keys `PILOT_AUTHOR_AUTO` (`on`/`off`, default `off`), `PILOT_AUTHOR_INTERVAL_S` (default 120) and `PILOT_AUTHOR_AUTO_ATTEMPTS` (default 2, 1–3) to `config.Target` in `internal/config/targets.go`, with validation tests in `internal/config/targets_test.go`; document them in `specs/014-any-project/contracts/target-profile.md`
 
 ## Phase 2: Foundational (blocks every story)
 
-- [ ] T002 Add the author proxy `pilot-egress-a` (clients `specfoundry.io/role: author`, allowlist exactly the model hosts) to `cluster.ApplyAll` in `internal/cluster/infra.go`, recreated when its hosts change; tests in `internal/cluster/cluster_test.go`
-- [ ] T003 [P] Add `pilot/manifests/author-ns.yaml.tmpl`: role `author`, default deny, egress only DNS and `pilot-egress-a`, quota pods=1 secrets=1, service account without token; render test in `internal/cluster/cluster_test.go`
-- [ ] T004 [P] Add `pilot/manifests/author-job.yaml.tmpl`: the worker image with `meta.json` role `author`, the model-key secret, the deadline and resources of a worker, non-root and read-only root; render test
-- [ ] T005 Add the `author` role to `pilot/images/worker/entrypoint.sh`: unpack `/in/workspace.tar` into `/work/task`, run OpenCode with `/in/prompt.md`, emit `report.json` (with `role`, `draft_id`, redacted tail) and `draft.tar` holding only `draft/`; Python tests in `pilot/images/tests/` (a fake `opencode` writing a draft file)
-- [ ] T006 [P] Add the author prompt in `internal/prompt/author.go`, built from the test-author skill's rules (research R4), with a feedback section for a retry (code plus the drafted tests' base output); a test in `internal/prompt/author_test.go` that each rule from `.claude/skills/test-author/SKILL.md` §Steps 3–4 is present
+- [X] T002 Add the author proxy `pilot-egress-a` (clients `specfoundry.io/role: author`, allowlist exactly the model hosts) to `cluster.ApplyAll` in `internal/cluster/infra.go`, recreated when its hosts change; tests in `internal/cluster/cluster_test.go`
+- [X] T003 [P] Add `pilot/manifests/author-ns.yaml.tmpl`: role `author`, default deny, egress only DNS and `pilot-egress-a`, quota pods=1 secrets=1, service account without token; render test in `internal/cluster/cluster_test.go`
+- [X] T004 [P] Add `pilot/manifests/author-job.yaml.tmpl`: the worker image with `meta.json` role `author`, the model-key secret, the deadline and resources of a worker, non-root and read-only root; render test
+- [X] T005 Add the `author` role to `pilot/images/worker/entrypoint.sh`: unpack `/in/workspace.tar` into `/work/task`, run OpenCode with `/in/prompt.md`, emit `report.json` (with `role`, `draft_id`, redacted tail) and `draft.tar` holding only `draft/`; Python tests in `pilot/images/tests/` (a fake `opencode` writing a draft file)
+- [X] T006 [P] Add the author prompt in `internal/prompt/author.go`, built from the test-author skill's rules (research R4), with a feedback section for a retry (code plus the drafted tests' base output); a test in `internal/prompt/author_test.go` that each rule from `.claude/skills/test-author/SKILL.md` §Steps 3–4 is present
 
 ## Phase 3: User Story 2 — the unattended author is sandboxed (P1)
 

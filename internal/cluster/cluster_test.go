@@ -82,3 +82,22 @@ func TestAllowlistChanged(t *testing.T) {
 		t.Fatal("a different host list is a change")
 	}
 }
+
+// 024 R6: the author proxy serves only role=author namespaces and allows only the model hosts.
+func TestAuthorProxyRenders(t *testing.T) {
+	root, _ := filepath.Abs("../..")
+	y, err := RenderEgress(paths.At(root), AuthorProxyNS, "author", []string{"model.example"}, "e@sha256:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"name: pilot-egress-a", "specfoundry.io/role: author", `^model\.example$`} {
+		if !strings.Contains(y, want) {
+			t.Fatalf("missing %q in\n%s", want, y)
+		}
+	}
+	for _, not := range []string{"github", "role: worker", "maven"} {
+		if strings.Contains(y, not) {
+			t.Fatalf("unexpected %q in the author proxy", not)
+		}
+	}
+}

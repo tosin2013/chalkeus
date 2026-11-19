@@ -12,6 +12,11 @@ HEXIT=""
 
 meta() { python3 -c 'import json,sys; print(json.load(open("/in/meta.json"))[sys.argv[1]])' "$1"; }
 
+# 024: the same image runs the test author's Job; that role has its own script (author.sh).
+if [ "$(python3 -c 'import json; print(json.load(open("/in/meta.json")).get("role", "worker"))' 2>/dev/null)" = "author" ]; then
+  exec "$LIB/author.sh"
+fi
+
 finish() {
   cd /tmp || true
   python3 - "$ERROR" "$HEXIT" <<'PY' > "$OUT/report.json"

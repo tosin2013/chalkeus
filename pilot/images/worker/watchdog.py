@@ -62,7 +62,8 @@ class Meter:
 def main(argv) -> int:
     pid = int(argv[1]) if len(argv) > 1 else 0
     m = Meter(float(os.environ.get("PILOT_SPEND_CAP_USD", "1.00")), int(os.environ.get("PILOT_TOKEN_CAP", "2000000")))
-    with open("/tmp/harness.jsonl", "a") as log:
+    tmp = os.environ.get("PILOT_TMP", "/tmp")  # overridable for tests (024 author role)
+    with open(os.path.join(tmp, "harness.jsonl"), "a") as log:
         for line in sys.stdin:
             log.write(line)
             log.flush()
@@ -73,7 +74,7 @@ def main(argv) -> int:
                         os.kill(pid, signal.SIGTERM)
                     except ProcessLookupError:
                         pass
-    with open("/tmp/spend.json", "w") as f:
+    with open(os.path.join(tmp, "spend.json"), "w") as f:
         json.dump(m.report(), f)
     return 0
 

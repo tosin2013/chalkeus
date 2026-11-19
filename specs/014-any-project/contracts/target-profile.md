@@ -35,6 +35,8 @@ PILOT_COMPANION_REPO=owner/greeting-service-acceptance
 # PILOT_COMPANION_PATH=greeting-service
 PILOT_GITHUB_ISSUES=off
 PILOT_GITHUB_APPROVALS=on
+# optional (024): let `pilot author watch` draft hidden tests for this target's ready items
+# PILOT_AUTHOR_AUTO=on  PILOT_AUTHOR_INTERVAL_S=120  PILOT_AUTHOR_AUTO_ATTEMPTS=2
 # optional, may only raise the toolchain defaults:
 # PILOT_GRADER_MEMORY=3Gi  PILOT_GRADER_DEADLINE_S=1200  PILOT_CACHE_SIZE=4Gi  PILOT_MAX_INPUT_MB=80
 ```

@@ -82,6 +82,10 @@ func RenderEgress(l paths.Layout, ns, role string, hosts []string, image string)
 // agent uses for the model) and the prefetch's (registries only; never the model host).
 type TargetProxies struct{ Worker, Prefetch string }
 
+// AuthorProxyNS is the test author's egress proxy (024 R6): model hosts only, for namespaces with
+// role author. It never allows a registry or the SCM host.
+const AuthorProxyNS = "pilot-egress-a"
+
 // WorkerProxyNS and PrefetchProxyNS name a target's proxy namespaces.
 func WorkerProxyNS(target string) string   { return "pilot-egress-w-" + target }
 func PrefetchProxyNS(target string) string { return "pilot-egress-r-" + target }
@@ -127,7 +131,8 @@ func ApplyAll(e Env, c *k8s.Client, modelHosts []string, imgs map[string]string,
 	for _, p := range []struct {
 		ns, role string
 		hosts    []string
-	}{{"pilot-egress-model", "worker", modelHosts}, {"pilot-egress-scm", "publisher", []string{"github.com", "api.github.com"}}} {
+	}{{"pilot-egress-model", "worker", modelHosts}, {"pilot-egress-scm", "publisher", []string{"github.com", "api.github.com"}},
+		{AuthorProxyNS, "author", modelHosts}} { // 024: the test author's Job reaches only the model
 		y, err := RenderEgress(e.L, p.ns, p.role, p.hosts, imgs["egress"])
 		if err != nil {
 			return err
@@ -146,7 +151,7 @@ func ApplyAll(e Env, c *k8s.Client, modelHosts []string, imgs map[string]string,
 			return err
 		}
 	}
-	for _, ns := range []string{"pilot-egress-model", "pilot-egress-scm"} {
+	for _, ns := range []string{"pilot-egress-model", "pilot-egress-scm", AuthorProxyNS} {
 		if !c.RolloutStatus(ns, "proxy", 180*time.Second) {
 			return FailOnPull(c, ns, "egress proxy in "+ns+" did not become ready")
 		}

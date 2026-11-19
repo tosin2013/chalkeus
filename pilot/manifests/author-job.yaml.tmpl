@@ -1,0 +1,55 @@
+# The test author's Job for one automatic draft (024 R3): the worker image in its `author`
+# role. Its inputs (meta.json, prompt.md, workspace.tar) arrive through the `receiver` init
+# container, as for an item worker; its draft leaves only as the framed result on stdout. It
+# holds no repository credential: only the model key, and egress through pilot-egress-a.
+apiVersion: batch/v1
+kind: Job
+metadata: {name: author, namespace: ${NS}}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: ${DEADLINE}
+  template:
+    metadata: {labels: {app: author}}
+    spec:
+      serviceAccountName: author
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: receiver
+          image: ${TOOLS_IMAGE}
+          command: [sh, -c, "until [ -f /stage/.ready ]; do sleep 1; done"]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 500m, memory: 128Mi}}
+          volumeMounts:
+            - {name: inputs, mountPath: /stage}
+      containers:
+        - name: worker
+          image: ${WORKER_IMAGE}
+          env:
+            - {name: PILOT_MODEL, value: "${PILOT_MODEL}"}
+            - {name: PILOT_SPEND_CAP_USD, value: "${SPEND_CAP}"}
+            - {name: PILOT_TOKEN_CAP, value: "${TOKEN_CAP}"}
+            - {name: HTTPS_PROXY, value: "http://proxy.pilot-egress-a.svc.cluster.local:8888"}
+            - {name: https_proxy, value: "http://proxy.pilot-egress-a.svc.cluster.local:8888"}
+            - {name: NO_PROXY, value: ""}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "2", memory: 2Gi}}
+          volumeMounts:
+            - {name: inputs, mountPath: /in, readOnly: true}
+            - {name: work, mountPath: /work}
+            - {name: home, mountPath: /home/worker}
+            - {name: model-key, mountPath: /home/worker/.config/opencode, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: inputs, emptyDir: {sizeLimit: ${INPUT_LIMIT}}}
+        - {name: work, emptyDir: {sizeLimit: 1Gi}}
+        - {name: home, emptyDir: {sizeLimit: 256Mi}}
+        - {name: model-key, secret: {secretName: model-key, defaultMode: 0440}}
+        - {name: tmp, emptyDir: {sizeLimit: 1Gi}}
