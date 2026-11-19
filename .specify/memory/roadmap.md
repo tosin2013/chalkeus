@@ -4,7 +4,8 @@ SYNC IMPACT REPORT
 Version change: 1.24.0 → 1.25.0 (this revision)
 Bump rationale: MINOR — a new planned item (025). Nothing existing changes.
 Changes this revision (owner decision 2026-11-19, Tosin Akinosho):
-  - 025 (new, planned): integration tests in CI on a kind cluster, after the seam audit of 021
+  - 025 (new, planned): integration tests in CI on a kind cluster (weekly, and on PRs that touch
+    the pilot), after the seam audit of 021
     and 024 (specs/021-step-mode/audit-20261119.md): six bugs found one live step at a time
     were all in the glue that unit tests with fakes can't see.
 Specs affected: 025 (new)
@@ -1585,7 +1586,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Description:** Run the pilot's real pieces together in CI, on a kind cluster, so seams
   between commands, templates, checks, processes and GitHub are tested before a live run finds
   them.
-- **Outcome:** a CI job (nightly, and on PRs that touch the pilot's Go code, manifests or images)
+- **Outcome:** a CI job (weekly, and on PRs that touch the pilot's Go code, manifests or images)
   stands up kind with `pilot up --local-build` and runs, with a stub harness instead of a model:
   - the fixture run to its first PR;
   - `author watch --once`;
