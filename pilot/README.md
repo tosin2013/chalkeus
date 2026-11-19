@@ -14,6 +14,11 @@ It proves that **no worker starts on a blocked item**. A's first attempt is made
 purpose, B stays blocked through the failure and the retry, and B runs only after A is
 verified.
 
+The same cycle runs one prepared item of **your own repository** (014): `--target <name>
+--item NNN`, with a toolchain image for the project's language, a dependency cache filled before
+any attempt, and hidden tests from a private companion repository. See
+[docs/targets.md](../docs/targets.md).
+
 - **Operators:** follow the [operator guide](../docs/operator-guide.md) ([troubleshooting](../docs/troubleshooting.md))
 - Spec, plan and contracts: [`specs/002-m1-gated-pilot/`](../specs/002-m1-gated-pilot/)
 - Step-by-step validation: [quickstart.md](../specs/002-m1-gated-pilot/quickstart.md)
@@ -49,6 +54,10 @@ pilot/pilot down            # tear down and verify
 pilot/pilot audit           # re-check the committed evidence (AU01-AU11)
 pilot/pilot gate A|B [--root DIR]   # gate only (exit 0 allow, 10 refuse)
 pilot/pilot status          # current run state
+pilot/pilot targets         # 014: list target profiles (never prints secrets)
+pilot/pilot doctor --target <name> [--item NNN] [--baseline]  # every problem at once, read-only
+pilot/pilot gate --target <name> --item NNN   # an item's readiness (exit 10 = refused, with a code)
+pilot/pilot run --target <name> --item NNN    # an item run on your repository
 pilot/pilot approve --run <id> mode|retry|reconcile  # no terminal: approve the one pending step
 #   (your agent harness asks you first; OpenCode needs the rule in your own config,
 #    see docs/troubleshooting.md#prompts-answer-no)
@@ -68,9 +77,12 @@ Every human decision is a typed `y`. Without a terminal, the run pauses at each 
 
 ## Evidence
 
-Each run writes `specs/002-m1-gated-pilot/evidence/<run-id>/`. Its layout is in
-[contracts/evidence-record.md](../specs/002-m1-gated-pilot/contracts/evidence-record.md).
-Commit it after `pilot down`.
+Each run writes `evidence/<run-id>/` in the active Spec Kit feature (`PILOT_EVIDENCE_FEATURE`
+overrides it). Its layout is in
+[contracts/evidence-record.md](../specs/002-m1-gated-pilot/contracts/evidence-record.md); item
+runs add `kind: item`, the baseline, the prefetch and the companion's file hashes
+([contracts/audit-item.md](../specs/014-any-project/contracts/audit-item.md)). Commit it after
+`pilot down`.
 
 ## Tests
 
@@ -85,6 +97,7 @@ python3 -m unittest discover -s pilot/images/tests -t pilot/images/tests   # in-
 |---|---|
 | `pilot` | The command: builds and runs the Go pilot (`cmd/pilot`, `internal/`; the runner is pluggable: plain Jobs, or Kelos in 003) |
 | `images/` | `worker` (OpenCode), `tools` (grader + publisher), `egress` (tinyproxy); `common/frame.py` (both images); `tests/` (the in-image scripts' tests and a reference solution) |
-| `manifests/` | Namespace, Job and proxy templates |
+| `images/toolchain-*/`, `images/toolchains.json` | 014: the toolchain images specfoundry builds (`jdk21-maven`, `node24`, `python3.13`, `go`) and their catalog; `toolchain-samples/` are the offline sample projects each one is tested with |
+| `manifests/` | Namespace, Job and proxy templates; for item runs, `worker-ns-item`, `grading-ns`, `grader-job-item`, `prefetch-job` and `toolchain-probe-job` |
 | `fixture/` | Template of the throwaway repo (roadmap 001 → 002, specs, visible tests) |
 | `grading/` | Hidden acceptance tests: mounted only into grader namespaces |

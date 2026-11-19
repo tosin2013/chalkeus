@@ -84,7 +84,7 @@ agent's live activity) only when the human asks for it.
 | 4 | AWAIT_MERGE | A's PR isn't merged yet; ask the human to merge it on GitHub |
 | 5 | DECLINED, or paused for mode / reconcile approval | See "Decisions" |
 | 6 | AWAIT_RETRY: paused for retry approval | See "Decisions" |
-| 10 | REFUSE (gate refused) | Expected for B before A is verified; otherwise explain the reasons |
+| 10 | REFUSE (gate refused) | Expected for B before A is verified. For an item run, the first code names the problem: find it in `docs/troubleshooting.md` (`#item-not-ready`) and explain it; never edit the target or its profile yourself |
 
 ## Decisions
 

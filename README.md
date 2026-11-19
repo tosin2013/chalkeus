@@ -56,12 +56,31 @@ roadmap.md ──► gate (spec status, fail closed) ──► mode confirmed by
 
 ## Status
 
+What works today:
+
+- **The fixture pilot** (two tasks, B depends on A) runs end to end on a local kind cluster,
+  with every check and an 11/11 evidence audit.
+- **Your own repositories** (014, in progress): one prepared roadmap item at a time, in Java
+  (JDK 21 + Maven), Python 3.13, Node.js 24 or Go (all four images are published; Java and
+  Python have run on real targets), with hidden tests in a private companion repository and
+  offline grading. Real targets so far:
+  - [cli-schema-mcp](https://github.com/tosin2013/cli-schema-mcp), a Python project;
+  - [Stockroom](https://github.com/tosin2013/stockroom), a Spring Boot service built from an
+    empty repository: 7 of 7 items verified, each on its first attempt
+    ([greenfield guide](docs/greenfield.md)).
+
 | Milestone | Status | Evidence |
 |---|---|---|
 | **001** M0 isolation suite on kind + Calico | verified | [specs/001-m0-isolation-stub](specs/001-m0-isolation-stub/) (37/37 checks) |
 | **002** M1 two-task gated pilot (plain Jobs) | verified | [run 20261113T030655Z](specs/002-m1-gated-pilot/evidence/20261113T030655Z/summary.md): A fails, B stays blocked, retry passes, 2 draft PRs, audit 11/11 |
-| **003** Hardened GitHub-built images + Kelos comparison | in progress | [specs/003-m2-kelos-backend](specs/003-m2-kelos-backend/) |
-| 004 GitHub loop · 005 OpenShift · 006 Operator guide | planned | [roadmap](.specify/memory/roadmap.md) |
+| **003** Hardened GitHub-built images + Kelos comparison | verified | [specs/003-m2-kelos-backend](specs/003-m2-kelos-backend/) |
+| **004** GitHub loop: approvals on issues, status PRs, the GitHub App | verified | [specs/004-github-loop/evidence](specs/004-github-loop/evidence/) |
+| **006** Operator guide | verified | [docs/operator-guide.md](docs/operator-guide.md) |
+| **012** Working with an agent: pilot skill and harness approvals | verified | [specs/012-agent-approvals](specs/012-agent-approvals/) |
+| **016** Go pilot at parity | verified | [specs/016-go-pilot](specs/016-go-pilot/) |
+| **014** Any project, any item | in progress | [specs/014-any-project/evidence](specs/014-any-project/evidence/), [docs/targets.md](docs/targets.md) |
+| **017** Greenfield bootstrap · **018** Test author | built; recorded verified after 014 | [docs/greenfield.md](docs/greenfield.md), [specs/018-test-author](specs/018-test-author/) |
+| 005 OpenShift · 011 Cluster mode · 013 Release · 015 Released waves · others | planned | [roadmap](.specify/memory/roadmap.md) |
 
 ## Try the pilot
 
@@ -85,6 +104,10 @@ pilot/pilot run                  # confirm the mode; A/1 fails on purpose; confi
 pilot/pilot resume               # approve "A verified"; B runs; PR for B; audit
 pilot/pilot down && pilot/pilot audit
 ```
+
+**Your own repository:** describe it in a target profile and run one prepared item with
+`pilot/pilot run --target <name> --item NNN`. See [targets](docs/targets.md), or
+[greenfield](docs/greenfield.md) to start from an empty repository.
 
 Pilot reference: [pilot/README.md](pilot/README.md) · configuration contract:
 [contracts/config.md](specs/002-m1-gated-pilot/contracts/config.md).
