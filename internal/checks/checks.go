@@ -1,4 +1,5 @@
-// Package checks runs the live isolation and credential checks P01–P10 and the gate
+// Package checks runs the live isolation and credential checks P01–P12 (with P06r for item
+// runs whose target declares registries) and the gate
 // fail-closed matrix GM01–GM04 (reference: the former Python pilot's checks.py;
 // specs/002-m1-gated-pilot/contracts/evidence-record.md). Detail strings match the reference.
 //
@@ -44,6 +45,13 @@ type Deps struct {
 	L   paths.Layout
 	C   *k8s.Client
 	Out io.Writer
+	Net *ItemNet // an item run's target proxies; nil when the target declares no registries
+}
+
+// ItemNet is an item run's target proxies (014 R6), for P06r.
+type ItemNet struct {
+	WorkerProxyNS, PrefetchProxyNS string
+	Registries                     []string
 }
 
 func (d Deps) rec(run *evidence.Run, id, req string, ok bool, desc, unit, detail string) {
@@ -241,6 +249,9 @@ func (d Deps) RunWorkerChecks(run *evidence.Run, imgs map[string]string, task st
 		d.rec(run, "P07", "FR-010", sOK && scOK, "worker-policy pod cannot reach the grader stand-in; control can",
 			unit, fmt.Sprintf("twin=%s control=%s", sD, scD))
 	}()
+	if d.Net != nil && len(d.Net.Registries) > 0 {
+		d.registryCheck(run, imgs, ns, unit)
+	}
 	// P08 RBAC
 	gns := fmt.Sprintf("pilot-g-%s-%d", strings.ToLower(task), n)
 	if run.Kind() == evidence.KindItem { // one grading namespace per item run (014 R7)
@@ -256,6 +267,66 @@ func (d Deps) RunWorkerChecks(run *evidence.Run, imgs map[string]string, task st
 		allNo = allNo && v == "no"
 	}
 	d.rec(run, "P08", "FR-010", allNo, "worker SA cannot create/patch/exec in its grader namespace", unit, pyrepr.SortedJSON(ans))
+}
+
+// registryCheck records P06r (014 R6) from a second probe twin rendered like the item's worker
+// namespace, whose one proxy is the target's worker proxy.
+func (d Deps) registryCheck(run *evidence.Run, imgs map[string]string, ns, unit string) {
+	twin := ns + "-probe-r"
+	defer d.C.DeleteNS(twin, false)
+	d.C.DeleteNS(twin, true)
+	ready := false
+	if y, err := k8s.Render(filepath.Join(d.L.Manifests, "worker-ns-item.yaml.tmpl"),
+		map[string]string{"NS": twin, "RUN_ID": run.ID, "PROXY_NS": d.Net.WorkerProxyNS}); err == nil && d.C.Apply(y) == nil {
+		if y, err := k8s.Render(filepath.Join(d.L.Manifests, "worker-probe.yaml.tmpl"), map[string]string{"NS": twin, "TOOLS_IMAGE": imgs["tools"]}); err == nil && d.C.Apply(y) == nil {
+			ready = d.C.WaitPodReady(twin, "probe", 120*time.Second)
+		}
+	}
+	proxy := "http://proxy." + d.Net.WorkerProxyNS + ".svc.cluster.local:8888"
+	reg, bad := "000", "000"
+	if ready {
+		reg = d.curl(twin, "probe", "https://"+d.Net.Registries[0]+"/", proxy)
+		bad = d.curl(twin, "probe", "https://"+undeclaredHost+"/", proxy)
+	}
+	cm, _ := d.C.Get(d.Net.PrefetchProxyNS, "configmap", "proxy-config")
+	ok, detail := RegistryProxy(ready, reg, bad, s(m(cm["data"])["allowlist"]), d.Net.Registries)
+	d.rec(run, "P06r", "014 R6", ok,
+		"a declared registry is reachable through the target's proxy; "+undeclaredHost+" is refused; the prefetch proxy allows only the registries",
+		unit, detail)
+}
+
+// undeclaredHost is the host P06r expects every proxy to refuse.
+const undeclaredHost = "example.invalid"
+
+// RegistryProxy is P06r's rule: the probe reached the first declared registry through the
+// worker's target proxy (any HTTP status), the undeclared host was refused (no status), and the
+// prefetch proxy's allowlist is exactly the declared registries. The detail names no host, so
+// an unexpected allowlist entry (such as a model host) is only counted.
+func RegistryProxy(ready bool, registryCode, undeclaredCode, prefetchAllowlist string, registries []string) (bool, string) {
+	want := map[string]bool{}
+	for _, h := range registries {
+		want[h] = true
+	}
+	got, extra := map[string]bool{}, 0
+	for _, line := range strings.Split(prefetchAllowlist, "\n") {
+		h := strings.ReplaceAll(strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(line), "^"), "$"), `\`, "")
+		if h == "" {
+			continue
+		}
+		got[h] = true
+		if !want[h] {
+			extra++
+		}
+	}
+	missing := 0
+	for h := range want {
+		if !got[h] {
+			missing++
+		}
+	}
+	ok := ready && registryCode != "000" && undeclaredCode == "000" && extra == 0 && missing == 0
+	return ok, fmt.Sprintf("probe_ready=%t registry=http=%s undeclared=http=%s prefetch_allowlist=%d missing=%d unexpected=%d",
+		ready, registryCode, undeclaredCode, len(got), missing, extra)
 }
 
 // HiddenTestsAbsent is P11's rule (014 FR-008): no hidden-test path from companion.json appears in

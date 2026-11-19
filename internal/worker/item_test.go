@@ -122,3 +122,17 @@ func TestItemWorkerJobRenders(t *testing.T) {
 		}
 	}
 }
+
+func TestRefusals(t *testing.T) {
+	log := "INFO a connect\nNOTICE Proxying refused on filtered domain \"example.invalid\"\nINFO b\n"
+	got := Refusals(log, "[pilot-egress-w-x] ")
+	if len(got) != 1 || got[0] != `[pilot-egress-w-x] NOTICE Proxying refused on filtered domain "example.invalid"` {
+		t.Fatalf("got %q", got)
+	}
+	if got := Refusals("", ""); len(got) != 0 {
+		t.Fatalf("empty log: %q", got)
+	}
+	if itemProxyNS(nil) != "" || itemProxyNS(&Item{ProxyNS: "pilot-egress-w-x"}) != "pilot-egress-w-x" {
+		t.Fatal("itemProxyNS")
+	}
+}

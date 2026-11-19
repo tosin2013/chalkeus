@@ -160,19 +160,40 @@ func nilIfEmpty(m map[string]any) any {
 	return m
 }
 
-// ProxyDenials returns the model egress proxy's refusal lines since a time.
-func ProxyDenials(c *k8s.Client, since string) string {
+// ProxyDenials returns the egress proxies' refusal lines since a time: the model proxy's, then,
+// prefixed with their namespace, those of any other proxy the attempt used (an item run's
+// target proxy, 014 R6). Refusals of the network checks' own probes appear here too.
+func ProxyDenials(c *k8s.Client, since string, others ...string) string {
 	var t *time.Time
 	if p, err := time.Parse(evidence.TimeFormat, since); err == nil {
 		t = &p
 	}
-	var keep []string
-	for _, l := range strings.Split(c.DeploymentLogs("pilot-egress-model", "proxy", t), "\n") {
-		if strings.Contains(strings.ToLower(l), "refused") {
-			keep = append(keep, l)
+	keep := Refusals(c.DeploymentLogs("pilot-egress-model", "proxy", t), "")
+	for _, ns := range others {
+		if ns != "" && ns != "pilot-egress-model" {
+			keep = append(keep, Refusals(c.DeploymentLogs(ns, "proxy", t), "["+ns+"] ")...)
 		}
 	}
 	return strings.Join(keep, "\n") + "\n"
+}
+
+// Refusals keeps a proxy log's refusal lines, each with a prefix.
+func Refusals(log, prefix string) []string {
+	var keep []string
+	for _, l := range strings.Split(log, "\n") {
+		if strings.Contains(strings.ToLower(l), "refused") {
+			keep = append(keep, prefix+l)
+		}
+	}
+	return keep
+}
+
+// itemProxyNS is the target proxy an item attempt used, or "".
+func itemProxyNS(it *Item) string {
+	if it == nil {
+		return ""
+	}
+	return it.ProxyNS
 }
 
 // RunAttempt runs one attempt and returns its record (stored in run.json tasks.<T>.attempts).
@@ -288,7 +309,7 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 		st["outcome"] = outcome
 		_ = evidence.WriteJSON(filepath.Join(adir, "job.json"), st)
 		log := d.Runner.Collect(h)
-		_ = os.WriteFile(filepath.Join(adir, "proxy-denials.log"), []byte(ProxyDenials(d.C, started)), 0o644)
+		_ = os.WriteFile(filepath.Join(adir, "proxy-denials.log"), []byte(ProxyDenials(d.C, started, itemProxyNS(d.Item))), 0o644)
 		files, ferr := frame.Decode(log)
 		if files != nil {
 			_ = os.WriteFile(filepath.Join(adir, "report.json"), files["report.json"], 0o644)

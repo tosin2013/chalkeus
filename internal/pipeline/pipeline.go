@@ -21,6 +21,7 @@ import (
 
 	"github.com/tosin2013/specfoundry/internal/audit"
 	"github.com/tosin2013/specfoundry/internal/checks"
+	"github.com/tosin2013/specfoundry/internal/cluster"
 	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/decisions"
 	"github.com/tosin2013/specfoundry/internal/evidence"
@@ -213,6 +214,16 @@ func (p *P) fail(run *evidence.Run, reason string) int {
 
 func (p *P) checks() checks.Deps { return checks.Deps{L: p.L, C: p.C, Out: p.Out} }
 
+// workerChecks adds an item run's target proxies, so the worker checks include P06r (014 R6).
+func (p *P) workerChecks(run *evidence.Run) checks.Deps {
+	d := p.checks()
+	if run.Kind() == evidence.KindItem && len(p.Target.RegistryHosts) > 0 {
+		d.Net = &checks.ItemNet{WorkerProxyNS: cluster.WorkerProxyNS(p.Target.Name),
+			PrefetchProxyNS: cluster.PrefetchProxyNS(p.Target.Name), Registries: p.Target.RegistryHosts}
+	}
+	return d
+}
+
 func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 	t := run.Task(task)
 	total := 1 + p.Cfg.RetryLimit()
@@ -228,7 +239,7 @@ func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 			_ = run.Event("attempt", task, n, "attempt_error", err.Error())
 		} else {
 			wd := worker.Deps{L: p.L, C: p.C, Runner: p.Runner,
-				Checks: func(task string, n int, ns string) { p.checks().RunWorkerChecks(run, p.Imgs, task, n, ns) }}
+				Checks: func(task string, n int, ns string) { p.workerChecks(run).RunWorkerChecks(run, p.Imgs, task, n, ns) }}
 			if run.Kind() == evidence.KindItem {
 				wd.Item = p.workerItem(run)
 			}
