@@ -31,11 +31,11 @@ RUN apt-get update \
  && chgrp -R 0 /home/worker /work && chmod -R g=u /home/worker /work \
  && ! command -v sudo
 COPY --from=fetch /fetch/opencode /usr/local/bin/opencode
-COPY entrypoint.sh watchdog.py frame.py /usr/local/lib/pilot/
+COPY entrypoint.sh author.sh watchdog.py frame.py /usr/local/lib/pilot/
 # Kelos-compatible entrypoint shim (FR-010): lets Kelos users run this hardened image.
 # It adds no dependency on Kelos.
 COPY kelos_entrypoint.sh /kelos_entrypoint.sh
-RUN chmod 0755 /usr/local/bin/opencode /usr/local/lib/pilot/entrypoint.sh /kelos_entrypoint.sh
+RUN chmod 0755 /usr/local/bin/opencode /usr/local/lib/pilot/entrypoint.sh /usr/local/lib/pilot/author.sh /kelos_entrypoint.sh
 ENV HOME=/home/worker PYTHONDONTWRITEBYTECODE=1 \
     OPENCODE_DISABLE_AUTOUPDATE=1 \
     OPENCODE_DISABLE_MODELS_FETCH=1 \

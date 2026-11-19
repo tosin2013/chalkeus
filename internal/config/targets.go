@@ -46,6 +46,9 @@ type Target struct {
 	PublisherEnv    string // token mode: targets/<name>.publisher.env
 	SecurityLevel   string // minimal (default) | recommended | strict (roadmap C-14; 018)
 	AuthorEnv       string // targets/<name>.author.env: the test author's companion-only token (recommended level)
+	AuthorAuto      string // on|off: `pilot author watch` may draft this target's items (024)
+	AuthorIntervalS int    // seconds between the watcher's polls (024, default 120)
+	AuthorAttempts  int    // author Jobs per automatic draft (024, default 2, at most 3)
 	Fixture         bool
 }
 
@@ -176,7 +179,8 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		CompanionPath:  strings.Trim(strings.TrimSpace(v["PILOT_COMPANION_PATH"]), "/"),
 		InstallCommand: strings.TrimSpace(v["PILOT_INSTALL_COMMAND"]), ChangeType: v["PILOT_CHANGE_TYPE"],
 		GithubIssues: v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
-		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50}
+		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50,
+		AuthorAuto: strings.TrimSpace(v["PILOT_AUTHOR_AUTO"]), AuthorIntervalS: 120, AuthorAttempts: 2}
 	if !repoRE.MatchString(t.Repo) {
 		return Target{}, invalid("PILOT_TARGET_REPO", "must be owner/name")
 	}
@@ -241,7 +245,10 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	if t.GithubApprovals == "" {
 		t.GithubApprovals = "off"
 	}
-	for k, x := range map[string]string{"PILOT_GITHUB_ISSUES": t.GithubIssues, "PILOT_GITHUB_APPROVALS": t.GithubApprovals} {
+	if t.AuthorAuto == "" {
+		t.AuthorAuto = "off" // auto-draft is opt-in per target (024 FR-001)
+	}
+	for k, x := range map[string]string{"PILOT_GITHUB_ISSUES": t.GithubIssues, "PILOT_GITHUB_APPROVALS": t.GithubApprovals, "PILOT_AUTHOR_AUTO": t.AuthorAuto} {
 		if x != "on" && x != "off" {
 			return Target{}, invalid(k, "must be on or off")
 		}
@@ -251,7 +258,8 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 			return Target{}, invalid(k, "must be a quantity like 2Gi or 512Mi")
 		}
 	}
-	for k, dst := range map[string]*int{"PILOT_GRADER_DEADLINE_S": &t.GraderDeadlineS, "PILOT_MAX_INPUT_MB": &t.MaxInputMB} {
+	for k, dst := range map[string]*int{"PILOT_GRADER_DEADLINE_S": &t.GraderDeadlineS, "PILOT_MAX_INPUT_MB": &t.MaxInputMB,
+		"PILOT_AUTHOR_INTERVAL_S": &t.AuthorIntervalS, "PILOT_AUTHOR_AUTO_ATTEMPTS": &t.AuthorAttempts} {
 		if x := v[k]; x != "" {
 			n, err := strconv.Atoi(x)
 			if err != nil || n <= 0 {
@@ -259,6 +267,12 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 			}
 			*dst = n
 		}
+	}
+	if t.AuthorAttempts > 3 {
+		return Target{}, invalid("PILOT_AUTHOR_AUTO_ATTEMPTS", "must be 1, 2 or 3")
+	}
+	if t.AuthorIntervalS < 30 {
+		return Target{}, invalid("PILOT_AUTHOR_INTERVAL_S", "must be at least 30 (seconds)")
 	}
 	return t, nil
 }

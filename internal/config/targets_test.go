@@ -57,7 +57,7 @@ func TestLoadTargetGood(t *testing.T) {
 		TestCommand: "mvn -B test", RegistryHosts: []string{"repo.maven.apache.org", "repo1.example.org"},
 		CompanionRepo: "me/greeting-service-acceptance", GithubIssues: "off", GithubApprovals: "on", MaxInputMB: 50, ChangeType: "feat",
 		PublisherEnv: filepath.Join(c.TargetsDir(), "greeting.publisher.env"), SecurityLevel: LevelMinimal,
-		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env")}
+		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env"), AuthorAuto: "off", AuthorIntervalS: 120, AuthorAttempts: 2}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\n got %+v\nwant %+v", got, want)
 	}
@@ -87,15 +87,18 @@ func TestLoadTargetRefusals(t *testing.T) {
 	wantCode(t, err, "TARGET_INVALID")
 
 	for key, body := range map[string]string{
-		"PILOT_TARGET_REPO":       strings.Replace(goodTarget, "me/greeting-service\n", "not-a-repo\n", 1),
-		"PILOT_TOOLCHAIN":         strings.Replace(goodTarget, "PILOT_TOOLCHAIN=jdk21-maven\n", "", 1),
-		"PILOT_TEST_COMMAND":      strings.Replace(goodTarget, "mvn -B test", "  ", 1),
-		"PILOT_COMPANION_REPO":    strings.Replace(goodTarget, "me/greeting-service-acceptance", "me/greeting-service", 1),
-		"PILOT_REGISTRY_HOSTS":    strings.Replace(goodTarget, "repo1.example.org", "https://x.org/y", 1),
-		"PILOT_GITHUB_ISSUES":     goodTarget + "PILOT_GITHUB_ISSUES=yes\n",
-		"PILOT_GRADER_MEMORY":     goodTarget + "PILOT_GRADER_MEMORY=lots\n",
-		"PILOT_GRADER_DEADLINE_S": goodTarget + "PILOT_GRADER_DEADLINE_S=-1\n",
-		"PILOT_MAX_INPUT_MB":      goodTarget + "PILOT_MAX_INPUT_MB=x\n",
+		"PILOT_TARGET_REPO":          strings.Replace(goodTarget, "me/greeting-service\n", "not-a-repo\n", 1),
+		"PILOT_TOOLCHAIN":            strings.Replace(goodTarget, "PILOT_TOOLCHAIN=jdk21-maven\n", "", 1),
+		"PILOT_TEST_COMMAND":         strings.Replace(goodTarget, "mvn -B test", "  ", 1),
+		"PILOT_COMPANION_REPO":       strings.Replace(goodTarget, "me/greeting-service-acceptance", "me/greeting-service", 1),
+		"PILOT_REGISTRY_HOSTS":       strings.Replace(goodTarget, "repo1.example.org", "https://x.org/y", 1),
+		"PILOT_GITHUB_ISSUES":        goodTarget + "PILOT_GITHUB_ISSUES=yes\n",
+		"PILOT_GRADER_MEMORY":        goodTarget + "PILOT_GRADER_MEMORY=lots\n",
+		"PILOT_GRADER_DEADLINE_S":    goodTarget + "PILOT_GRADER_DEADLINE_S=-1\n",
+		"PILOT_MAX_INPUT_MB":         goodTarget + "PILOT_MAX_INPUT_MB=x\n",
+		"PILOT_AUTHOR_AUTO":          goodTarget + "PILOT_AUTHOR_AUTO=yes\n",
+		"PILOT_AUTHOR_INTERVAL_S":    goodTarget + "PILOT_AUTHOR_INTERVAL_S=5\n",
+		"PILOT_AUTHOR_AUTO_ATTEMPTS": goodTarget + "PILOT_AUTHOR_AUTO_ATTEMPTS=4\n",
 	} {
 		writeTarget(t, c, "t", body)
 		_, err := c.LoadTarget("t", "")
@@ -235,4 +238,19 @@ func TestSecurityLevel(t *testing.T) {
 	writeTarget(t, c, "p", goodTarget+"PILOT_SECURITY_LEVEL=max\n")
 	_, err = c.LoadTarget("p", "")
 	wantCode(t, err, "TARGET_INVALID")
+}
+
+// 024: auto-draft is off by default; the watcher's interval and attempts have defaults.
+func TestTargetAuthorAuto(t *testing.T) {
+	c := targetCfg(t)
+	writeTarget(t, c, "g", goodTarget)
+	got, err := c.LoadTarget("g", "")
+	if err != nil || got.AuthorAuto != "off" || got.AuthorIntervalS != 120 || got.AuthorAttempts != 2 {
+		t.Fatalf("%+v %v", got, err)
+	}
+	writeTarget(t, c, "g", goodTarget+"PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_INTERVAL_S=60\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\n")
+	got, err = c.LoadTarget("g", "")
+	if err != nil || got.AuthorAuto != "on" || got.AuthorIntervalS != 60 || got.AuthorAttempts != 1 {
+		t.Fatalf("%+v %v", got, err)
+	}
 }
