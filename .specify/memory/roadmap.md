@@ -1,7 +1,22 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.20.0 → 1.21.0 (this revision)
+Version change: 1.21.0 → 1.22.0 (this revision)
+Bump rationale: MINOR — a new planned item (023) taking 014's OpenShift EAP validation, and
+014 scope and dependency corrections from its debrief. Nothing verified is invalidated.
+Changes this revision (owner decisions 2026-11-19, Tosin Akinosho):
+  - 023 (new, planned): a Quarkus reference project built from an empty repository like
+    Stockroom, then run on OpenShift; the legacy Java EE → JBoss EAP upgrade is its stretch
+    goal on OpenShift.
+  - 014: the OpenShift EAP validation moves to 023, and 005 leaves Depends on. The toolchain
+    scope line is corrected: the repository declares nothing; built-in images plus operator
+    profiles (own images in 022). Debrief:
+    specs/014-any-project/roadmap-reviews/debrief-20261119T143806Z.md.
+  - 011: a note that its cluster resource takes the target profile fields (014 FR-004b).
+Specs affected: 011, 014, 023 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.20.0 → 1.21.0
 Bump rationale: MINOR — a new planned item (022) taking 014's operator-supplied toolchain
 images, and owner decisions that change 014's and 017's validation. Nothing verified is
 invalidated.
@@ -974,6 +989,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   spec-status release and must give the same answer for the same roadmap (the audit relies on
   it). Cluster mode defaults
   to the **strict** level (C-14).
+  **Target profiles (014 FR-004b, 2026-11-19):** the run resource takes the fields of 014's
+  operator-side target profiles (`targets/<name>.env`: repository, branch, toolchain, install
+  and test commands, registry hosts, companion repository and path, test paths), so a target is
+  configured the same way in both modes and the repository still declares nothing.
 
 ### 012 — Working with an agent: pilot skill and harness approvals  [status: verified]
 
@@ -1036,15 +1055,18 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - the worker prompt and the grading come from the item's spec, tasks and the repo's own tests;
   - a readiness check: a spec and tasks exist, dependencies are verified, no open questions;
   - per-item evidence, and an audit that no longer assumes exactly items A and B;
-  - per-repo toolchains for the worker and the grader (an image per language, or declared in
-    the repo's configuration), still digest-pinned and hardened (C-08, C-09);
+  - per-repo toolchains for the worker and the grader (an image per language~~, or declared in
+    the repo's configuration~~), still digest-pinned and hardened (C-08, C-09). *(Corrected
+    2026-11-19: the repository declares nothing; the operator's target profile names one of the
+    built-in images. Operator-supplied images are 022.)*
   - an egress allowlist for the repo's package registries, so dependencies can be installed,
     declared per repo and shown at the mode approval;
   - hidden acceptance tests ~~written by a human and~~ kept out of the worker's view, with the
     repo's own test suite run as a visible check. A human may write them, or the test author
     (018) may draft them for a human to review and merge (C-12, owner decision 2026-11-17).
 - **Scope (out):** parallel runs (015); writing specs or plans; choosing items automatically.
-- **Depends on:** 004, 016 (and 005 for the OpenShift EAP validation)
+- **Depends on:** 004, 016 (2026-11-19: no longer 005; the OpenShift EAP validation moved to
+  023)
 - **Spec dir:** specs/014-any-project/
 - **Governed by:** C-01, C-02, C-04, C-09, C-12, C-14
 - **Addresses:** docs/prd.md §4 loop, F1, F8, F9
@@ -1055,7 +1077,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
   ~~**Validation (owner decision 2026-11-15):** a real **Quarkus** (Java) brownfield repository,~~
   ~~chosen when 014 is specified, with a roadmap of a few items where one depends on another.~~
-  **Validation (owner decision 2026-11-16, replaces the Quarkus validation):** a legacy Java EE
+  **Validation (owner decision 2026-11-16, replaces the Quarkus validation):** *(Moved to 023
+  on 2026-11-19, owner decision; kept here as history. 014 was validated on kind with
+  cli-schema-mcp and Stockroom.)* A legacy Java EE
   upgrade on **OpenShift**, the enterprise brownfield case:
   - the starting point is a public application on the `javax` namespace with real tests, on an
     older JBoss EAP or WildFly release (candidates: the Java EE 7 Petstore, Cargo Tracker's
@@ -1421,6 +1445,34 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   toolchains (JDK 21 + Maven, Node.js 24, Python 3.13, Go). 014's tasks.md keeps T042, T043 and
   T055 as the starting point.
 
+### 023 — Quarkus reference project, then OpenShift  [status: planned]
+
+- **Description:** A second reference project built roadmap-driven from an empty repository, as
+  Stockroom was, on Quarkus; then the same loop on OpenShift.
+- **Outcome:** a Quarkus service grows from an empty repository through a few dependent
+  roadmap items, each built by an agent, graded offline with hidden tests and merged by the
+  owner, every run auditing 11/11. Its items then run on OpenShift under the same audit.
+  Stretch goal: a legacy Java EE application upgraded to a current JBoss EAP release on
+  OpenShift, one item per upgrade step.
+- **Scope (in):**
+  - the Quarkus project: planning PR (constitution, roadmap, first specs, every dependency
+    declared), hidden tests in the companion, items run on `jdk21-maven`, as in
+    [docs/greenfield.md](../../docs/greenfield.md);
+  - the same items, or later ones, on OpenShift (needs 005);
+  - stretch: the EAP upgrade validation moved from 014 (its notes keep the detail: a `javax`
+    application with real tests, Migration Toolkit for Applications analysis when planning, the
+    grader trusting only hidden tests and the app's suite, UBI images, the model in the
+    cluster).
+- **Scope (out):** new pilot features beyond what 005 brings; a Node.js greenfield (dropped in
+  017).
+- **Depends on:** 014, 017 (and 005 for the OpenShift part)
+- **Governed by:** C-04, C-09, C-12, C-14
+- **Notes:** Owner decision 2026-11-19, from 014's debrief: "something similar to what we did
+  with Stockroom, but with Quarkus; the Java EAP could be a stretch goal when running in
+  OpenShift". The Quarkus part can start on kind before 005; the OpenShift part waits for 005.
+  The Quarkus version, the target release for EAP, and whether the Quarkus project is the
+  OpenShift validation for 005 are decided when 023 is specified.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -1559,4 +1611,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.21.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
+**Version**: 1.22.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-19
