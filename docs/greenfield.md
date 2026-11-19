@@ -155,7 +155,14 @@ three rounds each, and failed on the 005 code every time before passing on the f
 filtering) followed ([run record](../specs/018-test-author/evidence/20261118T230306Z/)); one of
 its requirements, paging in the database query, had no hidden test, so it was checked in review.
 
-**Stockroom's roadmap finished at 7 of 7 items verified**, each on its first attempt, each item
+Reviewing 006's PR showed another gap: the name filter passed the client's text into a SQL
+`LIKE` pattern unescaped, so `name=%` matched every product. Like 005's flaw, it became a new
+item, 008, which escapes `%`, `_` and `\` and passed on its first attempt
+([run record](../specs/018-test-author/evidence/20261119T154630Z/)). It was the first run on
+[OpenCode Go](providers.md#quick-start-opencode-go): 52,000 tokens, against 140,000 to 720,000
+for the earlier items.
+
+**Stockroom's roadmap stands at 8 of 8 items verified**, each on its first attempt, each item
 taking about 10 minutes from approving the mode to recorded verified. Every change arrived by a
 pull request the owner merged.
 

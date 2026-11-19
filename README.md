@@ -66,7 +66,7 @@ What works today:
   offline grading. Real targets so far:
   - [cli-schema-mcp](https://github.com/tosin2013/cli-schema-mcp), a Python project;
   - [Stockroom](https://github.com/tosin2013/stockroom), a Spring Boot service built from an
-    empty repository: 7 of 7 items verified, each on its first attempt
+    empty repository: 8 of 8 items verified, each on its first attempt
     ([greenfield guide](docs/greenfield.md)).
 
 | Milestone | Status | Evidence |

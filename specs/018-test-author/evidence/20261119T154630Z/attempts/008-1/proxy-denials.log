@@ -1,0 +1,3 @@
+NOTICE    Nov 19 15:56:47.900 [1]: Proxying refused on filtered domain "github.com"
+[pilot-egress-w-stockroom] NOTICE    Nov 19 15:56:57.775 [1]: Proxying refused on filtered domain "github.com"
+[pilot-egress-w-stockroom] NOTICE    Nov 19 15:57:06.977 [1]: Proxying refused on filtered domain "example.invalid"

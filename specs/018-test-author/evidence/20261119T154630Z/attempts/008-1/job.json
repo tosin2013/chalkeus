@@ -1,0 +1,39 @@
+{
+  "container_terminated": {
+    "containerID": "containerd://1d27c2ef4828af29601ffd16cda0847c240b29636ba6a4278613fedb565923ce",
+    "exitCode": 0,
+    "finishedAt": "2026-11-19T16:03:08Z",
+    "reason": "Completed",
+    "startedAt": "2026-11-19T15:56:42Z"
+  },
+  "job_status": {
+    "completionTime": "2026-11-19T16:03:11Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-19T16:03:11Z",
+        "lastTransitionTime": "2026-11-19T16:03:11Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-11-19T16:03:11Z",
+        "lastTransitionTime": "2026-11-19T16:03:11Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-11-19T15:56:02Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "outcome": "Complete",
+  "pod": "worker-lkmbc",
+  "pod_phase": "Succeeded",
+  "pod_reason": null
+}

@@ -1,0 +1,23 @@
+{
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/008-filter-wildcards/tasks.md"
+  ],
+  "attempt": 1,
+  "base_revision": "5bcca3507244031f3d475c5e4e47e5b98c222767",
+  "command_timeout_s": 600,
+  "hidden_mode": "overlay",
+  "induction": null,
+  "item_id": "008",
+  "mode": "attempt",
+  "run_id": "20261119T154630Z",
+  "spec_sha256": "764da53c8b8764edf9f108d386fcd7ea67c62ca8c9594323e87ff7cdba2ec98b",
+  "task": "008",
+  "test_command": "mvn -B test",
+  "test_paths": [
+    "src/test/*"
+  ],
+  "tests_may_change": [],
+  "toolchain": "jdk21-maven"
+}

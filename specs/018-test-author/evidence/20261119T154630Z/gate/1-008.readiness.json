@@ -1,0 +1,69 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/008-filter-wildcards/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/008-filter-wildcards/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "src/main/java/dev/stockroom/*, src/test/java/dev/stockroom/*, specs/008-filter-wildcards/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@6fbef7f285f9"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "1536000 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "79d337e549415151ae6c386de3b8c7d68fa4cedd",
+  "spec_dir": "specs/008-filter-wildcards",
+  "title": "The name filter matches wildcard characters literally",
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/008-filter-wildcards/tasks.md"
+  ],
+  "spec_sha256": "85d3a49240b07c8dd4d4ce553eaf393dd6732a027b6b03e9c70dac86187fcdf6",
+  "mapping": {
+    "present": true,
+    "stale": false,
+    "uncovered": [
+      "FR-003",
+      "FR-004"
+    ],
+    "valid": true
+  },
+  "companion_commit": "6fbef7f285f978abff2a8caaf7e92b29ae2101a0",
+  "hidden_files": 1,
+  "input_bytes": 1536000
+}

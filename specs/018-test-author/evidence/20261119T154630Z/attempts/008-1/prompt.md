@@ -1,0 +1,171 @@
+You are a coding agent working in a git repository (the current directory).
+Implement the specification below completely, then mark every task in the task list as
+done by changing `- [ ]` to `- [X]` in that tasks.md file.
+
+Rules:
+- Change only files matching these paths (`*` also matches `/`):
+  - `src/main/java/dev/stockroom/*`
+  - `src/test/java/dev/stockroom/*`
+  - `specs/008-filter-wildcards/tasks.md`
+- The project uses the jdk21-maven toolchain. Check your work with: `mvn -B test`
+- Add or extend tests for your change in the project's test files (`src/test/*`). Keep every existing
+  test passing unchanged: the grader re-runs the original versions of any test file you edit or delete.
+- Only the project's existing dependencies are available to the grader; do not add new ones.
+- Do not run git commands; the harness commits your work.
+- When finished, stop.
+
+# Specification
+
+# Feature Specification: The name filter matches wildcard characters literally
+
+**Feature Branch**: `008-filter-wildcards`
+
+**Created**: 2026-11-19
+
+**Status**: Draft
+
+**Input**: Roadmap item 008, found in the owner's review of 006 (stockroom#33). The name filter
+passes the client's text into a SQL `LIKE` pattern unescaped, so `%` and `_` act as wildcards:
+`name=%` matches every product, and `name=a_b` also matches `axb`. 006's spec says `name` matches
+products whose name *contains* the text, so these characters must match only themselves.
+Depends on 006.
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - `%` matches only a percent sign (Priority: P1)
+
+As a client, when I filter by text containing `%`, I get only products whose name contains that
+text, `%` included.
+
+**Why this priority**: Today `name=%` returns the whole catalogue as a "match".
+
+**Independent Test**: Products with and without `%` in their names; filter by text with `%`.
+
+**Acceptance Scenarios**:
+
+1. **Given** products `wq-100% cotton` and `wq-100 cotton`, **When** a client calls
+   `GET /api/products?name=wq-100%25`, **Then** `content` holds only `wq-100% cotton`, and
+   `totalElements` is `1`.
+2. **Given** those products, **When** a client calls `GET /api/products?name=%25`, **Then**
+   every product in `content` has `%` in its name, and `wq-100 cotton` is not among them.
+
+---
+
+### User Story 2 - `_` matches only an underscore (Priority: P1)
+
+As a client, when I filter by text containing `_`, it matches an underscore and nothing else.
+
+**Why this priority**: `_` is common in product codes (`SKU_12`), and today it matches any
+character.
+
+**Independent Test**: Products whose names differ only where one has `_`.
+
+**Acceptance Scenarios**:
+
+1. **Given** products `wu-sku_12` and `wu-skuX12`, **When** a client calls
+   `GET /api/products?name=wu-sku_12`, **Then** `content` holds only `wu-sku_12`, and
+   `totalElements` is `1`.
+
+---
+
+### User Story 3 - The escape character itself is literal (Priority: P2)
+
+As a client, a backslash in my filter text matches a backslash.
+
+**Why this priority**: Escaping usually works by giving `\` a special meaning, which must not
+leak to clients either.
+
+**Independent Test**: Products whose names differ only by a backslash.
+
+**Acceptance Scenarios**:
+
+1. **Given** products `wb-a\b` and `wb-ab`, **When** a client calls
+   `GET /api/products?name=wb-a%5Cb`, **Then** `content` holds only `wb-a\b`.
+2. **Given** products `wb-c\%d` and `wb-c%d`, **When** a client calls
+   `GET /api/products?name=wb-c%5C%25d`, **Then** `content` holds only `wb-c\%d`.
+
+---
+
+### Edge Cases
+
+- Matching still ignores case and still matches anywhere in the name: `name=WQ-100%25` finds
+  `wq-100% cotton`.
+- Paging is unchanged: `page`, `size`, `totalElements` and `totalPages` count only the literal
+  matches.
+- Text without `%`, `_` or `\` answers exactly as in 006.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: In the `name` filter, `%`, `_` and `\` MUST match only themselves, in both the
+  page query and the count behind `totalElements` and `totalPages`.
+- **FR-002**: Everything else about 006 MUST stay the same: trimming, ignoring case, matching
+  anywhere in the name, ascending id order, paging, validation, and the plain array when no
+  parameter is given.
+- **FR-003**: The filtering and paging MUST stay in the database query (006 FR-005).
+- **FR-004**: Tests for this item MUST be added under `src/test/java/dev/stockroom/`, and every
+  existing test MUST keep passing unedited. No dependency may be added.
+
+## Allowed paths
+
+- `src/main/java/dev/stockroom/*`
+- `src/test/java/dev/stockroom/*`
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: Every acceptance scenario above passes as an automated test under `mvn test`, and
+  fails on the 006 code (scenario 1 of User Story 3 may pass on it, since a plain backslash
+  matches itself there; scenario 2 fails).
+- **SC-002**: The 001–007 tests pass without being edited.
+
+## Assumptions
+
+- Product names may contain `%`, `_` and `\` (002 limits only blankness and length).
+- Tests share one in-memory database per Spring context, so each scenario's names start with
+  its own prefix (`wq-`, `wu-`, `wb-`) to stay apart from other tests' products.
+
+# Plan
+
+# Implementation Plan: The name filter matches wildcard characters literally
+
+**Branch**: `008-filter-wildcards` | **Date**: 2026-11-19 | **Spec**: [spec.md](spec.md)
+
+## Summary
+
+Escape the filter text before it reaches `LIKE`: backslash first, then `%` and `_`, each
+prefixed with `\`. Then declare that escape character in both repository queries
+(`... LIKE ... ESCAPE '\'`). The page query and the count both use the escaped text. No other
+behaviour changes.
+
+## Technical Context
+
+**Language/Version**: Java 21 | **Framework**: Spring Boot 4.1.2 (`data-jdbc`, embedded H2)
+**Testing**: JUnit 5, `@SpringBootTest` + MockMvc | **Build**: `mvn test`
+**Constraints**: no new dependencies; tests offline; existing tests unchanged
+
+## Constitution Check
+
+I item 008, depends on 006 ✓ · II owner merges ✓ · III one PR with tests ✓ · IV no dependency
+change ✓ · V offline tests ✓ · VI no planning files or CI touched ✓
+
+## Project Structure
+
+```text
+src/main/java/dev/stockroom/product/ProductRepository.java   (ESCAPE clause on both queries)
+src/main/java/dev/stockroom/product/ProductStore.java        (escape the filter text)
+src/test/java/dev/stockroom/product/ProductFilterWildcardTests.java
+```
+
+# Task list (`specs/008-filter-wildcards/tasks.md`)
+
+# Tasks: The name filter matches wildcard characters literally
+
+**Input**: `specs/008-filter-wildcards/` (spec.md, plan.md)
+
+- [ ] T001 [US1] [US2] [US3] Escape the trimmed filter text before matching: `\` becomes `\\`, then `%` becomes `\%` and `_` becomes `\_`, where the filter is passed to the repository (`src/main/java/dev/stockroom/product/`) (FR-001)
+- [ ] T002 [US1] [US2] [US3] In `src/main/java/dev/stockroom/product/ProductRepository.java`, add `ESCAPE '\'` to the `LIKE` in both the page query and the count query (FR-001, FR-003)
+- [ ] T003 Add tests in `src/test/java/dev/stockroom/product/ProductFilterWildcardTests.java` for every acceptance scenario and edge case, with the products' name prefixes from the spec (FR-004)
+- [ ] T004 Run `mvn test` and confirm the 001–007 tests pass unedited (FR-002, SC-002)
