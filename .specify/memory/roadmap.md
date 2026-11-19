@@ -1,7 +1,24 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.22.0 → 1.23.0 (this revision)
+Version change: 1.23.0 → 1.24.0 (this revision)
+Bump rationale: MINOR — material scope changes to 010 and 021, and a new dependency for 013.
+Nothing verified is invalidated.
+Changes this revision (owner decisions 2026-11-19, Tosin Akinosho):
+  - 021 becomes the laptop **manager loop**: a reconcile loop that reads the roadmap, item
+    labels and PRs, and hands each item to the drafting loop (024) and the run loop, waiting at
+    every human gate. It takes 010's label half (a proposal label, honoured only from an
+    approver) and polls GitHub; it no longer depends on 010. No standing mode approval in its
+    first version.
+  - 010 keeps signed webhooks, for cluster mode: the operator (011) receives them, with TLS
+    from cert-manager. It now depends on 011.
+  - 013 (the laptop release) ships with 021 as well as 024.
+  - The proposal label's name follows the product name (Q7, still open); until then it is a
+    profile setting with a placeholder default.
+Specs affected: 010, 013, 021
+Open questions added/resolved: Q7 gains the label name
+
+Prior: Version change: 1.22.0 → 1.23.0
 Bump rationale: MINOR — a new planned item (024) split from 018, and status transitions (014,
 017 and 018 verified). Nothing verified is invalidated.
 Changes this revision (owner decisions 2026-11-19, Tosin Akinosho):
@@ -959,12 +976,16 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Scope (in):** event authentication; proposal recording; handoff to the gate and the
   mode confirmation.
 - **Scope (out):** automatic runs without human confirmation; unauthenticated endpoints.
-- **Depends on:** 004
+- **Depends on:** 004, 011 (2026-11-19: the webhook receiver is the operator's)
 - **Governed by:** C-01, C-02, C-04
 - **Addresses:** docs/prd.md F6
 - **Notes:** Proposed in the 003 Kelos review (owner decision 2026-11-13). A merged
   spec-and-tasks PR is a natural event to start 018's opt-in auto-draft of hidden tests
   (2026-11-18); it proposes a draft, not a run, and a human still merges the tests.
+  **Amended 2026-11-19 (owner): signed webhooks, cluster mode.** Label proposals moved to 021
+  (laptop, polled). 010 keeps signed webhooks: the operator (011) receives GitHub's webhooks
+  over TLS with certificates from cert-manager, verifies their signatures, and turns a proposal
+  into the same decisions 021 makes, instead of polling.
 
 ### 011 — Cluster mode: specfoundry Kubernetes operator  [status: planned]
 
@@ -1053,7 +1074,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   how the CLI finds the target project and its config; the command name used in harness rules
   (Q8); install docs.
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
-- **Depends on:** 016, 024 (2026-11-19: the laptop release includes auto-draft)
+- **Depends on:** 016, 024, 021 (2026-11-19: the laptop release includes auto-draft and the
+  manager loop)
 - **Notes:** **Owner decision 2026-11-19:** the laptop-mode release ships with the test
   author's auto-draft (024), so a released pilot drafts an item's hidden tests on its own once
   the item is ready; a human still reviews and merges them.
@@ -1424,7 +1446,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   largest inputs) in the evidence; a lower token cap for small items in the mode. The grader
   itself spends no tokens.
 
-### 021 — Step mode: run unattended, wait at each human gate  [status: planned]
+### 021 — Step mode: the laptop manager loop  [status: planned]
 
 - **Description:** Let the pilot carry an item, and then the next ready item, through every
   automatic step on its own, stopping at each human decision, so the owner can leave it running
@@ -1450,13 +1472,27 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Scope (out):** auto-merging any PR (C-04): the tests PR, the item PR and the status PR stay
   human merges; a standing approval without a spend cap or deadline; skipping the gate or
   `doctor`; step mode in developer mode counting as evidence (C-15).
-- **Depends on:** 024, 010 (2026-11-19: 024 replaces 018 because auto-draft moved there)
+- **Depends on:** 024 (2026-11-19: 010 is no longer needed; the label half moved here)
 - **Governed by:** C-01, C-02, C-04, C-11, C-12
 - **Notes:** Owner decision 2026-11-18 (Tosin Akinosho), after the Stockroom runs: "if I wanted
   to step away from the computer and leave it running it could do it by steps." Stockroom shows
   why the merges stay human: item 005 passed every check, and only reading the PR found the
   stale stock figure (now item 007). The spend budget (009) should land before standing
   approvals are used beyond a single item.
+  **Amended 2026-11-19 (owner): the manager loop.** On the laptop, step mode is one manager
+  process per target, built like an operator's reconcile loop:
+  - each pass reads the roadmap (`spec status`), the item issues' labels and open PRs, and
+    decides each item's next step;
+  - it delegates: drafting to the test author's loop (024), runs to `run` and `github watch`;
+  - it holds no state of its own beyond GitHub and the run evidence, so it can stop and
+    restart at any point;
+  - an item is **proposed** by a label on its issue (004 mirrors items as issues), honoured only
+    when an approver (`PILOT_APPROVERS`) added it, read from the issue's timeline. The label
+    proposes; the gate, `doctor` and `/approve mode` still decide (010's rule). Its name follows
+    Q7 and is a profile setting until then;
+  - it polls GitHub, as the other watchers do; signed webhooks are 010, in cluster mode;
+  - the first version always waits for `/approve mode`; the standing approval follows 009.
+  The same decisions run in the operator (011) later, on a different host.
 
 ### 022 — Operator-supplied toolchain images  [status: planned]
 
@@ -1562,6 +1598,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - Q7 — Product name and CLI interface: `pilot` is a prototype name, and the CLI becomes
   the interface for humans and LLM agents in both modes (C-11). Decide the name and the
   stable command surface before 011 (raised 2026-11-14).
+  **2026-11-19:** the name also sets 021's proposal label (a profile setting with a placeholder
+  until then). The `specfoundry` GitHub organization name is taken.
 - Q8 — Using the pilot across projects and harnesses (raised 2026-11-15, 012 debrief).
   - Do harness ask rules live per user, or does a `pilot` command install them?
   - Today's rules match the `pilot/pilot` path; an installed CLI (013) changes the pattern.
@@ -1672,4 +1710,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.23.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-19
+**Version**: 1.24.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-19
