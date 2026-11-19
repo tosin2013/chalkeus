@@ -49,6 +49,8 @@ type Target struct {
 	AuthorAuto      string // on|off: `pilot author watch` may draft this target's items (024)
 	AuthorIntervalS int    // seconds between the watcher's polls (024, default 120)
 	AuthorAttempts  int    // author Jobs per automatic draft (024, default 2, at most 3)
+	ProposeLabel    string // the label that proposes an item to step mode (021; its name follows Q7)
+	StepIntervalS   int    // seconds between step mode's passes (021, default 120)
 	Fixture         bool
 }
 
@@ -180,7 +182,8 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		InstallCommand: strings.TrimSpace(v["PILOT_INSTALL_COMMAND"]), ChangeType: v["PILOT_CHANGE_TYPE"],
 		GithubIssues: v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
 		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50,
-		AuthorAuto: strings.TrimSpace(v["PILOT_AUTHOR_AUTO"]), AuthorIntervalS: 120, AuthorAttempts: 2}
+		AuthorAuto: strings.TrimSpace(v["PILOT_AUTHOR_AUTO"]), AuthorIntervalS: 120, AuthorAttempts: 2,
+		ProposeLabel: strings.TrimSpace(v["PILOT_PROPOSE_LABEL"]), StepIntervalS: 120}
 	if !repoRE.MatchString(t.Repo) {
 		return Target{}, invalid("PILOT_TARGET_REPO", "must be owner/name")
 	}
@@ -259,7 +262,8 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		}
 	}
 	for k, dst := range map[string]*int{"PILOT_GRADER_DEADLINE_S": &t.GraderDeadlineS, "PILOT_MAX_INPUT_MB": &t.MaxInputMB,
-		"PILOT_AUTHOR_INTERVAL_S": &t.AuthorIntervalS, "PILOT_AUTHOR_AUTO_ATTEMPTS": &t.AuthorAttempts} {
+		"PILOT_AUTHOR_INTERVAL_S": &t.AuthorIntervalS, "PILOT_AUTHOR_AUTO_ATTEMPTS": &t.AuthorAttempts,
+		"PILOT_STEP_INTERVAL_S": &t.StepIntervalS} {
 		if x := v[k]; x != "" {
 			n, err := strconv.Atoi(x)
 			if err != nil || n <= 0 {
@@ -270,6 +274,15 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	}
 	if t.AuthorAttempts > 3 {
 		return Target{}, invalid("PILOT_AUTHOR_AUTO_ATTEMPTS", "must be 1, 2 or 3")
+	}
+	if t.ProposeLabel == "" {
+		t.ProposeLabel = "pilot/go" // a placeholder until the product is named (roadmap Q7)
+	}
+	if len(t.ProposeLabel) > 50 || strings.ContainsAny(t.ProposeLabel, ",\n") {
+		return Target{}, invalid("PILOT_PROPOSE_LABEL", "must be a GitHub label name (at most 50 characters, no commas)")
+	}
+	if t.StepIntervalS < 30 {
+		return Target{}, invalid("PILOT_STEP_INTERVAL_S", "must be at least 30 (seconds)")
 	}
 	if t.AuthorIntervalS < 30 {
 		return Target{}, invalid("PILOT_AUTHOR_INTERVAL_S", "must be at least 30 (seconds)")

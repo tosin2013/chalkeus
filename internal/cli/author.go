@@ -20,6 +20,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/gate"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/images"
+	"github.com/tosin2013/specfoundry/internal/pipeline"
 	"github.com/tosin2013/specfoundry/internal/readiness"
 	"github.com/tosin2013/specfoundry/internal/verbose"
 	"github.com/tosin2013/specfoundry/internal/worker"
@@ -108,39 +109,11 @@ func authorWatchCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			imgs, err := images.Load(p.L) // the digests `pilot up` pulled (as every run loads them)
+			w, err := authorWatchEnv(e, p)
 			if err != nil {
-				return Exit(ExitError, "%v", err)
+				return err
 			}
-			p.Imgs = imgs
-			if !p.C.NSExists(cluster.AuthorProxyNS) {
-				return Exit(ExitError, "the author proxy %s is missing: run `pilot/pilot up` first", cluster.AuthorProxyNS)
-			}
-			ck := checks.Deps{L: p.L, C: p.C, Out: io.Discard}
-			je := author.JobEnv{Manifests: p.L.Manifests, Cluster: p.C, Runner: p.Runner, Images: p.Imgs,
-				Model: p.Cfg.Get("PILOT_MODEL"), SpendCap: p.Cfg.Get("PILOT_SPEND_CAP_USD"), TokenCap: p.Cfg.Get("PILOT_TOKEN_CAP"),
-				ModelFiles: p.Cfg.ModelFiles(), Deadline: worker.Deadline,
-				Checks: func(ns, draftID string) []author.AuthorCheck {
-					var out []author.AuthorCheck
-					for _, r := range ck.RunAuthorChecks(ns, draftID, p.Imgs) {
-						out = append(out, author.AuthorCheck{ID: r.ID, Result: r.Result, Detail: r.Detail})
-					}
-					return out
-				}}
 			t := e.Target
-			w := author.WatchEnv{Env: e, Baseline: p.AuthorBaseline,
-				Status: func() (string, error) {
-					dir, _, err := fixture.FreshClone(t.Repo, t.Branch, 1)
-					if err != nil {
-						return "", err
-					}
-					defer func() { _ = os.RemoveAll(dir) }()
-					_, out := gate.ExecStatus{}.Status(dir)
-					return out, nil
-				},
-				Job: func(ctx context.Context, d *author.Draft, attempt int, prompt string) author.JobRecord {
-					return author.RunJob(ctx, je, d, attempt, prompt)
-				}}
 			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			once, _ := cmd.Flags().GetBool("once")
@@ -220,4 +193,45 @@ func watchVerbosity(flagCount int, envSet bool) int {
 		return 2
 	}
 	return verbose.Level()
+}
+
+// authorWatchEnv is the drafting loop's environment (024): the pulled images, the author proxy,
+// the author Job and its checks, and the target's roadmap. Step mode (021) uses it too.
+func authorWatchEnv(e author.Env, p *pipeline.P) (author.WatchEnv, error) {
+	imgs, err := images.Load(p.L) // the digests `pilot up` pulled (as every run loads them)
+	if err != nil {
+		return author.WatchEnv{}, Exit(ExitError, "%v", err)
+	}
+	p.Imgs = imgs
+	if !p.C.NSExists(cluster.AuthorProxyNS) {
+		return author.WatchEnv{}, Exit(ExitError, "the author proxy %s is missing: run `pilot/pilot up` first", cluster.AuthorProxyNS)
+	}
+	ck := checks.Deps{L: p.L, C: p.C, Out: io.Discard}
+	je := author.JobEnv{Manifests: p.L.Manifests, Cluster: p.C, Runner: p.Runner, Images: p.Imgs,
+		Model: p.Cfg.Get("PILOT_MODEL"), SpendCap: p.Cfg.Get("PILOT_SPEND_CAP_USD"), TokenCap: p.Cfg.Get("PILOT_TOKEN_CAP"),
+		ModelFiles: p.Cfg.ModelFiles(), Deadline: worker.Deadline,
+		Checks: func(ns, draftID string) []author.AuthorCheck {
+			var out []author.AuthorCheck
+			for _, r := range ck.RunAuthorChecks(ns, draftID, p.Imgs) {
+				out = append(out, author.AuthorCheck{ID: r.ID, Result: r.Result, Detail: r.Detail})
+			}
+			return out
+		}}
+	return author.WatchEnv{Env: e, Baseline: p.AuthorBaseline, Status: targetStatus(e.Target),
+		Job: func(ctx context.Context, d *author.Draft, attempt int, prompt string) author.JobRecord {
+			return author.RunJob(ctx, je, d, attempt, prompt)
+		}}, nil
+}
+
+// targetStatus is `spec status --json` of the target's branch, on a fresh clone.
+func targetStatus(t config.Target) func() (string, error) {
+	return func() (string, error) {
+		dir, _, err := fixture.FreshClone(t.Repo, t.Branch, 1)
+		if err != nil {
+			return "", err
+		}
+		defer func() { _ = os.RemoveAll(dir) }()
+		_, out := gate.ExecStatus{}.Status(dir)
+		return out, nil
+	}
 }

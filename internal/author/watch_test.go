@@ -189,3 +189,16 @@ func TestPassRetriesAPathCollision(t *testing.T) {
 		t.Fatal("the second Job is told to rename")
 	}
 }
+
+// Step mode drafts one item only (021).
+func TestPassOnly(t *testing.T) {
+	w, we, prompts := watchWorld(t, "pass")
+	we.Only = "007"
+	if out, err := Pass(context.Background(), we); err != nil || out != PassIdle || len(*prompts) != 0 {
+		t.Fatalf("%s %v\n%s", out, err, w.out)
+	}
+	we.Only = "006"
+	if out, err := Pass(context.Background(), we); err != nil || out != PassOpened {
+		t.Fatalf("%s %v\n%s", out, err, w.out)
+	}
+}

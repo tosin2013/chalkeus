@@ -57,6 +57,9 @@ func (p *P) RunItem(item string) int {
 	pins, _ := paths.ReadEnv(p.L.Pins)
 	_ = evidence.WriteVersions(run, pins, p.L.Build, paths.Context, paths.Cluster, imgs)
 	_ = run.Event("run", nil, nil, "run_started", p.Target.Repo)
+	if by := StartedBy(os.Getenv("PILOT_STARTED_BY")); by != "" { // 021 FR-007: started by step mode
+		_ = run.Event("run", nil, nil, "run_started_by", by)
+	}
 
 	// Readiness: the gate plus the item rules (contracts/readiness.md); any doubt refuses.
 	seq, _ := run.NextGateSeq()
@@ -516,4 +519,13 @@ func coverage(run *evidence.Run) string {
 		s += " (map written for an older version of the spec)"
 	}
 	return s
+}
+
+// StartedBy is who started a run on the operator's behalf, from PILOT_STARTED_BY: only "step"
+// (021's manager loop) is recorded; anything else is ignored.
+func StartedBy(v string) string {
+	if v == "step" {
+		return v
+	}
+	return ""
 }
