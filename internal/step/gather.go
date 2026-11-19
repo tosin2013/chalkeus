@@ -3,6 +3,7 @@ package step
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -19,6 +20,7 @@ type RunInfo struct {
 	ID, Dir, State string    // State: run.json "state"
 	Watching       bool      // its GitHub watcher is alive
 	EndedAt        time.Time // its last event
+	Waiting        string    // what the run waits for, in words, with the link to act on
 }
 
 // Source is where the gatherer reads (research R4); every field is replaceable in tests.
@@ -69,7 +71,7 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 			labelledAt = p.AddedAt
 		}
 		if r, ok := src.Run(c.ID); ok {
-			s.RunID, s.RunDir = r.ID, r.Dir
+			s.RunID, s.RunDir, s.RunWaiting = r.ID, r.Dir, r.Waiting
 			s.Run = runState(r)
 			s.RelabelledAfterRun = !labelledAt.IsZero() && labelledAt.After(r.EndedAt)
 		}
@@ -157,6 +159,8 @@ func NewestRun(root string, extra []string, target, item string, watching func(d
 	_ = json.Unmarshal(raw, &st)
 	ri := RunInfo{ID: id, Dir: d, Watching: watching != nil && watching(d)}
 	ri.State, _ = st["state"].(string)
+	repo, _ := (st["target"].(map[string]any))["repo"].(string)
+	ri.Waiting = waitingFor(d, ri.State, repo)
 	if ev, err := os.ReadFile(filepath.Join(d, "events.jsonl")); err == nil {
 		lines := strings.Split(strings.TrimSpace(string(ev)), "\n")
 		var last struct {
@@ -167,4 +171,43 @@ func NewestRun(root string, extra []string, target, item string, watching func(d
 		}
 	}
 	return ri, true
+}
+
+// waitingFor says what a run waits for and where the owner acts: the tracking issue for an
+// approval, the PR for a merge (from the run's own tracking.json and prs.json).
+func waitingFor(dir, state, repo string) string {
+	issue := func() string {
+		var t struct {
+			Issue any `json:"issue"`
+		}
+		raw, _ := os.ReadFile(filepath.Join(dir, "github", "tracking.json"))
+		if json.Unmarshal(raw, &t) == nil && t.Issue != nil && repo != "" {
+			return fmt.Sprintf("https://github.com/%s/issues/%v", repo, t.Issue)
+		}
+		return "the run's tracking issue"
+	}
+	switch state {
+	case "paused(awaiting-mode)":
+		return "waiting for you: reply `/approve mode` on " + issue()
+	case "paused(awaiting-retry)":
+		return "waiting for you: an attempt failed; reply `/approve retry` (or not) on " + issue()
+	case "paused(awaiting-merge)":
+		var prs []struct {
+			Kind string `json:"kind"`
+			URL  string `json:"url"`
+		}
+		raw, _ := os.ReadFile(filepath.Join(dir, "prs.json"))
+		if json.Unmarshal(raw, &prs) == nil && len(prs) > 0 {
+			last := prs[len(prs)-1]
+			if last.Kind == "status" {
+				return "waiting for you: review and merge the status-change PR (it records the item verified): " + last.URL
+			}
+			return "waiting for you: review and merge the item's PR: " + last.URL
+		}
+		return "waiting for you to merge the run's PR"
+	case "paused(awaiting-publish)":
+		return "the run is publishing its PR; nothing needed from you"
+	default:
+		return "the run is working (build, grade or publish); nothing needed from you yet"
+	}
 }

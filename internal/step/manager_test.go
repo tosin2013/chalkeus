@@ -241,3 +241,28 @@ func TestManagerRelaysTheRunLog(t *testing.T) {
 		t.Fatalf("%s", out)
 	}
 }
+
+// The wait line says what the owner does and where (owner feedback, 2026-11-19).
+func TestWaitingFor(t *testing.T) {
+	d := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(d, "github"), 0o755)
+	_ = os.WriteFile(filepath.Join(d, "github", "tracking.json"), []byte(`{"issue": 45}`), 0o644)
+	if got := waitingFor(d, "paused(awaiting-mode)", "me/proj"); !strings.Contains(got, "`/approve mode` on https://github.com/me/proj/issues/45") {
+		t.Fatal(got)
+	}
+	_ = os.WriteFile(filepath.Join(d, "prs.json"), []byte(`[{"kind":"task","url":"https://x/pull/44"}]`), 0o644)
+	if got := waitingFor(d, "paused(awaiting-merge)", "me/proj"); got != "waiting for you: review and merge the item's PR: https://x/pull/44" {
+		t.Fatal(got)
+	}
+	_ = os.WriteFile(filepath.Join(d, "prs.json"), []byte(`[{"kind":"task","url":"https://x/pull/44"},{"kind":"status","url":"https://x/pull/45"}]`), 0o644)
+	if got := waitingFor(d, "paused(awaiting-merge)", "me/proj"); !strings.Contains(got, "status-change PR (it records the item verified): https://x/pull/45") {
+		t.Fatal(got)
+	}
+	if got := waitingFor(d, "in-progress", "me/proj"); !strings.Contains(got, "nothing needed from you") {
+		t.Fatal(got)
+	}
+	s := ItemState{ID: "009", Proposed: true, Run: RunActive, RunID: "R1", RunWaiting: "waiting for you: review and merge the item's PR: https://x/pull/44"}
+	if got := Next(s).String(); got != "009: wait (run R1: waiting for you: review and merge the item's PR: https://x/pull/44)" {
+		t.Fatal(got)
+	}
+}

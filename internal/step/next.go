@@ -28,6 +28,8 @@ type ItemState struct {
 	Run       string // RunNone | RunActive | RunSucceeded | RunFailed (the newest item run)
 	RunID     string
 	RunDir    string // its evidence folder (to relay its watcher's log)
+	// RunWaiting: what the run waits for, with the link to act on (from its evidence).
+	RunWaiting string
 	// Commits is "<target commit>:<companion commit>"; DoctorFailedAt is the Commits value at the
 	// last failed doctor, so doctor is retried only when either repository changes.
 	Commits        string
@@ -60,8 +62,10 @@ func (a Action) String() string { return fmt.Sprintf("%s: %s (%s)", a.Item, a.Ki
 func Next(s ItemState) Action {
 	a := func(kind, why string) Action { return Action{Item: s.ID, Kind: kind, Reason: why} }
 	switch {
+	case s.Run == RunActive && s.RunWaiting != "":
+		return a(Wait, "run "+s.RunID+": "+s.RunWaiting)
 	case s.Run == RunActive:
-		return a(Wait, "run "+s.RunID+" is in progress; it waits for the owner on GitHub")
+		return a(Wait, "run "+s.RunID+" is in progress")
 	case !s.Proposed:
 		return a(Skip, "not proposed: "+s.NotWhy)
 	case s.Run == RunSucceeded:
@@ -71,7 +75,7 @@ func Next(s ItemState) Action {
 	case !s.Ready:
 		return a(Skip, "not ready: "+s.ReadyWhy)
 	case s.Hidden == 0 && s.TestsPR:
-		return a(Wait, "the hidden-tests pull request is open; it waits for the owner's review")
+		return a(Wait, "waiting for you: review and merge the hidden-tests PR on the companion repository")
 	case s.Hidden == 0 && s.AutoDraft:
 		return a(Draft, "no hidden tests yet")
 	case s.Hidden == 0:
