@@ -16,7 +16,7 @@
 
 | Row | Rule |
 |---|---|
-| P06r | A declared registry host is reachable through the registry proxy, and an undeclared host (`example.invalid`) is refused |
+| P06r | From a probe in the item worker's policy, a declared registry host is reachable through the target's worker proxy and an undeclared host (`example.invalid`) is refused; the prefetch proxy's allowlist is exactly the declared registries |
 | P11 | No overlay file name or content hash appears in the worker namespace's ConfigMaps, staged-input list or prompt |
 | P12 | The grading namespace's grader pods have no egress rule, and the prefetch pod's rule allows only DNS and the registry proxy |
 

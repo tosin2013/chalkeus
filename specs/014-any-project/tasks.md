@@ -457,10 +457,17 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
   `/in/settings.xml` and `<deps>/m2`; grader: `-o`, `/tmp/m2` chained to the read-only cache);
   `toolchain.MavenSettings` writes the proxy entries (no credentials); staged for the worker and
   the prefetch. Checked with the offline Maven sample.
-- [ ] T047 [US3] Add the P06r check in `internal/checks/checks.go`: a declared registry is
+- [X] T047 [US3] Add the P06r check in `internal/checks/checks.go`: a declared registry is
   reachable through the registry proxy from a probe pod in the worker policy, and
   `example.invalid` is refused. Copy the registry proxy's refusals into the attempt's
   `proxy-denials.log` (extending `worker.ProxyDenials`). Tests.
+  Done as (2026-11-19): with the two proxies of T045, P06r probes from a second twin rendered
+  from `worker-ns-item.yaml.tmpl`: the first declared registry is reachable through
+  `pilot-egress-w-<target>`, `example.invalid` is refused, and the prefetch proxy's allowlist is
+  exactly the registries (counted, never named). `proxy-denials.log` now adds the target proxy's
+  refusals, prefixed with its namespace; before, an attempt on a registry target recorded only
+  the model proxy's. `checks.RegistryProxy` and `worker.Refusals` have tests. The first live row
+  comes with the next item run on a target that declares registries.
 
 **Dependency cache (R7)**
 
