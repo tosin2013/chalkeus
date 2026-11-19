@@ -4,15 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/tosin2013/specfoundry/internal/author"
+	"github.com/tosin2013/specfoundry/internal/checks"
+	"github.com/tosin2013/specfoundry/internal/cluster"
 	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/fixture"
 	"github.com/tosin2013/specfoundry/internal/gate"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/specfoundry/internal/worker"
 )
 
 // authorCmd is `pilot author` (018): the test author's helper commands. Only a separate
@@ -66,8 +74,88 @@ func authorCmd() *cobra.Command {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(raw))
 		return nil
 	})
-	g.AddCommand(start, check, submit, status)
+	g.AddCommand(start, check, submit, status, authorWatchCmd())
 	return g
+}
+
+// authorWatchCmd is `pilot author watch` (024, contracts/author-watch.md): drafts the hidden tests
+// of a target's ready items in an isolated author Job, checks them, and opens the companion pull
+// request. Only for targets with PILOT_AUTHOR_AUTO=on. The operator starts it in their own
+// terminal; the session that drives runs never does.
+func authorWatchCmd() *cobra.Command {
+	c := &cobra.Command{Use: "watch", Args: cobra.NoArgs,
+		Short: "024: draft hidden tests automatically for a target's ready items (PILOT_AUTHOR_AUTO=on); never run by the session that drives runs",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			e, _, err := authorEnv(cmd)
+			if err != nil {
+				return err
+			}
+			if e.Target.AuthorAuto != "on" {
+				return Exit(ExitError, "auto-draft is off for target %s: set PILOT_AUTHOR_AUTO=on in its profile to let `author watch` draft its items", e.Target.Name)
+			}
+			p, err := pipelineFor(cmd)
+			if err != nil {
+				return err
+			}
+			if !p.C.NSExists(cluster.AuthorProxyNS) {
+				return Exit(ExitError, "the author proxy %s is missing: run `pilot/pilot up` first", cluster.AuthorProxyNS)
+			}
+			ck := checks.Deps{L: p.L, C: p.C, Out: io.Discard}
+			je := author.JobEnv{Manifests: p.L.Manifests, Cluster: p.C, Runner: p.Runner, Images: p.Imgs,
+				Model: p.Cfg.Get("PILOT_MODEL"), SpendCap: p.Cfg.Get("PILOT_SPEND_CAP_USD"), TokenCap: p.Cfg.Get("PILOT_TOKEN_CAP"),
+				ModelFiles: p.Cfg.ModelFiles(), Deadline: worker.Deadline,
+				Checks: func(ns, draftID string) []author.AuthorCheck {
+					var out []author.AuthorCheck
+					for _, r := range ck.RunAuthorChecks(ns, draftID, p.Imgs) {
+						out = append(out, author.AuthorCheck{ID: r.ID, Result: r.Result, Detail: r.Detail})
+					}
+					return out
+				}}
+			t := e.Target
+			w := author.WatchEnv{Env: e, Baseline: p.AuthorBaseline,
+				Status: func() (string, error) {
+					dir, _, err := fixture.FreshClone(t.Repo, t.Branch, 1)
+					if err != nil {
+						return "", err
+					}
+					defer func() { _ = os.RemoveAll(dir) }()
+					_, out := gate.ExecStatus{}.Status(dir)
+					return out, nil
+				},
+				Job: func(ctx context.Context, d *author.Draft, attempt int, prompt string) author.JobRecord {
+					return author.RunJob(ctx, je, d, attempt, prompt)
+				}}
+			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			once, _ := cmd.Flags().GetBool("once")
+			out := cmd.OutOrStdout()
+			fmt.Fprintf(out, "author watch: target %s, every %d s, up to %d author Job(s) per draft; Ctrl-C stops it\n", t.Name, t.AuthorIntervalS, t.AuthorAttempts)
+			for {
+				res, err := author.Pass(ctx, w)
+				if err != nil {
+					fmt.Fprintf(out, "author watch: %v\n", err)
+					if once {
+						return Exit(ExitError, "%v", err)
+					}
+				}
+				if once {
+					if res == author.PassFailed {
+						return Code(ExitFail)
+					}
+					return nil
+				}
+				select {
+				case <-ctx.Done():
+					fmt.Fprintln(out, "author watch: stopped")
+					return nil
+				case <-time.After(time.Duration(t.AuthorIntervalS) * time.Second):
+				}
+			}
+		}}
+	addTargetFlag(c)
+	_ = c.MarkFlagRequired("target")
+	c.Flags().Bool("once", false, "one pass, then exit (0: nothing to do or a PR opened; 1: a draft failed)")
+	return c
 }
 
 func authorEnv(cmd *cobra.Command) (author.Env, string, error) {

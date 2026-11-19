@@ -1,0 +1,18 @@
+# Author probe twin (024 R6): same namespace template and policies as the test author, a sleeping tools pod
+# (curl) for live checks A03/A04 (the author namespace itself allows only 1 pod).
+apiVersion: v1
+kind: Pod
+metadata: {name: probe, namespace: ${NS}, labels: {app: author-probe}}
+spec:
+  serviceAccountName: author
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  restartPolicy: Never
+  activeDeadlineSeconds: 900
+  securityContext: {runAsNonRoot: true, runAsUser: 10002, seccompProfile: {type: RuntimeDefault}}
+  containers:
+    - name: probe
+      image: ${TOOLS_IMAGE}
+      command: [sleep, "900"]
+      securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+      resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 200m, memory: 64Mi}}
