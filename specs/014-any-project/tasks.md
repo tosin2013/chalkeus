@@ -574,11 +574,20 @@ run under every guarantee on kind.
 
 ## Phase 7: Polish and close-out
 
-- [ ] T057 [P] Do a privacy check: AU08 passes for every 014 record, and no model host, token,
+- [X] T057 [P] Do a privacy check: AU08 passes for every 014 record, and no model host, token,
   key or hidden-test content appears in `specs/014-any-project/`.
-- [ ] T058 [P] Update `README.md` ("What works today"), `pilot/README.md` (layout: toolchains,
+  Done as (2026-11-19): the audit's redaction scan (model host, model key files, publisher and
+  App token values, token patterns), run read-only over `specs/014-any-project/` and the eight
+  014 records (cli-schema-mcp 006 and Stockroom 001–007 under `specs/018-test-author/evidence/`):
+  0 hits each. Every record's committed AU08 and P11 pass, and no record holds test source
+  (`@Test`, `def test_`, JUnit or pytest imports).
+- [X] T058 [P] Update `README.md` ("What works today"), `pilot/README.md` (layout: toolchains,
   manifests) and `.claude/skills/pilot/SKILL.md` (`--target`/`--item`; refusal codes go to
   troubleshooting). Run the docs check.
+  Done as (2026-11-19): README "Status" now opens with what works today and its stale milestone
+  table is current; `pilot/README.md` gains item runs, the target commands, the evidence
+  location and the toolchain and item manifests; the skill already had `--target`/`--item`, and
+  its exit-10 row now sends item refusal codes to troubleshooting. Docs check passes.
 - [ ] T059 Add an Evidence section to `specs/014-any-project/spec.md`. Run
   `/speckit-roadmap-debrief` for 014. Then, with the owner's approval, run
   `/speckit-roadmap-write`:
