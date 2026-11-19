@@ -6,8 +6,8 @@ Bump rationale: MINOR — a new planned item (023) taking 014's OpenShift EAP va
 014 scope and dependency corrections from its debrief. Nothing verified is invalidated.
 Changes this revision (owner decisions 2026-11-19, Tosin Akinosho):
   - 023 (new, planned): a Quarkus reference project built from an empty repository like
-    Stockroom, then run on OpenShift; the legacy Java EE → JBoss EAP upgrade is its stretch
-    goal on OpenShift.
+    Stockroom, run by the operator on OpenShift with models served in the cluster (OpenShift
+    AI); depends on 011. The legacy Java EE → JBoss EAP upgrade is its stretch goal.
   - 014: the OpenShift EAP validation moves to 023, and 005 leaves Depends on. The toolchain
     scope line is corrected: the repository declares nothing; built-in images plus operator
     profiles (own images in 022). Debrief:
@@ -1445,33 +1445,35 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   toolchains (JDK 21 + Maven, Node.js 24, Python 3.13, Go). 014's tasks.md keeps T042, T043 and
   T055 as the starting point.
 
-### 023 — Quarkus reference project, then OpenShift  [status: planned]
+### 023 — Quarkus reference project on OpenShift  [status: planned]
 
 - **Description:** A second reference project built roadmap-driven from an empty repository, as
-  Stockroom was, on Quarkus; then the same loop on OpenShift.
+  Stockroom was, on Quarkus, run by the operator on OpenShift with models served in the cluster.
 - **Outcome:** a Quarkus service grows from an empty repository through a few dependent
-  roadmap items, each built by an agent, graded offline with hidden tests and merged by the
-  owner, every run auditing 11/11. Its items then run on OpenShift under the same audit.
-  Stretch goal: a legacy Java EE application upgraded to a current JBoss EAP release on
-  OpenShift, one item per upgrade step.
+  roadmap items. The operator (011) runs each item on OpenShift, code generation uses models
+  served in the cluster (OpenShift AI), and each item is graded offline with hidden tests and
+  merged by the owner, every run auditing 11/11. Stretch goal: a legacy Java EE application
+  upgraded to a current JBoss EAP release, the same way, one item per upgrade step.
 - **Scope (in):**
   - the Quarkus project: planning PR (constitution, roadmap, first specs, every dependency
-    declared), hidden tests in the companion, items run on `jdk21-maven`, as in
+    declared), hidden tests in the companion, items on `jdk21-maven`, as in
     [docs/greenfield.md](../../docs/greenfield.md);
-  - the same items, or later ones, on OpenShift (needs 005);
+  - runs by the operator on OpenShift, with the model endpoint in the cluster, so model traffic
+    stays in the cluster;
   - stretch: the EAP upgrade validation moved from 014 (its notes keep the detail: a `javax`
     application with real tests, Migration Toolkit for Applications analysis when planning, the
     grader trusting only hidden tests and the app's suite, UBI images, the model in the
     cluster).
 - **Scope (out):** new pilot features beyond what 005 brings; a Node.js greenfield (dropped in
   017).
-- **Depends on:** 014, 017 (and 005 for the OpenShift part)
+- **Depends on:** 014, 017, 011
 - **Governed by:** C-04, C-09, C-12, C-14
 - **Notes:** Owner decision 2026-11-19, from 014's debrief: "something similar to what we did
   with Stockroom, but with Quarkus; the Java EAP could be a stretch goal when running in
-  OpenShift". The Quarkus part can start on kind before 005; the OpenShift part waits for 005.
-  The Quarkus version, the target release for EAP, and whether the Quarkus project is the
-  OpenShift validation for 005 are decided when 023 is specified.
+  OpenShift". Owner decision 2026-11-19 (later the same day): 023 starts only once the operator
+  runs in OpenShift (011, which itself needs 005), because its code generation uses models
+  served in the cluster (OpenShift AI); it does not start on kind first. The Quarkus version,
+  the in-cluster model, and the target release for EAP are decided when 023 is specified.
 
 ## Open Questions
 
