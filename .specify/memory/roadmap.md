@@ -1446,7 +1446,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   largest inputs) in the evidence; a lower token cap for small items in the mode. The grader
   itself spends no tokens.
 
-### 021 — Step mode: the laptop manager loop  [status: planned]
+### 021 — Step mode: the laptop manager loop  [status: specced]
 
 - **Description:** Let the pilot carry an item, and then the next ready item, through every
   automatic step on its own, stopping at each human decision, so the owner can leave it running
@@ -1473,6 +1473,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   human merges; a standing approval without a spend cap or deadline; skipping the gate or
   `doctor`; step mode in developer mode counting as evidence (C-15).
 - **Depends on:** 024 (2026-11-19: 010 is no longer needed; the label half moved here)
+- **Spec dir:** specs/021-step-mode/
 - **Governed by:** C-01, C-02, C-04, C-11, C-12
 - **Notes:** Owner decision 2026-11-18 (Tosin Akinosho), after the Stockroom runs: "if I wanted
   to step away from the computer and leave it running it could do it by steps." Stockroom shows
