@@ -72,3 +72,13 @@ func TestTargetProxyRenders(t *testing.T) {
 		t.Errorf("prefetch proxy:\n%s", r)
 	}
 }
+
+func TestAllowlistChanged(t *testing.T) {
+	al, _ := Allowlist([]string{"old.example"})
+	if AllowlistChanged(al, []string{"old.example"}) || AllowlistChanged("  "+al+"\n", []string{"old.example"}) {
+		t.Fatal("same hosts must not count as a change")
+	}
+	if !AllowlistChanged(al, []string{"new.example"}) || !AllowlistChanged("", []string{"new.example"}) {
+		t.Fatal("a different host list is a change")
+	}
+}

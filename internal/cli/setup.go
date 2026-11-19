@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -224,6 +225,21 @@ func runImportOpenCode(cmd *cobra.Command, _ []string) error {
 			cache = filepath.Join(home, ".cache")
 		}
 		baseURL, _ := cmd.Flags().GetString("base-url")
+		if authFile == "-" { // `opencode auth export | pilot import-opencode --from-login --auth-file -`
+			tmp, err := os.MkdirTemp("", "pilot-auth-")
+			if err != nil {
+				return err
+			}
+			defer func() { _ = os.RemoveAll(tmp) }()
+			raw, err := io.ReadAll(io.LimitReader(cmd.InOrStdin(), 1<<20))
+			if err != nil {
+				return err
+			}
+			authFile = filepath.Join(tmp, "auth.json")
+			if err := os.WriteFile(authFile, raw, 0o600); err != nil {
+				return err
+			}
+		}
 		src, cleanup, err := config.LoginSource(expand(authFile), from, filepath.Join(cache, "opencode"), model, baseURL)
 		defer cleanup()
 		if err != nil {
