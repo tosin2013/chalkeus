@@ -117,6 +117,10 @@ type Manager struct {
 	// Busy: the last pass saw a run in flight; the loop then polls sooner, so short waits (a
 	// status PR merged within seconds) are seen.
 	Busy bool
+	// Next: what happens next after the last pass, in words for the owner: what they do (with
+	// the link) or that step mode is working and nothing is needed. The loop prints it when it
+	// changes.
+	Next string
 
 	shown map[string]string // the last line printed per item: print only changes
 	relay map[string]int64  // bytes of each run's watcher log already relayed
@@ -176,24 +180,27 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 		m.shown = map[string]string{}
 	}
 	m.Busy = false
-	if len(states) == 0 && m.shown[""] == "" { // say once why nothing can be proposed, and what's next
-		m.shown[""] = "none"
-		fmt.Fprintln(m.Out, "step: no item can be proposed now: every active item is verified, or waits on a dependency.")
+	m.Next = ""
+	if len(states) == 0 { // nothing can be proposed: say why (once), and what the owner does next
+		if m.shown[""] == "" {
+			m.shown[""] = "none"
+			fmt.Fprintln(m.Out, "step: no item can be proposed now: every active item is verified, or waits on a dependency.")
+		}
 		var open []string
 		if m.Src.Planning != nil {
 			open, _ = m.Src.Planning(ctx)
 		}
-		if len(open) == 0 {
-			fmt.Fprintln(m.Out, "step: plan a new item (merge its spec and tasks), then label its issue.")
-		}
-		for _, pr := range open {
-			fmt.Fprintf(m.Out, "step: waiting for you: review and merge the planning PR %s; then label the new item's issue\n", pr)
+		m.Next = "plan a new item: merge its spec and tasks, then label its issue"
+		if len(open) > 0 {
+			m.Next = "review and merge the planning PR " + open[0] + "; then label the new item's issue"
 		}
 	}
 	if len(states) > 0 {
 		delete(m.shown, "")
 	}
-	for _, a := range Plan(states) {
+	plan := Plan(states)
+	m.Next = nextFor(plan, m.Next)
+	for _, a := range plan {
 		if ctx.Err() != nil { // stopped: start nothing new (T010)
 			return failed, nil
 		}
@@ -301,4 +308,33 @@ func findings(logPath string) string {
 		return "(no findings printed; see the doctor log)"
 	}
 	return strings.Join(keep, "\n")
+}
+
+// nextFor is the owner's next step after a pass: the item in flight decides; otherwise the
+// first item waiting for its label; otherwise fallback.
+func nextFor(plan []Action, fallback string) string {
+	for _, a := range plan {
+		switch a.Kind {
+		case Wait:
+			if strings.Contains(a.Reason, "waiting for you") {
+				return a.Item + ": " + a.Reason[strings.Index(a.Reason, "waiting for you"):]
+			}
+			return a.Item + ": " + a.Reason + "; nothing needed from you"
+		case Draft:
+			return a.Item + ": drafting its hidden tests in the sandbox (about 10 minutes); nothing needed from you"
+		case Doctor:
+			return a.Item + ": running doctor --baseline, then starting the run; nothing needed from you yet"
+		case NeedsTests:
+			return a.Item + ": waiting for you: " + a.Reason + " (see the comment on its issue)"
+		}
+	}
+	for _, a := range plan {
+		if i := strings.Index(a.Reason, "to start it, "); a.Kind == Skip && i >= 0 {
+			return a.Item + ": " + a.Reason[i+len("to start it, "):]
+		}
+	}
+	if fallback != "" {
+		return fallback
+	}
+	return "nothing is waiting for you; failures are commented on their items' issues"
 }

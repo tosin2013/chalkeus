@@ -347,7 +347,35 @@ func TestManagerPointsAtThePlanningPR(t *testing.T) {
 		return []string{"https://github.com/me/proj/pull/46 (docs(010): plan updating a product's stock)"}, nil
 	}
 	w.pass(t)
-	if out := w.m.Out.(*strings.Builder).String(); !strings.Contains(out, "waiting for you: review and merge the planning PR https://github.com/me/proj/pull/46") {
-		t.Fatalf("%s", out)
+	if !strings.HasPrefix(w.m.Next, "review and merge the planning PR https://github.com/me/proj/pull/46") {
+		t.Fatalf("%q", w.m.Next)
+	}
+}
+
+// "next:" tells a first-time user what to do, or that nothing is needed (owner feedback).
+func TestManagerNext(t *testing.T) {
+	w := newWorld(t)
+	w.m.Src.Repo, w.m.Src.Label = "me/proj", "pilot/go"
+	w.pass(t)
+	if w.m.Next != `009: add the label "pilot/go" to https://github.com/me/proj/issues/41` {
+		t.Fatalf("label: %q", w.m.Next)
+	}
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	w.ready["009"] = readiness.Result{Decision: "allow", Commit: "t1", CompanionCommit: "c1"}
+	w.m.Src.AutoDraft = true
+	w.pass(t)
+	if !strings.HasPrefix(w.m.Next, "009: drafting its hidden tests") {
+		t.Fatalf("draft: %q", w.m.Next)
+	}
+	w.runs["009"] = RunInfo{ID: "R1", State: "paused(awaiting-mode)", Watching: true, Waiting: "waiting for you: reply `/approve mode` on https://x/issues/9"}
+	w.pass(t)
+	if w.m.Next != "009: waiting for you: reply `/approve mode` on https://x/issues/9" {
+		t.Fatalf("approve: %q", w.m.Next)
+	}
+	w.m.Src.Status = func() (string, error) { return `{"items":[{"id":"009","status":"verified","active":true}]}`, nil }
+	w.m.Src.Planning = func(context.Context) ([]string, error) { return []string{"https://x/pull/46 (plan 010)"}, nil }
+	w.pass(t)
+	if w.m.Next != "review and merge the planning PR https://x/pull/46 (plan 010); then label the new item's issue" {
+		t.Fatalf("planning: %q", w.m.Next)
 	}
 }
