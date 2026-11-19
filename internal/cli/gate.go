@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -105,8 +106,21 @@ func runItemReadiness(cmd *cobra.Command, l paths.Layout, item string) error {
 	if err != nil {
 		return Exit(ExitError, "%v", err)
 	}
+	clone := func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) }
+	if root, _ := cmd.Flags().GetString("root"); root != "" {
+		// Check a local checkout of the target instead of its branch on GitHub: its committed
+		// HEAD, copied, because readiness deletes its clone. The companion and open PRs are
+		// still read from GitHub.
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "gate: checking the committed HEAD of %s instead of %s@%s\n", root, t.Repo, t.Branch)
+		clone = func(repo, branch string) (string, string, error) {
+			if repo != t.Repo {
+				return fixture.FreshClone(repo, branch, 1)
+			}
+			return LocalClone(root)
+		}
+	}
 	res, err := readiness.Check(readiness.Deps{Src: gate.ExecStatus{},
-		Clone: func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) },
+		Clone: clone,
 		OpenPRHeads: func(repo string) ([]string, error) {
 			prs, err := ghloop.OpenPilotPRs(context.Background(), gh, repo)
 			heads := make([]string, 0, len(prs))
@@ -126,4 +140,27 @@ func runItemReadiness(cmd *cobra.Command, l paths.Layout, item string) error {
 		return Code(ExitGateRefusal)
 	}
 	return nil
+}
+
+// LocalClone copies the committed HEAD of a local git checkout into a new temporary directory
+// (the caller removes it) and returns that directory and the commit.
+func LocalClone(root string) (string, string, error) {
+	abs, err := filepath.Abs(root)
+	if err != nil {
+		return "", "", err
+	}
+	d, err := os.MkdirTemp("", "pilot-gate-root-")
+	if err != nil {
+		return "", "", err
+	}
+	if _, err := fixture.Git("", "clone", "--quiet", "--no-hardlinks", abs, d); err != nil {
+		_ = os.RemoveAll(d)
+		return "", "", fmt.Errorf("--root %s is not a git checkout: %v", root, err)
+	}
+	commit, err := fixture.Git(d, "rev-parse", "HEAD")
+	if err != nil {
+		_ = os.RemoveAll(d)
+		return "", "", err
+	}
+	return d, strings.TrimSpace(commit), nil
 }

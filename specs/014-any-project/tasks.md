@@ -525,7 +525,7 @@ targets come later.)*
   - Private `<owner>/greeting-service-acceptance` with `items/00N/` hidden JUnit tests that
     fail on the base.
   - App installed on the target if App mode; `targets/greeting.env`.
-- [ ] T053 [US3] **Owner action:** quickstart §3–§4.
+- [X] T053 [US3] **Owner action:** quickstart §3–§4.
   1. Readiness refusals on a scratch branch: each code once.
   2. Run `greeting-service` item 001 end to end: mode approval shows `repo.maven.apache.org` →
      prefetch → baseline pass → attempts → draft PR → merge → status PR → `down` → audit 11/11.
@@ -538,8 +538,9 @@ targets come later.)*
   (run 20261118T161914Z). The owner chose Stockroom for T052–T054 (2026-11-18). All 7 items
   then ran end to end (records in `specs/018-test-author/evidence/`); after `down`, the last run
   (20261118T230306Z) audits 11/11. The owner chose to link the records from 014's
-  `evidence/README.md` rather than copy them (2026-11-19). Still open here: the readiness
-  refusals on a scratch branch (step 1).
+  `evidence/README.md` rather than copy them (2026-11-19). Step 1 done (2026-11-19, owner's
+  choice): on local copies of Stockroom with `gate --root`, which now works for target items,
+  instead of a scratch branch; see `evidence/readiness-refusals/`.
 - [ ] T054 [US3] **Owner action:** quickstart §5. Run item 002, then 003 (unblocked by 002).
   Then run the fixture with no configuration edit between runs (SC-007). Record them.
   Progress (2026-11-18): Stockroom 002 and 003 ran with no configuration edit (runs

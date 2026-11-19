@@ -278,12 +278,14 @@ pilot/pilot gate --target greeting --item 002
 
 The check needs no cluster. It clones the target, runs `spec status`, reads the companion
 repository, and prints the result as JSON. Exit 0 means ready; exit 10 means refused, with the
-first failing rule's code:
+first failing rule's code. To check changes before you push them, add `--root <dir>`: the check
+then uses the committed HEAD of your local checkout instead of the branch on GitHub.
 
 | Code | What to fix |
 |---|---|
 | `ITEM_NOT_ON_ROADMAP` | The item isn't an active item of the target's roadmap |
 | `DEP_UNSATISFIED:<id>`, `ALREADY_VERIFIED`, `UNEVALUABLE:…` | The usual gate reasons (see the [troubleshooting guide](troubleshooting.md)) |
+| `ITEM_ERROR_DIAGNOSTIC:<code>` | `spec status` reports an error on the item, such as a missing `spec.md` (`SS_STAGE_FILE_MISSING`); `spec status --explain` says what to fix |
 | `ITEM_SPEC_MISSING` / `ITEM_TASKS_MISSING` | Add the spec dir to the roadmap entry, or the missing file |
 | `ITEM_OPEN_QUESTIONS` | Resolve the spec's clarification markers, or the roadmap open question naming the item |
 | `ITEM_NO_ALLOWED_PATHS` / `ITEM_PATHS_TOO_WIDE` | Add or narrow `## Allowed paths` |
