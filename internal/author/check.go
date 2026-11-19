@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/grader"
@@ -30,6 +31,10 @@ func Check(ctx context.Context, e Env, item string, baseline Baseline) (*Draft, 
 	spec, err := os.ReadFile(filepath.Join(d.Workspace, "spec.md"))
 	if err != nil {
 		return d, err
+	}
+	if clash := PathsInPlanning(d.Workspace, files); len(clash) > 0 {
+		return d, d.fail(hash, refuse(CodeDraftPathInSpec, "%s named in the item's spec, plan or tasks; those are the build worker's own files. Rename the hidden test file(s), for example with an AcceptanceTests suffix",
+			strings.Join(clash, ", ")))
 	}
 	mapping, err := CheckMap(draftDir, Criteria(string(spec)), d.SpecSHA256, files)
 	if err != nil {
@@ -113,4 +118,22 @@ func clip(s string) string {
 		return s[:300]
 	}
 	return s
+}
+
+// PathsInPlanning returns the drafted files whose path appears in the workspace's spec.md,
+// plan.md or tasks.md (P11's rule, applied before a draft can reach a pull request).
+func PathsInPlanning(workspace string, files []File) []string {
+	var text strings.Builder
+	for _, f := range []string{"spec.md", "plan.md", "tasks.md"} {
+		b, _ := os.ReadFile(filepath.Join(workspace, f))
+		text.Write(b)
+		text.WriteByte('\n')
+	}
+	var clash []string
+	for _, f := range files {
+		if f.Path != MapFile && strings.Contains(text.String(), f.Path) {
+			clash = append(clash, f.Path)
+		}
+	}
+	return clash
 }

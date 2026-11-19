@@ -265,3 +265,32 @@ func TestCheckAndSubmit(t *testing.T) {
 		return nil
 	})
 }
+
+// A hidden test may not reuse a path the item's spec, plan or tasks name (the build worker's
+// files): the worker would see its path (P11) and the grader's overlay would replace the
+// worker's file. Found in the Stockroom 009 run, 2026-11-19.
+func TestCheckRefusesAPathTheTasksName(t *testing.T) {
+	w := newWorld(t, config.LevelMinimal)
+	d, err := Start(context.Background(), w.env, "006", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tasks := filepath.Join(d.Workspace, "tasks.md")
+	_ = os.Chmod(tasks, 0o644)
+	_ = os.WriteFile(tasks, []byte("- [ ] T001 Add tests in `tests/test_bundled.py`\n"), 0o444)
+	write(t, filepath.Join(d.Workspace, "draft"), "tests/test_bundled.py", "def test_it():\n    assert False\n")
+	m, _ := json.Marshal(Map{Version: 1, SpecSHA256: "spec-sha", Criteria: map[string][]string{"US1-AS1": {"tests/test_bundled.py::test_it"}}, Uncovered: []string{"FR-001"}})
+	write(t, filepath.Join(d.Workspace, "draft"), MapFile, string(m))
+	called := false
+	fake := func(dir, id, item string, res readiness.Result, overlay []byte) (map[string]any, []byte, error) {
+		called = true
+		return map[string]any{"result": "pass"}, nil, nil
+	}
+	_, err = Check(context.Background(), w.env, "006", fake)
+	if code(err) != CodeDraftPathInSpec || !strings.Contains(err.Error(), "tests/test_bundled.py") || called {
+		t.Fatalf("%v (baseline called: %t)", err, called)
+	}
+	if _, err := Submit(context.Background(), w.env, "006"); code(err) != CodeDraftNotChecked {
+		t.Fatalf("a refused draft can't be submitted: %v", err)
+	}
+}

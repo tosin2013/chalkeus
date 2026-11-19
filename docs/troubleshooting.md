@@ -483,6 +483,9 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   - `DRAFT_SUITE_FAILS`: with the drafted tests added, the project's own tests fail; the tests may
     break the build or need a dependency the project doesn't declare.
   - `DRAFT_NOT_CHECKED`: run `check` again; the draft changed since its last passing check.
+  - `DRAFT_PATH_IN_SPEC`: a drafted file reuses a path the item's spec, plan or tasks name (the
+    build worker's own files). Rename it, for example with an `AcceptanceTests` suffix, and
+    update the map.
 - **Automatic drafting (`author watch`):**
   - `auto-draft is off for target …`: set `PILOT_AUTHOR_AUTO=on` in the target's profile.
   - `the author proxy pilot-egress-a is missing`: run `pilot/pilot up`.

@@ -25,6 +25,7 @@ var AuthorRules = []string{
 	"test behaviour the spec states, through the project's public interfaces, not its internals",
 	"use only the project's test framework and dependencies it already declares (the grader is offline)",
 	"not depend on anything outside the project (network, clock, other files of yours)",
+	"live in files whose paths `spec.md`, `plan.md` and `tasks.md` don't mention",
 }
 
 // BuildAuthor is the automatic test author's prompt.
@@ -58,6 +59,8 @@ func BuildAuthor(a Author) (string, error) {
 		switch a.FeedbackCode {
 		case "DRAFT_HIDDEN_PASSES":
 			b.WriteString("Your tests already pass on today's code, so they can't tell a correct change from no change. Make each\none test behaviour the spec adds.\n")
+		case "DRAFT_PATH_IN_SPEC":
+			b.WriteString("A file of yours has a path that `spec.md`, `plan.md` or `tasks.md` names: those are the build worker's\nown files. Rename your test files (for example with an `AcceptanceTests` suffix, and the class names to\nmatch), and update `draft/.acceptance-map.json`.\n")
 		case "DRAFT_SUITE_FAILS":
 			b.WriteString("With your tests added, the project's own tests fail on today's code: your tests may break the build\n(for example a compile error) or need an undeclared dependency. Fix that.\n")
 		}
