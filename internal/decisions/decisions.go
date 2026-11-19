@@ -27,6 +27,9 @@ func file(run *evidence.Run) string { return filepath.Join(run.Dir, "approvals",
 
 // HasTTY reports whether a controlling terminal is available (replaced in tests).
 var HasTTY = func() bool {
+	if NoTTY() {
+		return false
+	}
 	f, err := os.Open("/dev/tty")
 	if err != nil {
 		return false
@@ -37,6 +40,9 @@ var HasTTY = func() bool {
 
 // AskTTY asks on the controlling terminal; no terminal or any error gives "" (no, fail closed).
 var AskTTY = func(question string) string {
+	if NoTTY() {
+		return ""
+	}
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err != nil {
 		return ""
@@ -261,7 +267,7 @@ func TakeRecord(run *evidence.Run, step string, task, n any) map[string]any {
 // tty, harness, github or none. The used record is kept on run.LastApproval.
 func Decide(run *evidence.Run, step, question string, task, n any, say func(string)) (bool, string) {
 	run.LastApproval = nil
-	if HasTTY() {
+	if !NoTTY() && HasTTY() { // PILOT_NO_TTY: never ask on an inherited terminal (021)
 		defer func() { _ = os.Remove(file(run)) }()
 		return strings.ToLower(strings.TrimSpace(AskTTY(question))) == "y", "tty"
 	}
@@ -306,3 +312,7 @@ func Hint(run *evidence.Run, step string) string {
 	return fmt.Sprintf("no terminal: approve with `pilot/pilot approve --run %s %s` (your agent harness asks you first), then `pilot/pilot resume --run %s`",
 		run.ID, step, run.ID)
 }
+
+// NoTTY: PILOT_NO_TTY=1 means a process started on the operator's behalf (step mode, 021) must
+// never ask on a terminal, even one it inherited: every decision goes to GitHub instead.
+func NoTTY() bool { return os.Getenv("PILOT_NO_TTY") == "1" }

@@ -48,11 +48,17 @@ func TestStepCommand(t *testing.T) {
 // runPilot runs a program with its output in the log, records step mode, and passes the exit code.
 func TestRunPilot(t *testing.T) {
 	log := filepath.Join(t.TempDir(), "x", "run.log")
-	code, err := runPilot(context.Background(), "/bin/sh", t.TempDir(), []string{"-c", `echo "by=$PILOT_STARTED_BY"; exit 5`}, log)
+	var echo strings.Builder
+	code, err := runPilot(context.Background(), "/bin/sh", t.TempDir(),
+		[]string{"-c", `echo "by=$PILOT_STARTED_BY notty=$PILOT_NO_TTY"; exit 5`}, log, &echo)
 	raw, _ := os.ReadFile(log)
-	if err != nil || code != 5 || !strings.Contains(string(raw), "by=step") {
+	if err != nil || code != 5 || !strings.Contains(string(raw), "by=step notty=1") {
 		t.Fatalf("%d %v %q", code, err, raw)
 	}
+	if !strings.Contains(echo.String(), "  | by=step") {
+		t.Fatalf("the output is echoed, indented: %q", echo.String())
+	}
+
 }
 
 // Step mode follows the runs' rule: approvals on means issues on (found live, 2026-11-19).

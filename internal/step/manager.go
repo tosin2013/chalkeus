@@ -115,6 +115,34 @@ type Manager struct {
 	Issues func(ctx context.Context) (map[string]int, error)
 
 	shown map[string]string // the last line printed per item: print only changes
+	relay map[string]int64  // bytes of each run's watcher log already relayed
+}
+
+// relayRun prints what the run's watcher logged since the last pass, so the owner follows the
+// run in step mode's own terminal (approvals, attempts, grades, PR links).
+func (m *Manager) relayRun(item, dir string) {
+	if dir == "" {
+		return
+	}
+	if m.relay == nil {
+		m.relay = map[string]int64{}
+	}
+	p := filepath.Join(dir, "github", "watch.log")
+	f, err := os.Open(p)
+	if err != nil {
+		return
+	}
+	defer func() { _ = f.Close() }()
+	if _, err := f.Seek(m.relay[p], io.SeekStart); err != nil {
+		return
+	}
+	b, _ := io.ReadAll(f)
+	m.relay[p] += int64(len(b))
+	for _, l := range strings.Split(strings.TrimRight(string(b), "\n"), "\n") {
+		if strings.TrimSpace(l) != "" {
+			fmt.Fprintf(m.Out, "%s run: %s\n", item, l)
+		}
+	}
 }
 
 var runIDRE = regexp.MustCompile(`== run (\d{8}T\d{6}Z)`)
@@ -147,6 +175,9 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 			if s.ID == a.Item {
 				st = s
 			}
+		}
+		if st.Run == RunActive {
+			m.relayRun(a.Item, st.RunDir)
 		}
 		switch a.Kind {
 		case Draft:

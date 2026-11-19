@@ -221,3 +221,23 @@ func TestManagerStartsNothingWhenStopped(t *testing.T) {
 		t.Fatalf("%v", w.calls)
 	}
 }
+
+// While a run is in flight, step mode relays its watcher's log, only the new lines each pass.
+func TestManagerRelaysTheRunLog(t *testing.T) {
+	w := newWorld(t)
+	dir := filepath.Join(t.TempDir(), "R1")
+	_ = os.MkdirAll(filepath.Join(dir, "github"), 0o755)
+	logp := filepath.Join(dir, "github", "watch.log")
+	_ = os.WriteFile(logp, []byte("Item 009 draft PR: https://x/pull/50\n"), 0o644)
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	w.runs["009"] = RunInfo{ID: "R1", Dir: dir, State: "paused(awaiting-merge)", Watching: true}
+	w.pass(t)
+	f, _ := os.OpenFile(logp, os.O_APPEND|os.O_WRONLY, 0o644)
+	_, _ = f.WriteString("Status-change PR: https://x/pull/51\n")
+	_ = f.Close()
+	w.pass(t)
+	out := w.m.Out.(*strings.Builder).String()
+	if strings.Count(out, "009 run: Item 009 draft PR") != 1 || !strings.Contains(out, "009 run: Status-change PR") {
+		t.Fatalf("%s", out)
+	}
+}

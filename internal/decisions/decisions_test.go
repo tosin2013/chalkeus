@@ -136,3 +136,18 @@ func TestItemRunPendingSteps(t *testing.T) {
 		t.Fatal(d)
 	}
 }
+
+// With PILOT_NO_TTY=1 (step mode's subprocesses, 021) a terminal is never asked, even one
+// that is there: the decision waits for an approval recorded from GitHub or the harness.
+func TestDecideNoTTY(t *testing.T) {
+	oh, oa := HasTTY, AskTTY
+	asked := false
+	HasTTY, AskTTY = func() bool { return true }, func(string) string { asked = true; return "y\n" }
+	defer func() { HasTTY, AskTTY = oh, oa }()
+	t.Setenv("PILOT_NO_TTY", "1")
+	run := makeRun(t, "paused(awaiting-mode)", nil)
+	ok, ch := Decide(run, "mode", "Confirm? ", nil, nil, func(string) {})
+	if ok || ch == "tty" || asked {
+		t.Fatalf("approved=%t channel=%s asked=%t", ok, ch, asked)
+	}
+}

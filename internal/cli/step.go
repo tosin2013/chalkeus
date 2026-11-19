@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -112,8 +113,9 @@ func stepCmd() *cobra.Command {
 				},
 				Pilot: func(ctx context.Context, args []string, logPath string) (int, error) {
 					// A doctor or run that has started finishes even if the manager is stopped (T010):
-					// killing `run` while it prepares would leave a half-made run.
-					return runPilot(context.WithoutCancel(ctx), exe, p.L.Root, args, logPath)
+					// killing `run` while it prepares would leave a half-made run. Its output also
+					// goes to this terminal, so the owner follows it without asking.
+					return runPilot(context.WithoutCancel(ctx), exe, p.L.Root, args, logPath, out)
 				},
 				Post: func(ctx context.Context, n int, body string) error {
 					w, err := loop.W()
@@ -158,7 +160,7 @@ func stepCmd() *cobra.Command {
 
 // runPilot runs the pilot binary itself (research R3) with its output in logPath. A run started
 // this way is recorded as started by step mode (PILOT_STARTED_BY, FR-007).
-func runPilot(ctx context.Context, exe, root string, args []string, logPath string) (int, error) {
+func runPilot(ctx context.Context, exe, root string, args []string, logPath string, echo io.Writer) (int, error) {
 	if err := os.MkdirAll(filepath.Dir(logPath), 0o755); err != nil {
 		return 0, err
 	}
@@ -168,8 +170,16 @@ func runPilot(ctx context.Context, exe, root string, args []string, logPath stri
 	}
 	defer func() { _ = f.Close() }()
 	c := exec.CommandContext(ctx, exe, args...)
-	c.Dir, c.Stdout, c.Stderr = root, f, f
-	c.Env = append(os.Environ(), "PILOT_STARTED_BY=step", "PILOT_VERBOSE=0")
+	var w io.Writer = f
+	if echo != nil {
+		w = io.MultiWriter(f, &prefixWriter{w: echo, prefix: "  | "})
+	}
+	c.Dir, c.Stdout, c.Stderr = root, w, w
+	// Never the operator's terminal: without PILOT_NO_TTY and a new session (no controlling
+	// terminal), a run's mode question appeared in the terminal step mode runs in, and an answer
+	// there approved the mode (found live, 2026-11-19). Every gate goes to GitHub.
+	c.Env = append(os.Environ(), "PILOT_STARTED_BY=step", "PILOT_VERBOSE=0", "PILOT_NO_TTY=1")
+	c.SysProcAttr = watcher.DetachedAttr()
 	if err := c.Run(); err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
 			return ee.ExitCode(), nil
@@ -183,3 +193,28 @@ func runPilot(ctx context.Context, exe, root string, args []string, logPath stri
 // keeps its issues on whenever approvals are on, pipeline.issuesOn), so PILOT_GITHUB_ISSUES
 // isn't required separately.
 func stepGitHubOn(t config.Target) bool { return t.GithubApprovals == "on" }
+
+// prefixWriter indents a subprocess's output in step mode's terminal.
+type prefixWriter struct {
+	w       io.Writer
+	prefix  string
+	midLine bool
+}
+
+func (p *prefixWriter) Write(b []byte) (int, error) {
+	for _, line := range strings.SplitAfter(string(b), "\n") {
+		if line == "" {
+			continue
+		}
+		if !p.midLine {
+			if _, err := io.WriteString(p.w, p.prefix); err != nil {
+				return 0, err
+			}
+		}
+		if _, err := io.WriteString(p.w, line); err != nil {
+			return 0, err
+		}
+		p.midLine = !strings.HasSuffix(line, "\n")
+	}
+	return len(b), nil
+}
