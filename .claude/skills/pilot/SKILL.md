@@ -68,7 +68,9 @@ When an item has no hidden tests (`ITEM_NO_HIDDEN_TESTS`), the human writes them
 them. You are the session that drives runs, so you never act as the test author: never run
 any `pilot/pilot author` command (including `author watch`, the automatic drafting of 024: the
 human starts it in their own terminal), never read a draft workspace or draft evidence, and
-never open the companion's pull requests.
+never open the companion's pull requests. The same goes for `pilot/pilot step` (021, step
+mode): it may draft hidden tests, so only the human starts it, in their own terminal. Runs it
+starts are ordinary runs; explain them as usual, and leave every approval to the human.
 
 To diagnose a stuck or failing step, add `-vv` to the command (pod phases, Kubernetes events,
 model-proxy refusals, the first failing grader check; stderr only, redacted). Use `-vvv` (the

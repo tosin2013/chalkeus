@@ -493,6 +493,15 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
     failed its check twice. Change the spec, or draft by hand with the test-author skill.
   - `isolation check A0n failed, no PR`: the author's sandbox wasn't as expected. Read the
     draft's `draft.json` (`jobs[].checks`); don't run auto-draft until it passes.
+- **Step mode (`pilot step`):**
+  - `step mode needs PILOT_GITHUB_ISSUES=on and PILOT_GITHUB_APPROVALS=on`: set both in the
+    target's profile.
+  - `step mode needs PILOT_APPROVERS`: set it in `pilot.env`; only an approver's label counts.
+  - `NNN: skip (not proposed: the label was last added by @x, who is not in PILOT_APPROVERS)`:
+    an approver must add the label (remove it and add it again).
+  - A comment "`pilot doctor --baseline` found problems": fix what it lists; step mode tries
+    again once the target or the companion changes.
+  - A comment "Run … ended without verifying this item": add the label again to retry.
 - **Confirm:** `pilot/pilot author status --target <name> --item NNN` shows `checked(pass)`, then
   `submitted`.
 - **Source:** `internal/author/`.

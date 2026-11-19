@@ -207,3 +207,17 @@ func TestManagerPrintsOnlyChanges(t *testing.T) {
 		t.Fatalf("the same decision is printed once, got %d", n)
 	}
 }
+
+// A stopped manager starts nothing new (T010).
+func TestManagerStartsNothingWhenStopped(t *testing.T) {
+	w := newWorld(t)
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := w.m.Pass(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(w.calls, ",") != "sync" {
+		t.Fatalf("%v", w.calls)
+	}
+}

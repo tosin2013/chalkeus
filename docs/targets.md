@@ -308,6 +308,39 @@ tests.
 - The session that drives runs (your coding agent with the pilot skill) never starts the
   watcher or reads its drafts.
 
+### Step mode: leave it running
+
+Step mode carries items through every automatic step and stops at each of your decisions, so
+you can leave it running and answer from GitHub. You start it in **your own terminal**:
+
+```sh
+pilot/pilot step --target greeting           # Ctrl-C stops it
+pilot/pilot step --target greeting --once    # one pass, then exit
+```
+
+It needs GitHub issues and approvals on for the target (`PILOT_GITHUB_ISSUES=on`,
+`PILOT_GITHUB_APPROVALS=on`) and `PILOT_APPROVERS` in `pilot.env`.
+
+1. **Propose an item:** add the label "pilot/go" to the item's GitHub issue. Set
+   `PILOT_PROPOSE_LABEL` to use another name. The label counts only when an approver added it
+   last, so anyone else labelling the issue starts nothing.
+2. **Each pass** (every `PILOT_STEP_INTERVAL_S`, default 120 s), for the first proposed item in
+   roadmap order:
+   - **No hidden tests:** with auto-draft on, it drafts them as `author watch` does. Otherwise
+     it comments once on the issue that tests are needed. You review and merge the tests PR.
+   - **Tests merged:** it runs `doctor --baseline` and comments the findings if it fails. If
+     it's clean, it starts the run, which waits for your `/approve mode` on its tracking issue.
+   - **While the run waits for you** (mode, retries, the item PR, the status PR), it waits too.
+   - **When the run succeeds,** it moves to the next proposed item.
+3. **When something fails,** it comments once and leaves the item:
+   - a failed `doctor` is tried again when the target or the companion changes;
+   - a failed or abandoned run is tried again when you add the label again.
+
+One item is in flight per target. Step mode never approves, merges, labels or edits anything.
+It keeps no state of its own, so you can stop and restart it at any point. Each decision is in
+`step/<target>/decisions.jsonl` under the evidence folder. The coding agent that drives your
+runs never starts it, because it may draft hidden tests.
+
 ## 3. Check that an item is ready
 
 ```sh

@@ -135,6 +135,9 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 		m.shown = map[string]string{}
 	}
 	for _, a := range Plan(states) {
+		if ctx.Err() != nil { // stopped: start nothing new (T010)
+			return failed, nil
+		}
 		if line := a.String(); m.shown[a.Item] != line {
 			m.shown[a.Item] = line
 			fmt.Fprintln(m.Out, line)
