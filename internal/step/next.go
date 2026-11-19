@@ -27,6 +27,7 @@ type ItemState struct {
 	AutoDraft bool   // the target has PILOT_AUTHOR_AUTO=on
 	Run       string // RunNone | RunActive | RunSucceeded | RunFailed (the newest item run)
 	RunID     string
+	RunDir    string // its evidence folder (to relay its watcher's log)
 	// Commits is "<target commit>:<companion commit>"; DoctorFailedAt is the Commits value at the
 	// last failed doctor, so doctor is retried only when either repository changes.
 	Commits        string

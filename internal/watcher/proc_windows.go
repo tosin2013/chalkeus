@@ -34,3 +34,6 @@ func terminate(pid int) error {
 	}
 	return p.Kill()
 }
+
+// DetachedAttr starts a process detached from the caller's console.
+func DetachedAttr() *syscall.SysProcAttr { return detached() }

@@ -69,7 +69,7 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 			labelledAt = p.AddedAt
 		}
 		if r, ok := src.Run(c.ID); ok {
-			s.RunID = r.ID
+			s.RunID, s.RunDir = r.ID, r.Dir
 			s.Run = runState(r)
 			s.RelabelledAfterRun = !labelledAt.IsZero() && labelledAt.After(r.EndedAt)
 		}

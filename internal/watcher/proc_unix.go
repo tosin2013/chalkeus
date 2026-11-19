@@ -15,3 +15,6 @@ func processAlive(pid int) bool {
 }
 
 func terminate(pid int) error { return syscall.Kill(pid, syscall.SIGTERM) }
+
+// DetachedAttr starts a process in a new session, without the caller's controlling terminal.
+func DetachedAttr() *syscall.SysProcAttr { return detached() }
