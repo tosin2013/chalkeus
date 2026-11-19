@@ -494,8 +494,8 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   - `isolation check A0n failed, no PR`: the author's sandbox wasn't as expected. Read the
     draft's `draft.json` (`jobs[].checks`); don't run auto-draft until it passes.
 - **Step mode (`pilot step`):**
-  - `step mode needs PILOT_GITHUB_ISSUES=on and PILOT_GITHUB_APPROVALS=on`: set both in the
-    target's profile.
+  - `step mode needs GitHub approvals`: set `PILOT_GITHUB_APPROVALS=on` in the target's profile
+    or in `pilot.env`.
   - `step mode needs PILOT_APPROVERS`: set it in `pilot.env`; only an approver's label counts.
   - `NNN: skip (not proposed: the label was last added by @x, who is not in PILOT_APPROVERS)`:
     an approver must add the label (remove it and add it again).
