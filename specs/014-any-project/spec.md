@@ -376,7 +376,7 @@ Run records are listed in [evidence/README.md](evidence/README.md); 014's runs a
 | Criterion | Status | Evidence |
 |---|---|---|
 | SC-001 | met | cli-schema-mcp 006 (Python 3.13) and Stockroom 001–007 (Java 21, Maven) ran end to end: draft PR merged by the owner, status PR merged, audit 11/11 after `down` (20261118T030513Z, 20261118T230306Z) |
-| SC-002 | partly | each readiness rule has unit tests (`internal/readiness`); the live refusals, one per rule on a scratch branch, are T053 step 1 (owner) |
+| SC-002 | met | [evidence/readiness-refusals](evidence/readiness-refusals/): every rule refused with exit 10 on a copy of Stockroom that breaks only that rule, plus an unreadable roadmap. A missing `spec.md` is refused by `spec status`'s error diagnostic before `ITEM_SPEC_MISSING`; `HIDDEN_TESTS_IN_TARGET` and `OPEN_ITEM_PR` have unit tests only |
 | SC-003 | met | P11 passes in all eight records; T057's scan found no hidden-test content in any record; the drafts stay in the companion repository |
 | SC-004 | met | Stockroom 008 (20261119T154630Z): P06r passed live (the declared registry reached, `example.invalid` refused, the prefetch proxy allowing only the registry), and the agent's own request to `github.com` was refused by the target's proxy and recorded in `attempts/008-1/proxy-denials.log`. Earlier records (before T047) recorded only the model proxy's refusals |
 | SC-005 | open | the golden audit and fixture parity tests pass unchanged (`go test ./...`); the fixture run is T056 (owner) |

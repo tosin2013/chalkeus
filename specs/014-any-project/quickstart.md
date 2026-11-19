@@ -50,8 +50,9 @@ pilot/pilot app-token --check --target greeting         # App mode: fixture-like
 pilot/pilot gate --target greeting --item 003     # expect refuse: DEP_UNSATISFIED:002
 ```
 
-Then, on a scratch branch of the target (`PILOT_TARGET_BRANCH`), break one rule at a time and
-check that the expected code appears ([contracts/readiness.md](contracts/readiness.md)):
+Then, on a scratch branch of the target (`PILOT_TARGET_BRANCH`), or on a local checkout with
+`--root <dir>` (its committed HEAD is checked), break one rule at a time and check that the
+expected code appears ([contracts/readiness.md](contracts/readiness.md)):
 - remove `tasks.md`;
 - add a `[NEEDS CLARIFICATION` marker;
 - remove `## Allowed paths`;

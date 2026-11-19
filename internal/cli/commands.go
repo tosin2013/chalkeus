@@ -85,7 +85,7 @@ func gateCmd() *cobra.Command {
 		},
 		RunE: runGate,
 	}
-	c.Flags().String("root", "", "evaluate this directory instead of a fresh clone")
+	c.Flags().String("root", "", "evaluate this directory instead of a fresh clone (with --target: the committed HEAD of a local checkout of the target)")
 	c.Flags().String("item", "", "roadmap item NNN of the --target repository: check its readiness (no cluster)")
 	addTargetFlag(c)
 	return c
