@@ -318,8 +318,8 @@ pilot/pilot step --target greeting           # Ctrl-C stops it
 pilot/pilot step --target greeting --once    # one pass, then exit
 ```
 
-It needs GitHub issues and approvals on for the target (`PILOT_GITHUB_ISSUES=on`,
-`PILOT_GITHUB_APPROVALS=on`) and `PILOT_APPROVERS` in `pilot.env`.
+It needs GitHub approvals on for the target (`PILOT_GITHUB_APPROVALS=on`, in its profile or in
+`pilot.env`; item issues follow, as for runs) and `PILOT_APPROVERS` in `pilot.env`.
 
 1. **Propose an item:** add the label "pilot/go" to the item's GitHub issue. Set
    `PILOT_PROPOSE_LABEL` to use another name. The label counts only when an approver added it

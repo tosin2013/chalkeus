@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/verbose"
 )
 
@@ -51,5 +52,12 @@ func TestRunPilot(t *testing.T) {
 	raw, _ := os.ReadFile(log)
 	if err != nil || code != 5 || !strings.Contains(string(raw), "by=step") {
 		t.Fatalf("%d %v %q", code, err, raw)
+	}
+}
+
+// Step mode follows the runs' rule: approvals on means issues on (found live, 2026-11-19).
+func TestStepGitHubOn(t *testing.T) {
+	if !stepGitHubOn(config.Target{GithubIssues: "off", GithubApprovals: "on"}) || stepGitHubOn(config.Target{GithubIssues: "on", GithubApprovals: "off"}) {
+		t.Fatal("approvals decide")
 	}
 }

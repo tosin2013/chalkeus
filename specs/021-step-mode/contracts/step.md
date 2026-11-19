@@ -5,7 +5,8 @@ pilot step --target <name> [--once]
 ```
 
 - **Refuses (exit 2) unless:**
-  - `PILOT_GITHUB_ISSUES=on` and `PILOT_GITHUB_APPROVALS=on` for the target;
+  - GitHub approvals are on for the target (`PILOT_GITHUB_APPROVALS=on`); item issues follow, as
+    for runs;
   - `PILOT_APPROVERS` is set;
   - `pilot up` has completed.
 - **Polls** every `PILOT_STEP_INTERVAL_S` (default 120, at least 30). `--once` does one pass:

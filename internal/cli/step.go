@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/tosin2013/specfoundry/internal/author"
+	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/readiness"
 	"github.com/tosin2013/specfoundry/internal/step"
@@ -37,8 +38,8 @@ func stepCmd() *cobra.Command {
 				return err
 			}
 			t := e.Target
-			if t.GithubIssues != "on" || t.GithubApprovals != "on" {
-				return Exit(ExitError, "step mode needs PILOT_GITHUB_ISSUES=on and PILOT_GITHUB_APPROVALS=on for target %s: items are proposed on their issues and every gate is answered on GitHub", t.Name)
+			if !stepGitHubOn(t) {
+				return Exit(ExitError, "step mode needs GitHub approvals for target %s (PILOT_GITHUB_APPROVALS=on in its profile or pilot.env): items are proposed on their issues and every gate is answered on GitHub", t.Name)
 			}
 			p, err := pipelineFor(cmd)
 			if err != nil {
@@ -177,3 +178,8 @@ func runPilot(ctx context.Context, exe, root string, args []string, logPath stri
 	}
 	return 0, nil
 }
+
+// stepGitHubOn: step mode needs GitHub approvals. Issues follow them, as for runs (an item run
+// keeps its issues on whenever approvals are on, pipeline.issuesOn), so PILOT_GITHUB_ISSUES
+// isn't required separately.
+func stepGitHubOn(t config.Target) bool { return t.GithubApprovals == "on" }
