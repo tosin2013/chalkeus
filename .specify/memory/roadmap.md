@@ -1,7 +1,17 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.23.0 → 1.24.0 (this revision)
+Version change: 1.24.0 → 1.25.0 (this revision)
+Bump rationale: MINOR — a new planned item (025). Nothing existing changes.
+Changes this revision (owner decision 2026-11-19, Tosin Akinosho):
+  - 025 (new, planned): integration tests in CI on a kind cluster (weekly, and on PRs that touch
+    the pilot), after the seam audit of 021
+    and 024 (specs/021-step-mode/audit-20261119.md): six bugs found one live step at a time
+    were all in the glue that unit tests with fakes can't see.
+Specs affected: 025 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.23.0 → 1.24.0
 Bump rationale: MINOR — material scope changes to 010 and 021, and a new dependency for 013.
 Nothing verified is invalidated.
 Changes this revision (owner decisions 2026-11-19, Tosin Akinosho):
@@ -1571,6 +1581,35 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   model-only egress and no repository credential, and its harness is OpenCode; the GitHub
   Actions trigger comes later.
 
+### 025 — Integration tests in CI  [status: planned]
+
+- **Description:** Run the pilot's real pieces together in CI, on a kind cluster, so seams
+  between commands, templates, checks, processes and GitHub are tested before a live run finds
+  them.
+- **Outcome:** a CI job (weekly, and on PRs that touch the pilot's Go code, manifests or images)
+  stands up kind with `pilot up --local-build` and runs, with a stub harness instead of a model:
+  - the fixture run to its first PR;
+  - `author watch --once`;
+  - `step --once` against a test target, with their isolation checks, evidence and audit rows.
+
+  A broken seam fails the job. The glue packages get a coverage floor that only rises.
+- **Scope (in):**
+  - a stub harness: canned agent output in place of OpenCode, no model key and no cost;
+  - GitHub for the tests: a sandbox repository and App, or a fake GitHub API server (decided
+    when specified);
+  - the scenarios above, and the audit checklist's seams as assertions (template labels found
+    by their checks, no terminal in step mode's subprocesses, waits shown between polls);
+  - a coverage floor per package for `cli`, `pipeline`, `worker`, `checks`, `cluster` and
+    `grader`.
+- **Scope (out):** testing models or prompts; OpenShift in CI (with 005); replacing the live
+  validation runs, which still close each item.
+- **Depends on:** 016, 021, 024
+- **Governed by:** C-09, C-10, C-14
+- **Notes:** Owner decision 2026-11-19, after the seam audit
+  (specs/021-step-mode/audit-20261119.md): decision logic had 84-93% unit coverage and none of the
+  six live bugs; the glue had 15-22% and all six. The audit's known limits (a crashed
+  `in-progress` run holding the slot) are tested here first.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -1711,4 +1750,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.24.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-19
+**Version**: 1.25.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-19
