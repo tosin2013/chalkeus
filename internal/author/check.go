@@ -59,6 +59,7 @@ func Check(ctx context.Context, e Env, item string, baseline Baseline) (*Draft, 
 	if len(hidden) > 0 {
 		fmt.Fprintf(e.Out, "----- your drafted tests' output on the unchanged base (not stored) -----\n%s\n-----\n", hidden)
 	}
+	d.lastOutput = string(hidden)
 	d.Files, d.Mapping = files, mapping
 	d.Checks = append(d.Checks, CheckRecord{At: evidence.Now(), DraftHash: hash, Result: code, GradePath: filepath.Join(fmt.Sprintf("check%d", n), "baseline", "grade.json")})
 	d.State = "checked(fail)"

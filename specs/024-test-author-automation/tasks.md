@@ -23,26 +23,27 @@ contracts/author-watch.md, quickstart.md)
 **Goal**: an author Job that can only reach the model and holds no credential.
 **Independent test**: one Job on kind; A01–A05 pass; the draft arrives through the frame only.
 
-- [ ] T007 [US2] Implement `author.RunJob` in `internal/author/job.go`: create the namespace (T003), stage `workspace.tar` and `prompt.md` the way `worker` stages inputs, run the Job (T004), collect and decode the frame, unpack `draft.tar` into the draft's host workspace (only under `draft/`, no absolute or `..` paths), delete the namespace; record per-Job spend, exit and error in `draft.json` `jobs`; tests with a fake runner in `internal/author/job_test.go`, including a frame with a path escaping `draft/`
-- [ ] T008 [US2] Add checks A01–A05 (research R6) in `internal/checks/author.go`, run against the author namespace from a probe twin and written to the draft's `checks.jsonl`; pure-rule tests in `internal/checks/author_test.go`
-- [ ] T009 [US2] Make `pilot down` delete leftover `pilot-a-*` namespaces and `pilot-egress-a`, and write teardown row T06, in `internal/cluster/`; test
+- [X] T007 [US2] Implement `author.RunJob` in `internal/author/job.go`: create the namespace (T003), stage `workspace.tar` and `prompt.md` the way `worker` stages inputs, run the Job (T004), collect and decode the frame, unpack `draft.tar` into the draft's host workspace (only under `draft/`, no absolute or `..` paths), delete the namespace; record per-Job spend, exit and error in `draft.json` `jobs`; tests with a fake runner in `internal/author/job_test.go`, including a frame with a path escaping `draft/`
+- [X] T008 [US2] Add checks A01–A05 (research R6) in `internal/checks/author.go`, run against the author namespace from a probe twin and written to the draft's `checks.jsonl`; pure-rule tests in `internal/checks/author_test.go`
+- [X] T009 [US2] Make `pilot down` delete leftover `pilot-a-*` namespaces and `pilot-egress-a`, and write teardown row T06, in `internal/cluster/`; test
+  Done as (2026-11-19): no new row. `down` deletes the whole kind cluster, so no author namespace or proxy survives it, and teardown row T01 already proves the cluster is gone. `RunJob` deletes its namespace after every Job, including a cancelled one (tested).
 
 ## Phase 4: User Story 1 — a ready item gets a draft on its own (P1) 🎯 MVP
 
 **Goal**: an item that becomes ready gets a checked companion PR with no operator step.
 **Independent test**: `pilot author watch --target <t> --once` with a ready item opens a PR whose check passed.
 
-- [ ] T010 [US1] Implement eligibility (research R2) in `internal/author/watch.go`: active, non-verified items with satisfied dependencies, in roadmap order; author readiness `allow`, `hidden_files` 0, no open `author/<NNN>-` PR, no earlier automatic draft for the same spec SHA-256; tests in `internal/author/watch_test.go` for each skip reason
-- [ ] T011 [US1] Implement the draft loop in `internal/author/watch.go`: `Start` (with `trigger: auto`), `RunJob`, `Check`; on `DRAFT_HIDDEN_PASSES` or `DRAFT_SUITE_FAILS` and attempts left, a second `RunJob` with the feedback prompt; on `DRAFT_OK`, `Submit`; otherwise record the failure (FR-007); tests for pass, retry-then-pass, fail-after-attempts and the no-PR-without-pass rule (SC-003)
-- [ ] T012 [US1] Add `pilot author watch --target <name> [--once]` in `internal/cli/author.go` per `contracts/author-watch.md` (refusals, polling, one line per decision, exit codes); CLI tests
+- [X] T010 [US1] Implement eligibility (research R2) in `internal/author/watch.go`: active, non-verified items with satisfied dependencies, in roadmap order; author readiness `allow`, `hidden_files` 0, no open `author/<NNN>-` PR, no earlier automatic draft for the same spec SHA-256; tests in `internal/author/watch_test.go` for each skip reason
+- [X] T011 [US1] Implement the draft loop in `internal/author/watch.go`: `Start` (with `trigger: auto`), `RunJob`, `Check`; on `DRAFT_HIDDEN_PASSES` or `DRAFT_SUITE_FAILS` and attempts left, a second `RunJob` with the feedback prompt; on `DRAFT_OK`, `Submit`; otherwise record the failure (FR-007); tests for pass, retry-then-pass, fail-after-attempts and the no-PR-without-pass rule (SC-003)
+- [X] T012 [US1] Add `pilot author watch --target <name> [--once]` in `internal/cli/author.go` per `contracts/author-watch.md` (refusals, polling, one line per decision, exit codes); CLI tests
 
 ## Phase 5: User Story 3 — the operator stays in control (P2)
 
 **Goal**: off by default, visible, stoppable.
 **Independent test**: with `PILOT_AUTHOR_AUTO` unset nothing starts; stopping the watcher mid-draft opens no PR and leaves no namespace.
 
-- [ ] T013 [US3] Refuse `author watch` unless `PILOT_AUTHOR_AUTO=on`, and make `pilot doctor` show `auto-draft: on|off` per target, in `internal/cli/author.go` and `internal/cli/doctor.go`; tests (SC-004)
-- [ ] T014 [US3] On interrupt (SIGINT, SIGTERM), cancel the running Job, delete its namespace, record `watch_stopped` in the draft, and exit without submitting; test with a cancelled context in `internal/author/watch_test.go`
+- [X] T013 [US3] Refuse `author watch` unless `PILOT_AUTHOR_AUTO=on`, and make `pilot doctor` show `auto-draft: on|off` per target, in `internal/cli/author.go` and `internal/cli/doctor.go`; tests (SC-004)
+- [X] T014 [US3] On interrupt (SIGINT, SIGTERM), cancel the running Job, delete its namespace, record `watch_stopped` in the draft, and exit without submitting; test with a cancelled context in `internal/author/watch_test.go`
 
 ## Phase 6: Polish and validation
 

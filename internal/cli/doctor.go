@@ -70,6 +70,11 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		_, err := t.AuthorToken()
 		r.OK("profile", "test author token (recommended level)", err, "present, mode 0600")
 	}
+	if t.AuthorAuto == "on" { // 024: who drafts hidden tests, as information only
+		r.Add("profile", "auto-draft", doctor.Info, fmt.Sprintf("on: `pilot/pilot author watch --target %s` drafts ready items (every %d s, up to %d author Job(s) each)", t.Name, t.AuthorIntervalS, t.AuthorAttempts))
+	} else {
+		r.Add("profile", "auto-draft", doctor.Info, "off: hidden tests are drafted by hand (set PILOT_AUTHOR_AUTO=on to let `author watch` draft them)")
+	}
 
 	// Machine and cluster.
 	if hosts := cfg.ModelHosts(); len(hosts) == 0 {

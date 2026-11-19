@@ -17,6 +17,25 @@ type File struct {
 	SHA256 string `json:"sha256"`
 }
 
+// JobRecord is one author Job of an automatic draft (024 FR-006): names, spend and results only.
+type JobRecord struct {
+	Attempt     int            `json:"attempt"`
+	Namespace   string         `json:"namespace"`
+	Outcome     string         `json:"outcome"` // the Job's end: Complete | Failed | DeadlineExceeded | Timeout | cancelled
+	HarnessExit any            `json:"harness_exit"`
+	Spend       map[string]any `json:"spend,omitempty"`
+	Error       string         `json:"error,omitempty"`
+	DraftFiles  int            `json:"draft_files"`
+	Checks      []AuthorCheck  `json:"checks,omitempty"`
+}
+
+// AuthorCheck is one isolation check of the author's namespace (A01-A05, 024 R6).
+type AuthorCheck struct {
+	ID     string `json:"id"`
+	Result string `json:"result"` // pass | fail
+	Detail string `json:"detail"`
+}
+
 // CheckRecord is one `author check`.
 type CheckRecord struct {
 	At        string `json:"at"`
@@ -46,6 +65,13 @@ type Draft struct {
 	PR             map[string]any `json:"pr,omitempty"`
 	State          string         `json:"state"` // started | checked(pass) | checked(fail) | submitted
 	Readiness      map[string]any `json:"readiness,omitempty"`
+	// 024: how the draft started, the author Jobs of an automatic draft, and the watcher's decision.
+	Trigger       string      `json:"trigger,omitempty"` // manual | auto
+	Jobs          []JobRecord `json:"jobs,omitempty"`
+	WatchDecision string      `json:"watch_decision,omitempty"`
+
+	// lastOutput is the drafted tests' output from the last check (never stored; 018 FR, 024 R5).
+	lastOutput string
 
 	dir string
 }
