@@ -60,6 +60,9 @@ func RunJob(ctx context.Context, je JobEnv, d *Draft, attempt int, prompt string
 		}
 		return rec
 	}
+	if je.Images["worker"] == "" || je.Images["tools"] == "" {
+		return fail("harness_error", fmt.Errorf("no worker or tools image: run `pilot/pilot up`"))
+	}
 	je.Cluster.DeleteNS(ns, true)
 	defer je.Cluster.DeleteNS(ns, false)
 	nsYAML, err := k8s.Render(filepath.Join(je.Manifests, "author-ns.yaml.tmpl"), map[string]string{"NS": ns, "DRAFT_ID": d.ID})

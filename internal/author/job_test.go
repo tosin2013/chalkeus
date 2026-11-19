@@ -150,3 +150,12 @@ func TestRunJobNoResultAndCancel(t *testing.T) {
 		t.Fatal("a cancelled Job's namespace is deleted")
 	}
 }
+
+func TestRunJobNeedsImages(t *testing.T) {
+	c, r := &fakeCluster{}, &fakeRunner{}
+	je, d := jobEnv(t, c, r)
+	je.Images = map[string]string{}
+	if rec := RunJob(context.Background(), je, d, 1, "p"); !strings.Contains(rec.Error, "pilot/pilot up") || len(c.applied) != 0 {
+		t.Fatalf("%+v", rec)
+	}
+}
