@@ -114,8 +114,21 @@ type Manager struct {
 	Post   func(ctx context.Context, issue int, body string) error               // a comment on an item's issue
 	Issues func(ctx context.Context) (map[string]int, error)
 
+	// Busy: the last pass saw a run in flight; the loop then polls sooner, so short waits (a
+	// status PR merged within seconds) are seen.
+	Busy bool
+
 	shown map[string]string // the last line printed per item: print only changes
 	relay map[string]int64  // bytes of each run's watcher log already relayed
+}
+
+// relayed reports whether this process has relayed the run's log before.
+func (m *Manager) relayed(dir string) bool {
+	if dir == "" || m.relay == nil {
+		return false
+	}
+	_, ok := m.relay[filepath.Join(dir, "github", "watch.log")]
+	return ok
 }
 
 // relayRun prints what the run's watcher logged since the last pass, so the owner follows the
@@ -162,6 +175,7 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 	if m.shown == nil {
 		m.shown = map[string]string{}
 	}
+	m.Busy = false
 	for _, a := range Plan(states) {
 		if ctx.Err() != nil { // stopped: start nothing new (T010)
 			return failed, nil
@@ -176,8 +190,13 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 				st = s
 			}
 		}
-		if st.Run == RunActive {
+		// Relay while the run is active, and once more after it ends: lines written between
+		// passes (a status PR merged within seconds, "succeeded") must still reach the owner.
+		if st.Run == RunActive || m.relayed(st.RunDir) {
 			m.relayRun(a.Item, st.RunDir)
+		}
+		if st.Run == RunActive {
+			m.Busy = true
 		}
 		switch a.Kind {
 		case Draft:

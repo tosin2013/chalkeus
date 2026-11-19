@@ -148,7 +148,7 @@ func stepCmd() *cobra.Command {
 					_ = log.Add(step.Entry{Action: "step_stopped", Reason: "interrupted"})
 					fmt.Fprintln(out, "step: stopped")
 					return nil
-				case <-time.After(time.Duration(t.StepIntervalS) * time.Second):
+				case <-time.After(stepWait(m.Busy, t.StepIntervalS)):
 				}
 			}
 		}}
@@ -217,4 +217,13 @@ func (p *prefixWriter) Write(b []byte) (int, error) {
 		p.midLine = !strings.HasSuffix(line, "\n")
 	}
 	return len(b), nil
+}
+
+// stepWait is the pause before the next pass: 15 s while a run is in flight (its waits for the
+// owner can be short), the target's interval otherwise.
+func stepWait(busy bool, intervalS int) time.Duration {
+	if busy && intervalS > 15 {
+		return 15 * time.Second
+	}
+	return time.Duration(intervalS) * time.Second
 }

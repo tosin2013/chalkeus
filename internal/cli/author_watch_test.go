@@ -67,3 +67,9 @@ func TestStepGitHubOn(t *testing.T) {
 		t.Fatal("approvals decide")
 	}
 }
+
+func TestStepWait(t *testing.T) {
+	if stepWait(true, 120).Seconds() != 15 || stepWait(false, 120).Seconds() != 120 || stepWait(true, 10).Seconds() != 10 {
+		t.Fatal("15 s while busy, the interval otherwise")
+	}
+}
