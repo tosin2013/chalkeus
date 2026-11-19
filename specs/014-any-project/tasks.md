@@ -595,7 +595,7 @@ run under every guarantee on kind.
   table is current; `pilot/README.md` gains item runs, the target commands, the evidence
   location and the toolchain and item manifests; the skill already had `--target`/`--item`, and
   its exit-10 row now sends item refusal codes to troubleshooting. Docs check passes.
-- [ ] T059 Add an Evidence section to `specs/014-any-project/spec.md`. Run
+- [X] T059 Add an Evidence section to `specs/014-any-project/spec.md`. Run
   `/speckit-roadmap-debrief` for 014. Then, with the owner's approval, run
   `/speckit-roadmap-write`:
   - 014 status and spec dir;
@@ -606,6 +606,8 @@ run under every guarantee on kind.
   `roadmap-reviews/debrief-20261119T143806Z.md` (⚠️ proceed with updates: T053 step 1 and T056
   are still needed before `verified`; the roadmap entry is stale on the EAP validation and the
   toolchain scope line). The roadmap amendment waits for the owner.
+  Done (2026-11-19): the second debrief proposed verified; the owner approved roadmap 1.23.0
+  (014, 017 and 018 verified; 011's note added in 1.22.0; 017 unblocked).
 
 ---
 

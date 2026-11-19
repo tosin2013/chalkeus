@@ -1,7 +1,23 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.21.0 → 1.22.0 (this revision)
+Version change: 1.22.0 → 1.23.0 (this revision)
+Bump rationale: MINOR — a new planned item (024) split from 018, and status transitions (014,
+017 and 018 verified). Nothing verified is invalidated.
+Changes this revision (owner decisions 2026-11-19, Tosin Akinosho):
+  - 014 → verified. Debrief: specs/014-any-project/roadmap-reviews/debrief-20261119T171222Z.md
+    (proceed). Every success criterion met except SC-008 (moved to 022); fixture 11/11 after
+    `down` (20261119T164920Z); readiness refusals proven live.
+  - 017 → verified (Stockroom, 8 of 8 items). Its "Runs anywhere" OpenShift part moves to 023.
+    Debrief: specs/017-greenfield/roadmap-reviews/debrief-20261119T172429Z.md.
+  - 018 → verified on its spec'd scope. The two scope lines added 2026-11-18 (opt-in auto-draft,
+    the test author as its own Job on laptop clusters) move to 024. Debrief:
+    specs/018-test-author/roadmap-reviews/debrief-20261119T172429Z.md.
+  - 024 (new, planned): test-author automation. 021 now depends on 024 (it uses auto-draft).
+Specs affected: 014, 017, 018, 021, 024 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.21.0 → 1.22.0
 Bump rationale: MINOR — a new planned item (023) taking 014's OpenShift EAP validation, and
 014 scope and dependency corrections from its debrief. Nothing verified is invalidated.
 Changes this revision (owner decisions 2026-11-19, Tosin Akinosho):
@@ -1042,7 +1058,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   path). Decide the form and name before speccing. **2026-11-15:** form decided by C-13 (one Go
   binary); the name is still Q7. Dependency changed from 012 to 016 (2026-11-15).
 
-### 014 — Any project, any item  [status: in-progress]
+### 014 — Any project, any item  [status: verified]
 
 - **Description:** Run one chosen, prepared roadmap item of a real repository, not just the
   fixture's two items.
@@ -1139,6 +1155,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     end on `jdk21-maven`, with dependent items and no configuration edit between runs; the
     last run audits 11/11 after `down`. **Operator-supplied toolchain images** (T042, T043, the
     T055 run, SC-008) move to 022, so 014 closes on the four toolchains specfoundry builds.
+  - **Verified 2026-11-19 (owner):** debrief proceed
+    (`specs/014-any-project/roadmap-reviews/debrief-20261119T171222Z.md`). Every success
+    criterion met except SC-008 (022): cli-schema-mcp and Stockroom 001–008 end to end, the
+    readiness refusals live, P06r and an undeclared request refused live (Stockroom 008), and the
+    fixture 11/11 after `down` (20261119T164920Z) with no configuration edit after Stockroom.
 
 ### 015 — Released waves  [status: planned]
 
@@ -1236,7 +1257,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   decision (see 004).
 - **Spec dir:** specs/016-go-pilot/
 
-### 017 — Greenfield bootstrap  [status: specced]
+### 017 — Greenfield bootstrap  [status: verified]
 
 - **Description:** Start a project from an empty repository: the roadmap's first item is a
   scaffold, and every later item grows the project like a brownfield one.
@@ -1274,14 +1295,17 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   and the scaffold's spec and tasks from a human before any build worker runs. Acceptance
   tests may be written by that human or drafted by the test author (018); a human merges them
   (owner decision 2026-11-17).
-  **Runs anywhere (owner direction 2026-11-16):** the greenfield validation must pass on every
+  **Runs anywhere (owner direction 2026-11-16):** *(2026-11-19: verified on kind; the OpenShift
+  part moved to 023.)* The greenfield validation must pass on every
   cluster profile (kind, minikube, plain Kubernetes and OpenShift), using an on-demand Node.js
   image off OpenShift and a UBI Node.js image on OpenShift.
+  **Verified 2026-11-19 (owner):** Stockroom, 8 of 8 items, each on its first attempt; the run
+  that `down` followed audits 11/11 (SC-005).
   **Node.js dropped (owner decision 2026-11-18):** Stockroom is the reference greenfield
   (https://github.com/tosin2013/stockroom, 7 of 7 items verified, each on its first attempt);
   no Node.js greenfield is planned. 017's spec drops US5, FR-008 and SC-004.
 
-### 018 — Test author  [status: implemented]
+### 018 — Test author  [status: verified]
 
 - **Description:** A separate test-author agent drafts an item's hidden acceptance tests.
   Humans still plan and approve. Build workers never write or see those tests.
@@ -1308,24 +1332,30 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - evidence records the author identity and the companion commit;
   - a new grader check: every hidden test maps to an acceptance criterion in the item's spec,
     and criteria with no test are flagged;
-  - **amended 2026-11-18 (auto-draft, opt-in):** with `PILOT_AUTHOR_AUTO=on` for a target, the
+  - ~~**amended 2026-11-18 (auto-draft, opt-in):** with `PILOT_AUTHOR_AUTO=on` for a target, the
     test author starts on its own when an item becomes ready (spec and tasks merged, companion
     folder empty). It is off by default. Only drafting is automatic: a human still reviews and
     merges the companion PR (C-04) and still approves every run. Triggers: a GitHub Actions
     workflow on the target's merge (a companion-only token, the recommended level), or the
     pilot on the laptop, or the operator in cluster mode (011). In every case the author is a
-    separate process with its own identity, never the driving session;
-  - **amended 2026-11-18 (Job on laptop clusters):** in laptop mode the test author may also
+    separate process with its own identity, never the driving session;~~ *(Moved to 024 on
+    2026-11-19, owner decision.)*
+  - ~~**amended 2026-11-18 (Job on laptop clusters):** in laptop mode the test author may also
     run as its own Job in its own namespace on kind or minikube, with its own egress role
     (C-07) and no storage shared with workers (C-08), so strict-style isolation is available
-    before 011. A separate headless agent session stays as the no-cluster option.
+    before 011. A separate headless agent session stays as the no-cluster option.~~ *(Moved to
+    024 on 2026-11-19, owner decision.)*
 - **Scope (out):** build workers writing or seeing hidden tests; the test author launching,
   steering or reviewing workers; the test author touching worker branches; the test author
   writing specs, tasks or the roadmap (the specs and tasks half of Q13 stays open).
 - **Depends on:** 014
 - **Governed by:** C-01, C-03, C-04, C-07, C-08, C-11, C-12, C-14, C-15
 - **Spec dir:** specs/018-test-author/
-- **Notes:** Owner decision 2026-11-17 (Tosin Akinosho). Specced 2026-11-17. The publisher remains the
+- **Notes:** **Verified 2026-11-19 (owner):** the test author drafted the hidden tests for
+  cli-schema-mcp 006 and Stockroom's items in a separate session at the minimal level; every
+  draft failed on the base and was merged by the owner, and every run using them passed P11. The
+  recommended level has no live run yet. Auto-draft and the laptop Job are 024.
+  Owner decision 2026-11-17 (Tosin Akinosho). Specced 2026-11-17. The publisher remains the
   only writer of the target repository (C-03); the test author's credential is companion-only.
   The test author never launches, steers or reviews workers, and worker evidence and grader
   evidence never expose test contents (C-14).
@@ -1416,7 +1446,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Scope (out):** auto-merging any PR (C-04): the tests PR, the item PR and the status PR stay
   human merges; a standing approval without a spend cap or deadline; skipping the gate or
   `doctor`; step mode in developer mode counting as evidence (C-15).
-- **Depends on:** 018, 010
+- **Depends on:** 024, 010 (2026-11-19: 024 replaces 018 because auto-draft moved there)
 - **Governed by:** C-01, C-02, C-04, C-11, C-12
 - **Notes:** Owner decision 2026-11-18 (Tosin Akinosho), after the Stockroom runs: "if I wanted
   to step away from the computer and leave it running it could do it by steps." Stockroom shows
@@ -1474,6 +1504,25 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   runs in OpenShift (011, which itself needs 005), because its code generation uses models
   served in the cluster (OpenShift AI); it does not start on kind first. The Quarkus version,
   the in-cluster model, and the target release for EAP are decided when 023 is specified.
+
+### 024 — Test-author automation  [status: planned]
+
+- **Description:** The test author starts on its own when an item becomes ready, and can run as
+  its own Job on a laptop cluster.
+- **Outcome:** with `PILOT_AUTHOR_AUTO=on` for a target, a ready item (spec and tasks merged,
+  companion folder empty) gets a drafted companion PR without the operator starting the test
+  author; a human still reviews and merges it and approves every run. On kind or minikube the
+  test author can run as its own Job in its own namespace, so strict-style isolation is
+  available before 011.
+- **Scope (in):** the two lines moved from 018 on 2026-11-19 (their text stays in 018, struck
+  through): auto-draft, off by default, triggered by a GitHub Actions workflow on the target's
+  merge (companion-only token), by the pilot on the laptop, or by the operator (011); and the
+  test-author Job with its own egress role (C-07) and no storage shared with workers (C-08).
+- **Scope (out):** auto-merging any PR (C-04); the test author launching or steering workers.
+- **Depends on:** 018
+- **Governed by:** C-04, C-07, C-08, C-11, C-12, C-14
+- **Notes:** Owner decision 2026-11-19, from 018's debrief: split out so 018 is verified on what
+  its spec delivered. 021 (step mode) depends on it.
 
 ## Open Questions
 
@@ -1613,4 +1662,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.22.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-19
+**Version**: 1.23.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-19
