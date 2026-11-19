@@ -2,7 +2,7 @@
 
 **State:** succeeded
 
-**Elapsed:** 622 s total, 622 s excluding the human merge wait
+**Elapsed:** 963 s total, 963 s excluding the human merge wait
 
 **Mode:** `{"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}`
 
@@ -17,7 +17,8 @@
 - Task 006: [https://github.com/tosin2013/stockroom/pull/33](https://github.com/tosin2013/stockroom/pull/33) (draft=True, author=tosins-specfoundry-pilot[bot])
 - Task 006: [https://github.com/tosin2013/stockroom/pull/34](https://github.com/tosin2013/stockroom/pull/34) (draft=True, author=tosins-specfoundry-pilot[bot])
 - `checks/results.jsonl`: 16 of 16 pass
-- `audit.jsonl`: 10 of 10 pass
+- `audit.jsonl`: 11 of 11 pass
+- `teardown.jsonl`: 3 of 3 pass
 
 ## Events
 
@@ -59,6 +60,10 @@
 | 34 | github |  |  | github_sync | created=0 changed=0 |
 | 35 | audit |  |  | audit_done | 10/10 |
 | 36 | run |  |  | run_succeeded |  |
+| 37 | github |  |  | tracking_closed | issue=32 |
+| 38 | teardown |  |  | torn_down | teardown.jsonl |
+| 39 | audit |  |  | audit_done | 11/11 |
+| 40 | audit |  |  | audit_done | 11/11 |
 
 ## Known limits
 

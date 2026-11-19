@@ -35,3 +35,6 @@
 {"at": "2026-11-18T23:13:28Z", "attempt": null, "detail": "10/10", "event": "audit_done", "seq": 35, "stage": "audit", "task": null}
 {"at": "2026-11-18T23:13:28Z", "attempt": null, "detail": "", "event": "run_succeeded", "seq": 36, "stage": "run", "task": null}
 {"at": "2026-11-18T23:13:29Z", "attempt": null, "detail": "issue=32", "event": "tracking_closed", "seq": 37, "stage": "github", "task": null}
+{"at": "2026-11-18T23:19:00Z", "attempt": null, "detail": "teardown.jsonl", "event": "torn_down", "seq": 38, "stage": "teardown", "task": null}
+{"at": "2026-11-18T23:19:05Z", "attempt": null, "detail": "11/11", "event": "audit_done", "seq": 39, "stage": "audit", "task": null}
+{"at": "2026-11-18T23:19:09Z", "attempt": null, "detail": "11/11", "event": "audit_done", "seq": 40, "stage": "audit", "task": null}

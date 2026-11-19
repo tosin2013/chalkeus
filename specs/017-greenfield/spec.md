@@ -111,7 +111,7 @@ with the command or GitHub action it needs; the docs check passes.
 
 ---
 
-### User Story 5 - A Node.js greenfield follows (Priority: P3)
+### ~~User Story 5 - A Node.js greenfield follows (Priority: P3)~~ *(dropped, owner decision 2026-11-18: Stockroom is the reference greenfield)*
 
 As an owner, I repeat the loop on a new Node.js 24 repository with npm.
 
@@ -158,7 +158,9 @@ As an owner, I repeat the loop on a new Node.js 24 repository with npm.
   item, and point to the reference repository and the run record.
 - **FR-007**: The reference repository MUST have at least the scaffold and one dependent item
   recorded `verified` through the pilot.
-- **FR-008**: A Node.js 24 greenfield MUST follow the Java one, on the `node24` toolchain.
+- ~~**FR-008**: A Node.js 24 greenfield MUST follow the Java one, on the `node24` toolchain.~~
+  *Dropped (owner decision 2026-11-18): Stockroom is the reference; the `node24` toolchain is
+  covered by its own samples and 014.*
 - **FR-009**: The greenfield validation SHOULD pass on every cluster profile (kind, minikube,
   plain Kubernetes, OpenShift) as those profiles become available (roadmap note 2026-11-16);
   kind is the first.
@@ -188,8 +190,12 @@ As an owner, I repeat the loop on a new Node.js 24 repository with npm.
   attempt; review found a stale reported figure under concurrency, planned as item 007), 007
   (run 20261118T224610Z) and 006 (run 20261118T230306Z), all on their first attempt: Stockroom's
   roadmap is complete, 7 of 7 verified.
-- **SC-004**: A Node.js scaffold runs to `verified`.
-- **SC-005**: Each recorded run's audit passes 11/11 after `down`.
+- ~~**SC-004**: A Node.js scaffold runs to `verified`.~~ *(Dropped with US5 and FR-008, owner
+  decision 2026-11-18.)*
+- **SC-005**: The run that `down` follows audits 11/11. ~~Each recorded run's audit passes 11/11
+  after `down`.~~ *(Reworded 2026-11-18: `down` writes its teardown record into the most recent
+  run, so AU07 can pass only for that run. Met: run 20261118T230306Z, Stockroom 006, 11/11
+  after `down`.)*
 
 ## Assumptions
 

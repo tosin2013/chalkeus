@@ -402,7 +402,8 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
   Done as: `grader.ProbeToolchain` + `toolchain-probe-job.yaml.tmpl` and `internal/toolchain` (rules,
   per-role env with `${PILOT_DEPS}`, `setup_command`); evidence `toolchain.json`. Kind smoke test:
   Python 3.13.18 probed.
-- [ ] T042 [US3] Handle operator-supplied toolchain images (FR-011a, FR-011b).
+- T042 [US3] Handle operator-supplied toolchain images (FR-011a, FR-011b). *Moved to roadmap
+  entry 022 on 2026-11-18 (owner decision); kept here as its starting point.*
   - `PILOT_TOOLCHAIN_IMAGE` in the profile (already parsed and checked for a digest) is used
     for the toolchain init container only. The worker and tools images are never replaceable.
   - The mode approval adds `toolchain <label> (operator-supplied <image>)`.
@@ -412,7 +413,8 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
     - **absent:** recorded, and the run continues;
     - **present but failing:** the run refuses with `TOOLCHAIN_ATTESTATION_FAILED`.
   - Tests in `internal/toolchain/attest_test.go`, with a fake `gh`.
-- [ ] T043 [P] [US3] Add the own-image template in `pilot/images/toolchain-template/`:
+- T043 [P] [US3] *Moved to roadmap entry 022 on 2026-11-18 (owner decision).* Add the
+  own-image template in `pilot/images/toolchain-template/`:
   - `Dockerfile.ubi`, from a Red Hat UBI language image (for example `ubi9/nodejs-22`,
     `ubi9/openjdk-21`), copying the runtime into `/opt/toolchain`;
   - `Dockerfile.debian`, from any base;
@@ -500,7 +502,11 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
 project, on the Python 3.13 toolchain; its run also covers T036. `greeting-service` and the other
 targets come later.)*
 
-- [ ] T052 [US3] **Owner action:** prepare the validation repository (quickstart §1).
+- [X] T052 [US3] **Owner action:** prepare the validation repository (quickstart §1).
+  Done as (owner decision 2026-11-18): **Stockroom replaces greeting-service.**
+  `tosin2013/stockroom` (Spring Boot 4.1, Java 21, Maven) was planned by the owner with the
+  controller (017), with dependent items and hidden JUnit tests in
+  `tosin2013/specfoundry-acceptance` under `stockroom/`; App mode; profile `targets/stockroom.env`.
   - Copy `spring-guides/gs-rest-service` `complete/` (Apache-2.0) into
     `<owner>/greeting-service`. Remove Gradle; keep the license and notice.
   - Spec Kit roadmap with items 001 (validate `name`), 002 (greeting templates) and 003
@@ -518,12 +524,18 @@ targets come later.)*
   Progress (2026-11-18): Stockroom (017's greenfield Java target) ran item 001 end to end on
   `jdk21-maven`: mode approval with `repo.maven.apache.org` → prefetch → baseline → attempt 1
   passed → draft PR #9 merged → status PR #10 merged; audit 10/10 before `down`
-  (run 20261118T161914Z). For the owner to decide whether Stockroom replaces greeting-service
-  for T052–T054.
+  (run 20261118T161914Z). The owner chose Stockroom for T052–T054 (2026-11-18). All 7 items
+  then ran end to end (records in `specs/018-test-author/evidence/`); after `down`, the last run
+  (20261118T230306Z) audits 11/11. Still open here: the readiness refusals on a scratch branch
+  (step 1) and copying the records to 014's evidence.
 - [ ] T054 [US3] **Owner action:** quickstart §5. Run item 002, then 003 (unblocked by 002).
   Then run the fixture with no configuration edit between runs (SC-007). Record them.
+  Progress (2026-11-18): Stockroom 002 and 003 ran with no configuration edit (runs
+  20261118T171710Z, 20261118T210446Z), and 004–007 after them. The fixture run (with T056)
+  completes SC-007.
 
-- [ ] T055 [US3] **Owner action (SC-008):** a language specfoundry has no image for (for example
+- T055 [US3] *Moved to roadmap entry 022 on 2026-11-18 (owner decision), with SC-008.*
+  **Owner action (SC-008):** a language specfoundry has no image for (for example
   Rust or .NET).
   1. Build a toolchain image from `pilot/images/toolchain-template/` (UBI or another base) in
      your own repository.

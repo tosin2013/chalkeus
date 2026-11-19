@@ -1,7 +1,22 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.19.1 → 1.20.0 (this revision)
+Version change: 1.20.0 → 1.21.0 (this revision)
+Bump rationale: MINOR — a new planned item (022) taking 014's operator-supplied toolchain
+images, and owner decisions that change 014's and 017's validation. Nothing verified is
+invalidated.
+Changes this revision (owner decisions 2026-11-18, Tosin Akinosho):
+  - 014: Stockroom replaces greeting-service as the Java/Maven validation (T052–T054).
+    Operator-supplied toolchain images (T042, T043, T055, SC-008) move to 022, so 014 closes on
+    the four built-in toolchains.
+  - 017: the Node.js greenfield is dropped; Stockroom (7 of 7 items verified) is the reference.
+    SC-005 is reworded: the run that `down` follows audits 11/11 (met).
+  - 022 (new, planned): operator-supplied toolchain images.
+  - Footer corrected: the 1.20.0 revision below left it at 1.19.1.
+Specs affected: 014, 017, 022 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.19.1 → 1.20.0
 Bump rationale: MINOR — a scope addition to 018 (opt-in auto-draft, the test author as its own
 Job on kind and minikube), a note on 010, and a new planned item (021 Step mode). Nothing
 existing is invalidated: humans still review and merge every hidden-tests PR and approve every
@@ -1095,6 +1110,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     over the project in the grader. Who drafts them is 018: a human, or the test author with a
     human merge. First real target: `tosin2013/cli-schema-mcp`, item 006.
   - See `specs/014-any-project/`.
+  - **Validation done on Stockroom (owner decision 2026-11-18):** `tosin2013/stockroom`, the
+    Java/Maven greenfield of 017, replaces greeting-service for T052–T054: 7 items ran end to
+    end on `jdk21-maven`, with dependent items and no configuration edit between runs; the
+    last run audits 11/11 after `down`. **Operator-supplied toolchain images** (T042, T043, the
+    T055 run, SC-008) move to 022, so 014 closes on the four toolchains specfoundry builds.
 
 ### 015 — Released waves  [status: planned]
 
@@ -1233,6 +1253,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   **Runs anywhere (owner direction 2026-11-16):** the greenfield validation must pass on every
   cluster profile (kind, minikube, plain Kubernetes and OpenShift), using an on-demand Node.js
   image off OpenShift and a UBI Node.js image on OpenShift.
+  **Node.js dropped (owner decision 2026-11-18):** Stockroom is the reference greenfield
+  (https://github.com/tosin2013/stockroom, 7 of 7 items verified, each on its first attempt);
+  no Node.js greenfield is planned. 017's spec drops US5, FR-008 and SC-004.
 
 ### 018 — Test author  [status: implemented]
 
@@ -1377,6 +1400,27 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   stale stock figure (now item 007). The spend budget (009) should land before standing
   approvals are used beyond a single item.
 
+### 022 — Operator-supplied toolchain images  [status: planned]
+
+- **Description:** A target may use a toolchain image the operator built, for a language
+  specfoundry has no image for.
+- **Outcome:** with `PILOT_TOOLCHAIN_IMAGE` set to a digest, a prepared item in such a language
+  runs end to end under every guarantee; the mode approval shows the image as
+  operator-supplied, a GitHub build attestation is verified when present, and the audit is
+  11/11.
+- **Scope (in):** 014's T042 (the image in the toolchain init container only; attestation:
+  verified, absent and recorded, or failing and refused with `TOOLCHAIN_ATTESTATION_FAILED`),
+  T043 (the own-image template: UBI and any-base Dockerfiles, a `toolchain.json` example, a
+  build-and-attest workflow, a README) and T055 (one run in a language with no specfoundry
+  image, 014 SC-008).
+- **Scope (out):** replacing the worker or tools images (never; C-09); building images for
+  users.
+- **Depends on:** 014
+- **Governed by:** C-08, C-09 (operator-supplied exception), C-14
+- **Notes:** Owner decision 2026-11-18: split from 014 so 014 closes on the four built-in
+  toolchains (JDK 21 + Maven, Node.js 24, Python 3.13, Go). 014's tasks.md keeps T042, T043 and
+  T055 as the starting point.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -1515,4 +1559,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.19.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
+**Version**: 1.21.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-18
