@@ -18,6 +18,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/k8s"
 	"github.com/tosin2013/specfoundry/internal/runner"
 	"github.com/tosin2013/specfoundry/internal/stage"
+	"github.com/tosin2013/specfoundry/internal/verbose"
 )
 
 // JobCluster is what an author Job needs from the cluster (a *k8s.Client in production).
@@ -104,8 +105,12 @@ func RunJob(ctx context.Context, je JobEnv, d *Draft, attempt int, prompt string
 	if err := je.Cluster.StageInputs(ns, "author", "receiver", "/stage", inTar, 5*time.Minute); err != nil {
 		return fail("harness_error", err)
 	}
+	verbose.V(1, "author %s: inputs staged (%d bytes), prompt %d bytes", ns, len(inTar), len(prompt))
 	if je.Checks != nil {
 		rec.Checks = je.Checks(ns, d.ID)
+		for _, c := range rec.Checks {
+			verbose.V(1, "author %s: %s %s %s", ns, strings.ToUpper(c.Result), c.ID, c.Detail)
+		}
 	}
 	done := make(chan string, 1)
 	go func() { done <- je.Runner.Wait(h, time.Duration(je.Deadline+90)*time.Second) }()
@@ -131,6 +136,7 @@ func RunJob(ctx context.Context, je JobEnv, d *Draft, attempt int, prompt string
 	if report.Error != nil {
 		rec.Error = *report.Error
 	}
+	verbose.V(1, "author %s: harness exit %v, spend %v, error %q", ns, rec.HarnessExit, rec.Spend, rec.Error)
 	if b, ok := files["draft.tar"]; ok {
 		n, err := unpackDraft(b, filepath.Join(d.Workspace, "draft"))
 		if err != nil {

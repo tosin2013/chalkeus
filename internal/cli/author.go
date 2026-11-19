@@ -21,6 +21,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/images"
 	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/specfoundry/internal/verbose"
 	"github.com/tosin2013/specfoundry/internal/worker"
 )
 
@@ -87,6 +88,15 @@ func authorWatchCmd() *cobra.Command {
 	c := &cobra.Command{Use: "watch", Args: cobra.NoArgs,
 		Short: "024: draft hidden tests automatically for a target's ready items (PILOT_AUTHOR_AUTO=on); never run by the session that drives runs",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			// Unattended work is easier to follow with diagnostics, so `author watch` defaults to
+			// -vv (pod phases, events, the author proxy's refusals). -v or PILOT_VERBOSE choose
+			// another level; PILOT_VERBOSE=0 silences it. The agent's live stream (-vvv) is never
+			// shown for the author: it would print the drafted tests.
+			n, _ := cmd.Flags().GetCount("verbose")
+			_, envSet := os.LookupEnv("PILOT_VERBOSE")
+			if l := watchVerbosity(n, envSet); l != verbose.Level() {
+				verbose.Set(l, cmd.ErrOrStderr())
+			}
 			e, _, err := authorEnv(cmd)
 			if err != nil {
 				return err
@@ -201,4 +211,13 @@ func authorEnv(cmd *cobra.Command) (author.Env, string, error) {
 	}
 	return author.Env{Target: t, EvidenceRoot: l.EvidenceRoot(), BuildDir: l.Build, Ready: ready,
 		Identity: author.ResolveIdentity, OpenAuthorPRs: author.OpenAuthorPRs, Out: cmd.OutOrStdout()}, item, nil
+}
+
+// watchVerbosity is `author watch`'s diagnostics level: -vv unless -v or PILOT_VERBOSE says
+// otherwise (then the level they chose, which PersistentPreRun already set).
+func watchVerbosity(flagCount int, envSet bool) int {
+	if flagCount == 0 && !envSet {
+		return 2
+	}
+	return verbose.Level()
 }
