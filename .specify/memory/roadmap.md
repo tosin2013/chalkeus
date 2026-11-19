@@ -14,7 +14,8 @@ Changes this revision (owner decisions 2026-11-19, Tosin Akinosho):
     the test author as its own Job on laptop clusters) move to 024. Debrief:
     specs/018-test-author/roadmap-reviews/debrief-20261119T172429Z.md.
   - 024 (new, planned): test-author automation. 021 now depends on 024 (it uses auto-draft).
-Specs affected: 014, 017, 018, 021, 024 (new)
+  - 013: the laptop release ships with auto-draft, so it depends on 024 (owner, 2026-11-19).
+Specs affected: 013, 014, 017, 018, 021, 024 (new)
 Open questions added/resolved: none
 
 Prior: Version change: 1.21.0 → 1.22.0
@@ -1052,8 +1053,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   how the CLI finds the target project and its config; the command name used in harness rules
   (Q8); install docs.
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
-- **Depends on:** 016
-- **Notes:** Raised by the owner 2026-11-15 during the 012 debrief. Tied to Q7 (product name
+- **Depends on:** 016, 024 (2026-11-19: the laptop release includes auto-draft)
+- **Notes:** **Owner decision 2026-11-19:** the laptop-mode release ships with the test
+  author's auto-draft (024), so a released pilot drafts an item's hidden tests on its own once
+  the item is ready; a human still reviews and merges them.
+  Raised by the owner 2026-11-15 during the 012 debrief. Tied to Q7 (product name
   and CLI surface) and Q8 (multi-project use; harness rules today match the `pilot/pilot`
   path). Decide the form and name before speccing. **2026-11-15:** form decided by C-13 (one Go
   binary); the name is still Q7. Dependency changed from 012 to 016 (2026-11-15).
@@ -1522,7 +1526,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Depends on:** 018
 - **Governed by:** C-04, C-07, C-08, C-11, C-12, C-14
 - **Notes:** Owner decision 2026-11-19, from 018's debrief: split out so 018 is verified on what
-  its spec delivered. 021 (step mode) depends on it.
+  its spec delivered. 021 (step mode) depends on it. **Laptop mode first (owner, 2026-11-19):**
+  auto-draft must work in laptop mode, because the laptop release (013) ships with it; the
+  operator trigger waits for 011.
 
 ## Open Questions
 
