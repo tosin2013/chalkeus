@@ -499,11 +499,15 @@ refused and recorded. The audit passes 11/11, including P06r and P12 (T053, Owne
   AU07 require T04 and T05 for item runs, in `internal/audit/audit.go`. Tests.
   Done as: `checks.GradingPolicies` / `RunGradingChecks` (P12) after prefetch; AU04 requires P12
   when the run has a cache. P07/P08 extension and T05 follow.
-- [ ] T051 [US3] Update `docs/targets.md` and `docs/troubleshooting.md`:
+- [X] T051 [US3] Update `docs/targets.md` and `docs/troubleshooting.md`:
   - toolchains and the request form;
   - registry hosts at the mode approval;
   - an attempt can't add dependencies (the human adds them while preparing the item);
   - entries for `TOOLCHAIN_UNAVAILABLE`, `PREFETCH_FAILED` and `BASELINE_*`.
+  Done as (2026-11-19): the four points arrived with the toolchain, prefetch and baseline work
+  (`targets.md` §2 and §4; troubleshooting `#item-not-ready`, `#item-baseline`,
+  `#item-toolchain`). Added with P06r (T047): the check in `targets.md` and the operator guide,
+  the target proxy's lines in `proxy-denials.log`, and troubleshooting `#item-registry-check`.
 
 **Validation (Owner)** *(owner decision 2026-11-17: start minimal with `tosin2013/cli-schema-mcp`, a Spec Kit
 project, on the Python 3.13 toolchain; its run also covers T036. `greeting-service` and the other

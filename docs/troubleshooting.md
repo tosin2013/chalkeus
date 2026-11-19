@@ -39,6 +39,7 @@ instead.
 | An item run fails with `BASELINE_SUITE_FAILS` or `BASELINE_HIDDEN_PASSES` | [Baseline fails](#item-baseline) |
 | An item run fails with `PREPARE` or `REPLAY_MISMATCH`, or `target … needs its own publisher token` | [Item run setup](#item-setup) |
 | An item run fails with `TOOLCHAIN_CONTRACT` or `PREFETCH_FAILED` | [Toolchain or dependencies](#item-toolchain) |
+| `FAIL P06r` during an item attempt | [Registry check fails](#item-registry-check) |
 | Every attempt fails at `G1_bundle_applies` with `harness_error`, 0 tokens, and the worker log shows `provider.auth` / 401 | [Model key rejected](#model-key) |
 | A run refuses with `HIDDEN_TESTS_IN_TARGET` | [Hidden tests in the target](#hidden-in-target) |
 | `pilot/pilot author` refuses or fails (`COMPANION_NOT_EMPTY`, `DRAFT_PR_OPEN`, `AUTHOR_CAN_WRITE_TARGET`, `LEVEL_NEEDS_CLUSTER_MODE`, `DRAFT_*`, `MAP_INVALID`) | [Test author](#test-author) |
@@ -504,6 +505,28 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   project while preparing the item.
 - **Confirm:** a new run gets past `prepare` to `baseline`.
 - **Source:** `internal/grader/item.go` (`ProbeToolchain`, `Prefetch`).
+
+<a id="item-registry-check"></a>
+### Registry check fails: `FAIL P06r`
+
+- **Symptom:** during an attempt on a target with `PILOT_REGISTRY_HOSTS`, the run prints
+  `FAIL P06r` with a detail such as `registry=http=000`, `undeclared=http=200` or
+  `unexpected=1`.
+- **Cause:** the probe pod, which has the worker's network policy, saw something other than
+  what the profile declares:
+  - `probe_ready=false`: the probe pod didn't start; resume with `-vv` to see its pod events;
+  - `registry=http=000`: the first declared registry couldn't be reached through the target's
+    proxy. Usually the host is misspelled, or the registry is down;
+  - `undeclared=http=` with a status: the proxy let `example.invalid` through, so its allowlist
+    isn't applied. Don't run items until this is fixed;
+  - `missing=` or `unexpected=` above 0: the install's proxy (`pilot-egress-r-<target>`) allows
+    a different host list from the profile. The detail counts hosts and never names them.
+- **Fix:** correct `PILOT_REGISTRY_HOSTS` and run again; the pilot re-creates both target
+  proxies from the profile when every item run prepares. If the proxy let the undeclared host
+  through, run `pilot/pilot down` and `pilot/pilot up`.
+- **Confirm:** the next attempt prints `PASS P06r`.
+- **Source:** `internal/checks/checks.go` (`RegistryProxy`), `internal/cluster/infra.go`
+  (`EnsureTargetProxies`).
 
 ## Teardown
 
