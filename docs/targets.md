@@ -111,7 +111,11 @@ PILOT_GITHUB_ISSUES=off
   `PILOT_INSTALL_COMMAND`. The install runs twice: once for the agent (with the registries
   reachable), and once, before any attempt, into a cache built from your unchanged code plus the
   hidden tests. The grader then runs offline from that cache, so **an attempt can't add
-  dependencies**; add new ones to the project yourself when you prepare the item. For Python
+  dependencies**; add new ones to the project yourself when you prepare the item. The registries
+  are shown when you approve the mode, and check P06r confirms each attempt's network: a declared
+  registry is reachable, any other host (`example.invalid`) is refused, and the install's proxy
+  allows only the registries. What the agent tried and was refused is in the attempt's
+  `proxy-denials.log`. For Python
   (`python3.13`):
 
   ```sh

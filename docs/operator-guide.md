@@ -57,7 +57,7 @@ run, and the check IDs appear in your evidence (section 10).
 |---|---|---|
 | **No work starts on a blocked item** | A deterministic gate (`spec status`) decides; anything blocked, missing or unreadable means *no* | GM01–GM04 (gate self-checks), AU01 (B refused until A verified), AU05 |
 | **Workers never hold a repository credential** | One worker per pod and namespace; only the publisher's namespace holds the token | P04, P09, AU04 |
-| **Workers can only reach the model** | Default-deny network plus an allowlisting egress proxy | P06; `proxy-denials.log` shows what was refused |
+| **Workers can only reach the model** (and, for a target, the registries its profile declares) | Default-deny network plus an allowlisting egress proxy | P06 (P06r for a target's registries); `proxy-denials.log` shows what was refused |
 | **An independent grader judges the work** | A separate namespace with no secrets and no network, running hidden acceptance tests | P07, P08; checks G1–G5 in each `grade.json` |
 | **Only the publisher opens PRs, and only as drafts** | The publisher Job is the only token holder, and has no merge path | AU03 |
 | **Humans decide** | You confirm the mode, every retry, the merge and the status change | AU09, AU10; the reconcile prompt |
@@ -562,11 +562,14 @@ it in that spec's `evidence/` folder instead.)
   | AU10 | The mode was confirmed before any worker started |
   | AU11 | Only A/1 had its acceptance details withheld |
 
-- **`checks/results.jsonl`:** the live isolation checks (P01–P10, GM01–GM04).
+- **`checks/results.jsonl`:** the live isolation checks (P01–P10, GM01–GM04; item runs add
+  P11, P12 and, when the target declares registries, P06r).
 - **`attempts/<task>-<n>/`:** each attempt's prompt, report, change bundle and grade, and
   **`proxy-denials.log`**. Refusals there are expected; they show the allowlist working. In
   the reference run, the agent tried `bootstrap.pypa.io` (installing pip tools), and the
-  pilot's own probe tried `github.com`. Both were blocked.
+  pilot's own probe tried `github.com`. Both were blocked. On a target that declares
+  registries, lines from the target's proxy follow, prefixed with its name
+  (`[pilot-egress-w-<target>]`); the P06r probe's `example.invalid` is always among them.
 - **`config.json`:** your non-secret settings. The model host appears only as a hash.
 - **`versions.txt`:** every tool and image version, with the Calico hash and image digests.
 
