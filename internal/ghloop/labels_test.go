@@ -61,3 +61,30 @@ func TestProposedBy(t *testing.T) {
 		t.Fatalf("a removed label proposes nothing: %+v", p)
 	}
 }
+
+func TestPlanningPRs(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/me/proj/pulls":
+			_ = json.NewEncoder(w).Encode([]map[string]any{
+				{"number": 46, "title": "docs(010): plan", "html_url": "https://x/pull/46", "head": map[string]any{"ref": "plan-010"}},
+				{"number": 47, "title": "fix typo", "html_url": "https://x/pull/47", "head": map[string]any{"ref": "typo"}},
+				{"number": 48, "title": "feat(010)", "html_url": "https://x/pull/48", "head": map[string]any{"ref": "pilot/R1/010"}}})
+		case "/repos/me/proj/pulls/46/files":
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"filename": "specs/010-x/spec.md"}})
+		case "/repos/me/proj/pulls/47/files":
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"filename": "README.md"}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	old := API
+	API = srv.URL
+	defer func() { API = old }()
+	got, err := PlanningPRs(context.Background(), NewClient(secret.New("t")), "me/proj")
+	if err != nil || len(got) != 1 || got[0] != "https://x/pull/46 (docs(010): plan)" {
+		t.Fatalf("%v %v", got, err)
+	}
+}

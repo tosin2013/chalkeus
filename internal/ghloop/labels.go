@@ -60,3 +60,30 @@ func IsApprover(login string, approvers []string) bool {
 	}
 	return false
 }
+
+// PlanningPRs lists the repository's open pull requests that change its roadmap or specs/ (not
+// the pilot's own branches): the PRs whose merge makes a new item proposable (021).
+func PlanningPRs(ctx context.Context, gh *github.Client, repo string) ([]string, error) {
+	owner, name := SplitRepo(repo)
+	prs, _, err := gh.PullRequests.List(ctx, owner, name, &github.PullRequestListOptions{State: "open", ListOptions: github.ListOptions{PerPage: 50}})
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, pr := range prs {
+		if strings.HasPrefix(pr.GetHead().GetRef(), "pilot/") {
+			continue
+		}
+		files, _, err := gh.PullRequests.ListFiles(ctx, owner, name, pr.GetNumber(), &github.ListOptions{PerPage: 100})
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range files {
+			if p := f.GetFilename(); p == ".specify/memory/roadmap.md" || strings.HasPrefix(p, "specs/") {
+				out = append(out, pr.GetHTMLURL()+" ("+pr.GetTitle()+")")
+				break
+			}
+		}
+	}
+	return out, nil
+}

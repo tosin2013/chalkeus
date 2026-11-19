@@ -338,3 +338,16 @@ func TestGatherSkipsReadinessForARunInFlight(t *testing.T) {
 	}
 	w.pass(t)
 }
+
+// With nothing to propose, step mode points at the open planning PR (owner feedback: "but what pr").
+func TestManagerPointsAtThePlanningPR(t *testing.T) {
+	w := newWorld(t)
+	w.m.Src.Status = func() (string, error) { return `{"items":[{"id":"009","status":"verified","active":true}]}`, nil }
+	w.m.Src.Planning = func(context.Context) ([]string, error) {
+		return []string{"https://github.com/me/proj/pull/46 (docs(010): plan updating a product's stock)"}, nil
+	}
+	w.pass(t)
+	if out := w.m.Out.(*strings.Builder).String(); !strings.Contains(out, "waiting for you: review and merge the planning PR https://github.com/me/proj/pull/46") {
+		t.Fatalf("%s", out)
+	}
+}

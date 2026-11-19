@@ -176,9 +176,19 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 		m.shown = map[string]string{}
 	}
 	m.Busy = false
-	if len(states) == 0 && m.shown[""] == "" { // say once why nothing can be proposed
+	if len(states) == 0 && m.shown[""] == "" { // say once why nothing can be proposed, and what's next
 		m.shown[""] = "none"
-		fmt.Fprintln(m.Out, "step: no item can be proposed now: every active item is verified, or waits on a dependency. Plan a new item (merge its spec and tasks), then label its issue.")
+		fmt.Fprintln(m.Out, "step: no item can be proposed now: every active item is verified, or waits on a dependency.")
+		var open []string
+		if m.Src.Planning != nil {
+			open, _ = m.Src.Planning(ctx)
+		}
+		if len(open) == 0 {
+			fmt.Fprintln(m.Out, "step: plan a new item (merge its spec and tasks), then label its issue.")
+		}
+		for _, pr := range open {
+			fmt.Fprintf(m.Out, "step: waiting for you: review and merge the planning PR %s; then label the new item's issue\n", pr)
+		}
 	}
 	if len(states) > 0 {
 		delete(m.shown, "")
