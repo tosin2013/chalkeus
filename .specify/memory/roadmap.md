@@ -1509,7 +1509,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   served in the cluster (OpenShift AI); it does not start on kind first. The Quarkus version,
   the in-cluster model, and the target release for EAP are decided when 023 is specified.
 
-### 024 — Test-author automation  [status: planned]
+### 024 — Test-author automation  [status: specced]
 
 - **Description:** The test author starts on its own when an item becomes ready, and can run as
   its own Job on a laptop cluster.
@@ -1525,10 +1525,14 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Scope (out):** auto-merging any PR (C-04); the test author launching or steering workers.
 - **Depends on:** 018
 - **Governed by:** C-04, C-07, C-08, C-11, C-12, C-14
+- **Spec dir:** specs/024-test-author-automation/
 - **Notes:** Owner decision 2026-11-19, from 018's debrief: split out so 018 is verified on what
   its spec delivered. 021 (step mode) depends on it. **Laptop mode first (owner, 2026-11-19):**
   auto-draft must work in laptop mode, because the laptop release (013) ships with it; the
-  operator trigger waits for 011.
+  operator trigger waits for 011. **Specced 2026-11-19 (owner):** the pilot on the laptop is the
+  trigger (`PILOT_AUTHOR_AUTO=on`), the author runs as its own Job on the local cluster with
+  model-only egress and no repository credential, and its harness is OpenCode; the GitHub
+  Actions trigger comes later.
 
 ## Open Questions
 
