@@ -146,3 +146,19 @@ func TestPassStopsWhenCancelled(t *testing.T) {
 		t.Fatalf("%+v", d)
 	}
 }
+
+// A draft whose Jobs never produced files (the cluster refused the Job) doesn't block the next pass.
+func TestPassRetriesAfterAnInfrastructureFailure(t *testing.T) {
+	w, we, _ := watchWorld(t, "pass")
+	job := we.Job
+	we.Job = func(ctx context.Context, d *Draft, a int, p string) JobRecord {
+		return JobRecord{Attempt: a, Outcome: "", Error: "harness_error: apply Job author: invalid"}
+	}
+	if out, err := Pass(context.Background(), we); err != nil || out != PassFailed {
+		t.Fatalf("%s %v\n%s", out, err, w.out)
+	}
+	we.Job = job
+	if out, err := Pass(context.Background(), we); err != nil || out != PassOpened {
+		t.Fatalf("the next pass drafts again: %s %v\n%s", out, err, w.out)
+	}
+}

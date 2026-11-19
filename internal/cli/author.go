@@ -19,6 +19,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/fixture"
 	"github.com/tosin2013/specfoundry/internal/gate"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/specfoundry/internal/images"
 	"github.com/tosin2013/specfoundry/internal/readiness"
 	"github.com/tosin2013/specfoundry/internal/worker"
 )
@@ -97,6 +98,11 @@ func authorWatchCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			imgs, err := images.Load(p.L) // the digests `pilot up` pulled (as every run loads them)
+			if err != nil {
+				return Exit(ExitError, "%v", err)
+			}
+			p.Imgs = imgs
 			if !p.C.NSExists(cluster.AuthorProxyNS) {
 				return Exit(ExitError, "the author proxy %s is missing: run `pilot/pilot up` first", cluster.AuthorProxyNS)
 			}

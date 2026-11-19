@@ -121,7 +121,9 @@ func (w WatchEnv) skip(ctx context.Context, item string) (string, string, error)
 	return "", res.SpecSHA256, nil
 }
 
-// previousAuto is the id of an earlier automatic draft of this item for the same spec, or "".
+// previousAuto is the id of an earlier automatic draft of this item for the same spec that got as
+// far as a check (or a PR), or "". A draft that never produced files (an infrastructure failure,
+// such as a Job that couldn't start) doesn't count, so the next pass tries again.
 func (w WatchEnv) previousAuto(item, specSHA string) string {
 	entries, _ := os.ReadDir(Root(w.EvidenceRoot))
 	for _, e := range entries {
@@ -129,7 +131,8 @@ func (w WatchEnv) previousAuto(item, specSHA string) string {
 			continue
 		}
 		d, err := LoadDraft(Root(w.EvidenceRoot), e.Name(), "", "")
-		if err == nil && d.Trigger == "auto" && d.Target == w.Target.Name && d.Item == item && d.SpecSHA256 == specSHA {
+		if err == nil && d.Trigger == "auto" && d.Target == w.Target.Name && d.Item == item && d.SpecSHA256 == specSHA &&
+			(len(d.Checks) > 0 || d.State == "submitted") {
 			return d.ID
 		}
 	}
