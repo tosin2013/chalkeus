@@ -102,7 +102,7 @@ func TestPassRetriesWithFeedbackThenGivesUp(t *testing.T) {
 	}
 	// A spec change makes it eligible again.
 	w2.res.SpecSHA256 = "spec-sha-2"
-	we2.Env.Ready = func(config.Target, string) (readiness.Result, error) { return w2.res, nil }
+	we2.Ready = func(config.Target, string) (readiness.Result, error) { return w2.res, nil }
 	if why, _, _ := we2.skip(context.Background(), "006"); why != "" {
 		t.Fatalf("a new spec version is eligible: %s", why)
 	}
