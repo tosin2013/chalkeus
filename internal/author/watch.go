@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/prompt"
 )
 
@@ -124,6 +125,13 @@ func (w WatchEnv) skip(ctx context.Context, item string) (string, string, error)
 		return "already drafted automatically for this spec version (" + prev + "); change the spec or draft by hand", "", nil
 	}
 	return "", res.SpecSHA256, nil
+}
+
+// AutoDrafted reports whether an automatic draft of this item for this spec version already got
+// as far as a check (021: step mode then stops asking for a redraft).
+func AutoDrafted(evidenceRoot, target, item, specSHA string) bool {
+	w := WatchEnv{Env: Env{EvidenceRoot: evidenceRoot, Target: config.Target{Name: target}}}
+	return w.previousAuto(item, specSHA) != ""
 }
 
 // previousAuto is the id of an earlier automatic draft of this item for the same spec that got as

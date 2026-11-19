@@ -33,6 +33,9 @@ type Source struct {
 	Run       func(item string) (RunInfo, bool)                             // the newest item run
 	Approvers []string
 	AutoDraft bool
+	Repo      string                          // the target repository, for issue links
+	Label     string                          // the proposal label's name
+	Drafted   func(item, specSHA string) bool // an automatic draft already reached its check
 	Log       *Log
 }
 
@@ -56,15 +59,15 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 		s := ItemState{ID: c.ID, AutoDraft: src.AutoDraft}
 		var labelledAt time.Time
 		if n, ok := issues[c.ID]; !ok {
-			s.NotWhy = "the item has no issue yet"
+			s.NotWhy = "the item has no issue yet; the next issue sync creates it"
 		} else if p, err := src.Proposal(ctx, n); err != nil {
 			return nil, err
 		} else {
 			switch {
 			case !p.Labelled:
-				s.NotWhy = "no proposal label"
+				s.NotWhy = fmt.Sprintf("to start it, add the label %q to https://github.com/%s/issues/%d", src.Label, src.Repo, n)
 			case !ghloop.IsApprover(p.AddedBy, src.Approvers):
-				s.NotWhy = "the label was last added by @" + p.AddedBy + ", who is not in PILOT_APPROVERS"
+				s.NotWhy = fmt.Sprintf("the label was last added by @%s, who is not in PILOT_APPROVERS; an approver must remove and re-add it on https://github.com/%s/issues/%d", p.AddedBy, src.Repo, n)
 			default:
 				s.Proposed = true
 			}
@@ -75,8 +78,8 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 			s.Run = runState(r)
 			s.RelabelledAfterRun = !labelledAt.IsZero() && labelledAt.After(r.EndedAt)
 		}
-		if !s.Proposed && s.Run != RunActive {
-			out = append(out, s) // nothing else matters for an unproposed item
+		if (!s.Proposed && s.Run != RunActive) || s.Run == RunActive {
+			out = append(out, s) // an unproposed item, or a run in flight: nothing else is needed (and no clone every 15 s)
 			continue
 		}
 		res, err := src.Ready(c.ID)
@@ -92,6 +95,7 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 			if s.TestsPR, err = src.TestsPR(ctx, c.ID); err != nil {
 				return nil, err
 			}
+			s.AutoDrafted = src.Drafted != nil && src.Drafted(c.ID, res.SpecSHA256)
 		}
 		if src.Log != nil {
 			s.DoctorFailedAt = src.Log.DoctorFailedAt(c.ID)
