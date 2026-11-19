@@ -368,6 +368,22 @@ over every committed record is unchanged.
   runs each by name with 0 configuration edits between runs, and each run's evidence records
   which target it used.
 
+## Evidence
+
+Run records are listed in [evidence/README.md](evidence/README.md); 014's runs are under
+`specs/018-test-author/evidence/` (the active feature when they ran). Status on 2026-11-19:
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| SC-001 | met | cli-schema-mcp 006 (Python 3.13) and Stockroom 001–007 (Java 21, Maven) ran end to end: draft PR merged by the owner, status PR merged, audit 11/11 after `down` (20261118T030513Z, 20261118T230306Z) |
+| SC-002 | partly | each readiness rule has unit tests (`internal/readiness`); the live refusals, one per rule on a scratch branch, are T053 step 1 (owner) |
+| SC-003 | met | P11 passes in all eight records; T057's scan found no hidden-test content in any record; the drafts stay in the companion repository |
+| SC-004 | partly | the model proxy's refusals are recorded in every attempt's `proxy-denials.log`; before T047, refusals by a target's own proxy were not copied there. P06r (T047) now probes an undeclared host on every attempt of a registry target; its first live row comes with the next such run |
+| SC-005 | open | the golden audit and fixture parity tests pass unchanged (`go test ./...`); the fixture run is T056 (owner) |
+| SC-006 | partly | Stockroom's setup is written up step by step in [docs/targets.md](../../docs/targets.md) and [docs/greenfield.md](../../docs/greenfield.md); no operator has yet timed a setup from the docs alone |
+| SC-007 | partly | Stockroom 001–007 ran by name with no configuration edit between runs, each record naming its target; the fixture run (T056) completes it |
+| SC-008 | moved | to roadmap entry 022 (owner decision 2026-11-18) |
+
 ## Assumptions
 
 - **First delivery is on kind (laptop).** The OpenShift EAP validation (roadmap 014 notes) needs

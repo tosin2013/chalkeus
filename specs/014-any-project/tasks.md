@@ -594,6 +594,11 @@ run under every guarantee on kind.
   - 014 status and spec dir;
   - a note on 011 (its cluster resource takes the target profile fields, FR-004b);
   - 017 unblocked.
+  Progress (2026-11-19): the Evidence section is in the spec, `evidence/README.md` links the seven
+  Stockroom records, and the debrief is in
+  `roadmap-reviews/debrief-20261119T143806Z.md` (⚠️ proceed with updates: T053 step 1 and T056
+  are still needed before `verified`; the roadmap entry is stale on the EAP validation and the
+  toolchain scope line). The roadmap amendment waits for the owner.
 
 ---
 
