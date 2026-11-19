@@ -541,11 +541,13 @@ targets come later.)*
   `evidence/README.md` rather than copy them (2026-11-19). Step 1 done (2026-11-19, owner's
   choice): on local copies of Stockroom with `gate --root`, which now works for target items,
   instead of a scratch branch; see `evidence/readiness-refusals/`.
-- [ ] T054 [US3] **Owner action:** quickstart §5. Run item 002, then 003 (unblocked by 002).
+- [X] T054 [US3] **Owner action:** quickstart §5. Run item 002, then 003 (unblocked by 002).
   Then run the fixture with no configuration edit between runs (SC-007). Record them.
   Progress (2026-11-18): Stockroom 002 and 003 ran with no configuration edit (runs
   20261118T171710Z, 20261118T210446Z), and 004–007 after them. The fixture run (with T056)
   completes SC-007.
+  Done (2026-11-19): Stockroom 008 (20261119T154630Z) and then the fixture (20261119T164920Z)
+  ran with no configuration edit between them; each record names its repository.
 
 - T055 [US3] *Moved to roadmap entry 022 on 2026-11-18 (owner decision), with SC-008.*
   **Owner action (SC-008):** a language specfoundry has no image for (for example
@@ -568,9 +570,12 @@ run under every guarantee on kind.
 
 **Independent test:** one fixture run, 11/11; the golden audit is unchanged.
 
-- [ ] T056 [US4] **Owner action:** a fixture run on the final branch, following the operator
+- [X] T056 [US4] **Owner action:** a fixture run on the final branch, following the operator
   guide: `up` → `run` → … → `down` → audit 11/11. Record it in
   `specs/014-any-project/evidence/README.md`.
+  Done as (2026-11-19): run 20261119T164920Z on main `b83fc62`, the first fixture run on
+  OpenCode Go: A/1 failed by induction, A/2 passed after the owner's retry approval (PR #47,
+  status PR #48), B/1 passed (PR #49); after `down`, audit 11/11.
 
 ---
 

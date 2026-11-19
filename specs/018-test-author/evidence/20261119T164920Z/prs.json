@@ -1,0 +1,42 @@
+[
+  {
+    "attempt": 2,
+    "author": "tosins-specfoundry-pilot[bot]",
+    "closes": 18,
+    "created": true,
+    "draft": true,
+    "head": "pilot/20261119T164920Z/a",
+    "kind": "task",
+    "number": 47,
+    "operator_login": "tosin2013",
+    "publisher_identity": "tosins-specfoundry-pilot[bot]",
+    "task": "A",
+    "url": "https://github.com/tosin2013/craz3-pilot-fixture/pull/47"
+  },
+  {
+    "author": "tosins-specfoundry-pilot[bot]",
+    "base_revision": "0d9780809640c3f8ba45e60006bd2b536d0f5ff4",
+    "created": true,
+    "draft": true,
+    "head": "pilot/20261119T164920Z/status-001",
+    "kind": "status",
+    "number": 48,
+    "publisher_identity": "tosins-specfoundry-pilot[bot]",
+    "task": "A",
+    "url": "https://github.com/tosin2013/craz3-pilot-fixture/pull/48"
+  },
+  {
+    "attempt": 1,
+    "author": "tosins-specfoundry-pilot[bot]",
+    "closes": 19,
+    "created": true,
+    "draft": true,
+    "head": "pilot/20261119T164920Z/b",
+    "kind": "task",
+    "number": 49,
+    "operator_login": "tosin2013",
+    "publisher_identity": "tosins-specfoundry-pilot[bot]",
+    "task": "B",
+    "url": "https://github.com/tosin2013/craz3-pilot-fixture/pull/49"
+  }
+]

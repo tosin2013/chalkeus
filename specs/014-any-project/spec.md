@@ -371,7 +371,8 @@ over every committed record is unchanged.
 ## Evidence
 
 Run records are listed in [evidence/README.md](evidence/README.md); 014's runs are under
-`specs/018-test-author/evidence/` (the active feature when they ran). Status on 2026-11-19:
+`specs/018-test-author/evidence/` (the active feature when they ran). Status on 2026-11-19, after
+the fixture run:
 
 | Criterion | Status | Evidence |
 |---|---|---|
@@ -379,9 +380,9 @@ Run records are listed in [evidence/README.md](evidence/README.md); 014's runs a
 | SC-002 | met | [evidence/readiness-refusals](evidence/readiness-refusals/): every rule refused with exit 10 on a copy of Stockroom that breaks only that rule, plus an unreadable roadmap. A missing `spec.md` is refused by `spec status`'s error diagnostic before `ITEM_SPEC_MISSING`; `HIDDEN_TESTS_IN_TARGET` and `OPEN_ITEM_PR` have unit tests only |
 | SC-003 | met | P11 passes in all eight records; T057's scan found no hidden-test content in any record; the drafts stay in the companion repository |
 | SC-004 | met | Stockroom 008 (20261119T154630Z): P06r passed live (the declared registry reached, `example.invalid` refused, the prefetch proxy allowing only the registry), and the agent's own request to `github.com` was refused by the target's proxy and recorded in `attempts/008-1/proxy-denials.log`. Earlier records (before T047) recorded only the model proxy's refusals |
-| SC-005 | open | the golden audit and fixture parity tests pass unchanged (`go test ./...`); the fixture run is T056 (owner) |
+| SC-005 | met | fixture run 20261119T164920Z: the same commands, prompts and exit codes, audit 11/11 after `down`; the golden audit and fixture parity tests pass unchanged (`go test ./...`) |
 | SC-006 | met (owner decision 2026-11-19) | Stockroom's setup is written up step by step in [docs/targets.md](../../docs/targets.md) and [docs/greenfield.md](../../docs/greenfield.md); the owner accepted the walk-through without a timed setup |
-| SC-007 | partly | Stockroom 001–007 ran by name with no configuration edit between runs, each record naming its target; the fixture run (T056) completes it |
+| SC-007 | met | Stockroom 008 (20261119T154630Z) then the fixture (20261119T164920Z), each run by name with no configuration edit between them; Stockroom's record names `tosin2013/stockroom`, the fixture's names its fixture repository. Stockroom 001–007 likewise ran with no edit between them |
 | SC-008 | moved | to roadmap entry 022 (owner decision 2026-11-18) |
 
 ## Assumptions
