@@ -537,8 +537,9 @@ targets come later.)*
   passed → draft PR #9 merged → status PR #10 merged; audit 10/10 before `down`
   (run 20261118T161914Z). The owner chose Stockroom for T052–T054 (2026-11-18). All 7 items
   then ran end to end (records in `specs/018-test-author/evidence/`); after `down`, the last run
-  (20261118T230306Z) audits 11/11. Still open here: the readiness refusals on a scratch branch
-  (step 1) and copying the records to 014's evidence.
+  (20261118T230306Z) audits 11/11. The owner chose to link the records from 014's
+  `evidence/README.md` rather than copy them (2026-11-19). Still open here: the readiness
+  refusals on a scratch branch (step 1).
 - [ ] T054 [US3] **Owner action:** quickstart §5. Run item 002, then 003 (unblocked by 002).
   Then run the fixture with no configuration edit between runs (SC-007). Record them.
   Progress (2026-11-18): Stockroom 002 and 003 ran with no configuration edit (runs
