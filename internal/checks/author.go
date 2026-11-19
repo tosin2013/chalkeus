@@ -66,7 +66,7 @@ func AuthorProxyIngressRule(policy map[string]any) (bool, string) {
 // itself, A03, A04 from a probe twin with the same policies, A05 on the author proxy.
 func (d Deps) RunAuthorChecks(ns, draftID string, imgs map[string]string) []AuthorRow {
 	var rows []AuthorRow
-	pod := d.waitPod(ns, 120*time.Second)
+	pod := d.waitPodLabel(ns, "app=author", 120*time.Second) // the author Job's pod (author-job.yaml.tmpl)
 	spec := m(pod["spec"])
 	pods, _ := d.C.List(ns, "pods", "")
 	sa, _ := d.C.Get(ns, "sa", "author")
@@ -84,6 +84,9 @@ func (d Deps) RunAuthorChecks(ns, draftID string, imgs map[string]string) []Auth
 		}
 	}
 	ok, det = AuthorSecretsRule(names, envs)
+	if pod == nil { // no pod read means no env checked: never pass by default
+		ok, det = false, "no author pod found; "+det
+	}
 	rows = append(rows, row("A02", ok, det))
 
 	twin := ns + "-probe"

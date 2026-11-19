@@ -89,9 +89,14 @@ func l(v any) []any          { x, _ := v.([]any); return x }
 func s(v any) string         { x, _ := v.(string); return x }
 
 func (d Deps) waitPod(ns string, timeout time.Duration) map[string]any {
+	return d.waitPodLabel(ns, "app=worker", timeout)
+}
+
+// waitPodLabel waits for the first pod matching a label selector, or returns nil.
+func (d Deps) waitPodLabel(ns, selector string, timeout time.Duration) map[string]any {
 	end := time.Now().Add(timeout)
 	for time.Now().Before(end) {
-		pods, _ := d.C.List(ns, "pods", "app=worker")
+		pods, _ := d.C.List(ns, "pods", selector)
 		if len(pods) > 0 {
 			return pods[0]
 		}

@@ -99,3 +99,12 @@ func TestAuthorJobTemplate(t *testing.T) {
 		}
 	}
 }
+
+// The isolation checks find the author's pod by this label (checks.RunAuthorChecks).
+func TestAuthorJobPodLabel(t *testing.T) {
+	docs := renderDocs(t, "author-job.yaml.tmpl", map[string]string{"NS": "n", "DEADLINE": "1", "TOOLS_IMAGE": "t",
+		"WORKER_IMAGE": "w", "PILOT_MODEL": "m", "SPEND_CAP": "1", "TOKEN_CAP": "1", "INPUT_LIMIT": "1Mi"})
+	if mm(mm(mm(mm(docs[0]["spec"])["template"])["metadata"])["labels"])["app"] != "author" {
+		t.Fatal("the author pod must carry app=author")
+	}
+}
