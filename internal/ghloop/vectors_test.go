@@ -32,7 +32,9 @@ func TestApprovalVectors(t *testing.T) {
 		Cases []struct {
 			Name  string
 			Input struct {
-				Decision    struct{ CommentID int64 `json:"comment_id"` }
+				Decision struct {
+					CommentID int64 `json:"comment_id"`
+				}
 				Step        string
 				Approvers   []string
 				Publisher   string

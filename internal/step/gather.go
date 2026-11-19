@@ -36,7 +36,10 @@ type Source struct {
 	Repo      string                          // the target repository, for issue links
 	Label     string                          // the proposal label's name
 	Drafted   func(item, specSHA string) bool // an automatic draft already reached its check
-	Log       *Log
+	// Planning lists the target's open planning PRs (roadmap or specs/), shown when no item can
+	// be proposed: merging one is the owner's next step.
+	Planning func(ctx context.Context) ([]string, error)
+	Log      *Log
 }
 
 // Gather builds the state of every candidate item (active, startable, dependencies satisfied,

@@ -77,7 +77,8 @@ func stepCmd() *cobra.Command {
 			}
 			src := step.Source{Status: targetStatus(t), Issues: issues, Approvers: approvers, AutoDraft: t.AuthorAuto == "on", Log: log,
 				Repo: t.Repo, Label: t.ProposeLabel,
-				Drafted: func(item, specSHA string) bool { return author.AutoDrafted(e.EvidenceRoot, t.Name, item, specSHA) },
+				Planning: func(ctx context.Context) ([]string, error) { return ghloop.PlanningPRs(ctx, opGH, t.Repo) },
+				Drafted:  func(item, specSHA string) bool { return author.AutoDrafted(e.EvidenceRoot, t.Name, item, specSHA) },
 				Proposal: func(ctx context.Context, n int) (ghloop.Proposal, error) {
 					return ghloop.ProposedBy(ctx, opGH, t.Repo, n, t.ProposeLabel)
 				},
