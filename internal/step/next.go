@@ -25,9 +25,12 @@ type ItemState struct {
 	Hidden    int    // hidden-test files merged in the companion
 	TestsPR   bool   // an `author/<NNN>-` pull request is open on the companion
 	AutoDraft bool   // the target has PILOT_AUTHOR_AUTO=on
-	Run       string // RunNone | RunActive | RunSucceeded | RunFailed (the newest item run)
-	RunID     string
-	RunDir    string // its evidence folder (to relay its watcher's log)
+	// AutoDrafted: an automatic draft for this spec version already reached its check (and
+	// failed, or its PR was closed): step mode asks the owner instead of drafting again.
+	AutoDrafted bool
+	Run         string // RunNone | RunActive | RunSucceeded | RunFailed (the newest item run)
+	RunID       string
+	RunDir      string // its evidence folder (to relay its watcher's log)
 	// RunWaiting: what the run waits for, with the link to act on (from its evidence).
 	RunWaiting string
 	// Commits is "<target commit>:<companion commit>"; DoctorFailedAt is the Commits value at the
@@ -76,6 +79,8 @@ func Next(s ItemState) Action {
 		return a(Skip, "not ready: "+s.ReadyWhy)
 	case s.Hidden == 0 && s.TestsPR:
 		return a(Wait, "waiting for you: review and merge the hidden-tests PR on the companion repository")
+	case s.Hidden == 0 && s.AutoDraft && s.AutoDrafted:
+		return a(NeedsTests, "the automatic draft for this spec version didn't make it; draft the hidden tests by hand, or change the spec")
 	case s.Hidden == 0 && s.AutoDraft:
 		return a(Draft, "no hidden tests yet")
 	case s.Hidden == 0:

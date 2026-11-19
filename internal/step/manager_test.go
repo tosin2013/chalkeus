@@ -291,3 +291,50 @@ func TestManagerRelaysTheEndOfARun(t *testing.T) {
 		t.Fatalf("%s", out)
 	}
 }
+
+// Audit 2026-11-19: step mode says what to label and where, and why nothing can be proposed.
+func TestManagerTellsWhatToLabel(t *testing.T) {
+	w := newWorld(t)
+	w.m.Src.Repo, w.m.Src.Label = "me/proj", "pilot/go"
+	w.pass(t)
+	out := w.m.Out.(*strings.Builder).String()
+	if !strings.Contains(out, `009: skip (not proposed: to start it, add the label "pilot/go" to https://github.com/me/proj/issues/41)`) {
+		t.Fatalf("%s", out)
+	}
+	w.m.Src.Status = func() (string, error) { return `{"items":[{"id":"008","status":"verified","active":true}]}`, nil }
+	w.pass(t)
+	w.pass(t)
+	if n := strings.Count(w.m.Out.(*strings.Builder).String(), "no item can be proposed now"); n != 1 {
+		t.Fatalf("said once, got %d", n)
+	}
+}
+
+// Audit: an automatic draft that already failed for this spec isn't retried every pass; the
+// owner is asked once instead.
+func TestManagerNoRedraftLoop(t *testing.T) {
+	w := newWorld(t)
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	w.ready["009"] = readiness.Result{Decision: "allow", Commit: "t1", CompanionCommit: "c1", SpecSHA256: "s1"}
+	w.m.Src.AutoDraft = true
+	w.m.Src.Drafted = func(item, sha string) bool { return item == "009" && sha == "s1" }
+	w.pass(t)
+	w.pass(t)
+	if strings.Contains(strings.Join(w.calls, ","), "draft") || len(w.comments) != 1 || !strings.Contains(w.comments[0], "needs-tests:009") {
+		t.Fatalf("%v %v", w.calls, w.comments)
+	}
+}
+
+// Audit: a run in flight needs no readiness check (no clones every 15 s).
+func TestGatherSkipsReadinessForARunInFlight(t *testing.T) {
+	w := newWorld(t)
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	w.runs["009"] = RunInfo{ID: "R1", State: "paused(awaiting-merge)", Watching: true}
+	ready := w.m.Src.Ready
+	w.m.Src.Ready = func(i string) (readiness.Result, error) {
+		if i == "009" {
+			t.Fatal("readiness for a run in flight")
+		}
+		return ready(i)
+	}
+	w.pass(t)
+}
