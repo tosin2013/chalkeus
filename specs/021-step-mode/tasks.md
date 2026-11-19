@@ -37,11 +37,11 @@ quickstart.md)
 
 ## Phase 5: User Story 3 — stop, restart, failures (P2)
 
-- [ ] T010 [US3] Make doctor and run failures stop the item: post one comment, and retry doctor only when the target's or the companion's commit changes; a failed run waits for a relabel (a newer `labeled` event); on SIGINT or SIGTERM finish the current subprocess or cancel drafting, record `step_stopped`, and exit; tests (SC-003, SC-004)
+- [X] T010 [US3] Make doctor and run failures stop the item: post one comment, and retry doctor only when the target's or the companion's commit changes; a failed run waits for a relabel (a newer `labeled` event); on SIGINT or SIGTERM finish the current subprocess or cancel drafting, record `step_stopped`, and exit; tests (SC-003, SC-004)
 
 ## Phase 6: Polish and validation
 
-- [ ] T011 [P] Docs:
+- [X] T011 [P] Docs:
   - `docs/targets.md`, a new section "Step mode: leave it running": setup, the label, what it does and never does;
   - `.claude/skills/pilot/SKILL.md`: the human starts `pilot step` in their own terminal;
   - `docs/troubleshooting.md`: the refusals and the comments it posts.

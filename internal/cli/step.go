@@ -110,7 +110,9 @@ func stepCmd() *cobra.Command {
 					return author.Pass(ctx, w)
 				},
 				Pilot: func(ctx context.Context, args []string, logPath string) (int, error) {
-					return runPilot(ctx, exe, p.L.Root, args, logPath)
+					// A doctor or run that has started finishes even if the manager is stopped (T010):
+					// killing `run` while it prepares would leave a half-made run.
+					return runPilot(context.WithoutCancel(ctx), exe, p.L.Root, args, logPath)
 				},
 				Post: func(ctx context.Context, n int, body string) error {
 					w, err := loop.W()
