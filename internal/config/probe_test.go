@@ -23,10 +23,11 @@ func probeCfg(t *testing.T, base string) *Config {
 }
 
 func TestProbeModel(t *testing.T) {
-	var auth string
+	var auth, session, agent string
 	blocked := false
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth = r.Header.Get("Authorization")
+		session, agent = r.Header.Get("X-Opencode-Session"), r.Header.Get("User-Agent")
 		if r.URL.Path != "/v1/chat/completions" || r.Method != http.MethodPost {
 			http.NotFound(w, r)
 			return
@@ -50,6 +51,9 @@ func TestProbeModel(t *testing.T) {
 	if err != nil || p.Status != 200 || auth != "Bearer sk-PROBE" || p.Provider != "gw" {
 		t.Fatalf("%+v %v %q", p, err, auth)
 	}
+	if !strings.HasPrefix(session, "specfoundry-doctor-") || agent != "specfoundry-pilot" {
+		t.Fatalf("session %q, user agent %q", session, agent)
+	}
 	blocked = true
 	p, err = c.ProbeModel(context.Background())
 	if err != nil || p.Status != 401 || !strings.Contains(p.Message, "Key is blocked") || strings.Contains(p.Message, "sk-PROBE") {
@@ -57,5 +61,17 @@ func TestProbeModel(t *testing.T) {
 	}
 	if _, err := (&Config{ModelDir: t.TempDir()}).ProbeModel(context.Background()); err == nil {
 		t.Fatal("no model config must be an error")
+	}
+}
+
+func TestRedactProviderMessage(t *testing.T) {
+	msg := "Authentication Error, Invalid proxy server token passed. Received API Key = sk-...jTCQ, Key Hash (Token) =" +
+		strings.Repeat("2c", 32) + ". Unable to find token"
+	got := RedactProviderMessage(msg, "sk-FULLKEY")
+	if strings.Contains(got, "jTCQ") || strings.Contains(got, strings.Repeat("2c", 32)) || !strings.Contains(got, "Unable to find token") {
+		t.Fatal(got)
+	}
+	if got := RedactProviderMessage("bad key sk-FULLKEY here", "sk-FULLKEY"); strings.Contains(got, "FULLKEY") {
+		t.Fatal(got)
 	}
 }

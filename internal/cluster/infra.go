@@ -42,6 +42,16 @@ func Allowlist(hosts []string) (string, error) {
 	return strings.Join(lines, "\n") + "\n", nil
 }
 
+// AllowlistChanged reports whether a deployed proxy's allowlist differs from the one these hosts
+// render to (ignoring surrounding whitespace).
+func AllowlistChanged(deployed string, hosts []string) bool {
+	want, err := Allowlist(hosts)
+	if err != nil {
+		return true
+	}
+	return strings.TrimSpace(deployed) != strings.TrimSpace(want)
+}
+
 func indent(text string, n int) string {
 	pad := strings.Repeat(" ", n)
 	lines := strings.Split(strings.TrimSuffix(text, "\n"), "\n")
@@ -121,6 +131,16 @@ func ApplyAll(e Env, c *k8s.Client, modelHosts []string, imgs map[string]string,
 		y, err := RenderEgress(e.L, p.ns, p.role, p.hosts, imgs["egress"])
 		if err != nil {
 			return err
+		}
+		// tinyproxy reads its allowlist only at start, so a changed host list (a new model
+		// provider) needs a fresh proxy, not just an updated ConfigMap.
+		if cm, err := c.Get(p.ns, "configmap", "proxy-config"); err == nil && cm != nil {
+			data, _ := cm["data"].(map[string]any)
+			old, _ := data["allowlist"].(string)
+			if AllowlistChanged(old, p.hosts) {
+				e.say("egress proxy " + p.ns + ": host list changed, recreating it")
+				c.DeleteNS(p.ns, true)
+			}
 		}
 		if err := c.Apply(y); err != nil {
 			return err

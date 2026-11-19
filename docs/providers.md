@@ -60,6 +60,27 @@ What it does:
 Your host OpenCode version may differ from the worker's (v2.2.7). If the worker fails on
 config that works on your machine, compare against the format in option B.
 
+### Quick start: OpenCode Go
+
+[OpenCode Go](https://opencode.ai/v2/docs/console/go/) is OpenCode's own model subscription,
+the quickest start because OpenCode is already the harness. Log in with an **API key**, then
+import that login. OpenCode 2.2 keeps logins in its database, so pipe them in:
+
+```sh
+opencode auth login        # choose OpenCode Go, paste its API key
+opencode auth export | pilot/pilot import-opencode --from-login --auth-file - \
+  --model opencode-go/<model> --base-url https://opencode.ai/inference/go/openai/v1
+```
+
+- `opencode models` lists the `opencode-go/…` models. Pick one that supports tool calling.
+- In `pilot.env`, set `PILOT_MODEL=opencode-go/<model>` and `PILOT_MODEL_EGRESS_HOSTS=opencode.ai`
+  (the import tells you if they differ). Then run `pilot/pilot up` again: it recreates the
+  model proxy when its host list changed.
+- `pilot/pilot doctor` checks the key with one tiny request. OpenCode Go requires a session
+  header (`x-opencode-session`); OpenCode sends it, and so does the doctor's check.
+- Usage is billed against your Go allowance (a 5-hour, a weekly and a monthly limit), not
+  per request; see the link above. The pilot's per-attempt cap still applies (below).
+
 ## Option B: write it by hand
 
 1. Create the directory and the key file:
@@ -125,7 +146,9 @@ config that works on your machine, compare against the format in option B.
 
 Things that did **not** work with OpenCode 2.2.7 in testing:
 - passing the key through environment variables (`{env:...}`, `OPENCODE_CONFIG_CONTENT`);
-- `opencode auth`, which showed no credentials even on a configured machine.
+- `opencode auth`, which showed no credentials even on a configured machine. *(OpenCode 2.2
+  keeps logins in its database; `opencode auth export` prints them, and `--auth-file -` reads
+  that.)*
 
 ## Spend caps
 

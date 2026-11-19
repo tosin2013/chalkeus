@@ -214,6 +214,10 @@ If you connected your provider in OpenCode with an **API key** (`/connect` in th
 pilot/pilot import-opencode --from-login --model <provider>/<model> --fixture-repo <you>/<you>-pilot-fixture
 ```
 
+With OpenCode 2.2 or later, logins are in OpenCode's database instead of `auth.json`; pipe them
+in with `opencode auth export | pilot/pilot import-opencode --from-login --auth-file - --model
+<provider>/<model> …` ([providers: OpenCode Go](providers.md#quick-start-opencode-go)).
+
 The pilot copies only that provider's key into its own folder (mode 0600, never printed) and
 takes the API endpoint from your OpenCode config or OpenCode's provider catalog; pass
 `--base-url https://…` if it doesn't know one. A subscription (OAuth) login is refused: the

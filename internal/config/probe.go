@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -58,6 +59,10 @@ func (c *Config) ProbeModel(ctx context.Context) (ModelProbe, error) {
 	}
 	req.Header.Set("Authorization", "Bearer "+key)
 	req.Header.Set("Content-Type", "application/json")
+	// Coding-agent gateways (OpenCode Go) refuse requests without a session id, and ask clients to
+	// name themselves rather than send a generic HTTP library's user agent.
+	req.Header.Set("User-Agent", "specfoundry-pilot")
+	req.Header.Set("X-Opencode-Session", fmt.Sprintf("specfoundry-doctor-%d", time.Now().UnixNano()))
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return ModelProbe{Provider: prov}, fmt.Errorf("could not reach the model provider: %v", strings.ReplaceAll(err.Error(), key, "[key]"))
@@ -82,11 +87,23 @@ func (c *Config) ProbeModel(ctx context.Context) (ModelProbe, error) {
 				msg = e.Message
 			}
 		}
-		msg = strings.ReplaceAll(msg, key, "[key]")
+		msg = RedactProviderMessage(msg, key)
 		if len(msg) > 200 {
 			msg = msg[:200]
 		}
 		out.Message = msg
 	}
 	return out, nil
+}
+
+// keyFragmentRE matches what providers echo about a key in their errors: a masked key
+// (`sk-...jTCQ`) or a key hash (64 hex digits).
+var keyFragmentRE = regexp.MustCompile(`\bsk-[^\s,;"']*|\b[0-9a-fA-F]{64}\b`)
+
+// RedactProviderMessage removes the key and anything a provider echoes about it.
+func RedactProviderMessage(msg, key string) string {
+	if key != "" {
+		msg = strings.ReplaceAll(msg, key, "[key]")
+	}
+	return keyFragmentRE.ReplaceAllString(msg, "[key]")
 }

@@ -27,17 +27,19 @@ func LoginSource(authFile, cfgDir, cacheDir, model, baseURL string) (string, fun
 	provName, modelID, _ := strings.Cut(model, "/")
 	raw, err := os.ReadFile(authFile)
 	if err != nil {
-		return "", noop, cerr("no OpenCode login at %s: log in with OpenCode first (/connect in the TUI, or `opencode auth login`)", authFile)
+		return "", noop, cerr("no OpenCode login at %s: log in with OpenCode first (/connect in the TUI, or `opencode auth login`). "+
+			"OpenCode 2.2 and later keep logins in their database: pipe them in with "+
+			"`opencode auth export | pilot/pilot import-opencode --from-login --auth-file - --model <provider>/<model>`", authFile)
 	}
-	var auth map[string]map[string]any
-	if err := json.Unmarshal(raw, &auth); err != nil {
-		return "", noop, cerr("%s is not valid JSON", authFile)
+	auth, err := parseLogins(raw)
+	if err != nil {
+		return "", noop, cerr("%s is not an OpenCode login file (auth.json) or `opencode auth export` output", authFile)
 	}
 	entry, ok := auth[provName]
 	if !ok {
 		return "", noop, cerr("you are not logged in to provider %s in OpenCode (%s)", pyrepr.Str(provName), authFile)
 	}
-	if typ, _ := entry["type"].(string); typ != "api" {
+	if typ, _ := entry["type"].(string); typ != "api" && typ != "key" {
 		return "", noop, cerr("your OpenCode login for %s is a %s login, not an API key. The pilot runs unattended, so it uses API keys only "+
 			"(subscription logins are meant for interactive use, and vendors' terms may not allow automated use). "+
 			"Create an API key for %s, connect it in OpenCode, and import again", pyrepr.Str(provName), pyrepr.Str(typ), provName)
@@ -70,7 +72,8 @@ func LoginSource(authFile, cfgDir, cacheDir, model, baseURL string) (string, fun
 	}
 	u, err := url.Parse(baseURL)
 	if baseURL == "" || err != nil || u.Scheme != "https" || u.Hostname() == "" {
-		return "", noop, cerr("no https API endpoint known for provider %s: pass --base-url https://… (from the provider's docs)", pyrepr.Str(provName))
+		return "", noop, cerr("no https API endpoint known for provider %s: pass --base-url https://… (from the provider's docs; "+
+			"`opencode models --verbose` may show it)", pyrepr.Str(provName))
 	}
 	keyName := provName + "_api_key"
 	settings["baseURL"] = baseURL
@@ -107,6 +110,32 @@ func LoginSource(authFile, cfgDir, cacheDir, model, baseURL string) (string, fun
 		return "", noop, err
 	}
 	return dir, cleanup, nil
+}
+
+// parseLogins reads OpenCode's logins in either format, keyed by provider: auth.json (OpenCode
+// before 2.2: {"<provider>": {"type": "api", "key": …}}) or `opencode auth export` (2.2 keeps
+// logins in its database: [{"integrationID": "<provider>", "active": true, "value": {"type":
+// "key", "key": …}}]). From the export, only active entries count.
+func parseLogins(raw []byte) (map[string]map[string]any, error) {
+	var auth map[string]map[string]any
+	if err := json.Unmarshal(raw, &auth); err == nil {
+		return auth, nil
+	}
+	var list []struct {
+		IntegrationID string         `json:"integrationID"`
+		Active        bool           `json:"active"`
+		Value         map[string]any `json:"value"`
+	}
+	if err := json.Unmarshal(raw, &list); err != nil {
+		return nil, err
+	}
+	auth = map[string]map[string]any{}
+	for _, e := range list {
+		if e.Active && e.IntegrationID != "" && e.Value != nil {
+			auth[e.IntegrationID] = e.Value
+		}
+	}
+	return auth, nil
 }
 
 // catalogAPI is the provider's API URL from OpenCode's cached provider catalog, or "".
