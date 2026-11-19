@@ -27,7 +27,7 @@ func TestLocalClone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(d)
+	defer func() { _ = os.RemoveAll(d) }()
 	if len(commit) != 40 {
 		t.Fatalf("commit %q", commit)
 	}
