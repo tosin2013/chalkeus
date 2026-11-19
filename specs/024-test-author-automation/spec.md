@@ -160,8 +160,11 @@ is cleaned up.
   - the trigger (`auto`) and the watcher's decision;
   - the author Job's isolation check results;
   - the Job's token use.
-- **FR-007**: A failed check MUST record its reason code and MUST NOT be retried
-  automatically until the item's spec changes or the operator starts a draft by hand.
+- **FR-007**: A draft MAY run a second author Job when its check fails, and that Job is given the
+  failure. After its attempts (`PILOT_AUTHOR_AUTO_ATTEMPTS`, default 2), a failed draft MUST
+  record its reason code. It MUST NOT be drafted again automatically until the item's spec
+  changes or the operator starts a draft by hand. *(Amended in planning, 2026-11-19: research
+  R5.)*
 - **FR-008**: The pilot skill and the operator docs MUST say the driving session never starts
   or reads an automatic draft.
 - **FR-009**: Manual drafting (018) MUST keep working unchanged.
