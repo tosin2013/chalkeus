@@ -270,6 +270,40 @@ pilot/pilot author status --target greeting --item 002   # where the draft stand
 - The draft's evidence records names, hashes and results, never the tests' contents.
 - The test author never runs `run`, `resume` or `approve`, and never writes the target.
 
+### Drafting hidden tests automatically
+
+With auto-draft on, you don't start the test author yourself. A watcher notices when an item is
+ready except for its hidden tests (you merged its spec and tasks, and the companion has no tests
+and no open draft for it), drafts them, and opens the same companion pull request. You still
+review and merge it, and you still approve every run.
+
+1. In the target's profile, set `PILOT_AUTHOR_AUTO=on`. Optional: `PILOT_AUTHOR_INTERVAL_S`
+   (seconds between checks, default 120) and `PILOT_AUTHOR_AUTO_ATTEMPTS` (author Jobs per
+   draft, default 2).
+2. Run `pilot/pilot up`. It creates the author's proxy, which lets it reach only your model.
+3. In **your own terminal**, start the watcher:
+
+   ```sh
+   pilot/pilot author watch --target greeting           # Ctrl-C stops it
+   pilot/pilot author watch --target greeting --once    # one check, then exit
+   ```
+
+It prints one line per decision: `skip NNN: <why>`, `draft NNN: started …`, then
+`DRAFT_OK, opened <url>` or `<code>, no PR`.
+
+- **The author runs sandboxed:** a Job in its own namespace on your cluster, using the same
+  OpenCode and model as the workers. It can reach only the model, holds no GitHub credential,
+  and shares nothing with build workers. Checks A01-A05, in the draft's evidence, prove it for
+  every Job.
+- **The pilot, not the Job, checks the draft** (your tests pass, the drafted tests fail on
+  today's code) and opens the pull request with your target's usual test-author identity.
+- **A failed check gets one more try:** a second Job sees the failure. After that, the item
+  waits until its spec changes, or you draft by hand. An item is never drafted twice for the
+  same spec.
+- `pilot/pilot doctor --target <name>` shows whether auto-draft is on.
+- The session that drives runs (your coding agent with the pilot skill) never starts the
+  watcher or reads its drafts.
+
 ## 3. Check that an item is ready
 
 ```sh

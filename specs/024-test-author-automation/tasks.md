@@ -47,7 +47,7 @@ contracts/author-watch.md, quickstart.md)
 
 ## Phase 6: Polish and validation
 
-- [ ] T015 [P] Docs:
+- [X] T015 [P] Docs:
   - `docs/targets.md`: a new section "Drafting hidden tests automatically" (keys, the watcher, what it never does);
   - `.claude/skills/pilot/SKILL.md`: the driving session never starts or reads `author watch`;
   - `.claude/skills/test-author/SKILL.md`: a note that the same rules drive the automatic author;
