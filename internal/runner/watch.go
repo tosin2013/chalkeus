@@ -67,11 +67,11 @@ func watch(ctx context.Context, c cluster, h Handle) {
 				}(pod)
 			}
 		}
-		if h.Kind == "worker" {
-			for _, l := range strings.Split(c.DeploymentLogs("pilot-egress-model", "proxy", &start), "\n") {
+		if proxy := map[string]string{"worker": "pilot-egress-model", "author": "pilot-egress-a"}[h.Kind]; proxy != "" {
+			for _, l := range strings.Split(c.DeploymentLogs(proxy, "proxy", &start), "\n") {
 				if strings.Contains(strings.ToLower(l), "refused") && !seenProxy[l] {
 					seenProxy[l] = true
-					verbose.V(2, "%s: model proxy: %s", tag, strings.TrimSpace(l))
+					verbose.V(2, "%s: %s proxy: %s", tag, map[string]string{"worker": "model", "author": "author"}[h.Kind], strings.TrimSpace(l))
 				}
 			}
 		}
