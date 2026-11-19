@@ -46,6 +46,12 @@ and the pilot only uses them after a human reviews and merges your pull request
 6. Run `pilot/pilot author submit --target <name> --item <NNN>` and give the human the pull
    request link. **The human reviews and merges it.** You don't.
 
+## Automatic drafting
+
+With `PILOT_AUTHOR_AUTO=on`, `pilot/pilot author watch` runs these same rules in a sandboxed Job
+on the cluster, with no human in the session (specs/024-test-author-automation). Its prompt is
+built from steps 3 and 4 above; a test keeps the two in step, so change both together.
+
 ## Never
 
 - Run `pilot/pilot run`, `resume`, `approve`, `github`, `reset-fixture`, `up` or `down`.

@@ -483,6 +483,13 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   - `DRAFT_SUITE_FAILS`: with the drafted tests added, the project's own tests fail; the tests may
     break the build or need a dependency the project doesn't declare.
   - `DRAFT_NOT_CHECKED`: run `check` again; the draft changed since its last passing check.
+- **Automatic drafting (`author watch`):**
+  - `auto-draft is off for target …`: set `PILOT_AUTHOR_AUTO=on` in the target's profile.
+  - `the author proxy pilot-egress-a is missing`: run `pilot/pilot up`.
+  - `skip NNN: already drafted automatically for this spec version`: the last automatic draft
+    failed its check twice. Change the spec, or draft by hand with the test-author skill.
+  - `isolation check A0n failed, no PR`: the author's sandbox wasn't as expected. Read the
+    draft's `draft.json` (`jobs[].checks`); don't run auto-draft until it passes.
 - **Confirm:** `pilot/pilot author status --target <name> --item NNN` shows `checked(pass)`, then
   `submitted`.
 - **Source:** `internal/author/`.

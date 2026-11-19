@@ -66,8 +66,9 @@ companion repository's hidden tests yourself.
 When an item has no hidden tests (`ITEM_NO_HIDDEN_TESTS`), the human writes them, or opens a
 **separate** agent session with the test-author skill (`.claude/skills/test-author/`) to draft
 them. You are the session that drives runs, so you never act as the test author: never run
-any `pilot/pilot author` command, never read a draft workspace or draft evidence, and never open
-the companion's pull requests.
+any `pilot/pilot author` command (including `author watch`, the automatic drafting of 024: the
+human starts it in their own terminal), never read a draft workspace or draft evidence, and
+never open the companion's pull requests.
 
 To diagnose a stuck or failing step, add `-vv` to the command (pod phases, Kubernetes events,
 model-proxy refusals, the first failing grader check; stderr only, redacted). Use `-vvv` (the
