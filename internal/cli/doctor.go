@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -108,17 +109,9 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		if err := errors.Join(err1, err2); err != nil {
 			r.Add("cluster", "images", doctor.Fail, err.Error())
 		} else {
-			stale := []string{}
-			for k, key := range map[string]string{"worker": "WORKER_IMAGE", "tools": "TOOLS_IMAGE", "egress": "EGRESS_IMAGE"} {
-				if !doctor.DigestMatches(running[k], lock[key]) {
-					stale = append(stale, k)
-				}
-			}
-			if len(stale) > 0 {
-				r.Add("cluster", "images", doctor.Fail, fmt.Sprintf("the cluster runs older images than pilot/images.lock (%v); run `pilot/pilot up`", stale))
-			} else {
-				r.Add("cluster", "images", doctor.Pass, "match pilot/images.lock")
-			}
+			src, _ := os.ReadFile(l.ImageSource)
+			st, det := doctor.ImagesRow(strings.TrimSpace(string(src)), running, lock)
+			r.Add("cluster", "images", st, det)
 		}
 	}
 
