@@ -1,6 +1,7 @@
 package images
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -99,5 +100,22 @@ func TestOperatorSuppliedToolchain(t *testing.T) {
 		if err := CheckTarget(c, map[string]string{}, bad); err == nil || !strings.HasPrefix(err.Error(), "TARGET_INVALID:") {
 			t.Errorf("%s: %v", name, err)
 		}
+	}
+}
+
+// 025 FR-002: the stub harness is a layer on top of the built worker, never part of it.
+func TestStubDockerfile(t *testing.T) {
+	df := StubDockerfile("localhost:5001/pilot-worker@sha256:abc")
+	for _, want := range []string{"FROM localhost:5001/pilot-worker@sha256:abc\n", "COPY --chmod=0755 stub-opencode /usr/local/bin/opencode\n", "COPY scenarios /usr/local/lib/pilot/stub-scenarios\n"} {
+		if !strings.Contains(df, want) {
+			t.Fatalf("missing %q in\n%s", want, df)
+		}
+	}
+	root, _ := filepath.Abs("../..")
+	if _, err := os.Stat(filepath.Join(root, "pilot", "images", "worker", "stub-opencode")); err == nil {
+		t.Fatal("the stub must not be in the worker image's build context")
+	}
+	if _, err := os.Stat(filepath.Join(root, "pilot", "images", "stub", "Dockerfile")); err == nil {
+		t.Fatal("pilot/images/stub must have no Dockerfile, so no image workflow builds it")
 	}
 }

@@ -7,7 +7,7 @@
 | `PILOT_TEST_MODE=1` | allows the two below; marks every run as a test run |
 | `PILOT_TEST_GITHUB_API` | replaces `https://api.github.com` for the pilot, the publisher and the test author |
 | `PILOT_TEST_GIT_BASE` | replaces `https://github.com/` for clones and pushes |
-| `PILOT_STUB_SCENARIO` | passed to worker and author Jobs in test mode; the stub harness's scenario |
+| `PILOT_STUB_SCENARIO` | optional override for the stub harness; normally the stub picks the scenario whose rules match the prompt (no Job template carries it, so the fixture's manifests stay byte-identical) |
 
 Either address without `PILOT_TEST_MODE=1`: every command exits 2, with "test endpoints need
 PILOT_TEST_MODE=1 (they are for the integration tests only)".

@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
 )
@@ -260,5 +261,58 @@ func BuildAll(l paths.Layout, say func(string)) (map[string]string, error) {
 			return nil, err
 		}
 	}
+	if tm, err := config.TestMode(); err == nil && tm.On { // 025: the stub harness, test builds only
+		if imgs["worker"], err = BuildStub(l, imgs["worker"], say); err != nil {
+			return nil, err
+		}
+	}
 	return imgs, Save(l, imgs)
+}
+
+// StubDockerfile layers the integration tests' stub harness on top of a built worker image: the
+// stub replaces opencode, and its scenarios sit beside it. The worker image itself (and every
+// published image) never contains it (025 FR-002).
+func StubDockerfile(worker string) string {
+	return "FROM " + worker + "\n" +
+		"COPY --chmod=0755 stub-opencode /usr/local/bin/opencode\n" +
+		"COPY scenarios /usr/local/lib/pilot/stub-scenarios\n"
+}
+
+// BuildStub builds and pushes the test worker image (pilot-worker-test) from pilot/images/stub.
+func BuildStub(l paths.Layout, worker string, say func(string)) (string, error) {
+	ctx, err := os.MkdirTemp("", "pilot-stub-")
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = os.RemoveAll(ctx) }()
+	src := filepath.Join(l.Images, "stub")
+	if _, err := sh("cp", "-r", filepath.Join(src, "stub-opencode"), filepath.Join(src, "scenarios"), ctx); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(filepath.Join(ctx, "Dockerfile"), []byte(StubDockerfile(worker)), 0o644); err != nil {
+		return "", err
+	}
+	tag, err := hashDir(ctx, map[string]string{"worker": worker})
+	if err != nil {
+		return "", err
+	}
+	ref := fmt.Sprintf("%s/pilot-worker-test:%s", paths.RegistryHost, tag)
+	say(fmt.Sprintf("== image pilot-worker-test:%s (test mode: the stub harness on top of the worker)", tag))
+	if _, err := sh("docker", "build", "-q", "-t", ref, ctx); err != nil {
+		return "", err
+	}
+	if _, err := sh("docker", "push", "-q", ref); err != nil {
+		return "", err
+	}
+	out, err := sh("docker", "inspect", "--format", "{{range .RepoDigests}}{{println .}}{{end}}", ref)
+	if err != nil {
+		return "", err
+	}
+	prefix := fmt.Sprintf("%s/pilot-worker-test@sha256:", paths.RegistryHost)
+	for _, line := range strings.Fields(out) {
+		if strings.HasPrefix(line, prefix) {
+			return line, nil
+		}
+	}
+	return "", fmt.Errorf("no registry digest for %s", ref)
 }
