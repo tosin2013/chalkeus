@@ -12,8 +12,11 @@ pilot author watch --target <name> [--once]
 - **Polls** every `PILOT_AUTHOR_INTERVAL_S` (default 120). `--once` does one pass and exits:
   - 0 when nothing was eligible or a PR opened;
   - 1 when a draft failed its check.
-- **Prints one line per decision:** `skip NNN: <reason>`, `draft NNN: started <draft id>`,
-  `draft NNN: DRAFT_OK, opened <url>`, or `draft NNN: <code>, no PR`.
+- **Prints one line per decision:** `skip NNN: <reason>`, `draft NNN: started <draft id>`, then
+  either `draft NNN: DRAFT_OK, opened <url>`, or a line per failed attempt
+  (`draft NNN: attempt <n> <code>`) followed by `draft NNN: failed, no PR`. A failed isolation
+  check prints `draft NNN: isolation check A0n failed (<detail>), no PR`. *(Corrected 2026-11-21
+  to match the code; found by the 025 integration tests.)*
 - **Never** merges, approves a run, or writes the target repository.
 
 ## Profile keys (target profile)
@@ -51,4 +54,6 @@ All of these must hold:
 - `jobs`: per attempt, its spend, exit and error;
 - `watch_decision`.
 
-`checks.jsonl` holds the A01–A05 rows for each Job.
+The A01–A05 rows of each Job are in `draft.json`, under `jobs[].checks`. *(Corrected
+2026-11-21: this said `checks.jsonl`, which the code never wrote; found by the 025 integration
+tests.)*

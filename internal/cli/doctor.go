@@ -210,8 +210,10 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		r.Add("baseline", "hidden tests fail on today's code", doctor.Skip, "no hidden tests yet")
 	case by["G5_hidden_tests"] == "pass":
 		r.Add("baseline", "hidden tests fail on today's code", doctor.Pass, "")
-	default:
+	case by["G5_hidden_tests"] == "fail": // in a baseline, G5 fails when the hidden tests pass
 		r.Add("baseline", "hidden tests fail on today's code", doctor.Fail, "the hidden tests already pass (BASELINE_HIDDEN_PASSES)")
+	default: // not graded: the project's own tests failed first (found by the 025 gaps scenario)
+		r.Add("baseline", "hidden tests fail on today's code", doctor.Skip, "not checked: the project's own tests fail first; fix them, then run doctor again")
 	}
 	return doctorExit(&r)
 }

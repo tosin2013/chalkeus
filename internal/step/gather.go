@@ -108,8 +108,20 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 	return out, nil
 }
 
-// runState maps a run's recorded state: a paused run whose watcher is gone will never resume
-// (for example its pull request was closed), so it counts as failed, not active.
+// StaleAfter is how long an `in-progress` run may go without an event, and without a watcher,
+// before step mode counts it as crashed (025 T014). The longest quiet stretch of a live run is one
+// attempt (the worker deadline, 20 minutes) plus grading, well under an hour.
+const StaleAfter = time.Hour
+
+// now is the clock (replaced in tests).
+var now = time.Now
+
+// runState maps a run's recorded state:
+//   - a paused run whose watcher is gone will never resume (for example its pull request was
+//     closed), so it counts as failed, not active;
+//   - an in-progress run with no watcher and no event for StaleAfter crashed (its process was
+//     killed, or the machine restarted), so it counts as failed too instead of holding the item's
+//     slot forever. Either way step mode then waits for the owner to relabel the item.
 func runState(r RunInfo) string {
 	switch {
 	case r.State == "succeeded":
@@ -117,6 +129,8 @@ func runState(r RunInfo) string {
 	case strings.HasPrefix(r.State, "failed"), strings.HasPrefix(r.State, "declined"):
 		return RunFailed
 	case strings.HasPrefix(r.State, "paused") && !r.Watching:
+		return RunFailed
+	case r.State == "in-progress" && !r.Watching && !r.EndedAt.IsZero() && now().Sub(r.EndedAt) > StaleAfter:
 		return RunFailed
 	default:
 		return RunActive
