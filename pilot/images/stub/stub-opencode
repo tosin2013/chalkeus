@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""A stand-in for `opencode run …` in integration-test images only (025 R2).
+
+It is copied over /usr/local/bin/opencode by test builds (`pilot up --local-build` in test mode)
+and never by the release workflow. It picks the first rule (of PILOT_STUB_SCENARIO's
+rules.json, or of every scenario's in name order) whose `match` strings are all in the prompt
+and whose `absent` strings are not, copies that rule's files into the current directory, ticks the boxes of the
+tasks file the prompt names (`# Task list (`...`)`), prints one step_finish event for the spend
+watchdog, and exits with the rule's code.
+"""
+import json
+import os
+import re
+import shutil
+import sys
+from pathlib import Path
+
+SCENARIOS = Path(os.environ.get("PILOT_STUB_DIR", "/usr/local/lib/pilot/stub-scenarios"))
+
+
+def main(argv):
+    prompt = argv[-1] if len(argv) > 1 else ""
+    # The scenario is PILOT_STUB_SCENARIO if set; otherwise the first scenario (by name) with a
+    # rule matching the prompt. No Job template carries it, so the fixture's manifests stay
+    # byte-identical (014 FR-015): each scenario's rules name its item's own task list.
+    name = os.environ.get("PILOT_STUB_SCENARIO", "")
+    if name and not (SCENARIOS / name / "rules.json").is_file():
+        print(f"stub-opencode: no scenario {name!r}", file=sys.stderr)
+        return 3
+    names = [name] if name else sorted(p.name for p in SCENARIOS.iterdir() if (p / "rules.json").is_file())
+    rule = base = None
+    for n in names:
+        for r in json.loads((SCENARIOS / n / "rules.json").read_text()):
+            if all(m in prompt for m in r.get("match", [])) and not any(a in prompt for a in r.get("absent", [])):
+                rule, base = r, SCENARIOS / n
+                break
+        if rule:
+            break
+    if rule is None:
+        print("stub-opencode: no rule matches the prompt", file=sys.stderr)
+        return 4
+    src = base / rule["files"]
+    if src.is_dir():
+        shutil.copytree(src, Path.cwd(), dirs_exist_ok=True)
+    if rule.get("tick", True):
+        m = re.search(r"# Task list \(`([^`]+)`\)", prompt)
+        if m and Path(m.group(1)).is_file():
+            p = Path(m.group(1))
+            p.write_text(p.read_text().replace("- [ ]", "- [X]"))
+    print(json.dumps({"type": "step_finish", "part": {"id": "stub", "type": "step-finish", "reason": "stop", "cost": 0,
+                                                      "tokens": {"input": 1000, "output": 100, "reasoning": 0,
+                                                                 "cache": {"read": 0, "write": 0}}}}), flush=True)
+    return int(rule.get("exit", 0))
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

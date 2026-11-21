@@ -25,8 +25,10 @@
 - **Decision:** `pilot/images/worker/stub-opencode`, a small script. `images.BuildAll` copies it
   over `/usr/local/bin/opencode` only for a test build (`pilot up --local-build` with
   `PILOT_TEST_MODE=1`), and the release workflow never does.
-  - It reads the scenario from `PILOT_STUB_SCENARIO`, which the pilot passes to worker and
-    author Jobs only in test mode.
+  - It picks the scenario whose rules match the prompt (each scenario names its item's own task
+    list). `PILOT_STUB_SCENARIO` is only an optional override. *(Changed while building stage 2:
+    passing the scenario through the Job templates would have changed the fixture's rendered
+    manifests, which must stay byte-identical, 014 FR-015.)*
   - It writes the scenario's canned files from `pilot/images/worker/stub-scenarios/<name>/`,
     baked into the test image, into the workspace.
   - It prints one `step_finish` event (a token count) for the watchdog, and exits 0, or as the

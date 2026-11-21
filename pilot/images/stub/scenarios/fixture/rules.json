@@ -1,0 +1,6 @@
+[
+  {"match": ["specs/001-slugify/tasks.md"], "absent": ["## Acceptance details"], "files": "a1-wrong",
+   "note": "A/1 is induced (its acceptance details are withheld): write a slugify that misses them, as a real agent would"},
+  {"match": ["specs/001-slugify/tasks.md"], "files": "a-right"},
+  {"match": ["specs/002-unique-slug/tasks.md"], "files": "b-right"}
+]

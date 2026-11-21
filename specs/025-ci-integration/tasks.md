@@ -14,8 +14,9 @@ own test. Stages follow research R6, and each is mergeable on its own.
 
 ## Stage 2: The stub harness (US2)
 
-- [ ] T004 [US2] Write `pilot/images/worker/stub-opencode`: read `PILOT_STUB_SCENARIO`, copy `stub-scenarios/<name>/files/` into the workspace (worker) or `draft/` (author), print one `step_finish` event, exit with the scenario's code; scenarios `fixture-a1-induced`, `fixture-pass`, `item-pass`, `author-draft`, `author-collide`; Python tests run it with a fake workspace
-- [ ] T005 [US2] Make `internal/images` copy the stub over `/usr/local/bin/opencode` only for a test build (`--local-build` with `PILOT_TEST_MODE=1`), and pass `PILOT_STUB_SCENARIO` to worker and author Jobs only in test mode (`internal/worker/worker.go`, `internal/author/job.go`); a test that a non-test build never includes the stub
+- [X] T004 [US2] Write `pilot/images/worker/stub-opencode`: read `PILOT_STUB_SCENARIO`, copy `stub-scenarios/<name>/files/` into the workspace (worker) or `draft/` (author), print one `step_finish` event, exit with the scenario's code; scenarios `fixture-a1-induced`, `fixture-pass`, `item-pass`, `author-draft`, `author-collide`; Python tests run it with a fake workspace
+- [X] T005 [US2] Make `internal/images` copy the stub over `/usr/local/bin/opencode` only for a test build (`--local-build` with `PILOT_TEST_MODE=1`), and pass `PILOT_STUB_SCENARIO` to worker and author Jobs only in test mode (`internal/worker/worker.go`, `internal/author/job.go`); a test that a non-test build never includes the stub
+  Done as (2026-11-21): a test build adds a layer on top of the built worker (`pilot-worker-test`, `images.BuildStub`); the scenario is chosen by the stub from the prompt, not passed through the Jobs, because the fixture's manifests must stay byte-identical (the parity test caught it). The fixture scenario is in `pilot/images/stub/scenarios/fixture/`; the item and author scenarios come with their fixtures (stages 4-5).
 
 ## Stage 3: The fake GitHub (US1, US2)
 
