@@ -4,10 +4,14 @@
 It is copied over /usr/local/bin/opencode by test builds (`pilot up --local-build` in test mode)
 and never by the release workflow. It picks the first rule (of PILOT_STUB_SCENARIO's
 rules.json, or of every scenario's in name order) whose `match` strings are all in the prompt
-and whose `absent` strings are not, copies that rule's files into the current directory, ticks the boxes of the
+and whose `absent` strings are not (and whose `requires` [file, text] pairs hold in the current
+directory, which tells apart targets with the same item number), copies that rule's files into the
+current directory, writes `draft/.acceptance-map.json` from its `map` (with the hash of ./spec.md, as the
+test author does), ticks the boxes of the
 tasks file the prompt names (`# Task list (`...`)`), prints one step_finish event for the spend
 watchdog, and exits with the rule's code.
 """
+import hashlib
 import json
 import os
 import re
@@ -16,6 +20,11 @@ import sys
 from pathlib import Path
 
 SCENARIOS = Path(os.environ.get("PILOT_STUB_DIR", "/usr/local/lib/pilot/stub-scenarios"))
+
+
+def _has(path, text):
+    p = Path(path)
+    return p.is_file() and text in p.read_text(errors="replace")
 
 
 def main(argv):
@@ -31,7 +40,8 @@ def main(argv):
     rule = base = None
     for n in names:
         for r in json.loads((SCENARIOS / n / "rules.json").read_text()):
-            if all(m in prompt for m in r.get("match", [])) and not any(a in prompt for a in r.get("absent", [])):
+            if all(m in prompt for m in r.get("match", [])) and not any(a in prompt for a in r.get("absent", [])) \
+                    and all(_has(f, s) for f, s in r.get("requires", [])):
                 rule, base = r, SCENARIOS / n
                 break
         if rule:
@@ -42,6 +52,11 @@ def main(argv):
     src = base / rule["files"]
     if src.is_dir():
         shutil.copytree(src, Path.cwd(), dirs_exist_ok=True)
+    if "map" in rule:
+        spec = Path("spec.md").read_bytes() if Path("spec.md").is_file() else b""
+        out = Path("draft") / ".acceptance-map.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps({"version": 1, "spec_sha256": hashlib.sha256(spec).hexdigest(), **rule["map"]}, indent=2))
     if rule.get("tick", True):
         m = re.search(r"# Task list \(`([^`]+)`\)", prompt)
         if m and Path(m.group(1)).is_file():

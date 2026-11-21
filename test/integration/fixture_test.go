@@ -34,47 +34,7 @@ func TestFixtureRun(t *testing.T) {
 	var issue int
 	_, _ = fmt.Sscan(m[1], &issue)
 
-	// Act as the owner at each pause, once, and let the watcher resume.
-	var seen []string
-	acted := map[string]bool{}
-	failures := map[string]int{}
-	changed := time.Now()
-	reason := ""
-	deadline := time.Now().Add(30 * time.Minute)
-	for time.Now().Before(deadline) {
-		st := w.status(t, id)
-		state := fmt.Sprint(st["state"])
-		if len(seen) == 0 || seen[len(seen)-1] != state {
-			seen = append(seen, state)
-			say("run " + id + ": " + state)
-			changed = time.Now()
-		}
-		if time.Since(changed) > 10*time.Minute { // the longest step (an attempt) takes a few minutes
-			t.Fatalf("run %s has been %s for 10 minutes; watch.log:\n%s", id, state,
-				readTail(filepath.Join(w.runDir(id), "github", "watch.log"), 40))
-		}
-		if state == "succeeded" || state == "failed" {
-			reason = fmt.Sprint(st["reason"])
-			break
-		}
-		key := state + fmt.Sprint(st["pending"])
-		if strings.HasPrefix(state, "paused") && !acted[key] {
-			acted[key] = true
-			w.actAsOwner(t, state, issue)
-		}
-		if strings.HasPrefix(state, "paused") && st["watcher"] == nil && acted[key] {
-			// The watcher stopped (or never started): resume as the operator would.
-			if out, code := w.pilot("resume", "--run", id); code != 0 && code != 4 && code != 5 && code != 6 {
-				failures[key]++
-				t.Logf("resume exited %d:\n%s", code, tail(out, 30))
-				if failures[key] >= 3 {
-					t.Fatalf("run %s: resume failed 3 times at %s", id, state)
-				}
-			}
-		}
-		time.Sleep(10 * time.Second)
-	}
-	t.Logf("states: %s", strings.Join(seen, " → "))
+	seen, reason := w.drive(t, fixtureRepo, id, issue)
 	// A test run never succeeds: its end-of-run audit fails AU12 "not a test run" (025 R1), so
 	// the expected end is failed with reason AUDIT. The audit below checks AU12 is the only cause.
 	if last := seen[len(seen)-1]; last != "failed" || reason != "AUDIT" {
@@ -141,18 +101,64 @@ func TestFixtureRun(t *testing.T) {
 	}
 }
 
+// drive acts as the owner at each pause of a run, once, and lets the run's watcher resume it (or
+// resumes it as the operator would when no watcher runs). It returns the states seen and the
+// run's end reason. It fails the test when the run stops moving for 10 minutes.
+func (x *world) drive(t *testing.T, repo, id string, issue int) ([]string, string) {
+	t.Helper()
+	var seen []string
+	acted := map[string]bool{}
+	failures := map[string]int{}
+	changed := time.Now()
+	deadline := time.Now().Add(30 * time.Minute)
+	for time.Now().Before(deadline) {
+		st := x.status(t, id)
+		state := fmt.Sprint(st["state"])
+		if len(seen) == 0 || seen[len(seen)-1] != state {
+			seen = append(seen, state)
+			say("run " + id + ": " + state)
+			changed = time.Now()
+		}
+		if time.Since(changed) > 10*time.Minute { // the longest step (an attempt) takes a few minutes
+			t.Fatalf("run %s has been %s for 10 minutes; watch.log:\n%s", id, state,
+				readTail(filepath.Join(x.runDir(id), "github", "watch.log"), 40))
+		}
+		if state == "succeeded" || state == "failed" {
+			t.Logf("states: %s", strings.Join(seen, " → "))
+			return seen, fmt.Sprint(st["reason"])
+		}
+		key := state + fmt.Sprint(st["pending"])
+		if strings.HasPrefix(state, "paused") && !acted[key] {
+			acted[key] = true
+			x.actAsOwner(t, repo, state, issue)
+		}
+		if strings.HasPrefix(state, "paused") && st["watcher"] == nil && acted[key] {
+			if out, code := x.pilot("resume", "--run", id); code != 0 && code != 4 && code != 5 && code != 6 {
+				failures[key]++
+				t.Logf("resume exited %d:\n%s", code, tail(out, 30))
+				if failures[key] >= 3 {
+					t.Fatalf("run %s: resume failed 3 times at %s", id, state)
+				}
+			}
+		}
+		time.Sleep(10 * time.Second)
+	}
+	t.Fatalf("run %s did not end in 30 minutes: %v", id, seen)
+	return nil, ""
+}
+
 // actAsOwner does what the owner would at a pause, through the fake.
-func (x *world) actAsOwner(t *testing.T, state string, issue int) {
+func (x *world) actAsOwner(t *testing.T, repo, state string, issue int) {
 	t.Helper()
 	switch state {
 	case "paused(awaiting-mode)":
-		must(t, x.fake.Comment(fixtureRepo, issue, ownerLogin, "/approve mode"))
+		must(t, x.fake.Comment(repo, issue, ownerLogin, "/approve mode"))
 	case "paused(awaiting-retry)":
-		must(t, x.fake.Comment(fixtureRepo, issue, ownerLogin, "/approve retry"))
+		must(t, x.fake.Comment(repo, issue, ownerLogin, "/approve retry"))
 	case "paused(awaiting-merge)":
-		for _, it := range x.fake.Issues(fixtureRepo) {
+		for _, it := range x.fake.Issues(repo) {
 			if it.PR != nil && it.State == "open" {
-				if _, err := x.fake.Merge(fixtureRepo, it.Number, ownerLogin); err != nil {
+				if _, err := x.fake.Merge(repo, it.Number, ownerLogin); err != nil {
 					t.Fatalf("merge #%d: %v", it.Number, err)
 				}
 				say(fmt.Sprintf("owner merged #%d (%s)", it.Number, it.Title))

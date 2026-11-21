@@ -1,0 +1,12 @@
+[
+  {"match": ["You are the test author for item 001"], "requires": [["spec.md", "Spec 001: Word count"]],
+   "files": "author-001", "tick": false,
+   "map": {"criteria": {"US1-AS1": ["tests/test_word_count_acceptance.py::test_counts_words"],
+                        "US1-AS2": ["tests/test_word_count_acceptance.py::test_empty_text"]},
+           "uncovered": ["FR-001"]},
+   "note": "a good draft: fails on the base, maps every scenario; FR-001 left uncovered on purpose"},
+  {"match": ["You are the test author for item 002"], "requires": [["spec.md", "Spec 002: Line count"]],
+   "files": "author-002-collide", "tick": false,
+   "map": {"criteria": {"US1-AS1": ["tests/test_line_count.py::test_counts_lines"]}, "uncovered": ["FR-001"]},
+   "note": "a draft whose path the plan names: DRAFT_PATH_IN_SPEC, no PR"}
+]

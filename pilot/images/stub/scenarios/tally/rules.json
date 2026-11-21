@@ -1,0 +1,10 @@
+[
+  {"match": ["You are the test author for item 001"], "requires": [["spec.md", "Spec 001: Total"]],
+   "files": "author-001", "tick": false,
+   "map": {"criteria": {"US1-AS1": ["tests/test_total_acceptance.py::test_adds_numbers"],
+                        "US1-AS2": ["tests/test_total_acceptance.py::test_empty_list"]},
+           "uncovered": ["FR-001"]},
+   "note": "step mode's automatic draft"},
+  {"match": ["# Task list (`specs/001-total/tasks.md`)"], "files": "build-001",
+   "note": "the build worker: implements total and ticks the tasks"}
+]

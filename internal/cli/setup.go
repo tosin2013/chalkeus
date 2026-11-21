@@ -116,6 +116,13 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	if err := cluster.ApplyAll(e, c, cfg.ModelHosts(), imgs, credEnv); err != nil {
 		return Exit(ExitError, "%v", err)
 	}
+	// The live probes (P06, and the author's A03, which can run before any `pilot run`) read the
+	// model host from here; the model proxy just applied uses the same hosts. Never in evidence.
+	if hosts := cfg.ModelHosts(); len(hosts) > 0 {
+		if err := os.WriteFile(l.ModelHost, []byte(hosts[0]+"\n"), 0o644); err != nil {
+			return Exit(ExitError, "%v", err)
+		}
+	}
 	if err := cluster.WriteUpOK(l, imgs, source); err != nil {
 		return Exit(ExitError, "%v", err)
 	}

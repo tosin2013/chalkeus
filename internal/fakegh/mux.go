@@ -7,7 +7,7 @@ import (
 )
 
 // Mux is the fake GitHub's HTTP entry point: git's smart HTTP under /git/, the owner API under
-// /_test/, and the REST API at the root.
+// /_test/, a stand-in model provider under /model/, and the REST API at the root.
 type Mux struct{ s *Server }
 
 // NewMux serves s.
@@ -19,6 +19,8 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		m.s.serveGit(w, r)
 	case strings.HasPrefix(r.URL.Path, "/_test/"):
 		m.s.serveTest(w, r)
+	case strings.HasPrefix(r.URL.Path, "/model/"):
+		serveModel(w, r)
 	default:
 		m.s.ServeREST(w, r)
 	}
@@ -85,4 +87,21 @@ func (s *Server) Merge(repo string, pr int, login string) (string, error) {
 	i.Events = append(i.Events, &Event{ID: s.id(), Kind: "merged", Actor: login, CreatedAt: now},
 		&Event{ID: s.id(), Kind: "closed", Actor: login, CreatedAt: now})
 	return sha, nil
+}
+
+// serveModel answers `pilot doctor`'s one-token model check (an OpenAI-compatible
+// POST <base>/chat/completions with a bearer key). The stub harness never calls a model; this only
+// lets doctor's check pass in the integration tests without a real provider.
+func serveModel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost || !strings.HasSuffix(r.URL.Path, "/chat/completions") {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":{"message":"missing key"}}`))
+		return
+	}
+	_, _ = w.Write([]byte(`{"choices":[{"message":{"role":"assistant","content":"OK"}}]}`))
 }
