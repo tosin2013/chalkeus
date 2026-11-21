@@ -1,7 +1,25 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.24.0 → 1.25.0 (this revision)
+Version change: 1.25.0 → 1.26.0 (this revision)
+Bump rationale: MINOR — status transitions (021, 024 verified) and a scope addition to 025 from
+their debriefs. Nothing verified is invalidated.
+Changes this revision (owner decisions 2026-11-21, Tosin Akinosho):
+  - 021 → verified: Stockroom 010 carried end to end by step mode with only GitHub answers,
+    audit 11/11 after `down` (specs/021-step-mode/evidence/). Outcome wording corrected:
+    doctor findings go to the item's issue (the run's tracking issue doesn't exist yet).
+    Debrief: specs/021-step-mode/roadmap-reviews/debrief-20261121T144618Z.md.
+  - 024 → verified: automatic drafts for Stockroom 009 and 010 in the sandboxed author Job,
+    010 verified with them (specs/024-test-author-automation/evidence/). Only the laptop trigger
+    is built; the GitHub Actions trigger is later work (operator trigger: 011). Debrief:
+    specs/024-test-author-automation/roadmap-reviews/debrief-20261121T144618Z.md.
+  - 025 gains the debriefs' gaps: live cases for a non-approver's label and a failing doctor
+    (unit-tested only), the A01-A05 rows asserted in CI, and the known limits (a crashed
+    in-progress run holding the slot; a changed active feature hiding earlier drafts).
+Specs affected: 021, 024, 025
+Open questions added/resolved: none
+
+Prior: Version change: 1.24.0 → 1.25.0
 Bump rationale: MINOR — a new planned item (025). Nothing existing changes.
 Changes this revision (owner decision 2026-11-19, Tosin Akinosho):
   - 025 (new, planned): integration tests in CI on a kind cluster (weekly, and on PRs that touch
@@ -1456,14 +1474,15 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   largest inputs) in the evidence; a lower token cap for small items in the mode. The grader
   itself spends no tokens.
 
-### 021 — Step mode: the laptop manager loop  [status: specced]
+### 021 — Step mode: the laptop manager loop  [status: verified]
 
 - **Description:** Let the pilot carry an item, and then the next ready item, through every
   automatic step on its own, stopping at each human decision, so the owner can leave it running
   and answer from GitHub.
 - **Outcome:** After the owner merges an item's spec and tasks, the pilot drafts hidden tests
-  (018 auto-draft) and waits for the tests PR merge; runs `doctor --baseline` and posts the
-  result to the tracking issue; waits for `/approve mode` (or uses a standing approval); builds
+  (018 auto-draft) and waits for the tests PR merge; runs `doctor --baseline` ~~and posts the
+  result to the tracking issue~~ (findings are posted on the item's issue when it fails,
+  corrected 2026-11-21); waits for `/approve mode` (or uses a standing approval); builds
   and grades; waits for the item PR merge; opens the status PR and waits for its merge; then
   moves to the next ready item. Every wait is a comment or a merge on GitHub, nothing runs while
   it waits, and it resumes when the owner answers. A failing `doctor` stops the item and says
@@ -1504,6 +1523,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - it polls GitHub, as the other watchers do; signed webhooks are 010, in cluster mode;
   - the first version always waits for `/approve mode`; the standing approval follows 009.
   The same decisions run in the operator (011) later, on a different host.
+  **Verified 2026-11-21 (owner):** Stockroom 010 went from the owner's label to `verified` with
+  only GitHub answers (drafting, doctor, the run's `/approve mode`, item and status PRs); audit
+  11/11 after `down`. Evidence: specs/021-step-mode/evidence/. Fixes found live: #121-#128 and the
+  seam audit (#125).
 
 ### 022 — Operator-supplied toolchain images  [status: planned]
 
@@ -1556,7 +1579,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   served in the cluster (OpenShift AI); it does not start on kind first. The Quarkus version,
   the in-cluster model, and the target release for EAP are decided when 023 is specified.
 
-### 024 — Test-author automation  [status: specced]
+### 024 — Test-author automation  [status: verified]
 
 - **Description:** The test author starts on its own when an item becomes ready, and can run as
   its own Job on a laptop cluster.
@@ -1580,6 +1603,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   trigger (`PILOT_AUTHOR_AUTO=on`), the author runs as its own Job on the local cluster with
   model-only egress and no repository credential, and its harness is OpenCode; the GitHub
   Actions trigger comes later.
+  **Verified 2026-11-21 (owner):** drafts for Stockroom 009 (`author watch`) and 010 (step
+  mode) in the sandboxed author Job; each passed `author check` and was merged by the owner; 010
+  verified with them, audit 11/11 after `down`. Only the laptop trigger is built; the GitHub
+  Actions trigger is later work, and the operator trigger is 011's. Evidence:
+  specs/024-test-author-automation/evidence/.
 
 ### 025 — Integration tests in CI  [status: planned]
 
@@ -1600,7 +1628,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - the scenarios above, and the audit checklist's seams as assertions (template labels found
     by their checks, no terminal in step mode's subprocesses, waits shown between polls);
   - a coverage floor per package for `cli`, `pipeline`, `worker`, `checks`, `cluster` and
-    `grader`.
+    `grader`;
+  - from the 021 and 024 debriefs (2026-11-21): live cases for a non-approver's label and a
+    failing `doctor` in step mode; the author Job's A01-A05 rows asserted; the known limits (a
+    crashed `in-progress` run holding the slot; a changed active feature hiding earlier drafts).
 - **Scope (out):** testing models or prompts; OpenShift in CI (with 005); replacing the live
   validation runs, which still close each item.
 - **Depends on:** 016, 021, 024
@@ -1750,4 +1781,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.25.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-19
+**Version**: 1.26.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-21
