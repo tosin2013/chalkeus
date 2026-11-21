@@ -21,8 +21,8 @@ own test. Stages follow research R6, and each is mergeable on its own.
 ## Stage 3: The fake GitHub (US1, US2)
 
 - [X] T006 [P] Write `cmd/fakegithub` REST: users, repositories and permissions, branch protection, pulls (list, get, create, edit, files, merge), issues (list, get, create, edit, comments, events), labels, git refs, commits and trees, contents, and the App installation token; state in memory; handler tests with go-github as the client
-- [ ] T007 Serve git smart HTTP through `git http-backend` over bare repositories, with pushes updating the refs the REST side reads; test: clone, push a branch, open and merge a PR through REST, clone again
-- [ ] T008 Add the `/_test/` owner API (repos from fixture folders, comment, label with an issue event, merge, state) per `contracts/test-mode.md`; tests
+- [X] T007 Serve git smart HTTP through `git http-backend` over bare repositories, with pushes updating the refs the REST side reads; test: clone, push a branch, open and merge a PR through REST, clone again
+- [X] T008 Add the `/_test/` owner API (repos from fixture folders, comment, label with an issue event, merge, state) per `contracts/test-mode.md`; tests
 
 ## Stage 4: The harness and the fixture scenario (US1, US2)
 

@@ -3,16 +3,26 @@ package fakegh
 import (
 	"fmt"
 	"net/http"
+	"strings"
 )
 
-// Mux is the fake GitHub's HTTP entry point: the REST API at the root (stage 3b adds git at
-// /git/ and the owner API at /_test/).
+// Mux is the fake GitHub's HTTP entry point: git's smart HTTP under /git/, the owner API under
+// /_test/, and the REST API at the root.
 type Mux struct{ s *Server }
 
 // NewMux serves s.
 func NewMux(s *Server) *Mux { return &Mux{s: s} }
 
-func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) { m.s.ServeREST(w, r) }
+func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch {
+	case strings.HasPrefix(r.URL.Path, "/git/"):
+		m.s.serveGit(w, r)
+	case strings.HasPrefix(r.URL.Path, "/_test/"):
+		m.s.serveTest(w, r)
+	default:
+		m.s.ServeREST(w, r)
+	}
+}
 
 // Label adds (or removes) a label on an issue as login, recording the issue event the pilot reads
 // to tell who proposed an item (the owner acting through the fake).
