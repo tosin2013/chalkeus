@@ -20,6 +20,7 @@ on:
       - "pilot/pins.env"
       - ".github/workflows/pilot-images.yml"
       - "!pilot/images/tests/**" # host-side tests of the in-image scripts; not in any image
+      - "!pilot/images/stub/**" # 025: the integration tests' stub harness; layered only onto local test builds
       - "!pilot/images.lock" # never a trigger (F1); GitHub forbids paths + paths-ignore together
   pull_request:
     paths:
@@ -27,6 +28,7 @@ on:
       - "pilot/pins.env"
       - ".github/workflows/pilot-images.yml"
       - "!pilot/images/tests/**"
+      - "!pilot/images/stub/**"
   workflow_dispatch: {}
 
 permissions:
