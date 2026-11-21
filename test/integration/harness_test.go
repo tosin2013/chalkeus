@@ -116,6 +116,10 @@ func setUp() (*world, error) {
 	if err := x.writeConfig(); err != nil {
 		return x, err
 	}
+	// notes: automatic drafting (T011), at most one author Job per draft.
+	if err := x.addTarget("notes", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\n"); err != nil {
+		return x, err
+	}
 	x.baseEnv = []string{"PILOT_ROOT=" + x.root, "SPECFOUNDRY_CONFIG=" + x.config, "PILOT_TEST_MODE=1",
 		"PILOT_TEST_GITHUB_API=" + x.api, "PILOT_TEST_GIT_BASE=" + x.api + "/git/", "GH_TOKEN=" + ownerToken, "PILOT_NO_TTY=1",
 		// The pilot commits the status change with the operator's own git identity; a CI runner
@@ -202,6 +206,31 @@ func (x *world) writeConfig() error {
 		}
 	}
 	return nil
+}
+
+// addTarget seeds a test target and its companion on the fake from test/integration/fixtures/
+// (<name> and <name>-acceptance) and writes its profile and publisher token (the bot's). The target
+// uses the built-in python toolchain, so no toolchain image or package registry is needed.
+func (x *world) addTarget(name, extra string) error {
+	repo, companion := "owner/"+name, "owner/"+name+"-acceptance"
+	perms := map[string]string{ownerLogin: "admin", botLogin: "write"}
+	fx := filepath.Join(x.repo, "test", "integration", "fixtures")
+	if err := x.fake.AddRepo(repo, filepath.Join(fx, name), perms); err != nil {
+		return err
+	}
+	if err := x.fake.AddRepo(companion, filepath.Join(fx, name+"-acceptance"), map[string]string{ownerLogin: "admin"}); err != nil {
+		return err
+	}
+	dir := filepath.Join(x.config, "targets")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	profile := "PILOT_TARGET_REPO=" + repo + "\nPILOT_TARGET_BRANCH=main\nPILOT_TOOLCHAIN=python\n" +
+		"PILOT_TEST_COMMAND=python3 -m pytest -q tests/\nPILOT_COMPANION_REPO=" + companion + "\n" + extra
+	if err := os.WriteFile(filepath.Join(dir, name+".env"), []byte(profile), 0o600); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, name+".publisher.env"), []byte("PILOT_SCM_TOKEN="+botToken+"\n"), 0o600)
 }
 
 // copyPilot copies pilot/ without its build and run output.

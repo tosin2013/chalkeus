@@ -58,3 +58,46 @@ class TestStub(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+NOTES = IMAGES.parents[1] / "test" / "integration" / "fixtures" / "notes"
+
+
+class TestStubAuthor(unittest.TestCase):
+    """The author role's workspace: spec.md, plan.md, tasks.md at the top, base/, draft/."""
+
+    def run_author(self, item, spec_dir):
+        d = Path(tempfile.mkdtemp())
+        for f in ("spec.md", "plan.md", "tasks.md"):
+            shutil.copy(NOTES / spec_dir / f, d / f)
+        (d / "draft").mkdir()
+        env = dict(os.environ, PILOT_STUB_DIR=str(SCEN))
+        env.pop("PILOT_STUB_SCENARIO", None)
+        prompt = f"You are the test author for item {item}. You draft its hidden acceptance tests"
+        r = subprocess.run([str(STUB), "run", "--auto", "--model", "x", prompt], cwd=d, env=env, capture_output=True, text=True)
+        return r, d
+
+    def test_good_draft_and_its_map(self):
+        import hashlib
+        r, d = self.run_author("001", "specs/001-word-count")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((d / "draft" / "tests" / "test_word_count_acceptance.py").is_file())
+        m = json.loads((d / "draft" / ".acceptance-map.json").read_text())
+        self.assertEqual(m["spec_sha256"], hashlib.sha256((d / "spec.md").read_bytes()).hexdigest())
+        self.assertEqual(sorted(m["criteria"]), ["US1-AS1", "US1-AS2"])
+        self.assertEqual(m["uncovered"], ["FR-001"])
+        self.assertIn("[ ]", (d / "tasks.md").read_text(), "the author never ticks tasks")
+
+    def test_colliding_draft_uses_a_path_the_plan_names(self):
+        r, d = self.run_author("002", "specs/002-line-count")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((d / "draft" / "tests" / "test_line_count.py").is_file())
+        self.assertIn("tests/test_line_count.py", (d / "plan.md").read_text())
+
+    def test_requires_tells_targets_apart(self):
+        d = Path(tempfile.mkdtemp())
+        (d / "spec.md").write_text("# Spec 001: Something else\n")
+        env = dict(os.environ, PILOT_STUB_DIR=str(SCEN))
+        env.pop("PILOT_STUB_SCENARIO", None)
+        r = subprocess.run([str(STUB), "run", "You are the test author for item 001."], cwd=d, env=env, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 4, "no rule matches another target's item 001")
