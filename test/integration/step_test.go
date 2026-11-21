@@ -21,7 +21,8 @@ import (
 //     mode approval on GitHub (no terminal: PILOT_NO_TTY);
 //  4. the owner approves the mode on the run's tracking issue and merges the item PR and the
 //     status PR as the run asks;
-//  5. the run ends failed, only because AU12 marks it a test run, and the next pass reports it.
+//  5. the run ends failed, only because AU12 marks it a test run; 001 is verified on the roadmap
+//     (the status PR merged), so the next pass has nothing left to propose.
 func TestStepMode(t *testing.T) {
 	const repo = "owner/tally"
 	step := func(what string) string {
@@ -102,9 +103,11 @@ func TestStepMode(t *testing.T) {
 		t.Fatalf("run %s ended %s (reason %s), want failed (reason AUDIT, from AU12 only)", id, last, reason)
 	}
 
+	// Merging the status PR made 001 verified on the roadmap (the owner's approval of the status
+	// change), so the next pass has nothing left to propose and says to plan a new item.
 	out = step("after the run")
-	if !strings.Contains(out, "run-failed") && !strings.Contains(out, "relabel") {
-		t.Errorf("the pass after the run should report it failed")
+	if !strings.Contains(out, "every active item is verified") || !strings.Contains(out, "next: plan a new item") {
+		t.Errorf("the pass after the run should find nothing left to propose and say to plan a new item")
 	}
 	var actions []string
 	for _, e := range decisions(t) {
