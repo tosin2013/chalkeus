@@ -289,7 +289,8 @@ review and merge it, and you still approve every run.
    ```
 
 It prints one line per decision: `skip NNN: <why>`, `draft NNN: started …`, then
-`DRAFT_OK, opened <url>` or `<code>, no PR`. It runs at `-vv` by default, printing the author Job's
+`DRAFT_OK, opened <url>`, or `attempt <n> <code>` for each failed attempt and then
+`failed, no PR`. It runs at `-vv` by default, printing the author Job's
 pod phases and events, checks A01-A05, its spend, and anything the author's proxy refused, on
 stderr. Pass `-v` for less, or set `PILOT_VERBOSE=0` to turn it off. The agent's live activity
 (`-vvv` for build workers) is never shown for the author, because it would print the drafted

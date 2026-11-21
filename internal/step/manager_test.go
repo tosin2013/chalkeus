@@ -364,8 +364,8 @@ func TestManagerNext(t *testing.T) {
 	w.ready["009"] = readiness.Result{Decision: "allow", Commit: "t1", CompanionCommit: "c1"}
 	w.m.Src.AutoDraft = true
 	w.pass(t)
-	if !strings.HasPrefix(w.m.Next, "009: drafting its hidden tests") {
-		t.Fatalf("draft: %q", w.m.Next)
+	if !strings.HasPrefix(w.m.Next, "009: waiting for you: review and merge the hidden-tests pull request") {
+		t.Fatalf("after a draft opened its PR: %q", w.m.Next)
 	}
 	w.runs["009"] = RunInfo{ID: "R1", State: "paused(awaiting-mode)", Watching: true, Waiting: "waiting for you: reply `/approve mode` on https://x/issues/9"}
 	w.pass(t)
@@ -413,5 +413,25 @@ func TestStaleInProgressRun(t *testing.T) {
 	}
 	if a := Next(ItemState{ID: "001", Proposed: true, Run: runState(r), RunID: r.ID}); a.Kind != RunFailedAct {
 		t.Errorf("step mode waits for a relabel after a crashed run: %v", a)
+	}
+}
+
+// After doctor and the run start, the next line is what the owner does now, not the step that
+// just happened (found by the 025 step scenario: it said "running doctor" while the run waited
+// for /approve mode).
+func TestManagerNextAfterDoctorAndRun(t *testing.T) {
+	w := newWorld(t)
+	w.m.Src.Repo = "me/proj"
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	w.doctor = 1
+	w.pass(t)
+	if !strings.Contains(w.m.Next, "009: waiting for you: doctor found problems") {
+		t.Fatalf("after a failed doctor: %q", w.m.Next)
+	}
+	w.ready["009"] = readiness.Result{Decision: "allow", HiddenFiles: 1, Commit: "t2", CompanionCommit: "c1"}
+	w.doctor = 0
+	w.pass(t)
+	if !strings.HasPrefix(w.m.Next, "009: waiting for you: reply `/approve mode` on") {
+		t.Fatalf("after the run started: %q", w.m.Next)
 	}
 }
