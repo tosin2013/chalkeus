@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/frame"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
@@ -141,7 +142,12 @@ func (d Deps) submit(run *evidence.Run, imgs map[string]string, key string, spec
 	if err := d.C.CreateConfigMap("pilot-publish", cm, map[string]string{"pr.json": filepath.Join(tmp, "pr.json"), "change.bundle": bundle}, nil); err != nil {
 		return nil, err
 	}
-	y, err := k8s.Render(filepath.Join(d.L.Manifests, "publisher-job.yaml.tmpl"), map[string]string{"JOB": job, "CONFIGMAP": cm, "TOOLS_IMAGE": imgs["tools"]})
+	vars := map[string]string{"JOB": job, "CONFIGMAP": cm, "TOOLS_IMAGE": imgs["tools"], "TEST_GITHUB_API": "", "TEST_GIT_BASE": "", "TEST_HTTP_PROXY": ""}
+	if tm, _ := config.TestMode(); tm.On { // 025: the integration tests' fake GitHub
+		vars["TEST_GITHUB_API"], vars["TEST_GIT_BASE"] = tm.API, tm.GitBase
+		vars["TEST_HTTP_PROXY"] = "http://proxy.pilot-egress-scm.svc.cluster.local:8888"
+	}
+	y, err := k8s.Render(filepath.Join(d.L.Manifests, "publisher-job.yaml.tmpl"), vars)
 	if err != nil {
 		return nil, err
 	}

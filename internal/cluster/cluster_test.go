@@ -101,3 +101,18 @@ func TestAuthorProxyRenders(t *testing.T) {
 		}
 	}
 }
+
+// 025: in test mode the publisher's proxy also allows the fake GitHub's host; otherwise only GitHub.
+func TestSCMHosts(t *testing.T) {
+	t.Setenv("PILOT_TEST_MODE", "")
+	t.Setenv("PILOT_TEST_GITHUB_API", "")
+	t.Setenv("PILOT_TEST_GIT_BASE", "")
+	if got := strings.Join(SCMHosts(), ","); got != "github.com,api.github.com" {
+		t.Fatal(got)
+	}
+	t.Setenv("PILOT_TEST_MODE", "1")
+	t.Setenv("PILOT_TEST_GITHUB_API", "http://172.18.0.1:8090")
+	if got := strings.Join(SCMHosts(), ","); got != "github.com,api.github.com,172.18.0.1" {
+		t.Fatal(got)
+	}
+}

@@ -375,3 +375,21 @@ func TestRedactionScanAppTokenFile(t *testing.T) {
 		t.Fatalf("token not found: %v", hits)
 	}
 }
+
+// 025: a test-mode run gets a failing AU12; real records get no AU12 row.
+func TestAU12TestRun(t *testing.T) {
+	d := build(t, filepath.Join(t.TempDir(), "20261113T000000Z"))
+	var cfg map[string]any
+	raw, _ := os.ReadFile(filepath.Join(d, "config.json"))
+	_ = json.Unmarshal(raw, &cfg)
+	if cfg == nil {
+		cfg = map[string]any{}
+	}
+	cfg["test_mode"], cfg["test_github_api"] = true, "http://172.18.0.1:8090"
+	b, _ := json.Marshal(cfg)
+	_ = os.WriteFile(filepath.Join(d, "config.json"), b, 0o644)
+	res := results(t, d)
+	if len(res) != 12 || strings.Join(failed(res), ",") != "AU12" {
+		t.Fatalf("got %v", res)
+	}
+}

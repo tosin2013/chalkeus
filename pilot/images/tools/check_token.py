@@ -21,7 +21,8 @@ import sys
 import urllib.error
 import urllib.request
 
-API = "https://api.github.com"
+# 025: the integration tests point this at a fake GitHub (GITHUB_API, test mode only).
+API = (os.environ.get("GITHUB_API") or "https://api.github.com").rstrip("/")
 
 
 PROBE = {"content": "specfoundry publisher token scope probe (unreferenced blob)", "encoding": "utf-8"}

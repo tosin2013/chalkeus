@@ -2,12 +2,14 @@ package cluster
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/k8s"
 	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
@@ -131,7 +133,7 @@ func ApplyAll(e Env, c *k8s.Client, modelHosts []string, imgs map[string]string,
 	for _, p := range []struct {
 		ns, role string
 		hosts    []string
-	}{{"pilot-egress-model", "worker", modelHosts}, {"pilot-egress-scm", "publisher", []string{"github.com", "api.github.com"}},
+	}{{"pilot-egress-model", "worker", modelHosts}, {"pilot-egress-scm", "publisher", SCMHosts()},
 		{AuthorProxyNS, "author", modelHosts}} { // 024: the test author's Job reaches only the model
 		y, err := RenderEgress(e.L, p.ns, p.role, p.hosts, imgs["egress"])
 		if err != nil {
@@ -183,4 +185,17 @@ func ApplyAll(e Env, c *k8s.Client, modelHosts []string, imgs map[string]string,
 		}
 	}
 	return nil
+}
+
+// SCMHosts is the publisher proxy's allowlist: GitHub, plus the integration tests' fake GitHub
+// host in test mode (025).
+func SCMHosts() []string {
+	hosts := []string{"github.com", "api.github.com"}
+	tm, _ := config.TestMode()
+	for _, a := range []string{tm.API, tm.GitBase} {
+		if u, err := url.Parse(a); err == nil && u.Hostname() != "" && tm.On {
+			hosts = append(hosts, u.Hostname())
+		}
+	}
+	return hosts
 }

@@ -73,3 +73,14 @@ func TestStepWait(t *testing.T) {
 		t.Fatal("15 s while busy, the interval otherwise")
 	}
 }
+
+// 025: a test endpoint without PILOT_TEST_MODE=1 is refused by every command, before it runs.
+func TestTestEndpointsNeedTestMode(t *testing.T) {
+	t.Setenv("PILOT_TEST_MODE", "")
+	t.Setenv("PILOT_TEST_GIT_BASE", "")
+	t.Setenv("PILOT_TEST_GITHUB_API", "http://127.0.0.1:1")
+	var out, errb strings.Builder
+	if code := Execute([]string{"version"}, "test", &out, &errb); code != 2 || !strings.Contains(errb.String(), "need PILOT_TEST_MODE=1") || out.Len() != 0 {
+		t.Fatalf("code %d, stdout %q, stderr %q", code, out.String(), errb.String())
+	}
+}
