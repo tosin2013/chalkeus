@@ -54,8 +54,8 @@ contracts/author-watch.md, quickstart.md)
   - `docs/troubleshooting.md`: entries for the watcher's refusals.
 
   Run the docs check.
-- [ ] T016 Live validation (quickstart), with the owner: Stockroom with auto-draft on; plan a small item; the watcher opens a checked companion PR with A01–A05 passing; the owner merges it; the item runs to `verified`; after `down`, audit 11/11. Record it in `specs/024-test-author-automation/evidence/README.md` (SC-001, SC-002, SC-005)
-- [ ] T017 Privacy check of the new records (model host, keys, token patterns, no hidden-test content outside the companion PR), and the 024 debrief
+- [X] T016 Live validation (quickstart), with the owner: Stockroom with auto-draft on; plan a small item; the watcher opens a checked companion PR with A01–A05 passing; the owner merges it; the item runs to `verified`; after `down`, audit 11/11. Record it in `specs/024-test-author-automation/evidence/README.md` (SC-001, SC-002, SC-005)
+- [X] T017 Privacy check of the new records (model host, keys, token patterns, no hidden-test content outside the companion PR), and the 024 debrief
 
 ## Dependencies
 

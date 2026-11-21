@@ -1,0 +1,47 @@
+doctor: running the item's baseline on the cluster (a few minutes)...
+  PASS P12   014 R7   graders have no egress; only the prefetch pod reaches DNS and its registries-only proxy
+== profile
+  PASS pilot.env
+  PASS target profile: stockroom (tosin2013/stockroom@main), toolchain jdk21-maven, level minimal
+  INFO auto-draft: on: `pilot/pilot author watch --target stockroom` drafts ready items (every 120 s, up to 2 author Job(s) each)
+== cluster
+  PASS model host: 1 host(s) configured
+  PASS model key: the provider accepts the worker's key (provider opencode-go)
+  PASS pilot up
+  PASS images: match pilot/images.lock
+== github
+  PASS your GitHub token
+  PASS can read tosin2013/stockroom
+  PASS can read tosin2013/specfoundry-acceptance
+  PASS test author identity: tosin2013 (level minimal; it can also write the target)
+  WARN branch protection: could not check: GET https://api.github.com/repos/tosin2013/stockroom/branches/main/protection: 403 Resource not accessible by personal access token []
+== roadmap
+  INFO progress: 9 of 10 active items verified (90%)
+  INFO 001 Scaffold [verified] tasks 4/4: done
+  INFO 002 Products API [verified] tasks 7/7: done
+  INFO 003 Problem Details errors [verified] tasks 5/5: done
+  INFO 004 Persistence [verified] tasks 6/6: done
+  INFO 005 Reservations [verified] tasks 6/6: done
+  INFO 006 Paging and filtering [verified] tasks 6/6: done
+  INFO 007 Reservations report the stock they left [verified] tasks 4/4: done
+  INFO 008 The name filter matches wildcard characters lit… [verified] tasks 4/4: done
+  INFO 009 Delete a product [verified] tasks 4/4: done
+  PASS 010 Update a product's stock [specced] tasks 0/5: ready to run (check it with --item 010)
+== item
+  PASS readiness
+  PASS gate: allow
+  PASS spec: specs/010-update-stock/spec.md
+  PASS tasks: specs/010-update-stock/tasks.md
+  PASS open_questions: none
+  PASS allowed_paths: src/main/java/dev/stockroom/*, src/test/java/dev/stockroom/*, specs/010-update-stock/tasks.md
+  PASS hidden_tests: 1 file(s) at tosin2013/specfoundry-acceptance@1c3991cec250
+  PASS input_size: 1566720 bytes
+  PASS open_pr: none
+  WARN coverage: uncovered criteria: [FR-005 FR-006]
+== baseline
+  PASS pipeline
+  PASS hidden tests overlay
+  PASS toolchain, install and prefetch
+  PASS project tests offline: the test command passes on today's code with no network
+  PASS hidden tests fail on today's code
+doctor: 25 pass, 2 warn, 0 fail, 0 skipped, 11 info

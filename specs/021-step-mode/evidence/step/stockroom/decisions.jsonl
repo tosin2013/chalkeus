@@ -1,0 +1,11 @@
+{"at":"2026-11-19T20:28:20Z","item":"009","action":"doctor-ok","reason":"doctor --baseline passed","commits":"0e8314de6aefcae3e1198f5246a2ea7f7047b4e6:33030869c64ead563d252641e87cd3b2f4a3cdb7"}
+{"at":"2026-11-19T20:35:21Z","item":"009","action":"run","reason":"run exit 0 (5 = paused for /approve mode)","run":"/home/ubuntu/specfoundry/specs/021-step-mode/evidence/20261119T202820Z"}
+{"at":"2026-11-19T20:37:18Z","item":"","action":"step_stopped","reason":"interrupted"}
+{"at":"2026-11-19T21:48:54Z","item":"","action":"step_stopped","reason":"interrupted"}
+{"at":"2026-11-19T21:49:02Z","item":"","action":"step_stopped","reason":"interrupted"}
+{"at":"2026-11-19T21:54:12Z","item":"","action":"step_stopped","reason":"interrupted"}
+{"at":"2026-11-19T22:01:51Z","item":"","action":"step_stopped","reason":"interrupted"}
+{"at":"2026-11-19T22:15:25Z","item":"","action":"step_stopped","reason":"interrupted"}
+{"at":"2026-11-19T22:31:06Z","item":"010","action":"draft","reason":"drafting pass: opened"}
+{"at":"2026-11-19T22:37:29Z","item":"010","action":"doctor-ok","reason":"doctor --baseline passed","commits":"fb0b2fe42852fa2397abd8bd3eab9eda4274ec5b:1c3991cec25099006f4fd28f532aa0d8636517a1"}
+{"at":"2026-11-19T22:37:32Z","item":"010","action":"run","reason":"run exit 5 (5 = paused for /approve mode)","run":"/home/ubuntu/specfoundry/specs/021-step-mode/evidence/20261119T223729Z"}

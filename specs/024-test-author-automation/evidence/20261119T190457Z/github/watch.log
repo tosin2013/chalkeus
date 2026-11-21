@@ -1,0 +1,26 @@
+could not read GitHub approvals (cannot read comments on #42: GET https://api.github.com/repos/tosin2013/stockroom/issues/42/comments?per_page=100&page=1: 404 Not Found []); the run stays paused
+approved by @tosin2013 on GitHub: start the run in this mode: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}; target stockroom (tosin2013/stockroom@main), item 009, toolchain jdk21-maven, registries: repo.maven.apache.org, security level: minimal, hidden tests: 1 file(s), uncovered criteria: [FR-005]. Now run: pilot/pilot resume --run 20261119T190457Z
+Run mode for this pilot: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}
+  target stockroom (tosin2013/stockroom@main), item 009, toolchain jdk21-maven
+  egress: model host(s) 1 (from pilot.env); registries: repo.maven.apache.org
+  security level: minimal; hidden tests: 1 file(s), uncovered criteria: [FR-005]
+  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.
+Confirm this mode and start staging workers? [y/N] y  (approved on GitHub by @tosin2013)
+  PASS P12   014 R7   graders have no egress; only the prefetch pod reaches DNS and its registries-only proxy
+  baseline 009: pass (the project's tests pass and the hidden tests fail on the base)
+  PASS P01   FR-005   worker namespace has exactly 1 pod with 1 container
+  PASS P02   FR-006   SA and pod automount off; no token file
+  PASS P03   FR-006   default-deny netpol, quota pods=1 secrets=1, Job deadline
+  PASS P04   FR-007   only Secret is model-key; no SCM-like secret keys or env names
+  PASS P05   FR-007   no grading material in the worker namespace
+  FAIL P11   014 FR-008 no hidden-test file reaches the worker (ConfigMaps, staged inputs, prompt)
+  PASS P06   FR-009b  model host via proxy reachable; github.com via proxy and direct internet blocked; control reaches github.com
+  PASS P07   FR-010   worker-policy pod cannot reach the grader stand-in; control can
+  PASS P06r  014 R6   a declared registry is reachable through the target's proxy; example.invalid is refused; the prefetch proxy allows only the registries
+  PASS P08   FR-010   worker SA cannot create/patch/exec in its grader namespace
+  PASS P09   FR-013   only pilot-publish holds an SCM credential
+  PASS P10   S6       pilot pods digest-pinned, non-root, no privilege escalation
+
+Item 009 draft PR: https://github.com/tosin2013/stockroom/pull/43
+Review and merge it on GitHub yourself, then run: pilot/pilot resume --run 20261119T190457Z
+no run 20261119T190457Z

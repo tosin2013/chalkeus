@@ -1,0 +1,14 @@
+== run 20261119T223729Z (target stockroom, item 010)
+  readiness 010: allow [OK]
+  PASS GM01  FR-002   gate unit matrix (all refusal cases refuse)
+  PASS GM02  FR-002   missing roadmap refuses
+  PASS GM03  FR-002   status tool error refuses
+  PASS GM04  FR-002   truncated roadmap refuses B
+Run mode for this pilot: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}
+  target stockroom (tosin2013/stockroom@main), item 010, toolchain jdk21-maven
+  egress: model host(s) 1 (from pilot.env); registries: repo.maven.apache.org
+  security level: minimal; hidden tests: 1 file(s), uncovered criteria: [FR-005 FR-006]
+  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.
+paused: mode not confirmed. no terminal: approve with `pilot/pilot approve --run 20261119T223729Z mode` (your agent harness asks you first), then `pilot/pilot resume --run 20261119T223729Z`
+  or approve on GitHub: https://github.com/tosin2013/stockroom/issues/48 (reply `/approve mode`; allowed: tosin2013)
+watcher started (pid 3877195); you can close this terminal. Log: specs/021-step-mode/evidence/20261119T223729Z/github/watch.log
