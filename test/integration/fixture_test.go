@@ -20,7 +20,7 @@ var issueRE = regexp.MustCompile(`/issues/(\d+)`)
 // TestFixtureRun is the fixture scenario (T010): the walk-away run with GitHub approvals. The
 // owner approves the mode and the retry on the tracking issue and merges A's PR and the status
 // PR, all through the fake; the run's watcher does the rest. A/1 fails by induction, A/2 passes,
-// B runs and opens its PR.
+// B runs and opens its PR. The run then ends failed, only because AU12 marks it a test run.
 func TestFixtureRun(t *testing.T) {
 	out, code := w.pilot("run")
 	id := runID(t, out)
@@ -39,6 +39,7 @@ func TestFixtureRun(t *testing.T) {
 	acted := map[string]bool{}
 	failures := map[string]int{}
 	changed := time.Now()
+	reason := ""
 	deadline := time.Now().Add(30 * time.Minute)
 	for time.Now().Before(deadline) {
 		st := w.status(t, id)
@@ -53,6 +54,7 @@ func TestFixtureRun(t *testing.T) {
 				readTail(filepath.Join(w.runDir(id), "github", "watch.log"), 40))
 		}
 		if state == "succeeded" || state == "failed" {
+			reason = fmt.Sprint(st["reason"])
 			break
 		}
 		key := state + fmt.Sprint(st["pending"])
@@ -73,8 +75,11 @@ func TestFixtureRun(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	}
 	t.Logf("states: %s", strings.Join(seen, " → "))
-	if last := seen[len(seen)-1]; last != "succeeded" {
-		t.Fatalf("run %s ended %s; watch.log:\n%s", id, last, readTail(filepath.Join(w.runDir(id), "github", "watch.log"), 60))
+	// A test run never succeeds: its end-of-run audit fails AU12 "not a test run" (025 R1), so
+	// the expected end is failed with reason AUDIT. The audit below checks AU12 is the only cause.
+	if last := seen[len(seen)-1]; last != "failed" || reason != "AUDIT" {
+		t.Fatalf("run %s ended %s (reason %s), want failed (reason AUDIT, from AU12 only); watch.log:\n%s",
+			id, last, reason, readTail(filepath.Join(w.runDir(id), "github", "watch.log"), 60))
 	}
 	for _, want := range []string{"paused(awaiting-mode)", "paused(awaiting-retry)", "paused(awaiting-merge)"} {
 		if !contains(seen, want) {

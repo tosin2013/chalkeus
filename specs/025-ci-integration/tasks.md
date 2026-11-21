@@ -32,7 +32,7 @@ own test. Stages follow research R6, and each is mergeable on its own.
 ## Stage 5: Drafting and step mode (US1, US2)
 
 - [ ] T011 [US2] Scenario **auto-draft**: a test target with auto-draft on; `author watch --once` with `author-draft`, asserting A01–A05, `DRAFT_OK` and a companion PR on the fake; then with `author-collide`, asserting `DRAFT_PATH_IN_SPEC` and no PR
-- [ ] T012 [US2] Scenario **step mode**: an approver's label through the fake; `step --once` passes: draft, merge the tests, doctor and run (asserting the run pauses at `paused(awaiting-mode)` with `channel=none`), `/approve mode`, merge the item and status PRs; assert `run_started_by step`, the run succeeds, and `decisions.jsonl` has each step
+- [ ] T012 [US2] Scenario **step mode**: an approver's label through the fake; `step --once` passes: draft, merge the tests, doctor and run (asserting the run pauses at `paused(awaiting-mode)` with `channel=none`), `/approve mode`, merge the item and status PRs; assert `run_started_by step`, the run ends `failed` only because of AU12 (a test run never succeeds), and `decisions.jsonl` has each step
 
 ## Stage 6: The debrief gaps (US2)
 
