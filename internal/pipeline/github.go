@@ -255,6 +255,7 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 		base, bundle, err = rec.StatusBundle(edited)
 		if err != nil {
 			cleanup()
+			p.say("could not build the status-change commit: %s", clip(err.Error(), 300))
 			return p.fail(run, "RECONCILE_STATUS_BUNDLE")
 		}
 	}

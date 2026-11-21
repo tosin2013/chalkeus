@@ -27,6 +27,13 @@ func (s *Server) serveGit(w http.ResponseWriter, r *http.Request) {
 		login = s.login(pass)
 	}
 	canWrite := rp != nil && rp.canWrite(login)
+	if rp != nil { // GitHub moves pull/<n>/head with an open PR's branch
+		for _, i := range rp.Issues {
+			if i.PR != nil && i.State == "open" {
+				pullRef(rp.Bare, i.Number, i.PR.Head)
+			}
+		}
+	}
 	s.mu.Unlock()
 	if rp == nil {
 		http.NotFound(w, r)

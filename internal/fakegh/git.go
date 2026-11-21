@@ -180,3 +180,11 @@ func merge(bare, base, head, login, message string) (string, error) {
 func decodeB64(s string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(strings.ReplaceAll(s, "\n", ""))
 }
+
+// pullRef points refs/pull/<n>/head at a branch's commit, as GitHub keeps for every PR (the
+// pilot fetches it to check a status-change PR). A missing branch leaves the ref as it was.
+func pullRef(bare string, n int, branch string) {
+	if sha := refSHA(bare, branch); sha != "" {
+		_, _ = git(bare, nil, nil, "update-ref", fmt.Sprintf("refs/pull/%d/head", n), sha)
+	}
+}
