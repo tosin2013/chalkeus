@@ -379,3 +379,39 @@ func TestManagerNext(t *testing.T) {
 		t.Fatalf("planning: %q", w.m.Next)
 	}
 }
+
+// T014: an in-progress run with no watcher and no event for an hour crashed: it counts as failed
+// (step mode then waits for a relabel); a recent or watched one is still active.
+func TestStaleInProgressRun(t *testing.T) {
+	old := now
+	t.Cleanup(func() { now = old })
+	base := time.Date(2026, 11, 21, 12, 0, 0, 0, time.UTC)
+	now = func() time.Time { return base }
+	for _, c := range []struct {
+		name string
+		r    RunInfo
+		want string
+	}{
+		{"recent", RunInfo{State: "in-progress", EndedAt: base.Add(-10 * time.Minute)}, RunActive},
+		{"crashed", RunInfo{State: "in-progress", EndedAt: base.Add(-61 * time.Minute)}, RunFailed},
+		{"quiet but watched", RunInfo{State: "in-progress", Watching: true, EndedAt: base.Add(-3 * time.Hour)}, RunActive},
+		{"no events yet", RunInfo{State: "in-progress"}, RunActive},
+	} {
+		if got := runState(c.r); got != c.want {
+			t.Errorf("%s: %s, want %s", c.name, got, c.want)
+		}
+	}
+	// From the evidence on disk, as NewestRun reads it.
+	root := t.TempDir()
+	d := filepath.Join(root, "20261121T100000Z")
+	_ = os.MkdirAll(d, 0o755)
+	_ = os.WriteFile(filepath.Join(d, "run.json"), []byte(`{"run_id":"20261121T100000Z","kind":"item","item":"001","target":{"name":"t","repo":"o/t"},"state":"in-progress"}`), 0o644)
+	_ = os.WriteFile(filepath.Join(d, "events.jsonl"), []byte(`{"seq":1,"at":"2026-11-21T10:30:00Z","event":"attempt_started"}`+"\n"), 0o644)
+	r, ok := NewestRun(root, nil, "t", "001", func(string) bool { return false })
+	if !ok || runState(r) != RunFailed {
+		t.Fatalf("a run quiet since 10:30 with no watcher is stale at 12:00: %+v %s", r, runState(r))
+	}
+	if a := Next(ItemState{ID: "001", Proposed: true, Run: runState(r), RunID: r.ID}); a.Kind != RunFailedAct {
+		t.Errorf("step mode waits for a relabel after a crashed run: %v", a)
+	}
+}
