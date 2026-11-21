@@ -263,7 +263,7 @@ func (c *call) edit(i *Issue) {
 	if v, ok := c.body["body"].(string); ok {
 		i.Body = v
 	}
-	if v, ok := c.body["state"].(string); ok && (v == "open" || v == "closed") && !(i.PR != nil && i.PR.Merged) {
+	if v, ok := c.body["state"].(string); ok && (v == "open" || v == "closed") && (i.PR == nil || !i.PR.Merged) {
 		if v == "closed" && i.State == "open" {
 			i.Events = append(i.Events, &Event{ID: c.s.id(), Kind: "closed", Actor: c.login, CreatedAt: c.s.now()})
 		}
