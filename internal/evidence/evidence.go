@@ -570,6 +570,9 @@ func NewRun(root string) (*Run, error) {
 }
 
 // WriteConfigJSON records the public config values and the secret files' hashes (never values).
+// TestMode is set by the CLI in test mode (025): its fields go into every config.json.
+var TestMode map[string]any
+
 func WriteConfigJSON(r *Run, public map[string]string, configDir string, secretFiles []string) error {
 	secrets := map[string]any{}
 	for _, p := range secretFiles {
@@ -583,7 +586,11 @@ func WriteConfigJSON(r *Run, public map[string]string, configDir string, secretF
 		}
 		secrets[rel] = map[string]any{"sha256": sha}
 	}
-	return WriteJSON(filepath.Join(r.Dir, "config.json"), map[string]any{"pilot_env": public, "secret_files": secrets})
+	doc := map[string]any{"pilot_env": public, "secret_files": secrets}
+	for k, v := range TestMode { // 025: a test run says so (the audit's AU12 reads it)
+		doc[k] = v
+	}
+	return WriteJSON(filepath.Join(r.Dir, "config.json"), doc)
 }
 
 func firstLine(args ...string) string {

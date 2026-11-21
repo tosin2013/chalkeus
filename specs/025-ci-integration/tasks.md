@@ -8,9 +8,9 @@ own test. Stages follow research R6, and each is mergeable on its own.
 
 ## Stage 1: Test mode and endpoints (US3)
 
-- [ ] T001 [US3] Read `PILOT_TEST_MODE`, `PILOT_TEST_GITHUB_API` and `PILOT_TEST_GIT_BASE` in `internal/config/config.go`: refuse either address without test mode (exit 2, the contract's message); with test mode set `ghloop.API` and `fixture.BaseURL`, and record `test_mode` and both addresses in `config.json`; tests in `internal/config/config_test.go`
-- [ ] T002 [US3] In test mode, pass `GITHUB_API` and `GIT_BASE` to the publisher and test-author Jobs (`pilot/manifests/publisher-job.yaml.tmpl`, `internal/publisher/`), point the SCM proxy's allowlist at the fake's host (`internal/cluster/infra.go`), and make `pilot/images/tools/publish.py`, `ghops.py` and `check_token.py` read them (defaults unchanged); Python tests in `pilot/images/tests/`
-- [ ] T003 [US3] Add AU12 "not a test run" to `internal/audit/audit.go`, failing only when `config.json` has `test_mode`; the golden audit is unchanged; test
+- [X] T001 [US3] Read `PILOT_TEST_MODE`, `PILOT_TEST_GITHUB_API` and `PILOT_TEST_GIT_BASE` in `internal/config/config.go`: refuse either address without test mode (exit 2, the contract's message); with test mode set `ghloop.API` and `fixture.BaseURL`, and record `test_mode` and both addresses in `config.json`; tests in `internal/config/config_test.go`
+- [X] T002 [US3] In test mode, pass `GITHUB_API` and `GIT_BASE` to the publisher and test-author Jobs (`pilot/manifests/publisher-job.yaml.tmpl`, `internal/publisher/`), point the SCM proxy's allowlist at the fake's host (`internal/cluster/infra.go`), and make `pilot/images/tools/publish.py`, `ghops.py` and `check_token.py` read them (defaults unchanged); Python tests in `pilot/images/tests/`
+- [X] T003 [US3] Add AU12 "not a test run" to `internal/audit/audit.go`, failing only when `config.json` has `test_mode`; the golden audit is unchanged; test
 
 ## Stage 2: The stub harness (US2)
 

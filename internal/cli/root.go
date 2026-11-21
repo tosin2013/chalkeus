@@ -5,9 +5,14 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/tosin2013/specfoundry/internal/config"
+	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/specfoundry/internal/fixture"
+	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/verbose"
 )
 
@@ -37,12 +42,13 @@ func Execute(args []string, version string, stdout, stderr io.Writer) int {
 	root.SetArgs(args)
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+	root.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		n, _ := cmd.Flags().GetCount("verbose")
 		if n == 0 {
 			n, _ = strconv.Atoi(os.Getenv("PILOT_VERBOSE"))
 		}
 		verbose.Set(n, stderr)
+		return applyTestMode()
 	}
 	return exitCode(root.Execute(), stderr)
 }
@@ -62,4 +68,24 @@ func versionCmd(version string) *cobra.Command {
 			return nil
 		},
 	}
+}
+
+// applyTestMode points the pilot at the integration tests' fake GitHub (025), only with
+// PILOT_TEST_MODE=1, and marks every run as a test run.
+func applyTestMode() error {
+	tm, err := config.TestMode()
+	if err != nil {
+		return err
+	}
+	if !tm.On {
+		return nil
+	}
+	if tm.API != "" {
+		ghloop.API = strings.TrimSuffix(tm.API, "/")
+	}
+	if tm.GitBase != "" {
+		fixture.BaseURL = tm.GitBase
+	}
+	evidence.TestMode = tm.Record()
+	return nil
 }

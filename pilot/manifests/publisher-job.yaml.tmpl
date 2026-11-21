@@ -20,6 +20,12 @@ spec:
           env:
             - {name: HTTPS_PROXY, value: "http://proxy.pilot-egress-scm.svc.cluster.local:8888"}
             - {name: https_proxy, value: "http://proxy.pilot-egress-scm.svc.cluster.local:8888"}
+            # 025: empty outside the integration tests; then the fake GitHub's addresses, reached
+            # through the same SCM proxy over plain http
+            - {name: GITHUB_API, value: "${TEST_GITHUB_API}"}
+            - {name: GIT_BASE, value: "${TEST_GIT_BASE}"}
+            - {name: HTTP_PROXY, value: "${TEST_HTTP_PROXY}"}
+            - {name: http_proxy, value: "${TEST_HTTP_PROXY}"}
           securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
           volumeMounts:
             - {name: pub, mountPath: /in, readOnly: true}

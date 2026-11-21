@@ -17,7 +17,8 @@ import tempfile
 import urllib.parse
 import urllib.request
 
-API = "https://api.github.com"
+# 025: the integration tests point this at a fake GitHub (GITHUB_API, test mode only).
+API = (os.environ.get("GITHUB_API") or "https://api.github.com").rstrip("/")
 
 
 class GitHub:
@@ -77,7 +78,7 @@ def git_push(spec: dict, bundle: str = "/in/change.bundle") -> None:
         os.chmod(askpass, 0o700)
         env = {**os.environ, "GIT_ASKPASS": askpass, "GIT_TERMINAL_PROMPT": "0",
                "https_proxy": os.environ.get("HTTPS_PROXY", ""), "HOME": t}
-        url = f"https://github.com/{spec['repo']}.git"
+        url = f"{os.environ.get('GIT_BASE') or 'https://github.com/'}{spec['repo']}.git"  # 025: GIT_BASE in test mode
         repo = os.path.join(t, "repo")
 
         def g(*a):

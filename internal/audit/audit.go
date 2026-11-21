@@ -508,6 +508,13 @@ func Dir(d string, keyFiles, envFiles []string, final bool) ([]evidence.CheckRow
 	if runKind(d) == evidence.KindItem {
 		rows = itemVariants(d, rows)
 	}
+	// AU12 (025): a run made in test mode (fake GitHub, stub harness) is never evidence. Records
+	// without test_mode (every real one) get no AU12 row, so their audit is unchanged.
+	var cfg map[string]any
+	if readJSON(filepath.Join(d, "config.json"), &cfg) && cfg["test_mode"] == true {
+		rows = append(rows, row("AU12", false, "not a test run (integration test mode: fake GitHub, stub harness)",
+			fmt.Sprintf("test_github_api=%v test_git_base=%v", cfg["test_github_api"], cfg["test_git_base"])))
+	}
 	return rows, nil
 }
 
