@@ -11,3 +11,8 @@
 ## Requirements
 
 - **FR-001**: `line_count(text: str) -> int` is importable as `from notes import line_count`.
+
+## Allowed paths
+
+- `src/notes/*`
+- `tests/*`

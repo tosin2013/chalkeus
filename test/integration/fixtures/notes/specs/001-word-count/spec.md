@@ -12,3 +12,8 @@
 ## Requirements
 
 - **FR-001**: `word_count(text: str) -> int` is importable as `from notes import word_count`.
+
+## Allowed paths
+
+- `src/notes/*`
+- `tests/*`

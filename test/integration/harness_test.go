@@ -120,6 +120,10 @@ func setUp() (*world, error) {
 	if err := x.addTarget("notes", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\n"); err != nil {
 		return x, err
 	}
+	// tally: step mode (T012), with GitHub issues and approvals and automatic drafting.
+	if err := x.addTarget("tally", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\nPILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\n"); err != nil {
+		return x, err
+	}
 	x.baseEnv = []string{"PILOT_ROOT=" + x.root, "SPECFOUNDRY_CONFIG=" + x.config, "PILOT_TEST_MODE=1",
 		"PILOT_TEST_GITHUB_API=" + x.api, "PILOT_TEST_GIT_BASE=" + x.api + "/git/", "GH_TOKEN=" + ownerToken, "PILOT_NO_TTY=1",
 		// The pilot commits the status change with the operator's own git identity; a CI runner
