@@ -26,8 +26,8 @@ own test. Stages follow research R6, and each is mergeable on its own.
 
 ## Stage 4: The harness and the fixture scenario (US1, US2)
 
-- [ ] T009 Write `test/integration/` (build tag `integration`): build the pilot and the fake, start the fake on the Docker network's gateway, write a temporary config (pilot.env, the fixture repository, approvers, a model stub), run `pilot up --local-build` in test mode once, and `down` at the end; helpers to run pilot commands and read evidence
-- [ ] T010 [US2] Scenario **fixture**: `run` (A/1 fails by induction), `/approve retry` through the fake, A/2 passes, merge A's PR and its status PR, B runs and opens its PR; assert P01–P10, GM01–GM04, the PRs on the fake, and the audit rows (AU12 failing, the others passing except AU07)
+- [X] T009 Write `test/integration/` (build tag `integration`): build the pilot and the fake, start the fake on the Docker network's gateway, write a temporary config (pilot.env, the fixture repository, approvers, a model stub), run `pilot up --local-build` in test mode once, and `down` at the end; helpers to run pilot commands and read evidence
+- [X] T010 [US2] Scenario **fixture**: `run` (A/1 fails by induction), `/approve retry` through the fake, A/2 passes, merge A's PR and its status PR, B runs and opens its PR; assert P01–P10, GM01–GM04, the PRs on the fake, and the audit rows (AU12 failing, the others passing except AU07)
 
 ## Stage 5: Drafting and step mode (US1, US2)
 
@@ -41,7 +41,7 @@ own test. Stages follow research R6, and each is mergeable on its own.
 
 ## Stage 7: CI and the coverage floor (US1, US4)
 
-- [ ] T015 [US1] Add `.github/workflows/integration.yml`: weekly and on PRs touching `cmd/`, `internal/`, `pilot/manifests/`, `pilot/images/` or itself; `ubuntu-24.04`, no secrets, a 45-minute timeout; artifacts on failure
+- [X] T015 [US1] Add `.github/workflows/integration.yml`: weekly and on PRs touching `cmd/`, `internal/`, `pilot/manifests/`, `pilot/images/` or itself; `ubuntu-24.04`, no secrets, a 45-minute timeout; artifacts on failure
 - [ ] T016 [US4] Add `.github/coverage-floor.txt` with today's numbers for `cli`, `pipeline`, `worker`, `checks`, `cluster`, `grader`, and a step in `.github/workflows/go.yml` that fails a package below its floor
 - [ ] T017 [US1] SC-001 check: reintroduce each live bug on a scratch branch (images not loaded, the A01 label, a terminal for step mode's subprocesses, the issues rule) and confirm the job fails at the matching scenario; record it in `specs/025-ci-integration/evidence/README.md`
 - [ ] T018 Docs (`CONTRIBUTING.md` or `docs/`: running the integration tests locally), privacy check, and the 025 debrief
