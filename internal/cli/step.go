@@ -132,6 +132,8 @@ func stepCmd() *cobra.Command {
 			defer stop()
 			once, _ := cmd.Flags().GetBool("once")
 			fmt.Fprintf(out, "step: target %s, label %q (approvers: %s), every %d s; Ctrl-C stops it\n", t.Name, t.ProposeLabel, strings.Join(approvers, ", "), t.StepIntervalS)
+			fmt.Fprintf(out, "step: how it works: every %d s (15 s while a run is in flight) it checks the roadmap, labels and PRs and takes the next automatic step. Lines below say what it did; \"next:\" says what you do next, and where. You answer on GitHub; it never approves or merges.\n", t.StepIntervalS)
+			lastNext := ""
 			for {
 				failed, err := m.Pass(ctx)
 				if err != nil {
@@ -139,6 +141,10 @@ func stepCmd() *cobra.Command {
 					if once {
 						return Exit(ExitError, "%v", err)
 					}
+				}
+				if m.Next != "" && m.Next != lastNext {
+					lastNext = m.Next
+					fmt.Fprintf(out, "next: %s (next check in %s)\n", m.Next, stepWait(m.Busy, t.StepIntervalS))
 				}
 				if once {
 					if failed {

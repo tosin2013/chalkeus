@@ -336,6 +336,14 @@ It needs GitHub approvals on for the target (`PILOT_GITHUB_APPROVALS=on`, in its
    - a failed `doctor` is tried again when the target or the companion changes;
    - a failed or abandoned run is tried again when you add the label again.
 
+It starts by explaining itself. After each pass that changes something, it prints a `next:`
+line: what you do next, with the link, or that it's working and you don't need to do
+anything, plus when it checks again. For example:
+
+```text
+next: 010: add the label "pilot/go" to https://github.com/you/greeting/issues/47 (next check in 2m0s)
+```
+
 One item is in flight per target. Step mode never approves, merges, labels or edits anything.
 It keeps no state of its own, so you can stop and restart it at any point. Each decision is in
 `step/<target>/decisions.jsonl` under the evidence folder. The coding agent that drives your
