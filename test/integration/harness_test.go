@@ -117,7 +117,11 @@ func setUp() (*world, error) {
 		return x, err
 	}
 	x.baseEnv = []string{"PILOT_ROOT=" + x.root, "SPECFOUNDRY_CONFIG=" + x.config, "PILOT_TEST_MODE=1",
-		"PILOT_TEST_GITHUB_API=" + x.api, "PILOT_TEST_GIT_BASE=" + x.api + "/git/", "GH_TOKEN=" + ownerToken, "PILOT_NO_TTY=1"}
+		"PILOT_TEST_GITHUB_API=" + x.api, "PILOT_TEST_GIT_BASE=" + x.api + "/git/", "GH_TOKEN=" + ownerToken, "PILOT_NO_TTY=1",
+		// The pilot commits the status change with the operator's own git identity; a CI runner
+		// has none.
+		"GIT_AUTHOR_NAME=" + ownerLogin, "GIT_AUTHOR_EMAIL=owner@example.invalid",
+		"GIT_COMMITTER_NAME=" + ownerLogin, "GIT_COMMITTER_EMAIL=owner@example.invalid"}
 	say("pilot up --local-build (several minutes)")
 	if out, code := x.pilot("up", "--local-build"); code != 0 {
 		return x, fmt.Errorf("pilot up exited %d:\n%s", code, tail(out, 60))
