@@ -75,3 +75,26 @@ func (s *Server) State() map[string]any {
 	}
 	return out
 }
+
+// Issues is a snapshot of a repository's issues and PRs, by number (for the integration tests).
+func (s *Server) Issues(repo string) []Issue {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rp := s.repos[repo]
+	if rp == nil {
+		return nil
+	}
+	out := make([]Issue, 0, len(rp.Issues))
+	for n := 1; n < rp.Next; n++ {
+		if i := rp.Issues[n]; i != nil {
+			c := *i
+			if i.PR != nil {
+				pr := *i.PR
+				c.PR = &pr
+			}
+			c.Labels = append([]string(nil), i.Labels...)
+			out = append(out, c)
+		}
+	}
+	return out
+}

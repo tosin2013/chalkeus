@@ -1,0 +1,61 @@
+# Integration tests (spec 025): the pilot end to end on kind, against the fake GitHub
+# (internal/fakegh) with the stub harness in place of the model. No secrets: every token is a
+# dummy the fake accepts. Weekly, on demand, and on PRs that touch the pilot.
+name: integration
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - "pilot/manifests/**"
+      - "pilot/images/**"
+      - "pilot/fixture/**"
+      - "pilot/pins.env"
+      - "test/integration/**"
+      - ".github/workflows/integration.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Install spec (pinned, checksum-verified; the gate's status tool)
+        run: |
+          set -euo pipefail
+          . <(grep -E '^SPEC_(VERSION|SHA256)=' pilot/pins.env)
+          cd "$(mktemp -d)"
+          base="https://github.com/tosin2013/spec-status/releases/download/v${SPEC_VERSION}"
+          curl -fsSLO "$base/spec_${SPEC_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLO "$base/spec_${SPEC_VERSION}_checksums.txt"
+          sha256sum -c --ignore-missing "spec_${SPEC_VERSION}_checksums.txt"
+          tar -xzf "spec_${SPEC_VERSION}_linux_amd64.tar.gz"
+          cp */spec ./spec && echo "${SPEC_SHA256}  spec" | sha256sum -c -
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 spec "$HOME/.local/bin/spec"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Integration tests
+        run: go test -tags integration -timeout 50m -v -count=1 ./test/integration/
+      - name: Keep the evidence and logs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: integration-out
+          path: test/integration/out/
+          retention-days: 14

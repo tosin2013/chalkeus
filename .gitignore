@@ -24,3 +24,6 @@ pilot/runs/
 /vendor/
 coverage.out
 test.out
+
+# 025: integration test output (uploaded by CI on failure)
+test/integration/out/
