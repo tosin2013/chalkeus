@@ -38,6 +38,7 @@ func TestFixtureRun(t *testing.T) {
 	var seen []string
 	acted := map[string]bool{}
 	failures := map[string]int{}
+	changed := time.Now()
 	deadline := time.Now().Add(30 * time.Minute)
 	for time.Now().Before(deadline) {
 		st := w.status(t, id)
@@ -45,6 +46,11 @@ func TestFixtureRun(t *testing.T) {
 		if len(seen) == 0 || seen[len(seen)-1] != state {
 			seen = append(seen, state)
 			say("run " + id + ": " + state)
+			changed = time.Now()
+		}
+		if time.Since(changed) > 10*time.Minute { // the longest step (an attempt) takes a few minutes
+			t.Fatalf("run %s has been %s for 10 minutes; watch.log:\n%s", id, state,
+				readTail(filepath.Join(w.runDir(id), "github", "watch.log"), 40))
 		}
 		if state == "succeeded" || state == "failed" {
 			break

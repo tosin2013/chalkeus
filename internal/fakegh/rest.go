@@ -238,6 +238,7 @@ func createPull(c *call) {
 	}
 	draft, _ := c.body["draft"].(bool)
 	i := c.newIssue(str(c.body, "title"), str(c.body, "body"), &PR{Head: head, Base: base, Draft: draft})
+	pullRef(c.repo.Bare, i.Number, head)
 	c.json(201, c.pullJSON(i))
 }
 

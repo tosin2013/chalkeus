@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -86,6 +87,10 @@ func TestGitOverHTTPAndTheOwnerAPI(t *testing.T) {
 		Head: github.Ptr("pilot/r1/010"), Base: github.Ptr("main"), Draft: github.Ptr(true)})
 	if err != nil {
 		t.Fatal(err)
+	}
+	// GitHub's pull/<n>/head ref, which the pilot fetches for a status-change PR.
+	if err := gitRun(t, work, nil, "fetch", "-q", "origin", fmt.Sprintf("pull/%d/head", pr.GetNumber())); err != nil {
+		t.Fatal("pull/<n>/head is fetchable")
 	}
 	post(t, srv.URL, "/_test/comment", map[string]any{"repo": "me/target", "issue": pr.GetNumber(), "login": "owner", "body": "/approve mode"})
 	post(t, srv.URL, "/_test/merge", map[string]any{"repo": "me/target", "pr": pr.GetNumber(), "login": "owner"})
