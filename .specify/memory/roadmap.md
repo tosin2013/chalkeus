@@ -1,7 +1,24 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.25.0 → 1.26.0 (this revision)
+Version change: 1.26.0 → 1.27.0 (this revision)
+Bump rationale: MINOR — Q7 resolved (product and CLI name), a scope addition to 013 (tab
+completion on install), and the proposal label's default for 021. Nothing verified is
+invalidated.
+Changes this revision (owner decision 2026-11-21, Tosin Akinosho):
+  - Q7 resolved: the brand is SpecFoundry and the installed binary is `specfoundry`; `pilot`
+    becomes a subcommand (`specfoundry pilot …`). A bare `pilot` binary collides with an
+    existing AI ticket-to-PR CLI, and `sf` is the Salesforce CLI's binary (research return
+    MSG-2115 on the Relay). The short alias is `sfy`, offered by the installer, not a
+    second binary.
+  - 013 scope: the installer sets up tab completion (bash, zsh, fish, PowerShell) and offers
+    the `sfy` alias.
+  - 021: the proposal label's default becomes `specfoundry:proposed` (still a profile setting).
+  - Q8 notes that harness rules move from the `pilot/pilot` path to the `specfoundry` binary.
+Specs affected: 013, 021
+Open questions added/resolved: Q7 resolved
+
+Prior: Version change: 1.25.0 → 1.26.0
 Bump rationale: MINOR — status transitions (021, 024 verified) and a scope addition to 025 from
 their debriefs. Nothing verified is invalidated.
 Changes this revision (owner decisions 2026-11-21, Tosin Akinosho):
@@ -1100,7 +1117,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Scope (in):** ~~_to be defined_. Candidates: the release form (single binary, zipapp, or a
   Python package); …~~ A GitHub Actions release workflow (checksums, like the pilot images);
   how the CLI finds the target project and its config; the command name used in harness rules
-  (Q8); install docs.
+  (Q8); install docs; **tab completion set up on install** for bash, zsh, fish and PowerShell
+  (owner condition for the long binary name, 2026-11-21); an opt-in `sfy` shell alias
+  offered on install, with completion wired to it as well.
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
 - **Depends on:** 016, 024, 021 (2026-11-19: the laptop release includes auto-draft and the
   manager loop)
@@ -1111,6 +1130,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   and CLI surface) and Q8 (multi-project use; harness rules today match the `pilot/pilot`
   path). Decide the form and name before speccing. **2026-11-15:** form decided by C-13 (one Go
   binary); the name is still Q7. Dependency changed from 012 to 016 (2026-11-15).
+  **2026-11-21 (owner):** Q7 resolved: the binary is `specfoundry`, with `pilot` as a
+  subcommand (`specfoundry pilot …`), and completion ships with the install.
 
 ### 014 — Any project, any item  [status: verified]
 
@@ -1519,7 +1540,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - an item is **proposed** by a label on its issue (004 mirrors items as issues), honoured only
     when an approver (`PILOT_APPROVERS`) added it, read from the issue's timeline. The label
     proposes; the gate, `doctor` and `/approve mode` still decide (010's rule). Its name follows
-    Q7 and is a profile setting until then;
+    Q7: default `specfoundry:proposed` (Q7 resolved 2026-11-21), still a profile setting;
   - it polls GitHub, as the other watchers do; signed webhooks are 010, in cluster mode;
   - the first version always waits for `/approve mode`; the standing approval follows 009.
   The same decisions run in the operator (011) later, on a different host.
@@ -1676,9 +1697,21 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   stable command surface before 011 (raised 2026-11-14).
   **2026-11-19:** the name also sets 021's proposal label (a profile setting with a placeholder
   until then). The `specfoundry` GitHub organization name is taken.
+  **Resolved 2026-11-21 (owner):** brand SpecFoundry; installed binary `specfoundry`, with
+  `pilot` as a subcommand (`specfoundry pilot …`); tab completion on install (013); proposal
+  label default `specfoundry:proposed` (021). Why not bare `pilot`: an existing AI
+  ticket-to-PR tool already ships a `pilot` CLI; why not `sf`: the Salesforce CLI's binary
+  (research return MSG-2115). Not a trademark clearance: the `specfoundry` GitHub org is a
+  public org of unknown control, and another project uses the exact name SpecFoundry. Releases
+  come from tosin2013/specfoundry for now. Short alias: `sfy`, an opt-in shell alias the
+  installer offers, not a binary. Docs, harness rules and agents always use `specfoundry`.
+  `sfy` over `sfd`: an existing `sfd` CLI wraps the Salesforce CLI (next to the `sf`
+  clash), while the `sfy` uses found were small and unrelated.
 - Q8 — Using the pilot across projects and harnesses (raised 2026-11-15, 012 debrief).
   - Do harness ask rules live per user, or does a `pilot` command install them?
   - Today's rules match the `pilot/pilot` path; an installed CLI (013) changes the pattern.
+    Per Q7 (resolved 2026-11-21) the installed binary is `specfoundry`, so rules match
+    `specfoundry pilot …`, not a bare `pilot`.
   - How are agents that run in a real terminal handled (Warp, for example)? Such an agent
     could answer a `[y/N]` prompt that the audit records as `tty`.
   - Do harnesses other than Claude Code get a deny rule for `approvals/`?
@@ -1786,4 +1819,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.26.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-21
+**Version**: 1.27.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-21
