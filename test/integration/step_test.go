@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/specfoundry/internal/ghloop"
 )
 
 // TestStepMode is the step-mode scenario (T012) on the tally target, one `step --once` pass at a
@@ -18,7 +19,8 @@ import (
 //     opens the companion PR;
 //  3. the owner merges it; the next pass runs doctor and starts the run, which pauses for the
 //     mode approval on GitHub (no terminal: PILOT_NO_TTY);
-//  4. the owner approves the mode and merges the item PR and the status PR as the run asks;
+//  4. the owner approves the mode on the run's tracking issue and merges the item PR and the
+//     status PR as the run asks;
 //  5. the run ends failed, only because AU12 marks it a test run, and the next pass reports it.
 func TestStepMode(t *testing.T) {
 	const repo = "owner/tally"
@@ -86,7 +88,16 @@ func TestStepMode(t *testing.T) {
 		t.Errorf("run_started_by is %q, want step", by)
 	}
 
-	seen, reason := w.drive(t, repo, id, issue)
+	// The run asks for its approvals on its own tracking issue (not the item's issue).
+	run, err := evidence.LoadRun(filepath.Join(w.root, "pilot", "runs"), id)
+	if err != nil || run == nil {
+		t.Fatalf("load run %s: %v", id, err)
+	}
+	tracking := ghloop.TrackingIssue(run)
+	if tracking == 0 {
+		t.Fatalf("run %s has no tracking issue", id)
+	}
+	seen, reason := w.drive(t, repo, id, tracking)
 	if last := seen[len(seen)-1]; last != "failed" || reason != "AUDIT" {
 		t.Fatalf("run %s ended %s (reason %s), want failed (reason AUDIT, from AU12 only)", id, last, reason)
 	}
