@@ -37,6 +37,7 @@ func TestFixtureRun(t *testing.T) {
 	// Act as the owner at each pause, once, and let the watcher resume.
 	var seen []string
 	acted := map[string]bool{}
+	failures := map[string]int{}
 	deadline := time.Now().Add(30 * time.Minute)
 	for time.Now().Before(deadline) {
 		st := w.status(t, id)
@@ -56,7 +57,11 @@ func TestFixtureRun(t *testing.T) {
 		if strings.HasPrefix(state, "paused") && st["watcher"] == nil && acted[key] {
 			// The watcher stopped (or never started): resume as the operator would.
 			if out, code := w.pilot("resume", "--run", id); code != 0 && code != 4 && code != 5 && code != 6 {
+				failures[key]++
 				t.Logf("resume exited %d:\n%s", code, tail(out, 30))
+				if failures[key] >= 3 {
+					t.Fatalf("run %s: resume failed 3 times at %s", id, state)
+				}
 			}
 		}
 		time.Sleep(10 * time.Second)

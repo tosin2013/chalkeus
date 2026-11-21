@@ -50,6 +50,8 @@ jobs:
           mkdir -p "$HOME/.local/bin"
           install -m 0755 spec "$HOME/.local/bin/spec"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Let the fake GitHub listen on port 443 (the egress proxies allow only 443)
+        run: sudo sysctl -w net.ipv4.ip_unprivileged_port_start=443
       - name: Integration tests
         run: go test -tags integration -timeout 50m -v -count=1 ./test/integration/
       - name: Keep the evidence and logs

@@ -149,12 +149,15 @@ func kindGateway() (string, error) {
 // and the fixture repository from pilot/fixture, and records the fixture's base revision.
 func (x *world) startFake(gw, dir string) error {
 	x.fake = fakegh.New(dir)
-	ln, err := net.Listen("tcp", "0.0.0.0:0")
+	// Port 443: the pilot's egress proxies only let traffic out to port 443, and the tests keep
+	// that rule as it is. Binding it needs root or net.ipv4.ip_unprivileged_port_start<=443 (the
+	// workflow sets it).
+	ln, err := net.Listen("tcp", "0.0.0.0:443")
 	if err != nil {
-		return err
+		return fmt.Errorf("the fake GitHub must listen on port 443 (the egress proxies allow only 443): %v; "+
+			"run `sudo sysctl -w net.ipv4.ip_unprivileged_port_start=443` first", err)
 	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	x.api, x.local = fmt.Sprintf("http://%s:%d", gw, port), fmt.Sprintf("http://127.0.0.1:%d", port)
+	x.api, x.local = fmt.Sprintf("http://%s:443", gw), "http://127.0.0.1:443"
 	go func() { _ = http.Serve(ln, fakegh.NewMux(x.fake)) }()
 	x.fake.AddUser(ownerToken, ownerLogin)
 	x.fake.AddUser(botToken, botLogin)
