@@ -1609,7 +1609,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   Actions trigger is later work, and the operator trigger is 011's. Evidence:
   specs/024-test-author-automation/evidence/.
 
-### 025 — Integration tests in CI  [status: planned]
+### 025 — Integration tests in CI  [status: specced]
 
 - **Description:** Run the pilot's real pieces together in CI, on a kind cluster, so seams
   between commands, templates, checks, processes and GitHub are tested before a live run finds
@@ -1635,11 +1635,16 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Scope (out):** testing models or prompts; OpenShift in CI (with 005); replacing the live
   validation runs, which still close each item.
 - **Depends on:** 016, 021, 024
+- **Spec dir:** specs/025-ci-integration/
 - **Governed by:** C-09, C-10, C-14
 - **Notes:** Owner decision 2026-11-19, after the seam audit
   (specs/021-step-mode/audit-20261119.md): decision logic had 84-93% unit coverage and none of the
   six live bugs; the glue had 15-22% and all six. The audit's known limits (a crashed
   `in-progress` run holding the slot) are tested here first.
+  **Specced 2026-11-21 (owner):** a fake GitHub API server in this repository (no secrets, also
+  for fork PRs), a stub `opencode` in a locally built test worker image, and a GitHub-hosted
+  runner. Test endpoints are refused unless `PILOT_TEST_MODE=1`, and a test run's audit says
+  it is not evidence.
 
 ## Open Questions
 
