@@ -183,3 +183,5 @@ func TestMerge(t *testing.T) {
 		t.Fatal("a merged PR can't be merged again")
 	}
 }
+
+func secretOf(s string) secret.Value { return secret.New(s) }

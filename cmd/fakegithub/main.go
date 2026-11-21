@@ -1,4 +1,5 @@
-// Command fakegithub is the integration tests' fake GitHub (025): a REST subset backed by real
+// Command fakegithub is the integration tests' fake GitHub (025): a REST subset, git over HTTP
+// (/git/) and the owner API (/_test/), backed by real
 // bare git repositories. It is a test tool, built and run only by test/integration, and never
 // released (no release workflow builds it).
 package main
