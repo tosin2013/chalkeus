@@ -435,3 +435,23 @@ func TestManagerNextAfterDoctorAndRun(t *testing.T) {
 		t.Fatalf("after the run started: %q", w.m.Next)
 	}
 }
+
+// The next line names the owner's move after a non-approver's label and while a failed doctor
+// stands (both said "nothing is waiting for you"; found by the 025 gaps scenario).
+func TestManagerNextNonApproverAndStandingDoctorFailure(t *testing.T) {
+	w := newWorld(t)
+	w.m.Src.Repo = "me/proj"
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "stranger"}
+	w.labels[44] = ghloop.Proposal{Labelled: true, AddedBy: "stranger"}
+	w.pass(t)
+	if !strings.HasPrefix(w.m.Next, "009: waiting for an approver: remove and re-add it on https://github.com/me/proj/issues/41") {
+		t.Fatalf("non-approver: %q", w.m.Next)
+	}
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	w.doctor = 1
+	w.pass(t)
+	w.pass(t) // same commits: doctor isn't rerun
+	if !strings.Contains(w.m.Next, "009: waiting for you: doctor found problems") {
+		t.Fatalf("standing doctor failure: %q", w.m.Next)
+	}
+}

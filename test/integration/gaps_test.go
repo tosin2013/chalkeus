@@ -34,8 +34,8 @@ func TestStepGaps(t *testing.T) {
 
 	must(t, w.fake.Label(repo, issue, "stranger", "pilot/go", false))
 	out := step("after a non-approver's label")
-	if !strings.Contains(out, "not in PILOT_APPROVERS") {
-		t.Errorf("the pass should say the label's adder is not an approver")
+	if !strings.Contains(out, "not in PILOT_APPROVERS") || !strings.Contains(out, "next: 001: waiting for an approver") {
+		t.Errorf("the pass should say the label's adder is not an approver, and that an approver must relabel")
 	}
 	if acts := actionsOf(t, "gaps"); len(acts) != 0 {
 		t.Errorf("a non-approver's label must start nothing; decisions: %v", acts)
@@ -43,8 +43,17 @@ func TestStepGaps(t *testing.T) {
 
 	must(t, w.fake.Label(repo, issue, "stranger", "pilot/go", true))
 	must(t, w.fake.Label(repo, issue, ownerLogin, "pilot/go", false))
-	step("after the owner's label")
-	step("again, at the same commits")
+	out = step("after the owner's label")
+	if !strings.Contains(out, "next: 001: waiting for you: doctor found problems") {
+		t.Errorf("after the failed doctor, the next line should point at its findings")
+	}
+	if strings.Contains(out, "already pass") || !strings.Contains(out, "not checked: the project's own tests fail first") {
+		t.Errorf("doctor must not claim the hidden tests pass when they were never graded")
+	}
+	out = step("again, at the same commits")
+	if !strings.Contains(out, "next: 001: waiting for you: doctor found problems") && strings.Contains(out, "nothing is waiting for you") {
+		t.Errorf("a standing doctor failure is still the owner's move")
+	}
 
 	acts := actionsOf(t, "gaps")
 	if count(acts, "doctor-failed") != 1 || count(acts, "comment") != 1 || count(acts, "run") != 0 {

@@ -36,8 +36,9 @@ own test. Stages follow research R6, and each is mergeable on its own.
 
 ## Stage 6: The debrief gaps (US2)
 
-- [ ] T013 [US2] Scenarios: a non-approver's label starts nothing; a failing doctor (a target whose tests fail) gives exactly one comment and no run
-- [ ] T014 Add a stale-run rule to `internal/step/gather.go`: an `in-progress` run with no watcher and no event for an hour counts as failed (then waits for a relabel); unit test, and a scenario with a crashed run
+- [X] T013 [US2] Scenarios: a non-approver's label starts nothing; a failing doctor (a target whose tests fail) gives exactly one comment and no run
+- [X] T014 Add a stale-run rule to `internal/step/gather.go`: an `in-progress` run with no watcher and no event for an hour counts as failed (then waits for a relabel); unit test, and a scenario with a crashed run
+  Done as (2026-11-21): the rule (`step.StaleAfter`, one hour) with a unit test that also reads a run record from disk through `NewestRun`. No integration scenario: it would have to wait an hour, or add a test-only setting to shorten the limit, a test-mode exception in the pilot that the owner did not want.
 
 ## Stage 7: CI and the coverage floor (US1, US4)
 

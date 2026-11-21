@@ -347,11 +347,16 @@ func nextFor(plan []Action, fallback string) string {
 			return a.Item + ": running doctor --baseline, then starting the run; nothing needed from you yet"
 		case NeedsTests:
 			return a.Item + ": waiting for you: " + a.Reason + " (see the comment on its issue)"
+		case DoctorFailed:
+			return a.Item + ": waiting for you: doctor found problems (listed in the comment on its issue); fix them, and step mode tries again once the target or the companion changes"
 		}
 	}
 	for _, a := range plan {
 		if i := strings.Index(a.Reason, "to start it, "); a.Kind == Skip && i >= 0 {
 			return a.Item + ": " + a.Reason[i+len("to start it, "):]
+		}
+		if i := strings.Index(a.Reason, "an approver must "); a.Kind == Skip && i >= 0 {
+			return a.Item + ": waiting for an approver: " + a.Reason[i+len("an approver must "):]
 		}
 	}
 	if fallback != "" {
