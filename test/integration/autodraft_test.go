@@ -25,7 +25,7 @@ func TestAutoDraft(t *testing.T) {
 	if !strings.Contains(out, "skip 001: a draft pull request is open") {
 		t.Errorf("item 001 should be skipped while its PR is open")
 	}
-	if code != 1 || !strings.Contains(out, "draft 002: DRAFT_PATH_IN_SPEC, no PR") {
+	if code != 1 || !strings.Contains(out, "draft 002: attempt 1 DRAFT_PATH_IN_SPEC") || !strings.Contains(out, "draft 002: failed, no PR") {
 		t.Errorf("item 002's draft should be refused for its path, with no PR")
 	}
 

@@ -196,7 +196,9 @@ func (x *world) writeConfig() error {
 		"pilot.env": "PILOT_FIXTURE_REPO=" + fixtureRepo + "\nPILOT_MODEL=stub/stub\nPILOT_MODEL_EGRESS_HOSTS=example.com\n" +
 			"PILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\nPILOT_APPROVERS=" + ownerLogin + "\nPILOT_PUBLISHER_CREDENTIAL=token\n",
 		"publisher.env":          "PILOT_SCM_TOKEN=" + botToken + "\n",
-		"opencode/opencode.json": `{"model":"stub/stub","provider":{"stub":{"options":{"apiKey":"{file:/run/secrets/model/stub_api_key}"}}}}` + "\n",
+		// doctor's model check calls providers.<p>.settings.baseURL: the fake's stand-in model.
+		"opencode/opencode.json": `{"model":"stub/stub","providers":{"stub":{"settings":{"baseURL":"` + x.local +
+			`/model/v1","apiKey":"{file:/run/secrets/model/stub_api_key}"}}}}` + "\n",
 		"opencode/stub_api_key":  "not-a-real-key\n",
 	}
 	for _, d := range []string{x.config, filepath.Join(x.config, "opencode")} {

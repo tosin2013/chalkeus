@@ -111,3 +111,26 @@ func TestGitOverHTTPAndTheOwnerAPI(t *testing.T) {
 		t.Fatalf("%s", s)
 	}
 }
+
+// The stand-in model answers doctor's one-token check only with a bearer key.
+func TestStandInModel(t *testing.T) {
+	srv := httptest.NewServer(fakegh.NewMux(fakegh.New(t.TempDir())))
+	defer srv.Close()
+	for _, c := range []struct {
+		auth string
+		want int
+	}{{"Bearer k", 200}, {"", 401}} {
+		req, _ := http.NewRequest(http.MethodPost, srv.URL+"/model/v1/chat/completions", strings.NewReader(`{}`))
+		if c.auth != "" {
+			req.Header.Set("Authorization", c.auth)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != c.want {
+			t.Errorf("auth %q: %d, want %d", c.auth, resp.StatusCode, c.want)
+		}
+	}
+}
