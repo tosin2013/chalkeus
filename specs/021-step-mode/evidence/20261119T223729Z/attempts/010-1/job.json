@@ -1,0 +1,39 @@
+{
+  "container_terminated": {
+    "containerID": "containerd://cf5e5cbcaf20f3f875a012d83fa8535f24707be313238445aa20ee98b5792396",
+    "exitCode": 0,
+    "finishedAt": "2026-11-19T22:47:32Z",
+    "reason": "Completed",
+    "startedAt": "2026-11-19T22:42:19Z"
+  },
+  "job_status": {
+    "completionTime": "2026-11-19T22:47:34Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-19T22:47:34Z",
+        "lastTransitionTime": "2026-11-19T22:47:34Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-11-19T22:47:34Z",
+        "lastTransitionTime": "2026-11-19T22:47:34Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-11-19T22:41:50Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "outcome": "Complete",
+  "pod": "worker-lhz8s",
+  "pod_phase": "Succeeded",
+  "pod_reason": null
+}

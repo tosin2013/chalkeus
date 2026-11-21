@@ -1,0 +1,23 @@
+{
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/009-delete-product/tasks.md"
+  ],
+  "attempt": 1,
+  "base_revision": "59f496b4372295bef3c890605da8d73575224802",
+  "command_timeout_s": 600,
+  "hidden_mode": "overlay",
+  "induction": null,
+  "item_id": "009",
+  "mode": "attempt",
+  "run_id": "20261119T202820Z",
+  "spec_sha256": "c5599258a24383b7d9d2846f5b57c3c26af832a6d2ca284861f510fa69419902",
+  "task": "009",
+  "test_command": "mvn -B test",
+  "test_paths": [
+    "src/test/*"
+  ],
+  "tests_may_change": [],
+  "toolchain": "jdk21-maven"
+}

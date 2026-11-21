@@ -1,0 +1,29 @@
+== run 20261119T202820Z (target stockroom, item 009)
+  readiness 009: allow [OK]
+  PASS GM01  FR-002   gate unit matrix (all refusal cases refuse)
+  PASS GM02  FR-002   missing roadmap refuses
+  PASS GM03  FR-002   status tool error refuses
+  PASS GM04  FR-002   truncated roadmap refuses B
+Run mode for this pilot: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}
+  target stockroom (tosin2013/stockroom@main), item 009, toolchain jdk21-maven
+  egress: model host(s) 1 (from pilot.env); registries: repo.maven.apache.org
+  security level: minimal; hidden tests: 1 file(s), uncovered criteria: [FR-005]
+  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.
+  PASS P12   014 R7   graders have no egress; only the prefetch pod reaches DNS and its registries-only proxy
+  baseline 009: pass (the project's tests pass and the hidden tests fail on the base)
+  PASS P01   FR-005   worker namespace has exactly 1 pod with 1 container
+  PASS P02   FR-006   SA and pod automount off; no token file
+  PASS P03   FR-006   default-deny netpol, quota pods=1 secrets=1, Job deadline
+  PASS P04   FR-007   only Secret is model-key; no SCM-like secret keys or env names
+  PASS P05   FR-007   no grading material in the worker namespace
+  PASS P11   014 FR-008 no hidden-test file reaches the worker (ConfigMaps, staged inputs, prompt)
+  PASS P06   FR-009b  model host via proxy reachable; github.com via proxy and direct internet blocked; control reaches github.com
+  PASS P07   FR-010   worker-policy pod cannot reach the grader stand-in; control can
+  PASS P06r  014 R6   a declared registry is reachable through the target's proxy; example.invalid is refused; the prefetch proxy allows only the registries
+  PASS P08   FR-010   worker SA cannot create/patch/exec in its grader namespace
+  PASS P09   FR-013   only pilot-publish holds an SCM credential
+  PASS P10   S6       pilot pods digest-pinned, non-root, no privilege escalation
+
+Item 009 draft PR: https://github.com/tosin2013/stockroom/pull/44
+Review and merge it on GitHub yourself, then run: pilot/pilot resume --run 20261119T202820Z
+watcher started (pid 3752081); you can close this terminal. Log: specs/021-step-mode/evidence/20261119T202820Z/github/watch.log

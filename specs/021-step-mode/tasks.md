@@ -47,8 +47,8 @@ quickstart.md)
   - `docs/troubleshooting.md`: the refusals and the comments it posts.
 
   Run the docs check.
-- [ ] T012 Live validation with the owner (quickstart): Stockroom 009, labelled, carried to `verified` with only GitHub answers; after `down`, audit 11/11; `decisions.jsonl` recorded. Record it in `specs/021-step-mode/evidence/README.md` (SC-001)
-- [ ] T013 Privacy check of the new records, then the 021 debrief
+- [X] T012 Live validation with the owner (quickstart): Stockroom 009, labelled, carried to `verified` with only GitHub answers; after `down`, audit 11/11; `decisions.jsonl` recorded. Record it in `specs/021-step-mode/evidence/README.md` (SC-001)
+- [X] T013 Privacy check of the new records, then the 021 debrief
 
 ## Dependencies
 

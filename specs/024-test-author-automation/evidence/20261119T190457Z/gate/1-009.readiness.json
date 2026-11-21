@@ -1,0 +1,68 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/009-delete-product/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/009-delete-product/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "src/main/java/dev/stockroom/*, src/test/java/dev/stockroom/*, specs/009-delete-product/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@f1c400e831c1"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "1546240 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "0e8314de6aefcae3e1198f5246a2ea7f7047b4e6",
+  "spec_dir": "specs/009-delete-product",
+  "title": "Delete a product",
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/009-delete-product/tasks.md"
+  ],
+  "spec_sha256": "279c6f12c7f7952bc29c0dcf6c185f5ad32b227c26e1f398947f998f21794676",
+  "mapping": {
+    "present": true,
+    "stale": false,
+    "uncovered": [
+      "FR-005"
+    ],
+    "valid": true
+  },
+  "companion_commit": "f1c400e831c1ee80c3a28483c466e5f46d60c370",
+  "hidden_files": 1,
+  "input_bytes": 1546240
+}

@@ -1,0 +1,14 @@
+{
+  "repo": "tosin2013/specfoundry-acceptance",
+  "commit": "33030869c64ead563d252641e87cd3b2f4a3cdb7",
+  "dir": "stockroom/items/009",
+  "item": "009",
+  "file_count": 1,
+  "files_sha256": "fc976be2854bc0cc18c9176e2f6518117b329463bfa8aaedb549af22c7c90a4e",
+  "files": [
+    {
+      "path": "src/test/java/dev/stockroom/product/ProductDeleteAcceptanceTests.java",
+      "sha256": "63addb5a72835371f9704887d49110fded690f5bfce80d47c9ba2160bc13a612"
+    }
+  ]
+}

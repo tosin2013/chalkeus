@@ -1,0 +1,37 @@
+{
+  "attempt": 0,
+  "checks": [
+    {
+      "detail": "base checked out",
+      "id": "G1_bundle_applies",
+      "result": "pass"
+    },
+    {
+      "detail": "baseline: no change",
+      "id": "G2_allowed_paths",
+      "result": "skipped"
+    },
+    {
+      "detail": "baseline: no change",
+      "id": "G3_tasks_checked",
+      "result": "skipped"
+    },
+    {
+      "detail": "m] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration dev.stockroom.StockroomApplication for test class dev.stockroom.product.ProductDeleteTests\n[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.179 s -- in dev.stockroom.product.ProductDeleteTests\n[INFO] Running dev.stockroom.product.ProductFilterWildcardTests\n2026-11-19T22:41:31.121Z  INFO 79 --- [stockroom] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [dev.stockroom.product.ProductFilterWildcardTests]: ProductFilterWildcardTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.\n2026-11-19T22:41:31.123Z  INFO 79 --- [stockroom] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration dev.stockroom.StockroomApplication for test class dev.stockroom.product.ProductFilterWildcardTests\n2026-11-19T22:41:31.124Z  INFO 79 --- [stockroom] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [dev.stockroom.product.ProductFilterWildcardTests]: ProductFilterWildcardTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.\n2026-11-19T22:41:31.125Z  INFO 79 --- [stockroom] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration dev.stockroom.StockroomApplication for test class dev.stockroom.product.ProductFilterWildcardTests\n[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.096 s -- in dev.stockroom.product.ProductFilterWildcardTests\n[INFO] \n[INFO] Results:\n[INFO] \n[INFO] Tests run: 88, Failures: 0, Errors: 0, Skipped: 0\n[INFO] \n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  11.967 s\n[INFO] Finished at: 2026-11-19T22:41:31Z\n[INFO] ------------------------------------------------------------------------\nMockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3\nOpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended\nWARNING: A Java agent has been loaded dynamically (/deps/m2/net/bytebuddy/byte-buddy-agent/1.18.15/byte-buddy-agent-1.18.15.jar)\nWARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning\nWARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information\nWARNING: Dynamic loading of agents will be disallowed by default in a future release\n",
+      "id": "G4_visible_tests",
+      "result": "pass"
+    },
+    {
+      "detail": "hidden tests fail on the base revision (expected)\nexit=1 output_lines=34 output_sha256=5c5eb4208cc9f2449d00c0d64fc02fc4ee8da638211ee0d069de8a6417fada62 (output withheld: hidden tests)",
+      "id": "G5_hidden_tests",
+      "result": "pass"
+    }
+  ],
+  "failure": null,
+  "grader_image": "ghcr.io/tosin2013/specfoundry-pilot-tools@sha256:2b997b5008e214da51dedf9e7a437b9eb5a11f7d87afdda8edb67064f256f6aa",
+  "mode": "baseline",
+  "result": "pass",
+  "run_id": "20261119T223729Z",
+  "task": "010",
+  "version": 1
+}

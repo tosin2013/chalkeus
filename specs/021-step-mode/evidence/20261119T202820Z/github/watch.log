@@ -1,0 +1,19 @@
+Reconcile proposal for task 009 (item 009), PR #44 merged (eb48058badd58971e91e552c30d9cf3d5aa47f6f), tasks 100%, graded tree matches:
+- ### 009 — Delete a product  [status: specced]
++ ### 009 — Delete a product  [status: verified]
+
+Status-change PR: https://github.com/tosin2013/stockroom/pull/45
+It changes only item 009 to `verified`. Merging it on GitHub approves the status change; then run `pilot resume` (or `pilot github watch`).
+github drift: 0 difference(s)
+  PASS AU01 only the prepared item was allowed and attempted (014 FR-002)
+  PASS AU02 baseline passed, then failed attempts and exactly one final pass (014 FR-007)
+  PASS AU03 exactly 1 draft task PR (plus at most 1 status PR) on the target, by the publisher identity (014)
+  PASS AU04 no worker/grader held an SCM credential (P04, P09) (SC-004); no hidden test reached a worker (P11, 014)
+  PASS AU05 gate fail-closed matrix passed (SC-005)
+  PASS AU06 every attempt within its spend cap (SC-008)
+  PASS AU08 no secrets in the evidence record
+  PASS AU09 every retry confirmed by the operator (FR-017)
+  PASS AU10 mode confirmed before any worker staged (FR-023)
+  PASS AU11 no induction; every attempt got the item's spec unaltered (014)
+run 20261119T202820Z succeeded. Evidence: specs/021-step-mode/evidence/20261119T202820Z
+run 20261119T202820Z is succeeded; stopped watching
