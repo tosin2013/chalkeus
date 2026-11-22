@@ -119,10 +119,10 @@ func add(s *Slice, p Phase) {
 
 // State is a slice's tick state: merged (every task ticked), untouched (none) or started.
 func State(s Slice) string {
-	switch {
-	case s.Checked == s.Total:
+	switch s.Checked {
+	case s.Total: // first, so a slice with no tasks (0 of 0) counts as merged
 		return Merged
-	case s.Checked == 0:
+	case 0:
 		return Untouched
 	default:
 		return Started
