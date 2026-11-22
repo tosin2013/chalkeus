@@ -202,3 +202,32 @@ func TestPassOnly(t *testing.T) {
 		t.Fatalf("%s %v\n%s", out, err, w.out)
 	}
 }
+
+// A changed active feature moves the evidence root; an automatic draft made under the earlier
+// feature still counts, so the item isn't drafted again (021 audit known limit; 025 F1).
+func TestAutoDraftedAcrossFeatures(t *testing.T) {
+	repo := t.TempDir()
+	old := filepath.Join(repo, "specs", "024-x", "evidence")
+	d, err := NewDraft(Root(old))
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.Trigger, d.Target, d.Item, d.SpecSHA256, d.State = "auto", "notes", "001", "abc", "submitted"
+	if err := d.Save(); err != nil {
+		t.Fatal(err)
+	}
+	cur := filepath.Join(repo, "specs", "025-y", "evidence")
+	if !AutoDrafted(cur, "notes", "001", "abc") {
+		t.Fatalf("a draft under the earlier feature must count; roots %v", DraftRoots(cur))
+	}
+	if AutoDrafted(cur, "notes", "001", "other-spec") || AutoDrafted(cur, "other", "001", "abc") {
+		t.Error("only the same target, item and spec version count")
+	}
+	// The fixture's pilot/runs root finds them too; a root outside the layout has only its own.
+	if !AutoDrafted(filepath.Join(repo, "pilot", "runs"), "notes", "001", "abc") {
+		t.Error("from pilot/runs")
+	}
+	if r := DraftRoots(filepath.Join(t.TempDir(), "elsewhere")); len(r) != 1 {
+		t.Errorf("outside the layout: %v", r)
+	}
+}

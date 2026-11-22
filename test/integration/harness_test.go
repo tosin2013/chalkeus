@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -124,7 +125,7 @@ func setUp() (*world, error) {
 		return x, err
 	}
 	// tally: step mode (T012), with GitHub issues and approvals and automatic drafting.
-	if err := x.addTarget("tally", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\nPILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\n"); err != nil {
+	if err := x.addTarget("tally", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\nPILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\nPILOT_STEP_INTERVAL_S=30\n"); err != nil {
 		return x, err
 	}
 	// gaps: step mode's debrief gaps (T013): a non-approver's label, a failing doctor.
@@ -347,6 +348,45 @@ func (x *world) pilotTTY(args ...string) (string, int) {
 }
 
 func shellQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
+
+// background starts a long-running pilot command (as an operator leaves `pilot step` running) and
+// returns a function that reads its output so far, and one that stops it with an interrupt (as
+// Ctrl-C does) and returns all of it.
+func (x *world) background(args ...string) (func() string, func() string) {
+	c := exec.Command(x.bin, args...)
+	c.Dir = x.root
+	c.Env = append(cleanEnv(), x.baseEnv...)
+	b := &lockedBuf{}
+	c.Stdout, c.Stderr = b, b
+	if err := c.Start(); err != nil {
+		return func() string { return err.Error() }, func() string { return err.Error() }
+	}
+	done := make(chan struct{})
+	go func() { _ = c.Wait(); close(done) }()
+	stop := func() string {
+		_ = c.Process.Signal(os.Interrupt)
+		select {
+		case <-done:
+		case <-time.After(60 * time.Second):
+			_ = c.Process.Kill()
+			<-done
+		}
+		return b.String()
+	}
+	return b.String, stop
+}
+
+type lockedBuf struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (l *lockedBuf) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.Write(p)
+}
+func (l *lockedBuf) String() string { l.mu.Lock(); defer l.mu.Unlock(); return l.b.String() }
 
 // cleanEnv is this process's environment without GitHub credentials or pilot settings, so the
 // operator's own never reach a test run.

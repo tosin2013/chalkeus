@@ -79,6 +79,40 @@ type Draft struct {
 // Root is where draft evidence lives: <evidence root>/drafts.
 func Root(evidenceRoot string) string { return filepath.Join(evidenceRoot, "drafts") }
 
+// DraftRoots are every draft folder of the checkout that holds evidenceRoot, the current one
+// first: each Spec Kit feature's `specs/<feature>/evidence/drafts` and `pilot/runs/drafts`.
+// An evidence root outside that layout has only its own.
+func DraftRoots(evidenceRoot string) []string {
+	cur := Root(evidenceRoot)
+	repo := ""
+	abs, err := filepath.Abs(evidenceRoot)
+	if err == nil {
+		switch {
+		case filepath.Base(abs) == "evidence" && filepath.Base(filepath.Dir(filepath.Dir(abs))) == "specs":
+			repo = filepath.Dir(filepath.Dir(filepath.Dir(abs))) // <repo>/specs/<feature>/evidence
+		case filepath.Base(abs) == "runs" && filepath.Base(filepath.Dir(abs)) == "pilot":
+			repo = filepath.Dir(filepath.Dir(abs)) // <repo>/pilot/runs
+		}
+	}
+	out := []string{cur}
+	if repo == "" {
+		return out
+	}
+	seen := map[string]bool{filepath.Clean(cur): true}
+	if a, err := filepath.Abs(cur); err == nil {
+		seen[a] = true
+	}
+	more, _ := filepath.Glob(filepath.Join(repo, "specs", "*", "evidence", "drafts"))
+	sort.Strings(more)
+	for _, d := range append(more, filepath.Join(repo, "pilot", "runs", "drafts")) {
+		if !seen[d] {
+			seen[d] = true
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
 // NewDraft creates a draft folder named by the UTC time.
 func NewDraft(root string) (*Draft, error) {
 	if err := os.MkdirAll(root, 0o755); err != nil {

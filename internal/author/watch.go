@@ -137,16 +137,22 @@ func AutoDrafted(evidenceRoot, target, item, specSHA string) bool {
 // previousAuto is the id of an earlier automatic draft of this item for the same spec that got as
 // far as a check (or a PR), or "". A draft that never produced files (an infrastructure failure,
 // such as a Job that couldn't start) doesn't count, so the next pass tries again.
+//
+// It looks in every draft folder of the checkout, not only the active feature's: changing the
+// active Spec Kit feature moves the evidence root, and the earlier drafts must still count, or an
+// item would be drafted again (021 audit known limit; fixed in 025).
 func (w WatchEnv) previousAuto(item, specSHA string) string {
-	entries, _ := os.ReadDir(Root(w.EvidenceRoot))
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		d, err := LoadDraft(Root(w.EvidenceRoot), e.Name(), "", "")
-		if err == nil && d.Trigger == "auto" && d.Target == w.Target.Name && d.Item == item && d.SpecSHA256 == specSHA &&
-			(len(d.Checks) > 0 || d.State == "submitted") {
-			return d.ID
+	for _, root := range DraftRoots(w.EvidenceRoot) {
+		entries, _ := os.ReadDir(root)
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+			d, err := LoadDraft(root, e.Name(), "", "")
+			if err == nil && d.Trigger == "auto" && d.Target == w.Target.Name && d.Item == item && d.SpecSHA256 == specSHA &&
+				(len(d.Checks) > 0 || d.State == "submitted") {
+				return d.ID
+			}
 		}
 	}
 	return ""

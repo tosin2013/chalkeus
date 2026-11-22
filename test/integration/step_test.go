@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
@@ -98,7 +99,22 @@ func TestStepMode(t *testing.T) {
 	if tracking == 0 {
 		t.Fatalf("run %s has no tracking issue", id)
 	}
+	// The operator leaves `pilot step` running while the run goes on: it relays the run's watcher
+	// log, including the lines written after the run ends (the 021 bug fixed by #124 lost them).
+	output, stop := w.background("step", "--target", "tally")
 	seen, reason := w.drive(t, repo, id, tracking)
+	relayed := false
+	for end := time.Now().Add(3 * time.Minute); time.Now().Before(end); time.Sleep(5 * time.Second) {
+		if strings.Contains(output(), "001 run: run "+id+" is failed; stopped watching") {
+			relayed = true
+			break
+		}
+	}
+	long := stop()
+	t.Logf("long-running step:\n%s", tail(long, 40))
+	if !relayed {
+		t.Errorf("the running step mode should relay the run's last line after it ends (\"run %s is failed; stopped watching\")", id)
+	}
 	if last := seen[len(seen)-1]; last != "failed" || reason != "AUDIT" {
 		t.Fatalf("run %s ended %s (reason %s), want failed (reason AUDIT, from AU12 only)", id, last, reason)
 	}
