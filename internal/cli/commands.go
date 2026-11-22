@@ -105,6 +105,8 @@ func addTargetFlag(c *cobra.Command) {
 func auditCmd() *cobra.Command {
 	c := &cobra.Command{Use: "audit", Short: "evidence-only audit", Args: cobra.NoArgs, RunE: runAudit}
 	c.Flags().String("run", "", "run id (default: the latest run)")
+	c.Flags().String("item", "", "with --target: list every local run of the item (its slices too, 026) and audit the newest; writes nothing")
+	addTargetFlag(c)
 	return c
 }
 

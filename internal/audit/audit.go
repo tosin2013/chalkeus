@@ -540,7 +540,11 @@ func itemVariants(d string, rows []evidence.CheckRow) []evidence.CheckRow {
 		"AU03": itemAU03(d, st),
 		"AU11": itemAU11(d, item),
 	}
-	out := make([]evidence.CheckRow, 0, len(rows))
+	sliceID, _ := st["slice"].(string)
+	if sliceID != "" { // 026: a slice run's PR counts, and the slice order (AU13)
+		repl["AU03"] = sliceAU03(d, st, item, sliceID)
+	}
+	out := make([]evidence.CheckRow, 0, len(rows)+1)
 	for _, r := range rows {
 		if x, ok := repl[r.ID]; ok {
 			r = x
@@ -549,6 +553,9 @@ func itemVariants(d string, rows []evidence.CheckRow) []evidence.CheckRow {
 			r = itemAU04(d, r)
 		}
 		out = append(out, r)
+	}
+	if sliceID != "" {
+		out = append(out, sliceAU13(d, st, item, sliceID))
 	}
 	return out
 }

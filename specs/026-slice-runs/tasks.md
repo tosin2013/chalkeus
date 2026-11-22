@@ -169,21 +169,21 @@ Merge and status:
 
 **Independent Test:** after a two-slice item is verified, the item view lists both runs and the last run's AU13 passes (SC-006).
 
-- [ ] T033 [US4] In `internal/audit/audit.go`, add an `itemAU03` slice variant (contracts/audit.md): exactly 1 draft task PR whose head ends `/<item>-<lower(slice)>`, and status PRs 0 unless `slices_last`, then at most 1. It is selected in `itemVariants` only when `run.json` has `slice`.
-- [ ] T034 [US4] Add `itemAU13` to `internal/audit/audit.go` (contracts/audit.md "AU13"), only for slice runs. It checks:
+- [X] T033 [US4] In `internal/audit/audit.go`, add an `itemAU03` slice variant (contracts/audit.md): exactly 1 draft task PR whose head ends `/<item>-<lower(slice)>`, and status PRs 0 unless `slices_last`, then at most 1. It is selected in `itemVariants` only when `run.json` has `slice`.
+- [X] T034 [US4] Add `itemAU13` to `internal/audit/audit.go` (contracts/audit.md "AU13"), only for slice runs. It checks:
   - the readiness record lists earlier slices as merged, with the revision;
   - no status proposal unless `slices_last`;
   - for the last slice, at most one proposal across local slice runs of the same item and target.
 
   Earlier runs missing locally are reported as `merged on <rev>, evidence elsewhere`, which is not a failure.
-- [ ] T035 [P] [US4] Add `internal/audit/slices_test.go` with synthetic run folders:
+- [X] T035 [P] [US4] Add `internal/audit/slices_test.go` with synthetic run folders:
   - a US1 run passes AU03 and AU13;
   - a US1 run with a status PR fails AU03;
   - a last-slice run with two proposals across runs fails AU13;
   - a missing earlier run is reported but passes.
 
   T010's golden test must stay green.
-- [ ] T036 [US4] Add the item view, `pilot audit --target <t> --item NNN`, in `internal/cli/audit.go`. It shows one line per local run of the item (slice, state, audit pass/fail), then the newest run's full audit, and writes nothing. Add a test.
+- [X] T036 [US4] Add the item view, `pilot audit --target <t> --item NNN`, in `internal/cli/audit.go`. It shows one line per local run of the item (slice, state, audit pass/fail), then the newest run's full audit, and writes nothing. Add a test.
 
 ---
 

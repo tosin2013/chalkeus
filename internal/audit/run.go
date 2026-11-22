@@ -14,29 +14,8 @@ import (
 // Run audits a run directory, writes audit.jsonl, records an audit_done event, rewrites
 // summary.md and prints one line per check (the reference audit.run). cfg may be nil.
 func Run(r *evidence.Run, final bool, cfg *config.Config, out io.Writer) (bool, error) {
-	var keyFiles, envFiles []string
-	if cfg != nil {
-		for _, p := range cfg.ModelFiles() {
-			if filepath.Base(p) != "opencode.json" && exists(p) {
-				keyFiles = append(keyFiles, p)
-			}
-		}
-		if hosts := cfg.ModelHosts(); len(hosts) > 0 { // the provider host must not appear in evidence either
-			f, err := os.CreateTemp("", "model-hosts")
-			if err == nil {
-				_, _ = f.WriteString(strings.Join(hosts, "\n") + "\n")
-				_ = f.Close()
-				defer func() { _ = os.Remove(f.Name()) }()
-				keyFiles = append(keyFiles, f.Name())
-			}
-		}
-		if exists(cfg.PublisherEnv) {
-			envFiles = append(envFiles, cfg.PublisherEnv)
-		}
-		if p := filepath.Join(cfg.ConfigDir, "app-token.env"); exists(p) { // 004: the App token too
-			envFiles = append(envFiles, p)
-		}
-	}
+	keyFiles, envFiles, cleanup := secretFiles(cfg)
+	defer cleanup()
 	rows, err := Dir(r.Dir, keyFiles, envFiles, final)
 	if err != nil {
 		return false, err
@@ -65,3 +44,34 @@ func Run(r *evidence.Run, final bool, cfg *config.Config, out io.Writer) (bool, 
 }
 
 func exists(p string) bool { _, err := os.Stat(p); return err == nil }
+
+// secretFiles are the files whose contents must never appear in evidence (AU08): the model key
+// files, a temp file of the model hosts, and the publisher/App token env files. cleanup removes
+// the temp file. cfg may be nil.
+func secretFiles(cfg *config.Config) (keyFiles, envFiles []string, cleanup func()) {
+	cleanup = func() {}
+	if cfg != nil {
+		for _, p := range cfg.ModelFiles() {
+			if filepath.Base(p) != "opencode.json" && exists(p) {
+				keyFiles = append(keyFiles, p)
+			}
+		}
+		if hosts := cfg.ModelHosts(); len(hosts) > 0 { // the provider host must not appear in evidence either
+			f, err := os.CreateTemp("", "model-hosts")
+			if err == nil {
+				_, _ = f.WriteString(strings.Join(hosts, "\n") + "\n")
+				_ = f.Close()
+				name := f.Name()
+				cleanup = func() { _ = os.Remove(name) }
+				keyFiles = append(keyFiles, f.Name())
+			}
+		}
+		if exists(cfg.PublisherEnv) {
+			envFiles = append(envFiles, cfg.PublisherEnv)
+		}
+		if p := filepath.Join(cfg.ConfigDir, "app-token.env"); exists(p) { // 004: the App token too
+			envFiles = append(envFiles, p)
+		}
+	}
+	return keyFiles, envFiles, cleanup
+}
