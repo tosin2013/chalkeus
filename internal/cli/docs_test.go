@@ -293,7 +293,7 @@ func TestDocsCheckRules(t *testing.T) {
 			"`anomalyco/opencode` `kelos-dev/kelos` `~/.config/specfoundry/pilot.env` " +
 			"`<owner>/<name>-pilot-fixture` `https://github.com/x/y` `refs/heads/main` " +
 			"`localhost:5001/pilot-worker` `/etc/containerd/certs.d`\n",
-		"Installs kind v0.27.0 and kubectl v1.32.2; Calico v3.29.3; spec 0.2.0; OpenCode v2.2.7.\n",
+		"Installs kind v0.27.0 and kubectl v1.32.2; Calico v3.29.3; spec 0.3.0; OpenCode v2.2.7.\n",
 		"Paste the token into the hidden prompt; never into chat.\n",
 	}
 	for _, c := range clean {

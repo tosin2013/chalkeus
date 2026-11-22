@@ -1,7 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.25.0 → 1.26.0 (this revision)
+Version change: 1.26.0 → 1.27.0 (this revision)
+Bump rationale: MINOR — a new planned item (026) and a new dependency for 013. Nothing verified
+is invalidated.
+Changes this revision (owner decisions 2026-11-21, Tosin Akinosho; issue #142):
+  - 026 (new, planned): slice runs. A run builds one phase of an item's approved `tasks.md`
+    (by default the whole item). The item stays the unit that is verified and that unblocks
+    dependents, and `verified` is proposed once, after the last slice merges. Per-slice tick
+    state comes from spec-status per-phase counts (a future release), so C-01 is unchanged.
+  - 013 (the laptop release) depends on 026.
+  - spec-status pin bumped to 0.3.0 (`pilot/pins.env`); 0.3.0 has no per-phase counts yet.
+Specs affected: 013, 026 (new)
+Open questions added/resolved: Q4 decided (one run per slice, verified per item); Q12 notes
+026 (slices are sequential; parallel `[P]` tasks stay open)
+
+Prior: Version change: 1.25.0 → 1.26.0
 Bump rationale: MINOR — status transitions (021, 024 verified) and a scope addition to 025 from
 their debriefs. Nothing verified is invalidated.
 Changes this revision (owner decisions 2026-11-21, Tosin Akinosho):
@@ -1102,9 +1116,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   how the CLI finds the target project and its config; the command name used in harness rules
   (Q8); install docs.
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
-- **Depends on:** 016, 024, 021 (2026-11-19: the laptop release includes auto-draft and the
-  manager loop)
-- **Notes:** **Owner decision 2026-11-19:** the laptop-mode release ships with the test
+- **Depends on:** 016, 024, 021, 026 (2026-11-19: the laptop release includes auto-draft and the
+  manager loop. 2026-11-21: it also ships slice runs)
+- **Notes:** **Owner decision 2026-11-21 (issue #142):** the laptop release ships with slice
+  runs (026), so items with several stories of different risk can be built and reviewed one
+  story at a time. **Owner decision 2026-11-19:** the laptop-mode release ships with the test
   author's auto-draft (024), so a released pilot drafts an item's hidden tests on its own once
   the item is ready; a human still reviews and merges them.
   Raised by the owner 2026-11-15 during the 012 debrief. Tied to Q7 (product name
@@ -1646,6 +1662,84 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   runner. Test endpoints are refused unless `PILOT_TEST_MODE=1`, and a test run's audit says
   it is not evidence.
 
+### 026 — Slice runs  [status: planned]
+
+- **Description:** Let a run build one slice of a roadmap item (one user-story phase of its
+  approved `tasks.md`) instead of the whole item. The roadmap item stays the unit that is
+  verified and that unblocks dependents.
+- **Outcome:** `pilot run --target <t> --item NNN --slice <phase-id>` builds, grades and
+  publishes one slice under every existing guarantee. Running without `--slice` builds the whole
+  item, exactly as today. The item is proposed `verified` once, after its last slice merges.
+- **Scope (in):**
+  - **one model, not two modes:** an item has one or more slices, and by default one slice is
+    the whole item;
+  - **where slices come from:** the phase headings of the item's approved `tasks.md`. The human
+    who approves the tasks decides where to split. The pilot and agents never re-slice. The
+    plan's risk level may require slicing (for example "high risk: one story per slice");
+  - **gate for a slice (fails closed):**
+    - the item's dependencies are verified (unchanged);
+    - earlier slices are merged. Slices run in `tasks.md` order unless the tasks mark them
+      independent;
+    - this slice's tasks are unticked;
+    - an item with open slices is not `ALREADY_VERIFIED`;
+  - **allowed paths:** per slice when the spec gives them (for example
+    `## Allowed paths (US2)`), otherwise the item's;
+  - **grading:**
+    - only this slice's tasks may be ticked;
+    - it runs this slice's hidden tests (`items/NNN/<slice>/` in the companion), every
+      earlier slice's hidden tests as a regression check, and the project's test command;
+    - G6 and G7 apply per slice;
+  - **publishing:** one draft PR per slice, merged by a human, titled
+    `feat(NNN): <title> (USn)`;
+  - **status:**
+    - the `verified` proposal (status-change PR or terminal approval) comes only after the
+      last slice merges;
+    - an item may declare an item-level acceptance check (for example a human live check)
+      that must be recorded first;
+    - the pilot writes no intermediate roadmap status;
+  - **after verification:** gaps found after an item is verified never add slices to it. They
+    need a new item, or an explicit reopen that a human approves;
+  - **evidence and audit:** the run evidence records the item and the slice, and the item's
+    audit covers all its slice runs (today AU01–AU03 assume one run per item);
+  - **interactions:**
+    - 024 drafts hidden tests per slice, and is triggered when a slice is ready but has no
+      tests;
+    - in 021, a proposed item runs its slices in order, waiting for the human merge between
+      them, and each slice needs its own mode approval;
+    - in 015, slices of one item stay sequential inside its unit.
+- **Scope (out):**
+  - running slices or `[P]` tasks of one item in parallel (Q12, 015);
+  - the pilot choosing or changing slice boundaries;
+  - a roadmap status between `specced` and `verified` written by the pilot.
+- **Depends on:** 014, 021, 024
+- **Spec dir:** specs/026-slice-runs/
+- **Governed by:** C-01, C-02, C-04, C-12, C-14
+- **Addresses:** docs/prd.md F1, F8
+- **Notes:** Owner decision 2026-11-21 (Tosin Akinosho), from issue #142. It ships with the
+  laptop release (013 depends on it), because real projects have items with several stories of
+  different risk. Without slices, operators accept large PRs that are hard to review, or split
+  stories into roadmap items and so change what "done" means for dependents.
+  - **Tick state from spec-status (owner decision 2026-11-21):** per-slice tick state comes from
+    spec-status, which will report per-phase task counts. 026 also depends on that spec-status
+    release (not a roadmap item, so it isn't listed in `Depends on`). The pilot doesn't parse `tasks.md`
+    phases itself, so C-01 is unchanged. spec-status 0.3.0 (pinned 2026-11-21) still reports
+    only item-level `tasks.percent`.
+  - **Code today assumes one run per item** (found 2026-11-21):
+    - `pilot run` flags;
+    - G3 and reconcile need `tasks.percent == 100`;
+    - the companion folder is `items/NNN`;
+    - readiness `OPEN_ITEM_PR`;
+    - AU01–AU03;
+    - step mode's item keys and the test author's item keys.
+  - ~~**Open:**~~ **Decided in the spec's clarifications (owner, 2026-11-21):**
+    - ~~slice ids for phases that aren't user stories (Setup, Foundational, Polish)~~ they join
+      story slices: earlier phases join the first story's slice, Polish joins the last; ids stay
+      `US1`, `US2`, …;
+    - ~~how `tasks.md` marks slices independent~~ not in this version: slices are always
+      sequential;
+    - ~~exactly how G6 and G7 apply per slice~~ per slice, against the base the slice starts from
+      (spec default, FR-014).
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -1658,6 +1752,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   2026-11-13:** the Ubuntu host (31 GB, 8 CPUs). Still open for M2.
 - Q4 — Granularity: one worker run per roadmap entry, or per task or issue. **Decided
   for M1:** one worker run per roadmap item. Revisit in 004, where issues are per task.
+  **Decided 2026-11-21 (owner decision, Tosin Akinosho; issue #142):** a run builds one
+  *slice* of an item (one phase of its approved `tasks.md`, by default the whole item), and the
+  item stays the unit that is verified and unblocks dependents. See 026.
 - Q5 — Worker model provider and spend cap defaults. **Partly decided 2026-11-13:**
   harness OpenCode 2.2.7; provider is operator configuration (not named in docs); caps
   default to $1 per attempt with a 2M-token fallback when the provider reports no cost.
@@ -1713,6 +1810,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   item's PR; how overlapping file scopes are detected; how much the human and the worker need to
   see of the schedule (proposed: the human sees the plan at release, the worker sees only its
   task). Relates to Q4 (granularity), 004 (issues per task) and 015.
+  **2026-11-21:** 026 (slice runs) splits an item into sequential slices, one per `tasks.md`
+  phase. Running unblocked `[P]` tasks at the same time is still this question (and 015).
 - Q13 — How planning scales (raised 2026-11-16). Under C-12 the limit on throughput is how fast
   humans prepare items (spec, tasks, hidden tests), not how many workers run.
   ~~Open: whether agents may draft specs, tasks or tests for a human to approve, and what
@@ -1786,4 +1885,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.26.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-21
+**Version**: 1.27.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-21
