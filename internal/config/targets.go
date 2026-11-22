@@ -101,6 +101,37 @@ func (t Target) CompanionItemDir(item string) string {
 	return t.CompanionPath + "/items/" + item
 }
 
+// CompanionSliceDir is where one slice's hidden tests live (026, contracts/slices.md):
+// [<PILOT_COMPANION_PATH>/]items/<item>/<slice>.
+func (t Target) CompanionSliceDir(item, slice string) string {
+	return t.CompanionItemDir(item) + "/" + slice
+}
+
+// SliceLayout decides whether an item's companion folder uses the per-slice layout: every
+// top-level entry is a directory named after one of the item's slice ids. entries maps each
+// top-level name to whether it is a directory. With no entries, or when no entry is a slice
+// folder, the layout is the flat one (today's). stray lists the entries that break a per-slice
+// layout (a mixed layout, refused by readiness).
+func SliceLayout(entries map[string]bool, sliceIDs []string) (perSlice bool, stray []string) {
+	ids := map[string]bool{}
+	for _, id := range sliceIDs {
+		ids[id] = true
+	}
+	slices := 0
+	for name, isDir := range entries {
+		if isDir && ids[name] {
+			slices++
+		} else {
+			stray = append(stray, name)
+		}
+	}
+	sort.Strings(stray)
+	if slices == 0 {
+		return false, nil
+	}
+	return true, stray
+}
+
 var changeTypes = map[string]bool{"feat": true, "fix": true, "refactor": true, "perf": true, "test": true,
 	"docs": true, "build": true, "ci": true, "style": true, "chore": true}
 

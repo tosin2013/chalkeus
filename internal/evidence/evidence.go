@@ -554,6 +554,22 @@ func (r *Run) SetItemRun(target map[string]any, item string) {
 	r.State["item"] = item
 }
 
+// SetSlice records the slice an item run builds (026). An empty slice records nothing, so a
+// whole-item run's run.json has no "slice" key and older evidence keeps its shape (FR-022).
+func (r *Run) SetSlice(slice string) {
+	if slice == "" {
+		delete(r.State, "slice")
+		return
+	}
+	r.State["slice"] = slice
+}
+
+// Slice is the slice an item run builds, or "" for a whole-item or fixture run.
+func (r *Run) Slice() string {
+	s, _ := r.State["slice"].(string)
+	return s
+}
+
 // NewRun creates a run directory under root with a fresh state (the reference new_run); impl
 // "go" marks runs the Go pilot started (016 R16).
 func NewRun(root string) (*Run, error) {

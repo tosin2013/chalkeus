@@ -53,3 +53,24 @@ func TestSummaryElapsedIgnoresLaterAudits(t *testing.T) {
 		t.Fatal(string(raw))
 	}
 }
+
+// 026: only a slice run's run.json carries "slice"; a whole-item run's has no such key (FR-022).
+func TestSliceOnlyWhenSet(t *testing.T) {
+	dir := t.TempDir()
+	r := &Run{Dir: dir, State: map[string]any{}}
+	r.SetItemRun(map[string]any{"name": "t"}, "006")
+	r.SetSlice("")
+	if err := r.Save(); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(filepath.Join(dir, "run.json"))
+	if strings.Contains(string(raw), `"slice"`) || r.Slice() != "" {
+		t.Fatalf("whole-item run.json has a slice: %s", raw)
+	}
+	r.SetSlice("US2")
+	_ = r.Save()
+	o, err := OpenRun(dir)
+	if err != nil || o.Slice() != "US2" {
+		t.Fatalf("slice not kept: %v %q", err, o.Slice())
+	}
+}

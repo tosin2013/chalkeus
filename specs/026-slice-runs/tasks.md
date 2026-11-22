@@ -33,28 +33,28 @@ labels on the owner's behalf (AGENTS.md).
 
 ## Phase 1: Setup
 
-- [ ] T001 **Owner** Merge PR #154 (spec-status 0.4.0 pin: `pilot/pins.env`, operator guide, docs check). Then confirm on `main` that `.github/workflows/go.yml` installs 0.4.0, and that `spec status --json --root .` gives item 014 seven `tasks.phases` (research R1).
+- [X] T001 **Owner** Merge PR #154 (spec-status 0.4.0 pin: `pilot/pins.env`, operator guide, docs check). Then confirm on `main` that `.github/workflows/go.yml` installs 0.4.0, and that `spec status --json --root .` gives item 014 seven `tasks.phases` (research R1).
 - [ ] T002 **Owner** Merge the image-digest PR the `pilot-images` workflow opens for the 0.4.0 pin, so the tools image's grader has `tasks.phases` (C-09). Live runs (T047, T048) need it.
-- [ ] T003 [P] Create `internal/slice/testdata/` with spec-status JSON fixtures: `phases-014.json` (014's 7 phases, copied from real 0.4.0 output), `phases-none.json` (`"phases": []`), `phases-null.json` (`"phases": null`), `phases-absent.json` (0.3.0 shape, no field), and `phases-dup-story.json` (two phases with `story: 2`).
+- [X] T003 [P] Create `internal/slice/testdata/` with spec-status JSON fixtures: `phases-014.json` (014's 7 phases, copied from real 0.4.0 output), `phases-none.json` (`"phases": []`), `phases-null.json` (`"phases": null`), `phases-absent.json` (0.3.0 shape, no field), and `phases-dup-story.json` (two phases with `story: 2`).
 
 ---
 
 ## Phase 2: Foundational (blocks every story)
 
-- [ ] T004 Create `internal/slice/slice.go` with `Phase{Heading string; Line int; Story *int; Checked, Total int}` and `Slice{ID string; Index int; Phases []string; Checked, Total int}`, and `FromPhases([]Phase) ([]Slice, error)`, following contracts/slices.md "Deriving slices":
+- [X] T004 Create `internal/slice/slice.go` with `Phase{Heading string; Line int; Story *int; Checked, Total int}` and `Slice{ID string; Index int; Phases []string; Checked, Total int}`, and `FromPhases([]Phase) ([]Slice, error)`, following contracts/slices.md "Deriving slices":
   - a story phase starts `US<n>`;
   - leading non-story phases join the first story's slice;
   - any other non-story phase joins the slice before it;
   - with no story phases, one slice `ALL`;
   - a duplicate story number is an error naming both headings.
-- [ ] T005 Add `Parse(statusItem map[string]any) (phases []Phase, ok bool)` to `internal/slice/slice.go`: `ok=false` when `tasks.phases` is absent or `null`, and `[]` gives one `ALL` slice (research R1). Add `State(s Slice) string` returning `merged`/`untouched`/`started` from the counts (data-model.md; the open-PR half of "merged" is applied by readiness), `Current([]Slice) (Slice, bool)` for the first non-merged slice, and `Find(slices, id string)`, which takes `us2` as `US2` and refuses `ALL` (data-model.md "Validation").
-- [ ] T006 [P] Write `internal/slice/slice_test.go`, a table test over the T003 fixtures. Assert:
+- [X] T005 Add `Parse(statusItem map[string]any) (phases []Phase, ok bool)` to `internal/slice/slice.go`: `ok=false` when `tasks.phases` is absent or `null`, and `[]` gives one `ALL` slice (research R1). Add `State(s Slice) string` returning `merged`/`untouched`/`started` from the counts (data-model.md; the open-PR half of "merged" is applied by readiness), `Current([]Slice) (Slice, bool)` for the first non-merged slice, and `Find(slices, id string)`, which takes `us2` as `US2` and refuses `ALL` (data-model.md "Validation").
+- [X] T006 [P] Write `internal/slice/slice_test.go`, a table test over the T003 fixtures. Assert:
   - the 014 mapping equals the table in contracts/slices.md (US2: Setup, Foundational, Story 2; US1; US3; US4: Story 4, Polish), with order US2, US1, US3, US4;
   - the error case for a duplicate story;
   - `null` and absent both give `ok=false`.
-- [ ] T007 Extend `internal/evidence/evidence.go`: `SetItemRun(target, item, slice string)` writes `slice` into `run.json` only when non-empty, and add `(*Run).Slice() string`. Update every caller (`internal/pipeline/item.go`) to pass `""` for now. Add a test that a whole-item run's `run.json` has no `slice` key (FR-022).
-- [ ] T008 [P] Add `CompanionSliceDir(t Target, item, slice string) string` to `internal/config/targets.go` (`[<PILOT_COMPANION_PATH>/]items/NNN/<slice>`), plus `SliceLayout(entries []string, sliceIDs []string) (perSlice bool, stray []string)`, which implements contracts/slices.md "Companion layout": per-slice only when every top-level entry is a folder named after a slice id. Add tests in `internal/config/targets_test.go`.
-- [ ] T009 Change `internal/grader/companion.go` `Overlay` to take an ordered list of source folders and produce one deterministic, sorted tar, still excluding `.acceptance-map.json`. With one folder, the bytes must match today's output (test with a fixed folder in `internal/grader/companion_test.go`).
+- [X] T007 Extend `internal/evidence/evidence.go`: `(*Run).SetSlice(slice string)` writes `slice` into `run.json` only when non-empty, and `(*Run).Slice() string` reads it (`SetItemRun` keeps its signature, so its two callers are unchanged). Add a test that a whole-item run's `run.json` has no `slice` key (FR-022).
+- [X] T008 [P] Add `CompanionSliceDir(t Target, item, slice string) string` to `internal/config/targets.go` (`[<PILOT_COMPANION_PATH>/]items/NNN/<slice>`), plus `SliceLayout(entries []string, sliceIDs []string) (perSlice bool, stray []string)`, which implements contracts/slices.md "Companion layout": per-slice only when every top-level entry is a folder named after a slice id. Add tests in `internal/config/targets_test.go`.
+- [X] T009 Change `internal/grader/companion.go` `Overlay` to take an ordered list of source folders and produce one deterministic, sorted tar, still excluding `.acceptance-map.json`. With one folder, the bytes must match today's output (test with a fixed folder in `internal/grader/companion_test.go`).
 
 **Checkpoint:** `go test ./internal/slice/ ./internal/evidence/ ./internal/config/ ./internal/grader/` passes, and nothing user-visible has changed.
 
@@ -66,7 +66,7 @@ labels on the owner's behalf (AGENTS.md).
 
 **Independent Test:** the committed evidence audits with the same results, and the fixture run passes its full audit, with no `--slice` (SC-001).
 
-- [ ] T010 [US1] Reuse `TestGolden` (`internal/audit/golden_test.go`, `specs/016-go-pilot/golden/audit-expected.json`) as FR-022's guard. Check that it covers at least one evidence record each from 014, 021 and 024. Add any that are missing to `audit-expected.json` with their current rows, **before T007** (before any 026 code lands). No new snapshot file.
+- [X] T010 [US1] Reuse `TestGolden` (`internal/audit/golden_test.go`, `specs/016-go-pilot/golden/audit-expected.json`) as FR-022's guard. Check that it covers at least one evidence record each from 014, 021 and 024. Add any that are missing to `audit-expected.json` with their current rows, **before T007** (before any 026 code lands). No new snapshot file.
 - [ ] T011 [P] [US1] Add a whole-item case to `pilot/images/tests/test_grade_slices.py`: a meta with no `slice` key produces exactly the checks G1–G5 (plus G6, G7 when test paths are set), with no G8, and G3's detail is `tasks percent=…` as today.
 - [ ] T012 [US1] In `internal/readiness/readiness_test.go`, add a case: an item whose spec-status output has no `tasks.phases` field (0.3.0 shape), run without a slice, is allowed exactly as before. The result has no slice rules (`SLICE_*` absent).
 

@@ -1,0 +1,62 @@
+{
+ "id": "014",
+ "status": "verified",
+ "tasks": {
+  "checked": 61,
+  "total": 61,
+  "percent": 100,
+  "source": "specs/014-any-project/tasks.md",
+  "state": "read",
+  "phases": [
+   {
+    "heading": "Phase 1: Setup",
+    "line": 30,
+    "story": null,
+    "checked": 3,
+    "total": 3
+   },
+   {
+    "heading": "Phase 2: Foundational (blocks every story)",
+    "line": 47,
+    "story": null,
+    "checked": 9,
+    "total": 9
+   },
+   {
+    "heading": "Phase 3: User Story 2 — refuse an item that isn't prepared (P1)",
+    "line": 110,
+    "story": 2,
+    "checked": 5,
+    "total": 5
+   },
+   {
+    "heading": "Phase 4: User Story 1 — run a chosen item (P1), on the `python` toolchain",
+    "line": 165,
+    "story": 1,
+    "checked": 19,
+    "total": 19
+   },
+   {
+    "heading": "Phase 5: User Story 3 — toolchain and registries (P2)",
+    "line": 339,
+    "story": 3,
+    "checked": 16,
+    "total": 16
+   },
+   {
+    "heading": "Phase 6: User Story 4 — the fixture keeps working (P2)",
+    "line": 567,
+    "story": 4,
+    "checked": 1,
+    "total": 1
+   },
+   {
+    "heading": "Phase 7: Polish and close-out",
+    "line": 582,
+    "story": null,
+    "checked": 3,
+    "total": 3
+   }
+  ]
+ }
+}
