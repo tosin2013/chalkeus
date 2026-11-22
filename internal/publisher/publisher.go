@@ -237,7 +237,7 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 			return nil, err
 		}
 	}
-	head := fmt.Sprintf("pilot/%s/%s", run.ID, strings.ToLower(task))
+	head := fmt.Sprintf("pilot/%s/%s", run.ID, headName(run, task))
 	base, bundle, title := baseRevision(adir), filepath.Join(adir, "change.bundle"), fmt.Sprintf("pilot %s task %s", run.ID, task)
 	if run.Kind() == evidence.KindItem { // the change replayed onto the real base (014 R4)
 		base, bundle, title = ItemBase(run), filepath.Join(adir, "publish.bundle"), ItemTitle(run, task)
@@ -301,10 +301,34 @@ func itemBody(run *evidence.Run, task string, n int, gs string, rows []string, i
 		"Evidence: run `%s` on the operator's machine.\n\n"+
 		"This is a **draft**. A human reviews and merges it; the pilot never merges.\n",
 		run.ID, task, run.TargetRepo(), n, gs, strings.Join(rows, "\n"), imgs["worker"], imgs["tools"], run.ID)
+	if s := run.Slice(); s != "" {
+		b += fmt.Sprintf("\nThis PR is slice **%s** of item %s: it builds and ticks only that slice's tasks.\n", s, task)
+	}
 	if closes > 0 {
-		b += fmt.Sprintf("\nCloses #%d\n", closes)
+		if sliceNotLast(run) { // 026 FR-016a: the item's issue stays open until its last slice
+			b += fmt.Sprintf("\nPart of #%d\n", closes)
+		} else {
+			b += fmt.Sprintf("\nCloses #%d\n", closes)
+		}
 	}
 	return b
+}
+
+// sliceNotLast reports a slice run that isn't the item's last slice (026).
+func sliceNotLast(run *evidence.Run) bool {
+	if run.Slice() == "" {
+		return false
+	}
+	last, _ := run.State["slices_last"].(bool)
+	return !last
+}
+
+// headName is the PR head branch's last part: the item, or "<item>-<slice>" for a slice run (026).
+func headName(run *evidence.Run, task string) string {
+	if s := run.Slice(); s != "" && run.Kind() == evidence.KindItem {
+		return strings.ToLower(task + "-" + s)
+	}
+	return strings.ToLower(task)
 }
 
 // StatusBody is the status-change PR body (004 R6). An item run names the status it starts from
@@ -338,6 +362,9 @@ func ItemTitle(run *evidence.Run, item string) string {
 	title, _ := r["title"].(string)
 	if title = strings.TrimSpace(title); title == "" {
 		title = "roadmap item " + item
+	}
+	if s := run.Slice(); s != "" { // 026: "feat(006): Stock page (US2)"
+		return fmt.Sprintf("%s(%s): %s (%s)", typ, item, title, s)
 	}
 	return fmt.Sprintf("%s(%s): %s", typ, item, title)
 }

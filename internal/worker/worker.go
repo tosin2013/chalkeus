@@ -54,6 +54,23 @@ type Item struct {
 	ToolchainSpec     *toolchain.Spec
 	SetupScript       string
 	HomeLimit         string
+	// 026: the slice a slice run builds ("" for the whole item), its phases, and each earlier
+	// slice's phases (the grader's G8 and G3 need them).
+	Slice         string
+	SlicePhases   []string
+	EarlierPhases [][]string
+}
+
+// SliceMeta is meta.json's "slice" object for a slice run (contracts/grading.md), nil otherwise.
+func (it *Item) SliceMeta() map[string]any {
+	if it == nil || it.Slice == "" {
+		return nil
+	}
+	earlier := make([]any, 0, len(it.EarlierPhases))
+	for _, e := range it.EarlierPhases {
+		earlier = append(earlier, anyStrings(e))
+	}
+	return map[string]any{"id": it.Slice, "phases": anyStrings(it.SlicePhases), "earlier": earlier}
 }
 
 // WorkerDeps is where an item run's worker installs dependencies (its home volume).
@@ -377,7 +394,7 @@ func MakeItemInputs(d Deps, run *evidence.Run, task string, n int, clone string)
 	plan, _ := rd("plan.md") // optional for an item
 	text, err := prompt.BuildItem(prompt.Item{Spec: spec, Plan: plan, Tasks: tasks, TasksPath: it.SpecDir + "/tasks.md",
 		AllowedPaths: it.AllowedPaths, Toolchain: it.Toolchain, TestCommand: it.TestCommand,
-		TestPaths: it.TestPaths, TestsMayChange: it.TestsMayChange})
+		TestPaths: it.TestPaths, TestsMayChange: it.TestsMayChange, Slice: it.Slice, SlicePhases: it.SlicePhases})
 	if err != nil {
 		return "", err
 	}
@@ -390,6 +407,9 @@ func MakeItemInputs(d Deps, run *evidence.Run, task string, n int, clone string)
 		"toolchain": it.Toolchain, "spec_sha256": prompt.SpecSHA256(spec), "command_timeout_s": it.CommandTimeout}
 	if len(it.TestPaths) > 0 { // grader G6/G7 (absent: grading as before)
 		meta["test_paths"], meta["tests_may_change"] = anyStrings(it.TestPaths), anyStrings(it.TestsMayChange)
+	}
+	if sm := it.SliceMeta(); sm != nil { // 026: slice G3 and G8 (absent: grading as before)
+		meta["slice"] = sm
 	}
 	for _, dir := range []string{idir, adir} {
 		if err := os.WriteFile(filepath.Join(dir, "prompt.md"), []byte(text), 0o644); err != nil {

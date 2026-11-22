@@ -227,7 +227,7 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 			sl, earlier = &found, slice.Earlier(ss.slices, found)
 			res.SlicesLast = slice.Last(ss.slices, found)
 			info := &SliceInfo{ID: found.ID, Index: found.Index, Of: len(ss.slices), Phases: found.Phases,
-				Earlier: slice.IDs(earlier), EarlierPhases: [][]string{}, DefaultRevision: commit}
+				Earlier: slice.IDs(earlier), EarlierPhases: [][]string{}, DefaultRevision: commit, All: slice.IDs(ss.slices)}
 			for _, e := range earlier {
 				info.EarlierPhases = append(info.EarlierPhases, e.Phases)
 			}

@@ -60,3 +60,33 @@ func TestConventionalTitles(t *testing.T) {
 		t.Fatal("fixture wording changed: " + got)
 	}
 }
+
+// 026 T027: a slice run's PR has its own head, says which slice it is, and only the last slice
+// closes the item's issue (FR-016a). A whole-item run is unchanged.
+func TestSliceBodiesHeadsAndTitles(t *testing.T) {
+	r := bodyRun(evidence.KindItem)
+	r.State["readiness"] = map[string]any{"title": "Stock page", "change_type": "feat"}
+	if got := ItemTitle(r, "002"); got != "feat(002): Stock page" || headName(r, "002") != "002" {
+		t.Fatalf("whole item: %q %q", got, headName(r, "002"))
+	}
+	if b := body(paths.At(t.TempDir()), r, "002", 1, 7); !strings.Contains(b, "\nCloses #7\n") || strings.Contains(b, "slice") {
+		t.Fatal(b)
+	}
+	r.SetSlice("US1")
+	r.State["slices_last"] = false
+	if got := ItemTitle(r, "002"); got != "feat(002): Stock page (US1)" {
+		t.Fatalf("slice title %q", got)
+	}
+	if headName(r, "002") != "002-us1" {
+		t.Fatalf("slice head %q", headName(r, "002"))
+	}
+	b := body(paths.At(t.TempDir()), r, "002", 1, 7)
+	if !strings.Contains(b, "\nPart of #7\n") || strings.Contains(b, "Closes") || !strings.Contains(b, "slice **US1** of item 002") {
+		t.Fatalf("non-last slice body:\n%s", b)
+	}
+	r.SetSlice("US2")
+	r.State["slices_last"] = true
+	if b := body(paths.At(t.TempDir()), r, "002", 1, 7); !strings.Contains(b, "\nCloses #7\n") || strings.Contains(b, "Part of") {
+		t.Fatalf("last slice body:\n%s", b)
+	}
+}

@@ -73,7 +73,7 @@ func (p *P) githubPost(run *evidence.Run) {
 		return
 	}
 	pend := decisions.PendingStep(run)
-	if pend == nil || (pend.Step != "mode" && pend.Step != "retry") {
+	if pend == nil || (pend.Step != "mode" && pend.Step != "retry" && pend.Step != "acceptance") {
 		return
 	}
 	l, err := p.loop()
@@ -248,8 +248,18 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 	if err != nil {
 		return p.fail(run, "RECONCILE_SETUP")
 	}
+	if !SlicesLast(run) { // 026: a slice before the item's last: no status change
+		defer cleanup()
+		return p.sliceMerged(run, rec, task, n, changedPaths(tA, n), "github")
+	}
 	pr, _ := tA["pr"].(map[string]any)
 	code, r, edited := rec.Check(task, run.ItemOf(task), asInt(pr["number"]), changedPaths(tA, n))
+	if code == 0 {
+		if goOn, ec := p.acceptanceGate(run, task); !goOn { // 026 FR-018
+			cleanup()
+			return ec
+		}
+	}
 	var base, bundle string
 	if code == 0 {
 		base, bundle, err = rec.StatusBundle(edited)
@@ -432,7 +442,7 @@ func (p *P) ReadyToResume(run *evidence.Run) bool {
 	st, _ := run.State["state"].(string)
 	pend, _ := run.State["pending"].(map[string]any)
 	switch st {
-	case "paused(awaiting-mode)", "paused(awaiting-retry)":
+	case "paused(awaiting-mode)", "paused(awaiting-retry)", "paused(awaiting-acceptance)":
 		if l, err := p.loop(); err == nil {
 			if msg := l.Collect(run); msg != "" {
 				p.say("%s", msg)

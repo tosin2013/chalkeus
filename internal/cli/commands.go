@@ -48,6 +48,7 @@ func runCmd() *cobra.Command {
 	c := &cobra.Command{Use: "run", Short: "start a new pilot run (the fixture, or --target <name> --item NNN)", Args: cobra.NoArgs,
 		RunE: runRun}
 	c.Flags().String("item", "", "run this prepared roadmap item of the --target repository (014)")
+	c.Flags().String("slice", "", "with --item: build only this slice of the item, e.g. US2 (026; see `pilot slices`)")
 	addTargetFlag(c)
 	return c
 }
@@ -61,9 +62,9 @@ func resumeCmd() *cobra.Command {
 
 func approveCmd() *cobra.Command {
 	c := &cobra.Command{
-		Use:       "approve {mode|retry|reconcile}",
+		Use:       "approve {mode|retry|reconcile|acceptance}",
 		Short:     "approve the decision a paused run is waiting for (no-terminal use; your agent harness must ask you before this runs)",
-		ValidArgs: []string{"mode", "retry", "reconcile"},
+		ValidArgs: []string{"mode", "retry", "reconcile", "acceptance"},
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		RunE:      runApprove,
 	}

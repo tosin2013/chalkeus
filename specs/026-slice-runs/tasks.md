@@ -124,39 +124,39 @@ Readiness and CLI:
   - allow cases for US1 of a fresh item and for US2 after US1 is merged;
   - `--slice` on a verified item gives `ALREADY_VERIFIED`;
   - an item with a merged slice still gates as startable (FR-008, FR-019).
-- [ ] T020 [US2] Add `--slice` to `runCmd` and `doctor` in `internal/cli/commands.go`. Pass it through `internal/cli/run.go` to `p.RunItem(item, slice)`, and on resume read it from `run.json` (`targetFor`). Refuse `--slice` without `--item`.
-- [ ] T021 [P] [US2] Add `internal/cli/slices.go`, the `pilot slices --target <t> --item NNN [--json]` command from contracts/cli.md, as a read-only fresh clone plus spec status. Exit 2 on `SLICE_UNEVALUABLE`. Add a test for the text and JSON output against a fixture.
+- [X] T020 [US2] Add `--slice` to `runCmd` and `doctor` in `internal/cli/commands.go`. Pass it through `internal/cli/run.go` to `p.RunItem(item, slice)`, and on resume read it from `run.json` (`targetFor`). Refuse `--slice` without `--item`.
+- [X] T021 [P] [US2] Add `internal/cli/slices.go`, the `pilot slices --target <t> --item NNN [--json]` command from contracts/cli.md, as a read-only fresh clone plus spec status. Exit 2 on `SLICE_UNEVALUABLE`. Add a test for the text and JSON output against a fixture.
 
 Run, grade, publish:
-- [ ] T022 [US2] In `internal/pipeline/item.go`, `RunItem(item, slice)` calls `SetItemRun(target, item, slice)`, passes `Slice` to readiness, and sets `run.State["slices_last"]` (this slice is the item's last). `prepareItem` overlays this slice's companion folder (or all slice folders in order for a whole-item run of a sliced item), and records `companion.folders` (data-model.md).
-- [ ] T023 [US2] In `internal/grader/item.go`, when the run has a slice, write `meta.slice = {id, phases, earlier}` and stage each earlier slice's companion folder as `grading/earlier/<n>/`, using T009 per folder. Never stage anything from `earlier/` into worker inputs (P11). Add a test that the worker input tar has no companion path.
-- [ ] T023a [US2] In `internal/cli/doctor.go` and the doctor baseline path, when `--slice` is given: run readiness with `Slice`, stage `grading/earlier/<n>/` and this slice's overlay with T023's helper, and report G8 (must pass) and G5 (must fail) on today's default branch. Without `--slice`, nothing changes. Test it in `internal/cli/doctor_test.go` with fakes.
-- [ ] T024 [US2] Add G8 and the slice baseline to `pilot/images/tools/grade.py`, per contracts/grading.md:
+- [X] T022 [US2] In `internal/pipeline/item.go`, `RunItem(item, slice)` calls `SetItemRun(target, item, slice)`, passes `Slice` to readiness, and sets `run.State["slices_last"]` (this slice is the item's last). `prepareItem` overlays this slice's companion folder (or all slice folders in order for a whole-item run of a sliced item), and records `companion.folders` (data-model.md).
+- [X] T023 [US2] In `internal/grader/item.go`, when the run has a slice, write `meta.slice = {id, phases, earlier}` and stage each earlier slice's companion folder as `grading/earlier/<n>/`, using T009 per folder. Never stage anything from `earlier/` into worker inputs (P11). Add a test that the worker input tar has no companion path.
+- [X] T023a [US2] In `internal/cli/doctor.go` and the doctor baseline path, when `--slice` is given: run readiness with `Slice`, stage `grading/earlier/<n>/` and this slice's overlay with T023's helper, and report G8 (must pass) and G5 (must fail) on today's default branch. Without `--slice`, nothing changes. Test it in `internal/cli/doctor_test.go` with fakes.
+- [X] T024 [US2] Add G8 and the slice baseline to `pilot/images/tools/grade.py`, per contracts/grading.md:
   - add `SLICE_CHECKS = ["G8_earlier_slices_kept"]`, used only when `meta.slice.earlier` is non-empty;
   - in `visible_and_hidden`, overlay `grading/earlier/*` in order, run the tests (G8, `hidden_summary` only), then overlay `grading/overlay` and run again (G5);
   - in `baseline`, G8 must pass and G5 must fail. G8 failing on base gives the failure `EARLIER_SLICE_BROKEN_ON_BASE`.
-- [ ] T025 [P] [US2] Add G8 cases to `pilot/images/tests/test_grade_slices.py`:
+- [X] T025 [P] [US2] Add G8 cases to `pilot/images/tests/test_grade_slices.py`:
   - an earlier slice's test broken by the change fails G8, and G5 is skipped;
   - all passing passes;
   - the baseline with G8 passing and G5 failing passes;
   - the baseline with G8 failing reports `EARLIER_SLICE_BROKEN_ON_BASE`;
   - no hidden output appears in any check detail.
-- [ ] T026 [P] [US2] In `internal/prompt/prompt.go` `BuildItem`, when a slice is set, add the paragraph from contracts/audit.md "Prompt" after the task list: the slice id, that only its tasks are to be done and ticked, and its phase headings. Leave the spec and `tasks.md` text unaltered. Add a test that the spec's hash in the prompt equals `meta.spec_sha256` (AU11).
-- [ ] T027 [P] [US2] In `internal/publisher/publisher.go`, for a slice run, make the head `pilot/<run>/<item>-<lower(slice)>` and `ItemTitle` append ` (<slice>)` (contracts/cli.md). For a slice run that isn't `slices_last`, the body says `Part of #N` in place of `Closes #N` (the body builders near `publisher.go:101` and `:305`, fed by `closes` in `internal/pipeline/github.go`) (FR-016a). The status PR naming is unchanged. Add tests in `internal/publisher/publisher_test.go` and `body_test.go` for both bodies.
+- [X] T026 [P] [US2] In `internal/prompt/prompt.go` `BuildItem`, when a slice is set, add the paragraph from contracts/audit.md "Prompt" after the task list: the slice id, that only its tasks are to be done and ticked, and its phase headings. Leave the spec and `tasks.md` text unaltered. Add a test that the spec's hash in the prompt equals `meta.spec_sha256` (AU11).
+- [X] T027 [P] [US2] In `internal/publisher/publisher.go`, for a slice run, make the head `pilot/<run>/<item>-<lower(slice)>` and `ItemTitle` append ` (<slice>)` (contracts/cli.md). For a slice run that isn't `slices_last`, the body says `Part of #N` in place of `Closes #N` (the body builders near `publisher.go:101` and `:305`, fed by `closes` in `internal/pipeline/github.go`) (FR-016a). The status PR naming is unchanged. Add tests in `internal/publisher/publisher_test.go` and `body_test.go` for both bodies.
 
 Merge and status:
-- [ ] T028 [US2] Add `CheckSlice(task, item, slice string, pr int, changed []string)` to `internal/reconcile/reconcile.go`. It requires the PR merged, every phase of the slice at `checked == total` on the default branch (spec status on a fresh clone), and the tree matching the graded attempt. It returns a `slice_merged` record and no roadmap edit. Codes are as in `Check` (0, 1, 4).
-- [ ] T029 [US2] In `internal/pipeline/github.go` and `internal/pipeline/pipeline.go` (`reconcileGitHub`, `reconcileA`): when the run has a slice and not `slices_last`, call `CheckSlice`, log the `slice_merged` event, end the run `succeeded`, and print `slice <id> merged; next: --slice <next>`. When `slices_last`, or for a whole-item run, keep today's `Check`, then the status proposal.
-- [ ] T030 [US2] Add the acceptance decision (research R7):
+- [X] T028 [US2] Add `CheckSlice(task, item, slice string, pr int, changed []string)` to `internal/reconcile/reconcile.go`. It requires the PR merged, every phase of the slice at `checked == total` on the default branch (spec status on a fresh clone), and the tree matching the graded attempt. It returns a `slice_merged` record and no roadmap edit. Codes are as in `Check` (0, 1, 4).
+- [X] T029 [US2] In `internal/pipeline/github.go` and `internal/pipeline/pipeline.go` (`reconcileGitHub`, `reconcileA`): when the run has a slice and not `slices_last`, call `CheckSlice`, log the `slice_merged` event, end the run `succeeded`, and print `slice <id> merged; next: --slice <next>`. When `slices_last`, or for a whole-item run, keep today's `Check`, then the status proposal.
+- [X] T030 [US2] Add the acceptance decision (research R7):
   - `internal/readiness` reads an optional `## Item acceptance` section from spec.md into `readiness.acceptance` (the list items);
   - in `internal/pipeline/github.go` and `pipeline.go`, before the status proposal, when it is non-empty: pause `paused:acceptance`, log `acceptance_wait`, and post the decision comment listing the checks;
   - resume on `/approve acceptance` from an approver, or on `pilot approve acceptance`, logging `acceptance_recorded`.
-- [ ] T031 [US2] Add `acceptance` to `approveCmd`'s `ValidArgs` in `internal/cli/commands.go`, and to the GitHub approval parser (`internal/ghloop`). It is valid only in state `paused:acceptance`. Update `.claude/skills/pilot/SKILL.md` with the new pause and the rule that the agent runs `pilot approve acceptance` only after the human says yes to that exact step.
-- [ ] T032 [P] [US2] Add pipeline tests in `internal/pipeline/slices_test.go` with fakes:
+- [X] T031 [US2] Add `acceptance` to `approveCmd`'s `ValidArgs` in `internal/cli/commands.go`, and to the GitHub approval parser (`internal/ghloop`). It is valid only in state `paused:acceptance`. Update `.claude/skills/pilot/SKILL.md` with the new pause and the rule that the agent runs `pilot approve acceptance` only after the human says yes to that exact step.
+- [X] T032 [P] [US2] Add pipeline tests in `internal/pipeline/slices_test.go` with fakes:
   - US1 merge gives `slice_merged`, run `succeeded`, no status PR, no roadmap edit;
   - US2 merge (last) gives one status proposal;
   - with `## Item acceptance`, it pauses until `acceptance` is approved;
-  - a dev-mode slice run never proposes (C-15);
+  - a dev-mode slice run never proposes (C-15) — *not applicable yet: developer mode (019) isn't implemented in the pilot; the case is added with 019*;
   - a US1 PR body contains `Part of #N` and no `Closes`, and the last slice's contains `Closes #N` (FR-016a).
 
 **Checkpoint:** a two-slice item can be run end to end against the fakes, with the US1 guards still green.

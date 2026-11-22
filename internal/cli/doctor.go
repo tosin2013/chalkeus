@@ -27,7 +27,7 @@ import (
 // preflight that lists every problem in one pass. It never prints hidden-test contents.
 func doctorCmd() *cobra.Command {
 	c := &cobra.Command{
-		Use:   "doctor --target <name> [--item NNN] [--baseline]",
+		Use:   "doctor --target <name> [--item NNN [--slice <id>]] [--baseline]",
 		Short: "read-only preflight: check a target's profile, cluster and GitHub access, and one item's readiness, reporting every problem at once",
 		Args:  cobra.NoArgs,
 		RunE:  runDoctor,
@@ -36,6 +36,7 @@ func doctorCmd() *cobra.Command {
 	_ = c.MarkFlagRequired("target")
 	c.Flags().String("item", "", "also check roadmap item NNN: every readiness rule, without stopping at the first problem")
 	c.Flags().Bool("baseline", false, "with --item: on the cluster, check that the install and test commands pass on today's code, offline")
+	c.Flags().String("slice", "", "with --item: check this slice of the item (026), and with --baseline run the slice baseline")
 	return c
 }
 
@@ -43,8 +44,12 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	out := cmd.OutOrStdout()
 	item, _ := cmd.Flags().GetString("item")
 	withBaseline, _ := cmd.Flags().GetBool("baseline")
+	sliceID, _ := cmd.Flags().GetString("slice")
 	if withBaseline && item == "" {
 		return Exit(ExitError, "--baseline needs --item NNN")
+	}
+	if sliceID != "" && item == "" {
+		return Exit(ExitError, "--slice needs --item NNN")
 	}
 	var r doctor.Report
 	defer func() { r.Print(out) }()
@@ -151,7 +156,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	}
 
 	// The item: every readiness rule.
-	deps := readiness.Deps{Src: gate.ExecStatus{}, AllRules: true,
+	deps := readiness.Deps{Src: gate.ExecStatus{}, AllRules: true, Slice: sliceID,
 		Clone: func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) },
 		OpenPRHeads: func(repo string) ([]string, error) {
 			prs, err := ghloop.OpenPilotPRs(ctx, gh, repo)
@@ -205,6 +210,16 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	} else {
 		r.Add("baseline", "project tests offline", doctor.Fail, "the test command fails on today's code with no network (see BASELINE_SUITE_FAILS in docs/troubleshooting.md)")
 	}
+	if res.Slice != nil && len(res.Slice.Earlier) > 0 { // 026: earlier slices' hidden tests on today's code
+		switch by["G8_earlier_slices_kept"] {
+		case "pass":
+			r.Add("baseline", "earlier slices' hidden tests pass on today's code", doctor.Pass, strings.Join(res.Slice.Earlier, ", "))
+		case "fail":
+			r.Add("baseline", "earlier slices' hidden tests pass on today's code", doctor.Fail, "a merged slice's hidden tests fail (EARLIER_SLICE_BROKEN_ON_BASE)")
+		default:
+			r.Add("baseline", "earlier slices' hidden tests pass on today's code", doctor.Skip, "not checked: the project's own tests fail first")
+		}
+	}
 	switch {
 	case !hasHidden:
 		r.Add("baseline", "hidden tests fail on today's code", doctor.Skip, "no hidden tests yet")
@@ -227,7 +242,11 @@ func doctorOverlay(t config.Target, item string, res readiness.Result) ([]byte, 
 			return nil, false, err
 		}
 		defer func() { _ = os.RemoveAll(cdir) }()
-		tarb, _, err := grader.Overlay(cdir, t.CompanionRepo, commit, t.CompanionItemDir(item), item)
+		dirs := res.Overlay // 026: the slice's folder, or every slice folder for a sliced item
+		if len(dirs) == 0 {
+			dirs = []string{t.CompanionItemDir(item)}
+		}
+		tarb, _, err := grader.OverlayDirs(cdir, t.CompanionRepo, commit, dirs, item)
 		return tarb, true, err
 	}
 	d, err := os.MkdirTemp("", "pilot-doctor-")

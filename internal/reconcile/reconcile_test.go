@@ -164,3 +164,47 @@ func TestStatusMsg(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+// 026 T028: a non-last slice's merge is checked against the slice's phases on the default branch
+// and never proposes a status or edits the roadmap.
+func TestCheckSlice(t *testing.T) {
+	phases := func(us1 int) map[string]any {
+		return map[string]any{"id": "006", "tasks": map[string]any{"phases": []any{
+			map[string]any{"heading": "Phase 1: Setup", "story": nil, "checked": 1, "total": 1},
+			map[string]any{"heading": "Phase 2: User Story 1", "story": 1, "checked": us1, "total": 2},
+			map[string]any{"heading": "Phase 3: User Story 2", "story": 2, "checked": 0, "total": 2},
+		}}}
+	}
+	mine := []string{"Phase 1: Setup", "Phase 2: User Story 1"}
+	for _, c := range []struct {
+		name   string
+		merged bool
+		us1    int
+		equal  bool
+		status map[string]any
+		code   int
+		reason any
+	}{
+		{"merged and ticked", true, 2, true, nil, 0, nil},
+		{"not merged", false, 2, true, nil, 4, "NOT_MERGED"},
+		{"slice tasks not ticked", true, 1, true, nil, 1, "SLICE_TASKS_INCOMPLETE"},
+		{"tree changed after grading", true, 2, false, nil, 1, "TREE_MISMATCH"},
+		{"no phases", true, 2, true, map[string]any{"id": "006", "tasks": map[string]any{}}, 1, "SLICE_UNEVALUABLE"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			r, pushed, _ := make1(t, c.merged, 100, c.equal, "y")
+			st := phases(c.us1)
+			if c.status != nil {
+				st = c.status
+			}
+			r.ItemStatus = func(string) map[string]any { return st }
+			code, rec := r.CheckSlice("006", "006", "US1", mine, 9, paths2)
+			if code != c.code || rec["reason"] != c.reason || *pushed != 0 || rec["slice"] != "US1" {
+				t.Fatalf("code=%d rec=%v pushed=%d", code, rec, *pushed)
+			}
+			if code == 0 && rec["proposed"] != "slice_merged" {
+				t.Fatalf("proposed %v", rec["proposed"])
+			}
+		})
+	}
+}

@@ -1,10 +1,13 @@
 package pipeline
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/specfoundry/internal/fixture"
 	"github.com/tosin2013/specfoundry/internal/grader"
 	"github.com/tosin2013/specfoundry/internal/images"
 	"github.com/tosin2013/specfoundry/internal/readiness"
@@ -40,6 +43,11 @@ func (p *P) ItemBaseline(dir, id, item string, res readiness.Result, overlay []b
 	run.Task(item)["base_revision"] = res.Commit
 	run.State["readiness"] = map[string]any{"spec_dir": res.SpecDir, "allowed_paths": toAnyList(res.AllowedPaths),
 		"title": res.Title, "change_type": p.Target.ChangeType, "tests_may_change": toAnyList(res.TestsMayChange)}
+	if res.Slice != nil { // 026 `doctor --baseline --slice`: the slice baseline (G8 passes, G5 fails)
+		run.SetSlice(res.Slice.ID)
+		r := run.State["readiness"].(map[string]any)
+		r["slice"], r["earlier"] = res.Slice, toAnyList(res.Earlier)
+	}
 	_ = run.Save()
 	in := p.itemDir(run)
 	defer func() { _ = os.RemoveAll(filepath.Dir(in)) }() // the overlay holds the draft's tests
@@ -48,6 +56,11 @@ func (p *P) ItemBaseline(dir, id, item string, res readiness.Result, overlay []b
 	}
 	if err := os.WriteFile(filepath.Join(in, "overlay.tar"), overlay, 0o600); err != nil {
 		return nil, nil, err
+	}
+	if res.Slice != nil && len(res.Earlier) > 0 {
+		if err := p.writeEarlierOverlays(in, res.Earlier); err != nil {
+			return nil, nil, err
+		}
 	}
 	// Wait for the grading namespace to be gone before returning, so a check run right after
 	// this one doesn't meet a namespace that is still terminating (found by the first test
@@ -71,4 +84,38 @@ func (p *P) ItemBaseline(dir, id, item string, res readiness.Result, overlay []b
 	}
 	report := grader.GradeItem(p.L, p.C, p.Runner, run, p.Imgs, item, 0, g, mp, filepath.Dir(mp))
 	return report, hidden, nil
+}
+
+// writeEarlierOverlays writes each earlier slice's companion folder as earlier-<n>.tar in dir, for
+// the grader's G8 (026). They never reach a worker.
+func (p *P) writeEarlierOverlays(dir string, folders []string) error {
+	cdir, commit, err := fixture.FreshClone(p.Target.CompanionRepo, "", 1)
+	if err != nil {
+		return fmt.Errorf("companion repository %s: %v", p.Target.CompanionRepo, err)
+	}
+	defer func() { _ = os.RemoveAll(cdir) }()
+	for i, f := range folders {
+		tarb, c, err := grader.Overlay(cdir, p.Target.CompanionRepo, commit, f, itemOfFolder(f))
+		if err == nil && c.FileCount == 0 {
+			err = fmt.Errorf("%s has no files under %s/ (an earlier slice)", p.Target.CompanionRepo, f)
+		}
+		if err == nil {
+			err = os.WriteFile(filepath.Join(dir, fmt.Sprintf("earlier-%d.tar", i)), tarb, 0o600)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// itemOfFolder is the item id in a companion folder path ([<path>/]items/<item>/<slice>).
+func itemOfFolder(f string) string {
+	parts := strings.Split(f, "/")
+	for i, x := range parts {
+		if x == "items" && i+1 < len(parts) {
+			return parts[i+1]
+		}
+	}
+	return ""
 }

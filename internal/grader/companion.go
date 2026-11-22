@@ -32,7 +32,7 @@ type CompanionFile struct {
 type Companion struct {
 	Repo        string          `json:"repo"`
 	Commit      string          `json:"commit"`
-	Dir         string          `json:"dir"` // the item's folder in the companion, e.g. cli-schema-mcp/items/006
+	Dir         string          `json:"dir"`            // the item's folder in the companion, e.g. cli-schema-mcp/items/006
 	Dirs        []string        `json:"dirs,omitempty"` // 026: the folders overlaid, in order, when more than one
 	Item        string          `json:"item"`
 	FileCount   int             `json:"file_count"`

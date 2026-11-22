@@ -234,5 +234,64 @@ class SliceGrading(unittest.TestCase):
         self.assertEqual(self.results(r)["G2_allowed_paths"], "fail")
 
 
+    # --- US2: earlier slices kept (G8) and the slice baseline (T025) ---
+
+    def us2(self):
+        return {"id": "US2", "phases": US2, "earlier": [US1]}
+
+    def us2_setup(self):
+        self.merge_us1()
+        write(self.grading, "earlier/0/tests/test_h1.py", HIDDEN_US1)
+        write(self.grading, "overlay/tests/test_h2.py", HIDDEN_US2)
+
+    def test_g8_passes_then_g5(self):
+        self.us2_setup()
+        self.change(app=APP_US2, tasks=tick(TASKS_BASE, "T001", "T002", "T003", "T004"))
+        r = self.run_grade(self.meta(self.us2()))
+        self.assertEqual(r["result"], "pass", r)
+        ids = [c["id"] for c in r["checks"]]
+        self.assertLess(ids.index("G8_earlier_slices_kept"), ids.index("G5_hidden_tests"))
+        self.assertIn("1 earlier slice(s)' hidden tests pass", self.detail(r, "G8_earlier_slices_kept"))
+
+    def test_g8_fails_when_an_earlier_slice_breaks(self):
+        self.us2_setup()
+        broken = APP_US2.replace("return n.upper() + '!'", "return n")
+        self.change(app=broken, tasks=tick(TASKS_BASE, "T001", "T002", "T003", "T004"))
+        r = self.run_grade(self.meta(self.us2()))
+        self.assertEqual(r["result"], "fail")
+        self.assertEqual(self.results(r)["G8_earlier_slices_kept"], "fail")
+        self.assertEqual(self.results(r)["G5_hidden_tests"], "skipped")
+        self.assertIn("broke an earlier slice", self.detail(r, "G8_earlier_slices_kept"))
+
+    def test_slice_baseline_passes(self):
+        self.us2_setup()
+        r = self.run_grade(self.meta(self.us2(), mode="baseline"))
+        self.assertEqual(r["result"], "pass", r)
+        self.assertEqual(self.results(r)["G8_earlier_slices_kept"], "pass")
+        self.assertEqual(self.results(r)["G5_hidden_tests"], "pass")  # the hidden tests failed on the base
+        self.assertIsNone(r["failure"])
+
+    def test_slice_baseline_reports_a_broken_earlier_slice(self):
+        self.us2_setup()
+        write(self.repo, "app.py", APP_BASE)  # the default branch lost US1's code after it merged
+        sh(self.repo, "commit", "-qam", "regression")
+        self.rebase()
+        r = self.run_grade(self.meta(self.us2(), mode="baseline"))
+        self.assertEqual(r["result"], "fail")
+        self.assertEqual(r["failure"], "EARLIER_SLICE_BROKEN_ON_BASE")
+        self.assertEqual(self.results(r)["G5_hidden_tests"], "skipped")
+
+    def test_no_hidden_output_in_details(self):
+        self.us2_setup()
+        broken = APP_US2.replace("return n.upper() + '!'", "return n")
+        self.change(app=broken, tasks=tick(TASKS_BASE, "T001", "T002", "T003", "T004"))
+        r = self.run_grade(self.meta(self.us2()))
+        for c in r["checks"]:
+            if c["id"] in ("G5_hidden_tests", "G8_earlier_slices_kept") and c["result"] != "skipped":
+                self.assertNotIn("test_shout", c["detail"])
+                self.assertNotIn("AssertionError", c["detail"])
+                self.assertIn("output withheld", c["detail"])
+
+
 if __name__ == "__main__":
     unittest.main()

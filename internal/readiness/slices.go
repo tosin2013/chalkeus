@@ -23,6 +23,7 @@ type SliceInfo struct {
 	EarlierPhases      [][]string `json:"earlier_phases"`
 	AllowedPathsSource string     `json:"allowed_paths_source"`
 	DefaultRevision    string     `json:"default_revision"`
+	All                []string   `json:"all"` // every slice id of the item, in order
 }
 
 // PriorSlice is the slicing a local slice run of the item recorded when it was built: its phases

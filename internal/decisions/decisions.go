@@ -114,6 +114,8 @@ func PendingStep(run *evidence.Run) *Pending {
 	case "paused(awaiting-retry)":
 		n, _ := toInt(pend["n"])
 		return &Pending{Step: "retry", Task: pend["task"], N: n}
+	case "paused(awaiting-acceptance)": // 026: the item-level acceptance check before `verified`
+		return &Pending{Step: "acceptance", Task: pend["task"]}
 	case "paused(awaiting-merge)":
 		task := mergeTask(run)
 		rec := readJSON(filepath.Join(run.Dir, "reconcile", task+".json"))
@@ -172,6 +174,8 @@ func Describe(p *Pending) string {
 		return "start the run in this mode: " + PyJSON(string(mode))
 	case "retry":
 		return fmt.Sprintf("retry task %v (attempt %v)", p.Task, p.N)
+	case "acceptance":
+		return fmt.Sprintf("record that item %v's acceptance checks were done and passed (the status change then follows)", p.Task)
 	case "reconcile":
 		where := "the fixture roadmap"
 		if t, ok := p.Task.(string); ok && t != "A" {
