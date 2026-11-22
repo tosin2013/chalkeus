@@ -167,10 +167,12 @@ func (m *Manager) relayRun(item, dir string) {
 	}
 }
 
-// finishRelays relays the rest of each run this manager was relaying whose item is no longer a
-// candidate, then stops following it. Merging the status PR makes the item verified, which takes
-// it out of the candidates before its run's last lines ("succeeded", or the audit's result) were
-// relayed (found by the 025 step scenario; #124 fixed this only for items still proposed).
+// finishRelays keeps relaying each run this manager was following whose item is no longer a
+// candidate, until the run has ended, then relays it once more and stops following it. Merging the
+// status PR makes the item verified, which takes it out of the candidates while its run is still
+// finishing (the audit, then "succeeded" or "failed"); found by the 025 step scenario, since #124
+// fixed this only for items still proposed. While such a run is finishing the loop stays busy, so
+// it polls every 15 s.
 func (m *Manager) finishRelays(states []ItemState) {
 	live := map[string]bool{}
 	for _, s := range states {
@@ -186,10 +188,29 @@ func (m *Manager) finishRelays(states []ItemState) {
 	}
 	sort.Strings(done)
 	for _, p := range done {
-		m.relayRun(m.relayItem[p], filepath.Dir(filepath.Dir(p)))
-		delete(m.relay, p)
-		delete(m.relayItem, p)
+		dir := filepath.Dir(filepath.Dir(p))
+		ended := runEnded(dir) // read before relaying, so no line written at the end is missed
+		m.relayRun(m.relayItem[p], dir)
+		if ended {
+			delete(m.relay, p)
+			delete(m.relayItem, p)
+		} else {
+			m.Busy = true
+		}
 	}
+}
+
+// runEnded reports whether a run's recorded state is final (succeeded, failed or declined), or
+// its record can't be read (nothing more will be written that step mode can follow).
+func runEnded(dir string) bool {
+	var st struct {
+		State string `json:"state"`
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "run.json"))
+	if err != nil || json.Unmarshal(raw, &st) != nil {
+		return true
+	}
+	return st.State == "succeeded" || strings.HasPrefix(st.State, "failed") || strings.HasPrefix(st.State, "declined")
 }
 
 var runIDRE = regexp.MustCompile(`== run (\d{8}T\d{6}Z)`)
