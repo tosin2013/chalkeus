@@ -229,6 +229,7 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 				return failed, err
 			}
 			_ = m.Log.Add(Entry{Item: a.Item, Action: Draft, Reason: "drafting pass: " + res})
+			m.Next = draftNext(a.Item, res)
 		case NeedsTests:
 			m.comment(ctx, a.Item, "needs-tests:"+a.Item, "Hidden tests are needed before this item can run. Auto-draft is off for this target: write them in the companion repository, or turn on `PILOT_AUTHOR_AUTO`.")
 		case RunFailedAct:
@@ -254,6 +255,7 @@ func (m *Manager) doctorThenRun(ctx context.Context, st ItemState) (bool, error)
 	}
 	if code != 0 {
 		_ = m.Log.Add(Entry{Item: st.ID, Action: DoctorFailed, Reason: fmt.Sprintf("doctor exit %d", code), Commits: st.Commits})
+		m.Next = st.ID + ": waiting for you: doctor found problems (listed in the comment on its issue); fix them, and step mode tries again once the target or the companion changes"
 		m.comment(ctx, st.ID, "doctor-failed@"+st.Commits, "`pilot doctor --baseline` found problems, so this item didn't start. Step mode tries again when the target or the companion changes.\n\n```text\n"+findings(dlog)+"\n```")
 		return true, nil
 	}
@@ -274,6 +276,11 @@ func (m *Manager) doctorThenRun(ctx context.Context, st ItemState) (bool, error)
 	}
 	_ = m.Log.Add(Entry{Item: st.ID, Action: "run", Reason: fmt.Sprintf("run exit %d (5 = paused for /approve mode)", code), Run: runDir})
 	fmt.Fprintf(m.Out, "%s: run %s started; it waits for /approve mode on its tracking issue\n", st.ID, id)
+	if code == 5 {
+		m.Next = st.ID + ": " + waitingFor(runDir, "paused(awaiting-mode)", m.Src.Repo)
+	} else {
+		m.Next = fmt.Sprintf("%s: run %s ended with exit %d; its output is above", st.ID, id, code)
+	}
 	return code != 0 && code != 5, nil
 }
 
@@ -310,7 +317,21 @@ func findings(logPath string) string {
 	return strings.Join(keep, "\n")
 }
 
-// nextFor is the owner's next step after a pass: the item in flight decides; otherwise the
+// draftNext is the owner's next step after a drafting pass (the pass already printed the PR link
+// or the reason).
+func draftNext(item, res string) string {
+	switch res {
+	case "opened":
+		return item + ": waiting for you: review and merge the hidden-tests pull request linked above (on the companion repository)"
+	case "failed":
+		return item + ": the automatic draft failed its check (reason above); write the hidden tests in the companion repository, or change the spec for a new draft"
+	}
+	return item + ": no draft was started (see above)"
+}
+
+// nextFor is the owner's next step before a pass acts (Pass replaces it with the outcome of a
+// draft, a doctor or a run start, so the line printed after the pass is never about a step that
+// already happened): the item in flight decides; otherwise the
 // first item waiting for its label; otherwise fallback.
 func nextFor(plan []Action, fallback string) string {
 	for _, a := range plan {
@@ -326,11 +347,16 @@ func nextFor(plan []Action, fallback string) string {
 			return a.Item + ": running doctor --baseline, then starting the run; nothing needed from you yet"
 		case NeedsTests:
 			return a.Item + ": waiting for you: " + a.Reason + " (see the comment on its issue)"
+		case DoctorFailed:
+			return a.Item + ": waiting for you: doctor found problems (listed in the comment on its issue); fix them, and step mode tries again once the target or the companion changes"
 		}
 	}
 	for _, a := range plan {
 		if i := strings.Index(a.Reason, "to start it, "); a.Kind == Skip && i >= 0 {
 			return a.Item + ": " + a.Reason[i+len("to start it, "):]
+		}
+		if i := strings.Index(a.Reason, "an approver must "); a.Kind == Skip && i >= 0 {
+			return a.Item + ": waiting for an approver: " + a.Reason[i+len("an approver must "):]
 		}
 	}
 	if fallback != "" {

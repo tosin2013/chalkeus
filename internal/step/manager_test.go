@@ -364,8 +364,8 @@ func TestManagerNext(t *testing.T) {
 	w.ready["009"] = readiness.Result{Decision: "allow", Commit: "t1", CompanionCommit: "c1"}
 	w.m.Src.AutoDraft = true
 	w.pass(t)
-	if !strings.HasPrefix(w.m.Next, "009: drafting its hidden tests") {
-		t.Fatalf("draft: %q", w.m.Next)
+	if !strings.HasPrefix(w.m.Next, "009: waiting for you: review and merge the hidden-tests pull request") {
+		t.Fatalf("after a draft opened its PR: %q", w.m.Next)
 	}
 	w.runs["009"] = RunInfo{ID: "R1", State: "paused(awaiting-mode)", Watching: true, Waiting: "waiting for you: reply `/approve mode` on https://x/issues/9"}
 	w.pass(t)
@@ -377,5 +377,81 @@ func TestManagerNext(t *testing.T) {
 	w.pass(t)
 	if w.m.Next != "review and merge the planning PR https://x/pull/46 (plan 010); then label the new item's issue" {
 		t.Fatalf("planning: %q", w.m.Next)
+	}
+}
+
+// T014: an in-progress run with no watcher and no event for an hour crashed: it counts as failed
+// (step mode then waits for a relabel); a recent or watched one is still active.
+func TestStaleInProgressRun(t *testing.T) {
+	old := now
+	t.Cleanup(func() { now = old })
+	base := time.Date(2026, 11, 21, 12, 0, 0, 0, time.UTC)
+	now = func() time.Time { return base }
+	for _, c := range []struct {
+		name string
+		r    RunInfo
+		want string
+	}{
+		{"recent", RunInfo{State: "in-progress", EndedAt: base.Add(-10 * time.Minute)}, RunActive},
+		{"crashed", RunInfo{State: "in-progress", EndedAt: base.Add(-61 * time.Minute)}, RunFailed},
+		{"quiet but watched", RunInfo{State: "in-progress", Watching: true, EndedAt: base.Add(-3 * time.Hour)}, RunActive},
+		{"no events yet", RunInfo{State: "in-progress"}, RunActive},
+	} {
+		if got := runState(c.r); got != c.want {
+			t.Errorf("%s: %s, want %s", c.name, got, c.want)
+		}
+	}
+	// From the evidence on disk, as NewestRun reads it.
+	root := t.TempDir()
+	d := filepath.Join(root, "20261121T100000Z")
+	_ = os.MkdirAll(d, 0o755)
+	_ = os.WriteFile(filepath.Join(d, "run.json"), []byte(`{"run_id":"20261121T100000Z","kind":"item","item":"001","target":{"name":"t","repo":"o/t"},"state":"in-progress"}`), 0o644)
+	_ = os.WriteFile(filepath.Join(d, "events.jsonl"), []byte(`{"seq":1,"at":"2026-11-21T10:30:00Z","event":"attempt_started"}`+"\n"), 0o644)
+	r, ok := NewestRun(root, nil, "t", "001", func(string) bool { return false })
+	if !ok || runState(r) != RunFailed {
+		t.Fatalf("a run quiet since 10:30 with no watcher is stale at 12:00: %+v %s", r, runState(r))
+	}
+	if a := Next(ItemState{ID: "001", Proposed: true, Run: runState(r), RunID: r.ID}); a.Kind != RunFailedAct {
+		t.Errorf("step mode waits for a relabel after a crashed run: %v", a)
+	}
+}
+
+// After doctor and the run start, the next line is what the owner does now, not the step that
+// just happened (found by the 025 step scenario: it said "running doctor" while the run waited
+// for /approve mode).
+func TestManagerNextAfterDoctorAndRun(t *testing.T) {
+	w := newWorld(t)
+	w.m.Src.Repo = "me/proj"
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	w.doctor = 1
+	w.pass(t)
+	if !strings.Contains(w.m.Next, "009: waiting for you: doctor found problems") {
+		t.Fatalf("after a failed doctor: %q", w.m.Next)
+	}
+	w.ready["009"] = readiness.Result{Decision: "allow", HiddenFiles: 1, Commit: "t2", CompanionCommit: "c1"}
+	w.doctor = 0
+	w.pass(t)
+	if !strings.HasPrefix(w.m.Next, "009: waiting for you: reply `/approve mode` on") {
+		t.Fatalf("after the run started: %q", w.m.Next)
+	}
+}
+
+// The next line names the owner's move after a non-approver's label and while a failed doctor
+// stands (both said "nothing is waiting for you"; found by the 025 gaps scenario).
+func TestManagerNextNonApproverAndStandingDoctorFailure(t *testing.T) {
+	w := newWorld(t)
+	w.m.Src.Repo = "me/proj"
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "stranger"}
+	w.labels[44] = ghloop.Proposal{Labelled: true, AddedBy: "stranger"}
+	w.pass(t)
+	if !strings.HasPrefix(w.m.Next, "009: waiting for an approver: remove and re-add it on https://github.com/me/proj/issues/41") {
+		t.Fatalf("non-approver: %q", w.m.Next)
+	}
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	w.doctor = 1
+	w.pass(t)
+	w.pass(t) // same commits: doctor isn't rerun
+	if !strings.Contains(w.m.Next, "009: waiting for you: doctor found problems") {
+		t.Fatalf("standing doctor failure: %q", w.m.Next)
 	}
 }

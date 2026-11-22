@@ -15,5 +15,5 @@
    - `pilot/pilot run --target stockroom --item NNN`;
    - after `down`, the audit should be 11/11 (SC-005).
 
-**Check:** the draft's `checks.jsonl` shows A01–A05 passing (SC-002), and `draft.json` shows
+**Check:** the draft's `draft.json` shows A01–A05 passing under `jobs[].checks` (SC-002), and
 `trigger: auto`.

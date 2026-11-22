@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/fakegh"
 	"github.com/tosin2013/specfoundry/internal/paths"
 )
@@ -122,6 +123,10 @@ func setUp() (*world, error) {
 	}
 	// tally: step mode (T012), with GitHub issues and approvals and automatic drafting.
 	if err := x.addTarget("tally", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\nPILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\n"); err != nil {
+		return x, err
+	}
+	// gaps: step mode's debrief gaps (T013): a non-approver's label, a failing doctor.
+	if err := x.addTarget("gaps", "PILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\n"); err != nil {
 		return x, err
 	}
 	x.baseEnv = []string{"PILOT_ROOT=" + x.root, "SPECFOUNDRY_CONFIG=" + x.config, "PILOT_TEST_MODE=1",
@@ -366,3 +371,14 @@ func tail(s string, n int) string {
 }
 
 func say(s string) { fmt.Fprintf(os.Stderr, "[integration %s] %s\n", time.Now().Format("15:04:05"), s) }
+
+// readRows reads a JSONL file (nil, nil when it doesn't exist yet).
+func readRows(p string) ([]map[string]any, error) {
+	if _, err := os.Stat(p); err != nil {
+		return nil, nil
+	}
+	rows, err := evidence.ReadJSONL(p)
+	return rows, err
+}
+
+func filepathJoin(parts ...string) string { return filepath.Join(parts...) }

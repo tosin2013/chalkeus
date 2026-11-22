@@ -1,7 +1,7 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.26.0 → 1.27.0 (this revision)
+Version change: 1.28.0 → 1.29.0 (this revision)
 Bump rationale: MINOR — a new planned item (026) and a new dependency for 013. Nothing verified
 is invalidated.
 Changes this revision (owner decisions 2026-11-21, Tosin Akinosho; issue #142):
@@ -14,6 +14,39 @@ Changes this revision (owner decisions 2026-11-21, Tosin Akinosho; issue #142):
 Specs affected: 013, 026 (new)
 Open questions added/resolved: Q4 decided (one run per slice, verified per item); Q12 notes
 026 (slices are sequential; parallel `[P]` tasks stay open)
+
+Prior: Version change: 1.27.0 → 1.28.0
+Bump rationale: MINOR — Q7 re-resolved (brand and binary become Chalkeus / `chalkeus`, and
+`pilot` is renamed to `forge`), a scope change to 013 (alias and brand story), the 021
+label default, a planned repo rename, and a Q8 command-path note. Nothing verified is
+invalidated.
+Changes this revision (owner decision 2026-11-21, Tosin Akinosho):
+  - Q7 re-resolved, superseding 1.27.0: the brand and installed binary are `chalkeus`
+    (Greek χαλκεύς, "smith"); `pilot` is renamed to `forge` to fit the smith theme
+    (`chalkeus forge …`). 1.27.0 had chosen SpecFoundry / `specfoundry` and the `sfy`
+    alias. Name check: no US trademark and
+    no npm, PyPI, crates, Go, Homebrew, Docker Hub or Artifact Hub clash; chalkeus.com has
+    been parked since 2015; a Polish metalworking firm trades as Chalkeus; EU and WIPO were
+    unchecked. The owner accepts that risk and will revisit if the project gets very popular.
+    The short alias is `chk`, offered by the installer, not a second binary. `chk` is not a
+    common Unix command and is not an exact Debian, Ubuntu or Homebrew-core package, and
+    the npm package `chk` has no bin; the uses found (a small third-party Homebrew kubectl
+    version switcher, and a Windows GUI hash tool) were small and unrelated.
+  - 013 scope: the opt-in alias becomes `chk` in place of `sfy`; tab completion stays. The
+    README and install docs include the smith brand story: the spec is the raw metal, the
+    worker build is the forging, the grader is the testing and tempering, and the draft PR
+    is the proven piece a human inspects.
+  - 021: the proposal label's default becomes `chalkeus:proposed` (still a profile setting).
+  - Q8 notes that harness rules match `chalkeus forge …`.
+  - Q1 planned: after 1.28.0 merges, a single follow-up change updates the Go module path,
+    imports, docs, CI badges and GitHub App references, then the GitHub repo is renamed to
+    tosin2013/chalkeus in settings (the owner does that, or gives an explicit go-ahead).
+    Both happen before 013 ships. GitHub redirects the old URLs. This revision does not
+    rename the repo or change the code. The chalkeus.dev domain stays a separate, undecided
+    money call.
+Specs affected: 013, 021
+Open questions added/resolved: Q7 re-resolved; Q1 planned (repo rename to tosin2013/chalkeus);
+chalkeus.dev still open (money call)
 
 Prior: Version change: 1.25.0 → 1.26.0
 Bump rationale: MINOR — status transitions (021, 024 verified) and a scope addition to 025 from
@@ -1114,7 +1147,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Scope (in):** ~~_to be defined_. Candidates: the release form (single binary, zipapp, or a
   Python package); …~~ A GitHub Actions release workflow (checksums, like the pilot images);
   how the CLI finds the target project and its config; the command name used in harness rules
-  (Q8); install docs.
+  (Q8); install docs; **tab completion set up on install** for bash, zsh, fish and PowerShell
+  (owner condition for the long binary name, 2026-11-21); an opt-in `chk` shell alias
+  offered on install, with completion wired to it as well; the smith brand story in the
+  README and install docs (the spec is the raw metal, the worker build is the forging, the
+  grader is the testing and tempering, and the draft PR is the proven piece a human inspects).
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
 - **Depends on:** 016, 024, 021, 026 (2026-11-19: the laptop release includes auto-draft and the
   manager loop. 2026-11-21: it also ships slice runs)
@@ -1127,6 +1164,13 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   and CLI surface) and Q8 (multi-project use; harness rules today match the `pilot/pilot`
   path). Decide the form and name before speccing. **2026-11-15:** form decided by C-13 (one Go
   binary); the name is still Q7. Dependency changed from 012 to 016 (2026-11-15).
+  **2026-11-21 (owner):** Q7 resolved: the binary is `specfoundry`, with `pilot` as a
+  subcommand (`specfoundry pilot …`), and completion ships with the install.
+  **2026-11-21 (owner, later):** Q7 re-resolved (1.28.0, superseding 1.27.0): the binary is
+  `chalkeus`, with `forge` as the main subcommand (`chalkeus forge …`); `pilot` is renamed
+  to `forge` to fit the smith theme. The opt-in alias is `chk`.
+  The repo rename to tosin2013/chalkeus is planned after this revision merges and before 013
+  ships (see Q1); this item's docs also carry the smith brand story.
 
 ### 014 — Any project, any item  [status: verified]
 
@@ -1535,7 +1579,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - an item is **proposed** by a label on its issue (004 mirrors items as issues), honoured only
     when an approver (`PILOT_APPROVERS`) added it, read from the issue's timeline. The label
     proposes; the gate, `doctor` and `/approve mode` still decide (010's rule). Its name follows
-    Q7 and is a profile setting until then;
+    Q7: default `chalkeus:proposed` (Q7 re-resolved 2026-11-21, 1.28.0, superseding the
+    1.27.0 default `specfoundry:proposed`), still a profile setting;
   - it polls GitHub, as the other watchers do; signed webhooks are 010, in cluster mode;
   - the first version always waits for `/approve mode`; the standing approval follows 009.
   The same decisions run in the operator (011) later, on a different host.
@@ -1745,6 +1790,13 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
   org). Interim home: GitHub repo tosin2013/specfoundry (public since 2026-11-13, Apache-2.0,
   with CONTRIBUTING and a Code of Conduct).
+  **Planned 2026-11-21 (owner):** the product name is Chalkeus (Q7). After 1.28.0 merges, a
+  single follow-up change updates the Go module path, imports, docs, CI badges and GitHub
+  App references, then the GitHub repo is renamed to tosin2013/chalkeus in settings (the
+  owner does that, or gives an explicit go-ahead). Both happen before 013 ships. GitHub
+  redirects the old URLs. This revision does not rename the repo or change the code. The
+  "new repo vs. inside the spec-status org" options are not the plan; the repo stays under
+  tosin2013 and is renamed in place.
 - Q2 — Kelos as wrapped dependency vs. fork (default: wrap, see C-05). **Resolved
   2026-11-13:** never fork; wrap only if the security bar is met by configuration,
   otherwise do not adopt (C-05 amended).
@@ -1773,9 +1825,35 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   stable command surface before 011 (raised 2026-11-14).
   **2026-11-19:** the name also sets 021's proposal label (a profile setting with a placeholder
   until then). The `specfoundry` GitHub organization name is taken.
+  **Resolved 2026-11-21 (owner, 1.27.0):** brand SpecFoundry; installed binary `specfoundry`,
+  with `pilot` as a subcommand (`specfoundry pilot …`); tab completion on install (013);
+  proposal label default `specfoundry:proposed` (021). Why not bare `pilot`: an existing AI
+  ticket-to-PR tool already ships a `pilot` CLI; why not `sf`: the Salesforce CLI's binary
+  (research return MSG-2115). Not a trademark clearance: the `specfoundry` GitHub org is a
+  public org of unknown control, and another project uses the exact name SpecFoundry. Releases
+  come from tosin2013/specfoundry for now. Short alias: `sfy`, an opt-in shell alias the
+  installer offers, not a binary. Docs, harness rules and agents always use `specfoundry`.
+  `sfy` over `sfd`: an existing `sfd` CLI wraps the Salesforce CLI (next to the `sf`
+  clash), while the `sfy` uses found were small and unrelated.
+  **Re-resolved 2026-11-21 (owner, 1.28.0, superseding 1.27.0):** brand Chalkeus (Greek
+  χαλκεύς, "smith"); installed binary `chalkeus`, with `forge` as the main subcommand
+  (`chalkeus forge …`); `pilot` is renamed to `forge` to fit the smith theme; tab
+  completion on install (013); proposal label default
+  `chalkeus:proposed` (021). Name check: no US trademark and no npm, PyPI, crates, Go,
+  Homebrew, Docker Hub or Artifact Hub clash; chalkeus.com has been parked since 2015; a
+  Polish metalworking firm trades as Chalkeus; EU and WIPO were unchecked. The owner
+  accepts that risk and will revisit if the project gets very popular. Short alias: `chk`,
+  an opt-in shell alias the installer offers, not a binary. `chk` is not a common Unix
+  command, not an exact Debian, Ubuntu or Homebrew-core package, and the npm package `chk`
+  has no bin; the uses found (a small third-party Homebrew kubectl version switcher, and a
+  Windows GUI hash tool) were small and unrelated. Docs, harness rules and agents always
+  use `chalkeus`. The repo stays tosin2013/specfoundry until the planned rename in Q1.
+  The chalkeus.dev domain is a separate, undecided money call.
 - Q8 — Using the pilot across projects and harnesses (raised 2026-11-15, 012 debrief).
   - Do harness ask rules live per user, or does a `pilot` command install them?
   - Today's rules match the `pilot/pilot` path; an installed CLI (013) changes the pattern.
+    Per Q7 (re-resolved 2026-11-21, 1.28.0, superseding 1.27.0) the installed binary is
+    `chalkeus`, so rules match `chalkeus forge …`, not a bare `pilot`.
   - How are agents that run in a real terminal handled (Warp, for example)? Such an agent
     could answer a `[y/N]` prompt that the audit records as `tty`.
   - Do harnesses other than Claude Code get a deny rule for `approvals/`?
@@ -1885,4 +1963,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.27.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-21
+**Version**: 1.29.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
