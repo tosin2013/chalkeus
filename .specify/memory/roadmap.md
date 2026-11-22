@@ -1,12 +1,24 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.29.2 → 1.29.3 (this revision)
+Version change: 1.30.0 → 1.30.1 (this revision)
 Bump rationale: PATCH — a status transition.
 Changes this revision (owner decision 2026-11-22, Tosin Akinosho):
   - 026 planned → specced: spec, plan, design and tasks merged (#151, #156); implementation starts.
 Specs affected: 026
 Open questions added/resolved: none
+
+Prior: Version change: 1.29.2 → 1.30.0
+Bump rationale: MINOR — a new planned item (027) and a new dependency for 013. Nothing verified
+is invalidated.
+Changes this revision (owner decision 2026-11-22, Tosin Akinosho):
+  - 027 (new, planned): rename to Chalkeus. Carries out Q7 and Q1's planned change as an item:
+    the Go module path, the `pilot` → `forge` command, the label default, docs and the
+    repository rename, with a migration decision for image names, Kubernetes labels, the
+    config folder and cluster names.
+  - 013 depends on 027 (the release ships under the new name).
+Specs affected: 013, 027 (new)
+Open questions added/resolved: Q1's planned change becomes item 027
 
 Prior: Version change: 1.29.1 → 1.29.2
 Bump rationale: PATCH — a status transition (025 specced → verified) and notes. No scope,
@@ -1179,7 +1191,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   README and install docs (the spec is the raw metal, the worker build is the forging, the
   grader is the testing and tempering, and the draft PR is the proven piece a human inspects).
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
-- **Depends on:** 016, 024, 021, 026 (2026-11-19: the laptop release includes auto-draft and the
+- **Depends on:** 016, 024, 021, 026, 027 (2026-11-22: it ships under the new name. 2026-11-19: the laptop release includes auto-draft and the
   manager loop. 2026-11-21: it also ships slice runs)
 - **Notes:** **Owner decision 2026-11-21 (issue #142):** the laptop release ships with slice
   runs (026), so items with several stories of different risk can be built and reviewed one
@@ -1837,6 +1849,36 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     - ~~exactly how G6 and G7 apply per slice~~ per slice, against the base the slice starts from
       (spec default, FR-014).
 
+### 027 — Rename to Chalkeus  [status: planned]
+
+- **Description:** Carry out Q7 and Q1: the product, its Go module, binary, commands, docs and
+  repository become Chalkeus, without breaking existing setups or their evidence.
+- **Outcome:** the code and docs use Chalkeus. The Go module is `github.com/tosin2013/chalkeus`,
+  the repository is renamed to tosin2013/chalkeus (by the owner, the same day the code change
+  merges), the command is `forge` in place of `pilot`, and the step-mode label default is
+  `chalkeus:proposed`. An existing setup keeps working, or is told exactly what to move, and
+  older evidence still audits.
+- **Scope (in):**
+  - the Go module path and imports, CI badges, docs and GitHub App references (Q1's planned
+    change);
+  - the `pilot` → `forge` command rename, and how the repository's command path, the `pilot`
+    skill and the harness ask rules change with it (the rules are what make `approve` ask the
+    human, so they must keep matching);
+  - the proposal label default (`chalkeus:proposed`, replacing the `pilot/go` placeholder);
+  - decided in the spec, each with a migration path: image names (`ghcr.io/tosin2013/
+    specfoundry-*`), Kubernetes labels (`specfoundry.io/…`, also in golden data and older
+    evidence), the config folder (`~/.config/specfoundry`, `SPECFOUNDRY_CONFIG`) and the
+    cluster and registry names;
+  - the order of the code change and the owner's repository rename.
+- **Scope (out):** the installable release, the installed `chalkeus` binary, tab completion and
+  the `chk` alias (013); the chalkeus.dev domain (an open money call); renaming the
+  `specfoundry`-named Spec Kit artifacts of past items (history).
+- **Depends on:** none
+- **Notes:** Added 2026-11-22 (owner): the rename is its own item rather than Q1's single
+  unplanned change, because about 1,600 mentions in 540 files go beyond the module path, and
+  several (the config folder, image names, labels in evidence) need a migration decision.
+  013 depends on it: the release ships under the new name.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2015,4 +2057,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.29.3 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
+**Version**: 1.30.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
