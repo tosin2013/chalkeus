@@ -65,6 +65,38 @@ pilot/pilot up --local-build      # or build the images yourself
 WORKER=<ref> TOOLS=<ref> EGRESS=<ref> pilot/images/smoke.sh
 ```
 
+### Integration tests
+
+`test/integration/` runs the pilot end to end on kind, against a fake GitHub (`internal/fakegh`)
+with a stub in place of the coding agent: the fixture run, automatic drafting, step mode and its
+gaps. CI runs them weekly and on PRs that touch the pilot (`.github/workflows/integration.yml`);
+no secrets and no model are needed. To run them locally (Docker, Go, git and `spec` installed;
+about 20 minutes):
+
+```sh
+sudo sysctl -w net.ipv4.ip_unprivileged_port_start=443   # the fake listens on 443, the only
+                                                          # port the egress proxies allow
+go test -tags integration -timeout 50m ./test/integration/
+go test -tags integration -run TestAutoDraft ./test/integration/   # one scenario
+```
+
+- **It builds and deletes its own `specfoundry-m1` kind cluster,** and refuses to start if one
+  exists, so run `pilot/pilot down` first. It never touches your setup: it runs from a temporary
+  copy of `pilot/` with a temporary config folder, and drops `GH_TOKEN`, `GITHUB_TOKEN` and
+  `PILOT_*` from its environment.
+- **Every test run fails its own audit on AU12** ("not a test run"), by design: a run against
+  the fake can never count as real evidence. The scenarios expect that.
+- **On failure,** the run leaves an `out` folder in `test/integration/` (git ignores it) with
+  each run's evidence and the kind logs; CI uploads the same folder. Its `coverage.txt` shows how
+  much of the glue packages the scenarios ran.
+- **A new scenario** usually needs a target under `test/integration/fixtures/<name>` (and
+  `<name>-acceptance` for its companion), and canned agent output under
+  `pilot/images/stub/scenarios/<name>/` (see `pilot/images/stub/stub-opencode`).
+
+The go workflow also holds unit-test coverage of the glue packages at the floors in
+`.github/coverage-floor.txt`: raise a floor when coverage rises; never lower one without saying
+why in the PR.
+
 ### Style
 
 - **Pilot (`cmd/pilot`, `internal/`):** Go (the version in `go.mod`); `gofmt`, `go vet` and

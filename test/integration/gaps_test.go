@@ -17,7 +17,7 @@ import (
 func TestStepGaps(t *testing.T) {
 	const repo = "owner/gaps"
 	step := func(what string) string {
-		out, code := w.pilot("step", "--target", "gaps", "--once")
+		out, code := w.pilotTTY("step", "--target", "gaps", "--once")
 		t.Logf("step pass, %s (exit %d):\n%s", what, code, tail(out, 60))
 		return out
 	}

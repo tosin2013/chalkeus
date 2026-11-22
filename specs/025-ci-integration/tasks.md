@@ -43,9 +43,9 @@ own test. Stages follow research R6, and each is mergeable on its own.
 ## Stage 7: CI and the coverage floor (US1, US4)
 
 - [X] T015 [US1] Add `.github/workflows/integration.yml`: weekly and on PRs touching `cmd/`, `internal/`, `pilot/manifests/`, `pilot/images/` or itself; `ubuntu-24.04`, no secrets, a 45-minute timeout; artifacts on failure
-- [ ] T016 [US4] Add `.github/coverage-floor.txt` with today's numbers for `cli`, `pipeline`, `worker`, `checks`, `cluster`, `grader`, and a step in `.github/workflows/go.yml` that fails a package below its floor
-- [ ] T017 [US1] SC-001 check: reintroduce each live bug on a scratch branch (images not loaded, the A01 label, a terminal for step mode's subprocesses, the issues rule) and confirm the job fails at the matching scenario; record it in `specs/025-ci-integration/evidence/README.md`
-- [ ] T018 Docs (`CONTRIBUTING.md` or `docs/`: running the integration tests locally), privacy check, and the 025 debrief
+- [X] T016 [US4] Add `.github/coverage-floor.txt` with today's numbers for `cli`, `pipeline`, `worker`, `checks`, `cluster`, `grader`, and a step in `.github/workflows/go.yml` that fails a package below its floor
+- [X] T017 [US1] SC-001 check: reintroduce each live bug on a scratch branch (images not loaded, the A01 label, a terminal for step mode's subprocesses, the issues rule) and confirm the job fails at the matching scenario; record it in `specs/025-ci-integration/evidence/README.md`
+- [X] T018 Docs (`CONTRIBUTING.md` or `docs/`: running the integration tests locally), privacy check, and the 025 debrief
 
 ## Dependencies
 
