@@ -214,9 +214,9 @@ Merge and status:
 ## Phase 8: Polish and close-out
 
 - [ ] T042 [P] Add the 025 two-slice scenario: `test/integration/fixtures/slices/` (a target with a two-story `tasks.md` and `## Allowed paths (US1)`), `test/integration/fixtures/slices-acceptance/items/001/US1|US2/`, stub-model rules in `pilot/images/stub/scenarios/slices/`, and `test/integration/slices_test.go` asserting quickstart §3 steps 1–6.
-- [ ] T043 [P] Update `docs/targets.md` (sliced items, `## Allowed paths (<id>)`, companion layout, `## Item acceptance`), `docs/operator-guide.md` (`pilot slices`, `--slice`), and `docs/troubleshooting.md` (each new reason code and its fix). `go test ./internal/cli/` (the docs check) must pass.
-- [ ] T044 [P] Update `specs/014-any-project/contracts/item-spec.md` and `grading.md` with a one-line pointer each to 026's contracts for sliced items.
-- [ ] T045 Run `go vet ./... && go test ./...` and `python3 -m unittest discover -s pilot/images/tests`. Fix any failures.
+- [X] T043 [P] Update `docs/targets.md` (sliced items, `## Allowed paths (<id>)`, companion layout, `## Item acceptance`), `docs/operator-guide.md` (`pilot slices`, `--slice`), and `docs/troubleshooting.md` (each new reason code and its fix). `go test ./internal/cli/` (the docs check) must pass.
+- [X] T044 [P] Update `specs/014-any-project/contracts/item-spec.md` and `grading.md` with a one-line pointer each to 026's contracts for sliced items.
+- [X] T045 Run `go vet ./... && go test ./...` and `python3 -m unittest discover -s pilot/images/tests`. Fix any failures.
 - [ ] T046 Run the fixture with no `--slice` (quickstart §2): audit 11/11 after `down`. Record the run id in `specs/026-slice-runs/evidence/README.md`.
 - [ ] T047 **Owner** Choose a live target item with 2+ stories of different risk. Prepare its tasks, `## Allowed paths (<id>)` where wanted, and its per-slice hidden tests (drafted by the test author or by hand, reviewed and merged by the owner).
 - [ ] T048 Run the live item slice by slice on kind (quickstart §5), with the owner approving each mode and merging each PR. Put the evidence in `specs/026-slice-runs/evidence/`; the last run audits fully after `down`.

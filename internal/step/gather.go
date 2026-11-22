@@ -34,8 +34,8 @@ type Source struct {
 	Run       func(item, slice string) (RunInfo, bool)                      // the newest run of the item's slice ("" whole item, "*" any slice)
 	Approvers []string
 	AutoDraft bool
-	Repo      string                          // the target repository, for issue links
-	Label     string                          // the proposal label's name
+	Repo      string                                 // the target repository, for issue links
+	Label     string                                 // the proposal label's name
 	Drafted   func(item, slice, specSHA string) bool // an automatic draft (of the slice, 026) already reached its check
 	// Planning lists the target's open planning PRs (roadmap or specs/), shown when no item can
 	// be proposed: merging one is the owner's next step.

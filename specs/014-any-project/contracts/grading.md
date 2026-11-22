@@ -1,5 +1,8 @@
 # Contract: grading for item runs
 
+> **Slice runs (026):** a slice run changes G3 (only its own phases ticked) and adds G8 (earlier
+> slices' hidden tests). See `specs/026-slice-runs/contracts/grading.md`.
+
 `grade.py` keeps its frame output and check ids (G1–G5); G6 and G7 are added only when
 `test_paths` is set. New `meta.json` fields switch the
 behaviour; the fixture sets none of them, so its grading is unchanged.

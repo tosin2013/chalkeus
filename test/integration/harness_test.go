@@ -134,6 +134,10 @@ func setUp() (*world, error) {
 	if err := x.addTarget("gaps", "PILOT_GITHUB_APPROVALS=on\n"); err != nil {
 		return x, err
 	}
+	// slices: an item built in two slices (026), with GitHub approvals.
+	if err := x.addTarget("slices", "PILOT_GITHUB_APPROVALS=on\n"); err != nil {
+		return x, err
+	}
 	if err := os.MkdirAll(filepath.Join(x.out, "cover"), 0o755); err != nil {
 		return x, err
 	}

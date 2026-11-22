@@ -332,7 +332,8 @@ It needs GitHub approvals on for the target (`PILOT_GITHUB_APPROVALS=on`, in its
    - **Tests merged:** it runs `doctor --baseline` and comments the findings if it fails. If
      it's clean, it starts the run, which waits for your `/approve mode` on its tracking issue.
    - **While the run waits for you** (mode, retries, the item PR, the status PR), it waits too.
-   - **When the run succeeds,** it moves to the next proposed item.
+   - **When the run succeeds,** it moves to the next proposed item. For an item built in
+     slices, it moves to the item's next slice first ([one slice at a time](#one-slice-at-a-time)).
 3. **When something fails,** it comments once and leaves the item:
    - a failed `doctor` is tried again when the target or the companion changes;
    - a failed or abandoned run is tried again when you add the label again.
@@ -440,6 +441,43 @@ The run follows the fixture's steps, for one item:
 8. **Audit.** The run ends with the audit. Item runs use the item-run versions of AU01, AU02,
    AU03 and AU11 (only this item, the baseline, one PR, no induction), and AU04 also requires
    that no hidden test reached the worker (P11).
+
+### One slice at a time
+
+A large item can be built and reviewed one user story at a time. Each **slice** gets its own run
+and its own draft PR. The item is still the unit that is verified: the status change comes once,
+after its last slice.
+
+- **Where slices come from:** the phases of the item's approved `tasks.md`, as spec-status
+  (0.4.0 or later) reports them. Each `## Phase N: User Story M …` heading starts slice `USM`.
+  Phases before the first story (Setup, Foundational) join the first story's slice, and a phase
+  after a story (Polish) joins the slice before it. You decide the split when you approve the
+  tasks; the pilot never re-slices. An item with no story phases runs whole, as before.
+- **See them:** `pilot/pilot slices --target greeting --item 006` lists each slice, its state
+  (`untouched`, `started`, `merged`) and the current one.
+- **Run one:** `pilot/pilot run --target greeting --item 006 --slice US1`. Without `--slice`
+  the whole item runs, exactly as before; an item with a slice already merged must go on slice
+  by slice (`ITEM_PARTLY_SLICED`).
+- **Order:** slices run in `tasks.md` order. A slice starts only when every earlier slice is
+  merged on the default branch (its tasks are ticked there) and has no open PR.
+- **Allowed paths per slice:** add `## Allowed paths (US2)` to the spec, in the same list form as
+  `## Allowed paths`. A slice without its own list uses the item's.
+- **Hidden tests per slice:** `items/006/US1/`, `items/006/US2/` and so on in the companion,
+  each laid out like the project. An unsliced item keeps `items/006/`. A slice's grading also
+  re-runs every earlier slice's hidden tests (G8), so a later slice can't break an earlier one.
+- **What a slice's PR does:** it is titled `feat(006): <title> (US1)`, builds and ticks only
+  that slice's tasks, and says `Part of #N` (only the last slice's PR closes the item's issue).
+  After you merge a slice before the last, the run records it and proposes **no** status change;
+  it prints which slice is next.
+- **Item acceptance:** if the spec has `## Item acceptance` (a list, for example "a human checks
+  the stock page"), the status change after the last slice waits until you approve
+  `acceptance` (`/approve acceptance` on GitHub, or in the terminal).
+- **Audit:** each slice run audits on its own, plus AU13 (slice order). `pilot/pilot audit
+  --target greeting --item 006` lists every local run of the item.
+
+Step mode and automatic drafting follow the current slice by themselves: they draft its hidden
+tests, run `doctor --baseline --slice` and `run --slice`, and go on to the next slice after you
+merge. Each slice run still waits for your `/approve mode`.
 
 `pilot/pilot resume` and `pilot/pilot approve` take only `--run`: a paused run always continues
 against the target it started with. If that target's profile now names another repository, the
