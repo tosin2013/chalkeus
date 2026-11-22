@@ -97,7 +97,9 @@ func setUp() (*world, error) {
 		return x, err
 	}
 	say("building the pilot")
-	if out, err := run(repo, nil, "go", "build", "-o", x.bin, "./cmd/pilot"); err != nil {
+	// Built with coverage on (SC-004): every pilot process the scenarios start, watchers included,
+	// writes its counters to out/cover, and tearDown reports the glue packages' coverage.
+	if out, err := run(repo, nil, "go", "build", "-cover", "-coverpkg=github.com/tosin2013/specfoundry/...", "-o", x.bin, "./cmd/pilot"); err != nil {
 		return x, fmt.Errorf("go build: %v\n%s", err, out)
 	}
 	if err := copyPilot(filepath.Join(repo, "pilot"), filepath.Join(x.root, "pilot")); err != nil {
@@ -126,10 +128,15 @@ func setUp() (*world, error) {
 		return x, err
 	}
 	// gaps: step mode's debrief gaps (T013): a non-approver's label, a failing doctor.
-	if err := x.addTarget("gaps", "PILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\n"); err != nil {
+	// PILOT_GITHUB_ISSUES is left unset on purpose: issues follow approvals (the 021 bug fixed by
+	// #121 refused this profile; 025 SC-001).
+	if err := x.addTarget("gaps", "PILOT_GITHUB_APPROVALS=on\n"); err != nil {
 		return x, err
 	}
-	x.baseEnv = []string{"PILOT_ROOT=" + x.root, "SPECFOUNDRY_CONFIG=" + x.config, "PILOT_TEST_MODE=1",
+	if err := os.MkdirAll(filepath.Join(x.out, "cover"), 0o755); err != nil {
+		return x, err
+	}
+	x.baseEnv = []string{"GOCOVERDIR=" + filepath.Join(x.out, "cover"), "PILOT_ROOT=" + x.root, "SPECFOUNDRY_CONFIG=" + x.config, "PILOT_TEST_MODE=1",
 		"PILOT_TEST_GITHUB_API=" + x.api, "PILOT_TEST_GIT_BASE=" + x.api + "/git/", "GH_TOKEN=" + ownerToken, "PILOT_NO_TTY=1",
 		// The pilot commits the status change with the operator's own git identity; a CI runner
 		// has none.
@@ -287,6 +294,7 @@ func (x *world) tearDown(failed bool) {
 		if out, code := x.pilot("down"); code != 0 {
 			fmt.Fprintf(os.Stderr, "pilot down exited %d:\n%s\n", code, tail(out, 30))
 		}
+		x.coverage()
 	}
 }
 
@@ -307,6 +315,38 @@ func (x *world) pilot(args ...string) (string, int) {
 	}
 	return b.String(), code
 }
+
+// pilotTTY runs a pilot command under a pseudo-terminal (util-linux `script`) and without
+// PILOT_NO_TTY, as an operator runs `pilot step` in their terminal. A run step mode starts must
+// still never ask on that terminal (the 021 bug fixed by #122; 025 SC-001).
+func (x *world) pilotTTY(args ...string) (string, int) {
+	quoted := []string{shellQuote(x.bin)}
+	for _, a := range args {
+		quoted = append(quoted, shellQuote(a))
+	}
+	c := exec.Command("script", "-qec", strings.Join(quoted, " "), "/dev/null")
+	c.Dir = x.root
+	var env []string
+	for _, kv := range append(cleanEnv(), x.baseEnv...) {
+		if !strings.HasPrefix(kv, "PILOT_NO_TTY=") {
+			env = append(env, kv)
+		}
+	}
+	c.Env = env
+	var b bytes.Buffer
+	c.Stdin, c.Stdout, c.Stderr = nil, &b, &b
+	err := c.Run()
+	code := 0
+	if ee, ok := err.(*exec.ExitError); ok {
+		code = ee.ExitCode()
+	} else if err != nil {
+		code = -1
+		b.WriteString("\n" + err.Error())
+	}
+	return strings.ReplaceAll(b.String(), "\r\n", "\n"), code
+}
+
+func shellQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
 
 // cleanEnv is this process's environment without GitHub credentials or pilot settings, so the
 // operator's own never reach a test run.
@@ -382,3 +422,24 @@ func readRows(p string) ([]map[string]any, error) {
 }
 
 func filepathJoin(parts ...string) string { return filepath.Join(parts...) }
+
+// glue are the packages whose unit coverage the floor holds (025 SC-004); the scenarios exercise
+// them end to end, and coverage reports how much.
+var glue = []string{"cli", "pipeline", "worker", "checks", "cluster", "grader", "step", "author"}
+
+// coverage writes out/coverage.txt: the share of each glue package's statements that the
+// scenarios ran, from the counters every pilot process wrote (go build -cover).
+func (x *world) coverage() {
+	var pkgs []string
+	for _, g := range glue {
+		pkgs = append(pkgs, "github.com/tosin2013/specfoundry/internal/"+g)
+	}
+	out, err := run(x.repo, nil, "go", "tool", "covdata", "percent", "-i", filepath.Join(x.out, "cover"), "-pkg", strings.Join(pkgs, ","))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "coverage: %v\n%s\n", err, out)
+		return
+	}
+	text := strings.ReplaceAll(out, "github.com/tosin2013/specfoundry/", "")
+	_ = os.WriteFile(filepath.Join(x.out, "coverage.txt"), []byte(text), 0o644)
+	say("coverage of the glue packages by the scenarios:\n" + text)
+}

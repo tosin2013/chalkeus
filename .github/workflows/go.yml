@@ -47,6 +47,21 @@ jobs:
         run: |
           set -o pipefail
           go test -coverprofile=coverage.out ./... | tee test.out
+      - name: Coverage floor (spec 025)
+        run: |
+          set -euo pipefail
+          fail=0
+          while read -r pkg floor; do
+            case "$pkg" in ''|'#'*) continue;; esac
+            got=$(awk -v p="github.com/tosin2013/specfoundry/$pkg" '$0 ~ "(^|[ \t])" p "[ \t]" && /coverage:/ {for (i = 1; i <= NF; i++) if ($i == "coverage:") {sub(/%/, "", $(i + 1)); print $(i + 1)}}' test.out)
+            if [ -z "$got" ]; then echo "::error::$pkg: no coverage in the test output"; fail=1; continue; fi
+            if awk -v g="$got" -v f="$floor" 'BEGIN {exit !(g < f)}'; then
+              echo "::error::$pkg coverage ${got}% is below its floor ${floor}% (.github/coverage-floor.txt)"; fail=1
+            else
+              echo "$pkg ${got}% (floor ${floor}%)"
+            fi
+          done < .github/coverage-floor.txt
+          exit $fail
       - name: Coverage summary
         if: always()
         run: |

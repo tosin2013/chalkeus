@@ -1,0 +1,9 @@
+# Unit-test coverage floors (spec 025 T016, SC-004): package, minimum % of statements.
+# The go workflow fails when a package falls below its floor. Raise a floor when coverage rises;
+# never lower one without saying why in the PR. Set from the coverage on 2026-11-22.
+internal/cli 22.0
+internal/pipeline 21.0
+internal/worker 15.0
+internal/checks 20.0
+internal/cluster 17.0
+internal/grader 21.0

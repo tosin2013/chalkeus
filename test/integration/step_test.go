@@ -26,7 +26,7 @@ import (
 func TestStepMode(t *testing.T) {
 	const repo = "owner/tally"
 	step := func(what string) string {
-		out, code := w.pilot("step", "--target", "tally", "--once")
+		out, code := w.pilotTTY("step", "--target", "tally", "--once")
 		t.Logf("step pass, %s (exit %d):\n%s", what, code, tail(out, 120))
 		return out
 	}

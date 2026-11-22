@@ -54,6 +54,17 @@ jobs:
         run: sudo sysctl -w net.ipv4.ip_unprivileged_port_start=443
       - name: Integration tests
         run: go test -tags integration -timeout 50m -v -count=1 ./test/integration/
+      - name: Coverage by the scenarios (spec 025 SC-004)
+        if: always()
+        run: |
+          [ -f test/integration/out/coverage.txt ] || exit 0
+          {
+            echo "### Glue packages: statements the integration scenarios ran"
+            echo
+            echo '```text'
+            cat test/integration/out/coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Keep the evidence and logs
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
