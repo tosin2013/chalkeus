@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/tosin2013/specfoundry/internal/evidence"
@@ -124,6 +125,9 @@ type Manager struct {
 
 	shown map[string]string // the last line printed per item: print only changes
 	relay map[string]int64  // bytes of each run's watcher log already relayed
+	// relayItem is the item of each relayed log, to finish relaying a run whose item has left the
+	// candidates (it became verified when its status PR merged).
+	relayItem map[string]string
 }
 
 // relayed reports whether this process has relayed the run's log before.
@@ -142,9 +146,10 @@ func (m *Manager) relayRun(item, dir string) {
 		return
 	}
 	if m.relay == nil {
-		m.relay = map[string]int64{}
+		m.relay, m.relayItem = map[string]int64{}, map[string]string{}
 	}
 	p := filepath.Join(dir, "github", "watch.log")
+	m.relayItem[p] = item
 	f, err := os.Open(p)
 	if err != nil {
 		return
@@ -160,6 +165,52 @@ func (m *Manager) relayRun(item, dir string) {
 			fmt.Fprintf(m.Out, "%s run: %s\n", item, l)
 		}
 	}
+}
+
+// finishRelays keeps relaying each run this manager was following whose item is no longer a
+// candidate, until the run has ended, then relays it once more and stops following it. Merging the
+// status PR makes the item verified, which takes it out of the candidates while its run is still
+// finishing (the audit, then "succeeded" or "failed"); found by the 025 step scenario, since #124
+// fixed this only for items still proposed. While such a run is finishing the loop stays busy, so
+// it polls every 15 s.
+func (m *Manager) finishRelays(states []ItemState) {
+	live := map[string]bool{}
+	for _, s := range states {
+		if s.RunDir != "" {
+			live[filepath.Join(s.RunDir, "github", "watch.log")] = true
+		}
+	}
+	var done []string
+	for p := range m.relay {
+		if !live[p] {
+			done = append(done, p)
+		}
+	}
+	sort.Strings(done)
+	for _, p := range done {
+		dir := filepath.Dir(filepath.Dir(p))
+		ended := runEnded(dir) // read before relaying, so no line written at the end is missed
+		m.relayRun(m.relayItem[p], dir)
+		if ended {
+			delete(m.relay, p)
+			delete(m.relayItem, p)
+		} else {
+			m.Busy = true
+		}
+	}
+}
+
+// runEnded reports whether a run's recorded state is final (succeeded, failed or declined), or
+// its record can't be read (nothing more will be written that step mode can follow).
+func runEnded(dir string) bool {
+	var st struct {
+		State string `json:"state"`
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "run.json"))
+	if err != nil || json.Unmarshal(raw, &st) != nil {
+		return true
+	}
+	return st.State == "succeeded" || strings.HasPrefix(st.State, "failed") || strings.HasPrefix(st.State, "declined")
 }
 
 var runIDRE = regexp.MustCompile(`== run (\d{8}T\d{6}Z)`)
@@ -198,6 +249,7 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 	if len(states) > 0 {
 		delete(m.shown, "")
 	}
+	m.finishRelays(states)
 	plan := Plan(states)
 	m.Next = nextFor(plan, m.Next)
 	for _, a := range plan {

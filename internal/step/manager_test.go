@@ -455,3 +455,46 @@ func TestManagerNextNonApproverAndStandingDoctorFailure(t *testing.T) {
 		t.Fatalf("standing doctor failure: %q", w.m.Next)
 	}
 }
+
+// The status PR's merge makes the item verified, which drops it from the candidates; the run's
+// last lines are still relayed once (found by the 025 step scenario).
+func TestManagerRelaysTheEndAfterTheItemIsVerified(t *testing.T) {
+	w := newWorld(t)
+	dir := filepath.Join(t.TempDir(), "R1")
+	_ = os.MkdirAll(filepath.Join(dir, "github"), 0o755)
+	logp := filepath.Join(dir, "github", "watch.log")
+	_ = os.WriteFile(logp, []byte("Item 009 draft PR: https://x/pull/44\n"), 0o644)
+	runJSON := func(state string) {
+		_ = os.WriteFile(filepath.Join(dir, "run.json"), []byte(`{"state":"`+state+`"}`), 0o644)
+	}
+	runJSON("paused(awaiting-merge)")
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	w.runs["009"] = RunInfo{ID: "R1", Dir: dir, State: "paused(awaiting-merge)", Watching: true}
+	w.pass(t)
+	// The status PR merged: 009 is verified (no longer a candidate) while the run still finishes.
+	f, _ := os.OpenFile(logp, os.O_APPEND|os.O_WRONLY, 0o644)
+	_, _ = f.WriteString("Status-change PR: https://x/pull/45\n")
+	_ = f.Close()
+	runJSON("in-progress")
+	w.m.Src.Status = func() (string, error) { return `{"items":[{"id":"009","status":"verified","active":true}]}`, nil }
+	w.pass(t)
+	if !w.m.Busy {
+		t.Error("while the run finishes, the loop stays busy (15 s polls)")
+	}
+	f, _ = os.OpenFile(logp, os.O_APPEND|os.O_WRONLY, 0o644)
+	_, _ = f.WriteString("run R1 succeeded.\n")
+	_ = f.Close()
+	runJSON("succeeded")
+	w.pass(t)
+	out := w.m.Out.(*strings.Builder).String()
+	if !strings.Contains(out, "009 run: Status-change PR: https://x/pull/45") || !strings.Contains(out, "009 run: run R1 succeeded.") {
+		t.Fatalf("the run's last lines must be relayed after its item is verified:\n%s", out)
+	}
+	f, _ = os.OpenFile(logp, os.O_APPEND|os.O_WRONLY, 0o644)
+	_, _ = f.WriteString("later line\n")
+	_ = f.Close()
+	w.pass(t)
+	if strings.Contains(w.m.Out.(*strings.Builder).String(), "later line") {
+		t.Error("after the final relay the run is no longer followed")
+	}
+}
