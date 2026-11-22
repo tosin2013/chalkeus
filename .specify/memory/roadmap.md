@@ -1,7 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.29.0 → 1.29.1 (this revision)
+Version change: 1.29.1 → 1.29.2 (this revision)
+Bump rationale: PATCH — a status transition (025 specced → verified) and notes. No scope,
+dependency or constraint changes.
+Changes this revision (owner decision 2026-11-22, Tosin Akinosho):
+  - 025 Integration tests in CI: verified, after the debrief (PROCEED WITH UPDATES, no
+    must-address) and its follow-ups (F1 fixed, F2 asserted, F3 kept as policy). Notes record
+    what was delivered beyond the outcome's wording, SC-001/002/004 and the pilot fixes the
+    scenarios found.
+Specs affected: 025
+Open questions added/resolved: none
+
+Prior: Version change: 1.29.0 → 1.29.1
 Bump rationale: PATCH — a note update. Nothing changes in scope, status or dependencies.
 Changes this revision (2026-11-22):
   - 026 note: spec-status 0.4.0 shipped per-phase task counts (spec-status#66); PR #154 pins it in
@@ -1678,7 +1689,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   Actions trigger is later work, and the operator trigger is 011's. Evidence:
   specs/024-test-author-automation/evidence/.
 
-### 025 — Integration tests in CI  [status: specced]
+### 025 — Integration tests in CI  [status: verified]
 
 - **Description:** Run the pilot's real pieces together in CI, on a kind cluster, so seams
   between commands, templates, checks, processes and GitHub are tested before a live run finds
@@ -1714,6 +1725,30 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   for fork PRs), a stub `opencode` in a locally built test worker image, and a GitHub-hosted
   runner. Test endpoints are refused unless `PILOT_TEST_MODE=1`, and a test run's audit says
   it is not evidence.
+  **Verified 2026-11-22 (owner, after the debrief and its follow-ups):** evidence
+  [specs/025-ci-integration/evidence/README.md](../../specs/025-ci-integration/evidence/README.md),
+  debrief
+  [roadmap-reviews/debrief-20261122T185418Z.md](../../specs/025-ci-integration/roadmap-reviews/debrief-20261122T185418Z.md)
+  (PROCEED WITH UPDATES, no must-address findings).
+  - **Delivered (beyond the outcome's wording):** the fixture run goes to its end (status PR,
+    B, audit), not only its first PR; there are four scenarios (fixture, automatic drafting,
+    step mode, and step mode's gaps); every test run ends `failed` because AU12 marks it a test
+    run, by design.
+  - **SC-001:** five of the six live bugs, each put back, fail their scenario. #124 (a run's
+    last lines after it ends) is covered by a unit test; the scenario's relay assertion found a
+    related bug instead (see below).
+  - **SC-002:** `integration` passed on GitHub-hosted runners on #140, #146, #147, #155 and on
+    `main` (workflow_dispatch, 2026-11-22), in under 20 minutes, with no secrets.
+  - **SC-004:** unit-coverage floors in `.github/coverage-floor.txt`; the scenarios run 33-79%
+    of the glue packages (15-23% by unit tests), reported in every integration run.
+  - **Debrief follow-ups:** F1 fixed (automatic drafts made under an earlier Spec Kit feature
+    still count); F2 asserted (a long-running `pilot step` must relay a run's end); F3 kept as
+    policy (a floor is never lowered without saying why in the PR; not a check).
+  - **Pilot fixes the scenarios found:** `pilot up` records the model host (A03 failed before
+    any run); doctor accepts a local build and no longer claims ungraded hidden tests pass;
+    step's `next:` line names the owner's move in four more cases; step keeps relaying a run
+    after its item is verified; the status-change commit says why it failed without a git
+    identity; the 024 docs match the output.
 
 ### 026 — Slice runs  [status: planned]
 
@@ -1973,4 +2008,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.29.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
+**Version**: 1.29.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
