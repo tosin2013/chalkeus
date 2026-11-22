@@ -24,9 +24,16 @@ To catch the last two, stage 7 changed two scenarios: the `gaps` target leaves
 `PILOT_GITHUB_ISSUES` unset, as the live profile did, and step mode's passes run under a
 pseudo-terminal (`script`) without `PILOT_NO_TTY`, as an operator runs `pilot step`.
 
-**Not covered:** #124, a run's last lines missed between step's polls. No scenario checks the
-lines step relays, so putting it back would not fail a scenario. SC-001 allows this ("the timing
-and file-name bugs where the scenario covers them"); the file-name bug (#115) is covered.
+**#124 (a run's last lines missed after it ends), follow-up after the debrief (F2):** the step
+scenario now keeps a long-running `pilot step` beside the run and asserts that it relays the run's
+last line (`run … is failed; stopped watching`). That assertion failed even **with** #124's fix in
+place, and found a related bug: merging the status PR makes the item verified, which drops it
+from step mode's candidates while its run is still finishing, so the run's end was never relayed
+(#124 fixed only items still proposed). Fixed (`step.finishRelays`: follow such a run until it
+ends); with the fix the scenario passes and relays `FAILED: AUDIT` and the last line. In this
+scenario the item always becomes verified, so #124's own undo (an item still proposed after its
+run, for example a run that fails before its status PR) is still not exercised; it is covered by
+the unit test `TestManagerRelaysTheEndOfARun`.
 
 ## SC-002: the job on GitHub-hosted runners
 
@@ -62,6 +69,8 @@ much in 025; what rose is the share of this code that a test runs, end to end.
 5. doctor claimed ungraded hidden tests "already pass" when the project's tests failed first.
 6. step's `next:` line described the step just done (or said "nothing is waiting for you") in
    four places.
+6a. step stopped relaying a run once its status PR's merge made the item verified, so "succeeded"
+   (or the audit's result) never reached step's terminal (found by the F2 assertion).
 7. The 024 docs described output and a file (`checks.jsonl`) the code never produced.
 
 The fake GitHub also gained what the pilot needed from GitHub along the way (`pull/<n>/head`
