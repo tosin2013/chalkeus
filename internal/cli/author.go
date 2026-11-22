@@ -22,6 +22,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/images"
 	"github.com/tosin2013/specfoundry/internal/pipeline"
 	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/specfoundry/internal/slice"
 	"github.com/tosin2013/specfoundry/internal/verbose"
 	"github.com/tosin2013/specfoundry/internal/worker"
 )
@@ -51,10 +52,13 @@ func authorCmd() *cobra.Command {
 	}
 	start := mk("start", "check the item and create the draft workspace", func(cmd *cobra.Command, e author.Env, item string) error {
 		replace, _ := cmd.Flags().GetBool("replace")
+		sl, _ := cmd.Flags().GetString("slice")
+		e.Slice = slice.Normalize(sl)
 		_, err := author.Start(context.Background(), e, item, replace)
 		return err
 	})
 	start.Flags().Bool("replace", false, "propose replacing the item's existing hidden tests (still only a pull request)")
+	start.Flags().String("slice", "", "draft the hidden tests of one slice of the item, e.g. US2 (026): they go to items/<item>/<slice>/")
 	check := mk("check", "prove on the cluster that the project's tests pass and the drafted tests fail on the unchanged base", func(cmd *cobra.Command, e author.Env, item string) error {
 		p, err := pipelineFor(cmd)
 		if err != nil {
@@ -179,8 +183,10 @@ func authorEnv(cmd *cobra.Command) (author.Env, string, error) {
 			return heads, err
 		}}
 	deps.SkipHidden = true
-	ready := func(t config.Target, item string) (readiness.Result, error) {
-		return readiness.Check(deps, t, item, 0, "")
+	ready := func(t config.Target, item, sl string) (readiness.Result, error) {
+		d := deps
+		d.Slice = sl
+		return readiness.Check(d, t, item, 0, "")
 	}
 	return author.Env{Target: t, EvidenceRoot: l.EvidenceRoot(), BuildDir: l.Build, Ready: ready,
 		Identity: author.ResolveIdentity, OpenAuthorPRs: author.OpenAuthorPRs, Out: cmd.OutOrStdout()}, item, nil
@@ -217,7 +223,7 @@ func authorWatchEnv(e author.Env, p *pipeline.P) (author.WatchEnv, error) {
 			}
 			return out
 		}}
-	return author.WatchEnv{Env: e, Baseline: p.AuthorBaseline, Status: targetStatus(e.Target),
+	return author.WatchEnv{Env: e, Baseline: p.AuthorBaseline, Status: targetStatus(e.Target), Slices: slice.CurrentOf,
 		Job: func(ctx context.Context, d *author.Draft, attempt int, prompt string) author.JobRecord {
 			return author.RunJob(ctx, je, d, attempt, prompt)
 		}}, nil

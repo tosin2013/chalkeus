@@ -13,6 +13,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/author"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/specfoundry/internal/slice"
 )
 
 // RunInfo is the newest item run of a target and item, as the evidence records it.
@@ -28,14 +29,14 @@ type Source struct {
 	Status    func() (string, error)                                        // spec status --json of the target branch
 	Issues    func(ctx context.Context) (map[string]int, error)             // item -> issue number
 	Proposal  func(ctx context.Context, issue int) (ghloop.Proposal, error) // the label and its last adder
-	Ready     func(item string) (readiness.Result, error)                   // the author's readiness (SkipHidden)
+	Ready     func(item, slice string) (readiness.Result, error)            // the author's readiness (SkipHidden), of a slice (026) or the item
 	TestsPR   func(ctx context.Context, item string) (bool, error)          // an author/<NNN>- PR is open
-	Run       func(item string) (RunInfo, bool)                             // the newest item run
+	Run       func(item, slice string) (RunInfo, bool)                      // the newest run of the item's slice ("" whole item, "*" any slice)
 	Approvers []string
 	AutoDraft bool
 	Repo      string                          // the target repository, for issue links
 	Label     string                          // the proposal label's name
-	Drafted   func(item, specSHA string) bool // an automatic draft already reached its check
+	Drafted   func(item, slice, specSHA string) bool // an automatic draft (of the slice, 026) already reached its check
 	// Planning lists the target's open planning PRs (roadmap or specs/), shown when no item can
 	// be proposed: merging one is the owner's next step.
 	Planning func(ctx context.Context) ([]string, error)
@@ -59,7 +60,7 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 	}
 	var out []ItemState
 	for _, c := range cands {
-		s := ItemState{ID: c.ID, AutoDraft: src.AutoDraft}
+		s := ItemState{ID: c.ID, AutoDraft: src.AutoDraft, Slice: slice.CurrentOf(js, c.ID)}
 		var labelledAt time.Time
 		if n, ok := issues[c.ID]; !ok {
 			s.NotWhy = "the item has no issue yet; the next issue sync creates it"
@@ -76,7 +77,11 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 			}
 			labelledAt = p.AddedAt
 		}
-		if r, ok := src.Run(c.ID); ok {
+		r, ok := src.Run(c.ID, "*") // 026: any slice's run still active holds the item
+		if !ok || runState(r) != RunActive {
+			r, ok = src.Run(c.ID, s.Slice)
+		}
+		if ok {
 			s.RunID, s.RunDir, s.RunWaiting = r.ID, r.Dir, r.Waiting
 			s.Run = runState(r)
 			s.RelabelledAfterRun = !labelledAt.IsZero() && labelledAt.After(r.EndedAt)
@@ -85,7 +90,7 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 			out = append(out, s) // an unproposed item, or a run in flight: nothing else is needed (and no clone every 15 s)
 			continue
 		}
-		res, err := src.Ready(c.ID)
+		res, err := src.Ready(c.ID, s.Slice)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +103,7 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 			if s.TestsPR, err = src.TestsPR(ctx, c.ID); err != nil {
 				return nil, err
 			}
-			s.AutoDrafted = src.Drafted != nil && src.Drafted(c.ID, res.SpecSHA256)
+			s.AutoDrafted = src.Drafted != nil && src.Drafted(c.ID, s.Slice, res.SpecSHA256)
 		}
 		if src.Log != nil {
 			s.DoctorFailedAt = src.Log.DoctorFailedAt(c.ID)
@@ -139,7 +144,7 @@ func runState(r RunInfo) string {
 
 // NewestRun finds the newest item run of target and item among the run folders under root and
 // the extra folders (the decisions log's), reading run.json and events.jsonl.
-func NewestRun(root string, extra []string, target, item string, watching func(dir string) bool) (RunInfo, bool) {
+func NewestRun(root string, extra []string, target, item, slice string, watching func(dir string) bool) (RunInfo, bool) {
 	dirs := map[string]bool{}
 	if entries, err := os.ReadDir(root); err == nil {
 		for _, e := range entries {
@@ -162,9 +167,13 @@ func NewestRun(root string, extra []string, target, item string, watching func(d
 			ID     string         `json:"run_id"`
 			Kind   string         `json:"kind"`
 			Item   string         `json:"item"`
+			Slice  string         `json:"slice"`
 			Target map[string]any `json:"target"`
 		}
 		if json.Unmarshal(raw, &r) != nil || r.Kind != "item" || r.Item != item || r.Target["name"] != target {
+			continue
+		}
+		if slice != "*" && r.Slice != slice { // 026: "" is a whole-item run, "*" any run of the item
 			continue
 		}
 		ids, byID[r.ID] = append(ids, r.ID), d

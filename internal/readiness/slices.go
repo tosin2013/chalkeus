@@ -1,6 +1,7 @@
 package readiness
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -207,4 +208,24 @@ func Acceptance(specText string) []string {
 		}
 	}
 	return out
+}
+
+// SliceInfoOf reads a SliceInfo from a fresh *SliceInfo or from the map a saved JSON record gives
+// back (nil when v is neither).
+func SliceInfoOf(v any) *SliceInfo {
+	switch s := v.(type) {
+	case *SliceInfo:
+		return s
+	case map[string]any:
+		raw, err := json.Marshal(s)
+		if err != nil {
+			return nil
+		}
+		var out SliceInfo
+		if json.Unmarshal(raw, &out) != nil || out.ID == "" {
+			return nil
+		}
+		return &out
+	}
+	return nil
 }

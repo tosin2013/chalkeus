@@ -46,6 +46,9 @@ func Check(ctx context.Context, e Env, item string, baseline Baseline) (*Draft, 
 	}
 	res := readiness.Result{Commit: d.BaseRevision, SpecDir: str(d.Readiness["spec_dir"]), Title: d.Title,
 		AllowedPaths: strs(d.Readiness["allowed_paths"]), TestsMayChange: strs(d.Readiness["tests_may_change"])}
+	if si := readiness.SliceInfoOf(d.Readiness["slice"]); si != nil { // 026: the slice baseline
+		res.Slice, res.Earlier, res.Overlay = si, strs(d.Readiness["earlier"]), strs(d.Readiness["overlay"])
+	}
 	n := len(d.Checks) + 1
 	id := fmt.Sprintf("%s-check%d", d.ID, n)
 	fmt.Fprintf(e.Out, "checking draft %s (%d file(s)) against the unchanged base on the cluster; this takes a few minutes...\n", d.ID, len(files))

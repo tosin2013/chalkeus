@@ -2,6 +2,7 @@ package step
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,9 +41,9 @@ func newWorld(t *testing.T) *world {
 	issues := func(context.Context) (map[string]int, error) { return map[string]int{"009": 41, "010": 44}, nil }
 	src := Source{Status: func() (string, error) { return roadmap, nil }, Issues: issues,
 		Proposal:  func(_ context.Context, n int) (ghloop.Proposal, error) { return w.labels[n], nil },
-		Ready:     func(i string) (readiness.Result, error) { return w.ready[i], nil },
+		Ready:     func(i, _ string) (readiness.Result, error) { return w.ready[i], nil },
 		TestsPR:   func(_ context.Context, i string) (bool, error) { return w.prs[i], nil },
-		Run:       func(i string) (RunInfo, bool) { r, ok := w.runs[i]; return r, ok },
+		Run:       func(i, _ string) (RunInfo, bool) { r, ok := w.runs[i]; return r, ok },
 		Approvers: []string{"owner"}, Log: log}
 	w.m = &Manager{Target: "stockroom", Src: src, Log: log, Dir: dir, Out: &strings.Builder{}, Issues: issues,
 		Sync: func(context.Context) error { w.calls = append(w.calls, "sync"); return nil },
@@ -189,11 +190,11 @@ func TestNewestRun(t *testing.T) {
 	mk("20261119T100000Z", "stockroom", "009", "failed", "2026-11-19T10:05:00Z")
 	mk("20261119T110000Z", "stockroom", "009", "paused(awaiting-mode)", "2026-11-19T11:01:00Z")
 	mk("20261119T120000Z", "other", "009", "succeeded", "2026-11-19T12:00:00Z")
-	r, ok := NewestRun(root, nil, "stockroom", "009", func(string) bool { return true })
+	r, ok := NewestRun(root, nil, "stockroom", "009", "", func(string) bool { return true })
 	if !ok || r.ID != "20261119T110000Z" || r.State != "paused(awaiting-mode)" || r.EndedAt.Hour() != 11 || runState(r) != RunActive {
 		t.Fatalf("%+v %v", r, ok)
 	}
-	if _, ok := NewestRun(root, nil, "stockroom", "010", nil); ok {
+	if _, ok := NewestRun(root, nil, "stockroom", "010", "", nil); ok {
 		t.Fatal("no run for 010")
 	}
 }
@@ -316,7 +317,7 @@ func TestManagerNoRedraftLoop(t *testing.T) {
 	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
 	w.ready["009"] = readiness.Result{Decision: "allow", Commit: "t1", CompanionCommit: "c1", SpecSHA256: "s1"}
 	w.m.Src.AutoDraft = true
-	w.m.Src.Drafted = func(item, sha string) bool { return item == "009" && sha == "s1" }
+	w.m.Src.Drafted = func(item, _, sha string) bool { return item == "009" && sha == "s1" }
 	w.pass(t)
 	w.pass(t)
 	if strings.Contains(strings.Join(w.calls, ","), "draft") || len(w.comments) != 1 || !strings.Contains(w.comments[0], "needs-tests:009") {
@@ -330,11 +331,11 @@ func TestGatherSkipsReadinessForARunInFlight(t *testing.T) {
 	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
 	w.runs["009"] = RunInfo{ID: "R1", State: "paused(awaiting-merge)", Watching: true}
 	ready := w.m.Src.Ready
-	w.m.Src.Ready = func(i string) (readiness.Result, error) {
+	w.m.Src.Ready = func(i, sl string) (readiness.Result, error) {
 		if i == "009" {
 			t.Fatal("readiness for a run in flight")
 		}
-		return ready(i)
+		return ready(i, sl)
 	}
 	w.pass(t)
 }
@@ -407,7 +408,7 @@ func TestStaleInProgressRun(t *testing.T) {
 	_ = os.MkdirAll(d, 0o755)
 	_ = os.WriteFile(filepath.Join(d, "run.json"), []byte(`{"run_id":"20261121T100000Z","kind":"item","item":"001","target":{"name":"t","repo":"o/t"},"state":"in-progress"}`), 0o644)
 	_ = os.WriteFile(filepath.Join(d, "events.jsonl"), []byte(`{"seq":1,"at":"2026-11-21T10:30:00Z","event":"attempt_started"}`+"\n"), 0o644)
-	r, ok := NewestRun(root, nil, "t", "001", func(string) bool { return false })
+	r, ok := NewestRun(root, nil, "t", "001", "", func(string) bool { return false })
 	if !ok || runState(r) != RunFailed {
 		t.Fatalf("a run quiet since 10:30 with no watcher is stale at 12:00: %+v %s", r, runState(r))
 	}
@@ -496,5 +497,87 @@ func TestManagerRelaysTheEndAfterTheItemIsVerified(t *testing.T) {
 	w.pass(t)
 	if strings.Contains(w.m.Out.(*strings.Builder).String(), "later line") {
 		t.Error("after the final relay the run is no longer followed")
+	}
+}
+
+// 026 T039: a sliced item is carried slice by slice. The current slice comes from the roadmap's
+// per-phase counts; doctor and run get --slice; a succeeded slice run makes the next pass take the
+// next slice; while any slice's run is active, nothing else starts.
+func TestManagerCarriesASlicedItem(t *testing.T) {
+	sliced := func(us1Done int) string {
+		return `{"items":[{"id":"009","title":"Delete a product","status":"specced","active":true,"dependencies":[],
+		 "tasks":{"phases":[
+		  {"heading":"Phase 1: Setup","story":null,"checked":` + fmt.Sprint(us1Done) + `,"total":1},
+		  {"heading":"Phase 2: User Story 1 - delete","story":1,"checked":` + fmt.Sprint(us1Done*2) + `,"total":2},
+		  {"heading":"Phase 3: User Story 2 - undo","story":2,"checked":0,"total":2}]}}]}`
+	}
+	w := newWorld(t)
+	status := sliced(0)
+	w.m.Src.Status = func() (string, error) { return status, nil }
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	var args [][]string
+	var readyFor []string
+	pilot := w.m.Pilot
+	w.m.Pilot = func(ctx context.Context, a []string, logPath string) (int, error) {
+		args = append(args, a)
+		return pilot(ctx, a, logPath)
+	}
+	ready := w.m.Src.Ready
+	w.m.Src.Ready = func(i, sl string) (readiness.Result, error) { readyFor = append(readyFor, sl); return ready(i, sl) }
+	runs := map[string]RunInfo{}
+	w.m.Src.Run = func(item, sl string) (RunInfo, bool) {
+		if sl == "*" {
+			for _, r := range runs {
+				if r.State != "succeeded" {
+					return r, true
+				}
+			}
+			return RunInfo{}, false
+		}
+		r, ok := runs[sl]
+		return r, ok
+	}
+	w.pass(t)
+	if len(args) != 2 || strings.Join(args[0], " ") != "doctor --target stockroom --item 009 --baseline --slice US1" ||
+		strings.Join(args[1], " ") != "run --target stockroom --item 009 --slice US1" || strings.Join(readyFor, ",") != "US1" {
+		t.Fatalf("US1: %v ready=%v", args, readyFor)
+	}
+	// US1's run waits for its merge: nothing starts, for any slice.
+	runs["US1"] = RunInfo{ID: "R1", State: "paused(awaiting-merge)", Watching: true}
+	args = nil
+	w.pass(t)
+	if len(args) != 0 {
+		t.Fatalf("one slice in flight: %v", args)
+	}
+	// Merged on the default branch but its run is still reconciling: still nothing for US2.
+	status = sliced(1)
+	w.pass(t)
+	if len(args) != 0 {
+		t.Fatalf("US2 must wait for US1's run to end: %v", args)
+	}
+	// US1's run succeeded: the next pass takes US2, with its own mode approval (a new run).
+	runs["US1"] = RunInfo{ID: "R1", State: "succeeded"}
+	w.pass(t)
+	if len(args) != 2 || strings.Join(args[1], " ") != "run --target stockroom --item 009 --slice US2" {
+		t.Fatalf("US2: %v", args)
+	}
+}
+
+// A whole item (no phases) runs without --slice, as before.
+func TestManagerWholeItemHasNoSlice(t *testing.T) {
+	w := newWorld(t)
+	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	var got []string
+	w.m.Pilot = func(_ context.Context, a []string, logPath string) (int, error) {
+		got = append(got, strings.Join(a, " "))
+		_ = os.MkdirAll(filepath.Dir(logPath), 0o755)
+		_ = os.WriteFile(logPath, []byte("== run 20261120T010203Z (target stockroom, item 009)\n"), 0o644)
+		return 5, nil
+	}
+	w.pass(t)
+	for _, a := range got {
+		if strings.Contains(a, "--slice") {
+			t.Fatalf("%v", got)
+		}
 	}
 }

@@ -50,6 +50,7 @@ type Draft struct {
 	Target         string         `json:"target"`
 	Repo           string         `json:"repo"`
 	Item           string         `json:"item"`
+	Slice          string         `json:"slice,omitempty"` // 026: the slice the draft is for
 	Title          string         `json:"title,omitempty"`
 	SpecSHA256     string         `json:"spec_sha256"`
 	BaseRevision   string         `json:"base_revision"`

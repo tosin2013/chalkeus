@@ -123,7 +123,7 @@ func newWorld(t *testing.T, level string) *world {
 	w := &world{fake: fake, out: &bytes.Buffer{}, res: readiness.Result{Decision: "allow", Commit: commit, SpecDir: "specs/006-x",
 		Title: "bundled flags", SpecSHA256: "spec-sha", AllowedPaths: []string{"app.py"}}}
 	w.env = Env{Target: tg, EvidenceRoot: t.TempDir(), BuildDir: t.TempDir(), Out: w.out,
-		Ready:         func(config.Target, string) (readiness.Result, error) { return w.res, nil },
+		Ready:         func(config.Target, string, string) (readiness.Result, error) { return w.res, nil },
 		Identity:      ResolveIdentity,
 		OpenAuthorPRs: OpenAuthorPRs}
 	return w

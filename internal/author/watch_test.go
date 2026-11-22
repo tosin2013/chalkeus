@@ -103,7 +103,7 @@ func TestPassRetriesWithFeedbackThenGivesUp(t *testing.T) {
 	}
 	// A spec change makes it eligible again.
 	w2.res.SpecSHA256 = "spec-sha-2"
-	we2.Ready = func(config.Target, string) (readiness.Result, error) { return w2.res, nil }
+	we2.Ready = func(config.Target, string, string) (readiness.Result, error) { return w2.res, nil }
 	if why, _, _ := we2.skip(context.Background(), "006"); why != "" {
 		t.Fatalf("a new spec version is eligible: %s", why)
 	}
@@ -217,14 +217,14 @@ func TestAutoDraftedAcrossFeatures(t *testing.T) {
 		t.Fatal(err)
 	}
 	cur := filepath.Join(repo, "specs", "025-y", "evidence")
-	if !AutoDrafted(cur, "notes", "001", "abc") {
+	if !AutoDrafted(cur, "notes", "001", "", "abc") {
 		t.Fatalf("a draft under the earlier feature must count; roots %v", DraftRoots(cur))
 	}
-	if AutoDrafted(cur, "notes", "001", "other-spec") || AutoDrafted(cur, "other", "001", "abc") {
+	if AutoDrafted(cur, "notes", "001", "", "other-spec") || AutoDrafted(cur, "other", "001", "", "abc") {
 		t.Error("only the same target, item and spec version count")
 	}
 	// The fixture's pilot/runs root finds them too; a root outside the layout has only its own.
-	if !AutoDrafted(filepath.Join(repo, "pilot", "runs"), "notes", "001", "abc") {
+	if !AutoDrafted(filepath.Join(repo, "pilot", "runs"), "notes", "001", "", "abc") {
 		t.Error("from pilot/runs")
 	}
 	if r := DraftRoots(filepath.Join(t.TempDir(), "elsewhere")); len(r) != 1 {

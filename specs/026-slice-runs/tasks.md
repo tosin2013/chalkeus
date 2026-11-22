@@ -193,21 +193,21 @@ Merge and status:
 
 **Independent Test:** a labelled two-slice item with auto-draft on is carried slice by slice, with one mode approval and one merge per slice (SC-008).
 
-- [ ] T037 [US5] In `internal/step/gather.go`, add `CurrentSlice` to the item state (from `slice.Current` over a fresh clone's spec status). `NewestRun(root, extra, target, item, slice, watching)` also matches `run.json` `slice` (empty means a whole-item run).
-- [ ] T038 [US5] In `internal/step/next.go` and `internal/step/manager.go`:
+- [X] T037 [US5] In `internal/step/gather.go`, add `CurrentSlice` to the item state (from `slice.Current` over a fresh clone's spec status). `NewestRun(root, extra, target, item, slice, watching)` also matches `run.json` `slice` (empty means a whole-item run).
+- [X] T038 [US5] In `internal/step/next.go` and `internal/step/manager.go`:
   - when the item has 2+ slices, `doctorThenRun` runs `pilot doctor --target T --item N --slice S --baseline`, then `pilot run --target T --item N --slice S`;
   - a succeeded non-last slice run makes the next pass pick the next slice;
   - one slice in flight per item, and one item in flight per target, as today.
-- [ ] T039 [P] [US5] Extend `internal/step/manager_test.go` and `next_test.go`:
+- [X] T039 [P] [US5] Extend `internal/step/manager_test.go` and `next_test.go`:
   - a two-slice item gives the doctor and run commands with `--slice US1`, then, after a fake merge, `--slice US2`;
   - a whole-item item gives commands without `--slice`;
   - each slice run waits for its own `/approve mode` (FR-024).
-- [ ] T040 [US5] In `internal/author/watch.go` and `start.go`:
+- [X] T040 [US5] In `internal/author/watch.go` and `start.go`:
   - `Candidates` yields `(item, slice)` for the current slice when its companion folder (`CompanionSliceDir`) is empty;
   - `Start` writes to that folder;
   - `skip` and `previousAuto` key on item plus slice;
   - add `--slice` to `pilot author start` (`internal/cli/author.go`).
-- [ ] T041 [US5] In `internal/author/criteria.go` and `mapping.go`, for a slice draft, limit the criteria to the slice's stories (`US<n>-AS*`; a slice id `USn` maps to story n) and keep the item's FRs as context. Add a test that a US2 draft lists only `US2-AS*` criteria.
+- [X] T041 [US5] In `internal/author/criteria.go` and `mapping.go`, for a slice draft, limit the criteria to the slice's stories (`US<n>-AS*`; a slice id `USn` maps to story n) and keep the item's FRs as context. Add a test that a US2 draft lists only `US2-AS*` criteria.
 
 ---
 

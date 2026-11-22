@@ -120,3 +120,19 @@ func TestStatesAndFind(t *testing.T) {
 		t.Error("untouched")
 	}
 }
+
+func TestCurrentOf(t *testing.T) {
+	doc := `{"items":[{"id":"006","tasks":{"phases":[
+	 {"heading":"Phase 1: User Story 1","story":1,"checked":2,"total":2},
+	 {"heading":"Phase 2: User Story 2","story":2,"checked":0,"total":3}]}},
+	 {"id":"007","tasks":{"phases":[{"heading":"Phase 1: Setup","story":null,"checked":0,"total":1}]}},
+	 {"id":"008","tasks":{}}]}`
+	for item, want := range map[string]string{"006": "US2", "007": "", "008": "", "009": ""} {
+		if got := CurrentOf(doc, item); got != want {
+			t.Errorf("CurrentOf(%s) = %q, want %q", item, got, want)
+		}
+	}
+	if CurrentOf("not json", "006") != "" {
+		t.Error("bad JSON")
+	}
+}

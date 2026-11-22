@@ -198,3 +198,32 @@ func num(v any) int {
 	}
 	return 0
 }
+
+// CurrentOf is an item's current slice from a `spec status --json` document: the first slice not
+// merged, or "" when the item isn't sliced, every slice is merged, or slices can't be read (an
+// older spec-status). Step mode and the test author use it to work slice by slice (026 R9).
+func CurrentOf(statusJSON, item string) string {
+	var doc map[string]any
+	if json.Unmarshal([]byte(statusJSON), &doc) != nil {
+		return ""
+	}
+	items, _ := doc["items"].([]any)
+	for _, x := range items {
+		m, _ := x.(map[string]any)
+		if m["id"] != item {
+			continue
+		}
+		phases, ok := Parse(m)
+		if !ok {
+			return ""
+		}
+		slices, err := FromPhases(phases)
+		if err != nil || !Sliced(slices) {
+			return ""
+		}
+		if cur, ok := Current(slices); ok {
+			return cur.ID
+		}
+	}
+	return ""
+}

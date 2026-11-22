@@ -56,3 +56,19 @@ func title(s string) string {
 	}
 	return s
 }
+
+// SliceCriteria keeps the criteria a slice's tests must cover (026 T041): for slice US<n>, story
+// n's acceptance scenarios (US<n>-AS*) and every functional requirement (FR-*, context for any
+// story). Any other slice ("" or ALL) keeps every criterion.
+func SliceCriteria(all []Criterion, slice string) []Criterion {
+	if !strings.HasPrefix(slice, "US") || slice == "" {
+		return all
+	}
+	var out []Criterion
+	for _, c := range all {
+		if strings.HasPrefix(c.ID, slice+"-AS") || strings.HasPrefix(c.ID, "FR-") {
+			out = append(out, c)
+		}
+	}
+	return out
+}
