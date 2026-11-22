@@ -333,7 +333,8 @@ It needs GitHub approvals on for the target (`PILOT_GITHUB_APPROVALS=on`, in its
      it's clean, it starts the run, which waits for your `/approve mode` on its tracking issue.
    - **While the run waits for you** (mode, retries, the item PR, the status PR), it waits too.
    - **When the run succeeds,** it moves to the next proposed item. For an item built in
-     slices, it moves to the item's next slice first ([one slice at a time](#one-slice-at-a-time)).
+     slices (`PILOT_SLICE_RUNS=on`), it moves to the item's next slice first
+     ([one slice at a time](#one-slice-at-a-time)).
 3. **When something fails,** it comments once and leaves the item:
    - a failed `doctor` is tried again when the target or the companion changes;
    - a failed or abandoned run is tried again when you add the label again.
@@ -475,9 +476,12 @@ after its last slice.
 - **Audit:** each slice run audits on its own, plus AU13 (slice order). `pilot/pilot audit
   --target greeting --item 006` lists every local run of the item.
 
-Step mode and automatic drafting follow the current slice by themselves: they draft its hidden
-tests, run `doctor --baseline --slice` and `run --slice`, and go on to the next slice after you
-merge. Each slice run still waits for your `/approve mode`.
+**Step mode and automatic drafting** build every item whole unless you turn slices on for the
+target with `PILOT_SLICE_RUNS=on` in its profile (off by default, because almost every Spec Kit
+`tasks.md` has user-story phases, and existing companions keep their tests in `items/NNN/`). With
+it on, they follow each item's current slice: they draft its hidden tests into `items/NNN/USn/`,
+run `doctor --baseline --slice` and `run --slice`, and go on to the next slice after you merge.
+Each slice run still waits for your `/approve mode`.
 
 `pilot/pilot resume` and `pilot/pilot approve` take only `--run`: a paused run always continues
 against the target it started with. If that target's profile now names another repository, the

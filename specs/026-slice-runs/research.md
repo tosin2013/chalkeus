@@ -183,6 +183,11 @@ was considered.
 - **Alternatives:** step proposing all slices at once: it breaks one-in-flight and the merge
   between slices.
 
+- **Opt-in (found in the PR review, 2026-11-22):** step mode and auto-draft follow slices only
+  when the target sets `PILOT_SLICE_RUNS=on`. Almost every Spec Kit `tasks.md` has user-story
+  phases, so following them by default would move existing targets (flat `items/NNN/` companions)
+  to slice runs and redraft their hidden tests. Off, both build whole items as before (FR-005).
+
 ## R10 — Gate and readiness rules
 
 The gate is unchanged: the item's status stays `planned` or `specced` until the last slice, so

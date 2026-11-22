@@ -57,7 +57,7 @@ func TestLoadTargetGood(t *testing.T) {
 		TestCommand: "mvn -B test", RegistryHosts: []string{"repo.maven.apache.org", "repo1.example.org"},
 		CompanionRepo: "me/greeting-service-acceptance", GithubIssues: "off", GithubApprovals: "on", MaxInputMB: 50, ChangeType: "feat",
 		PublisherEnv: filepath.Join(c.TargetsDir(), "greeting.publisher.env"), SecurityLevel: LevelMinimal,
-		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env"), AuthorAuto: "off", AuthorIntervalS: 120, AuthorAttempts: 2,
+		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env"), AuthorAuto: "off", SliceRuns: "off", AuthorIntervalS: 120, AuthorAttempts: 2,
 		ProposeLabel: "pilot/go", StepIntervalS: 120}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\n got %+v\nwant %+v", got, want)
@@ -98,6 +98,7 @@ func TestLoadTargetRefusals(t *testing.T) {
 		"PILOT_GRADER_DEADLINE_S":    goodTarget + "PILOT_GRADER_DEADLINE_S=-1\n",
 		"PILOT_MAX_INPUT_MB":         goodTarget + "PILOT_MAX_INPUT_MB=x\n",
 		"PILOT_AUTHOR_AUTO":          goodTarget + "PILOT_AUTHOR_AUTO=yes\n",
+		"PILOT_SLICE_RUNS":           goodTarget + "PILOT_SLICE_RUNS=maybe\n",
 		"PILOT_AUTHOR_INTERVAL_S":    goodTarget + "PILOT_AUTHOR_INTERVAL_S=5\n",
 		"PILOT_AUTHOR_AUTO_ATTEMPTS": goodTarget + "PILOT_AUTHOR_AUTO_ATTEMPTS=4\n",
 		"PILOT_STEP_INTERVAL_S":      goodTarget + "PILOT_STEP_INTERVAL_S=10\n",

@@ -514,6 +514,7 @@ func TestManagerCarriesASlicedItem(t *testing.T) {
 	w := newWorld(t)
 	status := sliced(0)
 	w.m.Src.Status = func() (string, error) { return status, nil }
+	w.m.Src.SliceRuns = true // the target opted in (PILOT_SLICE_RUNS=on)
 	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
 	var args [][]string
 	var readyFor []string
@@ -560,6 +561,25 @@ func TestManagerCarriesASlicedItem(t *testing.T) {
 	w.pass(t)
 	if len(args) != 2 || strings.Join(args[1], " ") != "run --target stockroom --item 009 --slice US2" {
 		t.Fatalf("US2: %v", args)
+	}
+
+	// Without the opt-in, the same item (with story phases) is built whole, as before 026.
+	w2 := newWorld(t)
+	w2.m.Src.Status = func() (string, error) { return sliced(0), nil }
+	w2.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "owner"}
+	var got []string
+	w2.m.Pilot = func(_ context.Context, a []string, logPath string) (int, error) {
+		got = append(got, strings.Join(a, " "))
+		_ = os.MkdirAll(filepath.Dir(logPath), 0o755)
+		_ = os.WriteFile(logPath, []byte("== run 20261120T010203Z (target stockroom, item 009)\n"), 0o644)
+		if a[0] == "doctor" {
+			return 0, nil
+		}
+		return 5, nil
+	}
+	w2.pass(t)
+	if len(got) != 2 || strings.Contains(strings.Join(got, ","), "--slice") {
+		t.Fatalf("without PILOT_SLICE_RUNS the item runs whole: %v", got)
 	}
 }
 

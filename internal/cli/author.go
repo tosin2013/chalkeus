@@ -223,7 +223,11 @@ func authorWatchEnv(e author.Env, p *pipeline.P) (author.WatchEnv, error) {
 			}
 			return out
 		}}
-	return author.WatchEnv{Env: e, Baseline: p.AuthorBaseline, Status: targetStatus(e.Target), Slices: slice.CurrentOf,
+	var slices func(string, string) string
+	if e.Target.SliceRuns == "on" { // 026: draft each item's current slice; off: whole items, as before
+		slices = slice.CurrentOf
+	}
+	return author.WatchEnv{Env: e, Baseline: p.AuthorBaseline, Status: targetStatus(e.Target), Slices: slices,
 		Job: func(ctx context.Context, d *author.Draft, attempt int, prompt string) author.JobRecord {
 			return author.RunJob(ctx, je, d, attempt, prompt)
 		}}, nil

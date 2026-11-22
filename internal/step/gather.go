@@ -34,6 +34,8 @@ type Source struct {
 	Run       func(item, slice string) (RunInfo, bool)                      // the newest run of the item's slice ("" whole item, "*" any slice)
 	Approvers []string
 	AutoDraft bool
+	// SliceRuns (026, PILOT_SLICE_RUNS=on): work each item slice by slice. Off: every item whole.
+	SliceRuns bool
 	Repo      string                                 // the target repository, for issue links
 	Label     string                                 // the proposal label's name
 	Drafted   func(item, slice, specSHA string) bool // an automatic draft (of the slice, 026) already reached its check
@@ -60,7 +62,10 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 	}
 	var out []ItemState
 	for _, c := range cands {
-		s := ItemState{ID: c.ID, AutoDraft: src.AutoDraft, Slice: slice.CurrentOf(js, c.ID)}
+		s := ItemState{ID: c.ID, AutoDraft: src.AutoDraft}
+		if src.SliceRuns {
+			s.Slice = slice.CurrentOf(js, c.ID)
+		}
 		var labelledAt time.Time
 		if n, ok := issues[c.ID]; !ok {
 			s.NotWhy = "the item has no issue yet; the next issue sync creates it"

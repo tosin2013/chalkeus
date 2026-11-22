@@ -47,6 +47,9 @@ type Target struct {
 	SecurityLevel   string // minimal (default) | recommended | strict (roadmap C-14; 018)
 	AuthorEnv       string // targets/<name>.author.env: the test author's companion-only token (recommended level)
 	AuthorAuto      string // on|off: `pilot author watch` may draft this target's items (024)
+	// SliceRuns on|off (026): step mode and automatic drafting work an item slice by slice. Off
+	// (the default) they build every item whole, as before; `run --slice` works either way.
+	SliceRuns       string
 	AuthorIntervalS int    // seconds between the watcher's polls (024, default 120)
 	AuthorAttempts  int    // author Jobs per automatic draft (024, default 2, at most 3)
 	ProposeLabel    string // the label that proposes an item to step mode (021; its name follows Q7)
@@ -214,6 +217,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		GithubIssues: v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
 		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50,
 		AuthorAuto: strings.TrimSpace(v["PILOT_AUTHOR_AUTO"]), AuthorIntervalS: 120, AuthorAttempts: 2,
+		SliceRuns:    strings.TrimSpace(v["PILOT_SLICE_RUNS"]),
 		ProposeLabel: strings.TrimSpace(v["PILOT_PROPOSE_LABEL"]), StepIntervalS: 120}
 	if !repoRE.MatchString(t.Repo) {
 		return Target{}, invalid("PILOT_TARGET_REPO", "must be owner/name")
@@ -282,7 +286,10 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	if t.AuthorAuto == "" {
 		t.AuthorAuto = "off" // auto-draft is opt-in per target (024 FR-001)
 	}
-	for k, x := range map[string]string{"PILOT_GITHUB_ISSUES": t.GithubIssues, "PILOT_GITHUB_APPROVALS": t.GithubApprovals, "PILOT_AUTHOR_AUTO": t.AuthorAuto} {
+	if t.SliceRuns == "" {
+		t.SliceRuns = "off" // slice-by-slice step mode is opt-in per target (026 FR-005)
+	}
+	for k, x := range map[string]string{"PILOT_GITHUB_ISSUES": t.GithubIssues, "PILOT_GITHUB_APPROVALS": t.GithubApprovals, "PILOT_AUTHOR_AUTO": t.AuthorAuto, "PILOT_SLICE_RUNS": t.SliceRuns} {
 		if x != "on" && x != "off" {
 			return Target{}, invalid(k, "must be on or off")
 		}
