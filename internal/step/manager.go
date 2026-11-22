@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/tosin2013/specfoundry/internal/evidence"
@@ -124,6 +125,9 @@ type Manager struct {
 
 	shown map[string]string // the last line printed per item: print only changes
 	relay map[string]int64  // bytes of each run's watcher log already relayed
+	// relayItem is the item of each relayed log, to finish relaying a run whose item has left the
+	// candidates (it became verified when its status PR merged).
+	relayItem map[string]string
 }
 
 // relayed reports whether this process has relayed the run's log before.
@@ -142,9 +146,10 @@ func (m *Manager) relayRun(item, dir string) {
 		return
 	}
 	if m.relay == nil {
-		m.relay = map[string]int64{}
+		m.relay, m.relayItem = map[string]int64{}, map[string]string{}
 	}
 	p := filepath.Join(dir, "github", "watch.log")
+	m.relayItem[p] = item
 	f, err := os.Open(p)
 	if err != nil {
 		return
@@ -159,6 +164,31 @@ func (m *Manager) relayRun(item, dir string) {
 		if strings.TrimSpace(l) != "" {
 			fmt.Fprintf(m.Out, "%s run: %s\n", item, l)
 		}
+	}
+}
+
+// finishRelays relays the rest of each run this manager was relaying whose item is no longer a
+// candidate, then stops following it. Merging the status PR makes the item verified, which takes
+// it out of the candidates before its run's last lines ("succeeded", or the audit's result) were
+// relayed (found by the 025 step scenario; #124 fixed this only for items still proposed).
+func (m *Manager) finishRelays(states []ItemState) {
+	live := map[string]bool{}
+	for _, s := range states {
+		if s.RunDir != "" {
+			live[filepath.Join(s.RunDir, "github", "watch.log")] = true
+		}
+	}
+	var done []string
+	for p := range m.relay {
+		if !live[p] {
+			done = append(done, p)
+		}
+	}
+	sort.Strings(done)
+	for _, p := range done {
+		m.relayRun(m.relayItem[p], filepath.Dir(filepath.Dir(p)))
+		delete(m.relay, p)
+		delete(m.relayItem, p)
 	}
 }
 
@@ -198,6 +228,7 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 	if len(states) > 0 {
 		delete(m.shown, "")
 	}
+	m.finishRelays(states)
 	plan := Plan(states)
 	m.Next = nextFor(plan, m.Next)
 	for _, a := range plan {
