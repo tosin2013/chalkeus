@@ -1,0 +1,6 @@
+[
+  {"match": ["# Task list (`specs/001-stats/tasks.md`)", "# This run: slice US1"], "requires": [["specs/001-stats/spec.md", "Spec 001: Stats"]],
+   "files": "build-us1", "note": "slice US1: total, ticks only US1's phase"},
+  {"match": ["# Task list (`specs/001-stats/tasks.md`)", "# This run: slice US2"], "requires": [["specs/001-stats/spec.md", "Spec 001: Stats"]],
+   "files": "build-us2", "note": "slice US2: mean, ticks only US2's phase"}
+]

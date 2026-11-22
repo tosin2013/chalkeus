@@ -301,7 +301,7 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 func (m *Manager) doctorThenRun(ctx context.Context, st ItemState) (bool, error) {
 	n := len(m.Log.entries) + 1
 	dlog := filepath.Join(m.Dir, st.ID, fmt.Sprintf("%03d-doctor.log", n))
-	code, err := m.Pilot(ctx, []string{"doctor", "--target", m.Target, "--item", st.ID, "--baseline"}, dlog)
+	code, err := m.Pilot(ctx, withSlice([]string{"doctor", "--target", m.Target, "--item", st.ID, "--baseline"}, st.Slice), dlog)
 	if err != nil {
 		return false, err
 	}
@@ -313,7 +313,7 @@ func (m *Manager) doctorThenRun(ctx context.Context, st ItemState) (bool, error)
 	}
 	_ = m.Log.Add(Entry{Item: st.ID, Action: "doctor-ok", Reason: "doctor --baseline passed", Commits: st.Commits})
 	rlog := filepath.Join(m.Dir, st.ID, fmt.Sprintf("%03d-run.log", n))
-	code, err = m.Pilot(ctx, []string{"run", "--target", m.Target, "--item", st.ID}, rlog)
+	code, err = m.Pilot(ctx, withSlice([]string{"run", "--target", m.Target, "--item", st.ID}, st.Slice), rlog)
 	if err != nil {
 		return false, err
 	}
@@ -415,4 +415,12 @@ func nextFor(plan []Action, fallback string) string {
 		return fallback
 	}
 	return "nothing is waiting for you; failures are commented on their items' issues"
+}
+
+// withSlice adds --slice to a doctor or run command for a sliced item (026 R9).
+func withSlice(args []string, slice string) []string {
+	if slice == "" {
+		return args
+	}
+	return append(args, "--slice", slice)
 }

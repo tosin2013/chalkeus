@@ -101,3 +101,27 @@ class TestStubAuthor(unittest.TestCase):
         env.pop("PILOT_STUB_SCENARIO", None)
         r = subprocess.run([str(STUB), "run", "You are the test author for item 001."], cwd=d, env=env, capture_output=True, text=True)
         self.assertEqual(r.returncode, 4, "no rule matches another target's item 001")
+
+
+class TestStubSlices(unittest.TestCase):
+    """026: in a slice run the stub ticks only the slice's phases, as a real worker must."""
+
+    def test_tick_only_the_slice(self):
+        import importlib.machinery
+        import importlib.util
+        loader = importlib.machinery.SourceFileLoader("stub", str(STUB))
+        spec = importlib.util.spec_from_loader("stub", loader)
+        stub = importlib.util.module_from_spec(spec)
+        loader.exec_module(stub)
+        prompt = ("# Task list (`specs/001-x/tasks.md`)\n\n...\n\n# This run: slice US2\n\nBuild only slice US2: ...\n\n"
+                  "- Phase 3: User Story 2 - b\n- Phase 4: Polish\n")
+        self.assertEqual(stub.slice_phases(prompt), ["Phase 3: User Story 2 - b", "Phase 4: Polish"])
+        self.assertEqual(stub.slice_phases("# Task list (`x`)\n- [ ] a\n"), [])
+        tasks = ("# Tasks\n\n## Phase 1: Setup\n\n- [ ] T001 a\n\n## Phase 3: User Story 2 - b\n\n- [ ] T002 b\n"
+                 "### Tests\n- [ ] T003 c\n\n## Phase 4: Polish\n\n- [ ] T004 d\n\n## Notes\n\n- [ ] T005 e\n")
+        got = stub.tick_phases(tasks, stub.slice_phases(prompt))
+        self.assertIn("- [ ] T001 a", got)
+        self.assertIn("- [X] T002 b", got)
+        self.assertIn("- [X] T003 c", got)  # a ### heading stays inside its phase, as in spec-status
+        self.assertIn("- [X] T004 d", got)
+        self.assertIn("- [ ] T005 e", got)

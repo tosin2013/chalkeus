@@ -47,6 +47,9 @@ type Target struct {
 	SecurityLevel   string // minimal (default) | recommended | strict (roadmap C-14; 018)
 	AuthorEnv       string // targets/<name>.author.env: the test author's companion-only token (recommended level)
 	AuthorAuto      string // on|off: `pilot author watch` may draft this target's items (024)
+	// SliceRuns on|off (026): step mode and automatic drafting work an item slice by slice. Off
+	// (the default) they build every item whole, as before; `run --slice` works either way.
+	SliceRuns       string
 	AuthorIntervalS int    // seconds between the watcher's polls (024, default 120)
 	AuthorAttempts  int    // author Jobs per automatic draft (024, default 2, at most 3)
 	ProposeLabel    string // the label that proposes an item to step mode (021; its name follows Q7)
@@ -99,6 +102,37 @@ func (t Target) CompanionItemDir(item string) string {
 		return "items/" + item
 	}
 	return t.CompanionPath + "/items/" + item
+}
+
+// CompanionSliceDir is where one slice's hidden tests live (026, contracts/slices.md):
+// [<PILOT_COMPANION_PATH>/]items/<item>/<slice>.
+func (t Target) CompanionSliceDir(item, slice string) string {
+	return t.CompanionItemDir(item) + "/" + slice
+}
+
+// SliceLayout decides whether an item's companion folder uses the per-slice layout: every
+// top-level entry is a directory named after one of the item's slice ids. entries maps each
+// top-level name to whether it is a directory. With no entries, or when no entry is a slice
+// folder, the layout is the flat one (today's). stray lists the entries that break a per-slice
+// layout (a mixed layout, refused by readiness).
+func SliceLayout(entries map[string]bool, sliceIDs []string) (perSlice bool, stray []string) {
+	ids := map[string]bool{}
+	for _, id := range sliceIDs {
+		ids[id] = true
+	}
+	slices := 0
+	for name, isDir := range entries {
+		if isDir && ids[name] {
+			slices++
+		} else {
+			stray = append(stray, name)
+		}
+	}
+	sort.Strings(stray)
+	if slices == 0 {
+		return false, nil
+	}
+	return true, stray
 }
 
 var changeTypes = map[string]bool{"feat": true, "fix": true, "refactor": true, "perf": true, "test": true,
@@ -183,6 +217,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		GithubIssues: v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
 		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50,
 		AuthorAuto: strings.TrimSpace(v["PILOT_AUTHOR_AUTO"]), AuthorIntervalS: 120, AuthorAttempts: 2,
+		SliceRuns:    strings.TrimSpace(v["PILOT_SLICE_RUNS"]),
 		ProposeLabel: strings.TrimSpace(v["PILOT_PROPOSE_LABEL"]), StepIntervalS: 120}
 	if !repoRE.MatchString(t.Repo) {
 		return Target{}, invalid("PILOT_TARGET_REPO", "must be owner/name")
@@ -251,7 +286,10 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	if t.AuthorAuto == "" {
 		t.AuthorAuto = "off" // auto-draft is opt-in per target (024 FR-001)
 	}
-	for k, x := range map[string]string{"PILOT_GITHUB_ISSUES": t.GithubIssues, "PILOT_GITHUB_APPROVALS": t.GithubApprovals, "PILOT_AUTHOR_AUTO": t.AuthorAuto} {
+	if t.SliceRuns == "" {
+		t.SliceRuns = "off" // slice-by-slice step mode is opt-in per target (026 FR-005)
+	}
+	for k, x := range map[string]string{"PILOT_GITHUB_ISSUES": t.GithubIssues, "PILOT_GITHUB_APPROVALS": t.GithubApprovals, "PILOT_AUTHOR_AUTO": t.AuthorAuto, "PILOT_SLICE_RUNS": t.SliceRuns} {
 		if x != "on" && x != "off" {
 			return Target{}, invalid(k, "must be on or off")
 		}

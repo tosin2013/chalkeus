@@ -17,6 +17,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/publisher"
 	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/specfoundry/internal/slice"
 	"github.com/tosin2013/specfoundry/internal/toolchain"
 	"github.com/tosin2013/specfoundry/internal/verbose"
 	"github.com/tosin2013/specfoundry/internal/worker"
@@ -33,8 +34,10 @@ func (p *P) itemDir(run *evidence.Run) string {
 	return filepath.Join(p.L.Build, "inputs", run.ID, "item")
 }
 
-// RunItem starts an item run of p.Target.
-func (p *P) RunItem(item string) int {
+// RunItem starts an item run of p.Target: the whole item, or one slice of it (026; sliceID "" is
+// the whole item, exactly as before).
+func (p *P) RunItem(item, sliceID string) int {
+	sliceID = slice.Normalize(sliceID)
 	imgs, err := images.Load(p.L)
 	if err != nil {
 		p.say("pilot: %v", err)
@@ -46,9 +49,14 @@ func (p *P) RunItem(item string) int {
 		p.say("pilot: %v", err)
 		return ExitError
 	}
-	p.say("== run %s (target %s, item %s)", run.ID, p.Target.Name, item)
+	if sliceID != "" {
+		p.say("== run %s (target %s, item %s, slice %s)", run.ID, p.Target.Name, item, sliceID)
+	} else {
+		p.say("== run %s (target %s, item %s)", run.ID, p.Target.Name, item)
+	}
 	run.SetItemRun(map[string]any{"name": p.Target.Name, "repo": p.Target.Repo, "branch": p.Target.Branch,
 		"toolchain": p.Target.Toolchain}, item)
+	run.SetSlice(sliceID)
 	_ = run.Save()
 	if hosts := p.Cfg.ModelHosts(); len(hosts) > 0 { // for the P06 probe; never in evidence
 		_ = os.WriteFile(p.L.ModelHost, []byte(hosts[0]+"\n"), 0o644)
@@ -63,7 +71,12 @@ func (p *P) RunItem(item string) int {
 
 	// Readiness: the gate plus the item rules (contracts/readiness.md); any doubt refuses.
 	seq, _ := run.NextGateSeq()
-	res, err := readiness.Check(p.readinessDeps(), p.Target, item, seq, filepath.Join(run.Dir, "gate"))
+	rd := p.readinessDeps()
+	rd.Slice = sliceID
+	if sliceID != "" {
+		rd.PriorSlices = PriorSlices(p.L.EvidenceRoot(), p.Target.Name, item, run.ID)
+	}
+	res, err := readiness.Check(rd, p.Target, item, seq, filepath.Join(run.Dir, "gate"))
 	if err != nil {
 		return p.fail(run, "READINESS_ERROR")
 	}
@@ -82,6 +95,18 @@ func (p *P) RunItem(item string) int {
 		"title": res.Title, "change_type": p.Target.ChangeType, "tests_may_change": toAnyList(res.TestsMayChange),
 		"companion_commit": res.CompanionCommit, "hidden_files": res.HiddenFiles, "input_bytes": res.InputBytes,
 		"spec_sha256": res.SpecSHA256, "mapping": res.Mapping}
+	r := run.State["readiness"].(map[string]any)
+	if len(res.Overlay) > 0 { // 026: the companion folders to overlay (absent in older runs: the item folder)
+		r["overlay"] = toAnyList(res.Overlay)
+	}
+	if len(res.Acceptance) > 0 {
+		r["acceptance"] = toAnyList(res.Acceptance)
+	}
+	if res.Slice != nil {
+		r["slice"] = res.Slice
+		r["earlier"] = toAnyList(res.Earlier)
+		run.State["slices_last"] = res.SlicesLast
+	}
 	run.State["security_level"] = p.Target.SecurityLevel // roadmap C-14; reported, never a failure
 	_ = run.Save()
 
@@ -229,21 +254,42 @@ func (p *P) prepareItem(run *evidence.Run) error {
 		if err != nil {
 			return fmt.Errorf("companion repository %s: %v", p.Target.CompanionRepo, err)
 		}
-		tarb, c, err := grader.Overlay(cdir, p.Target.CompanionRepo, commit, p.Target.CompanionItemDir(item), item)
-		_ = os.RemoveAll(cdir)
+		dirs, earlier := overlayFolders(run, p.Target.CompanionItemDir(item))
+		tarb, c, err := grader.OverlayDirs(cdir, p.Target.CompanionRepo, commit, dirs, item)
 		if err != nil {
+			_ = os.RemoveAll(cdir)
 			return err
 		}
 		if c.FileCount == 0 {
-			return fmt.Errorf("%s has no files under %s/", p.Target.CompanionRepo, p.Target.CompanionItemDir(item))
+			_ = os.RemoveAll(cdir)
+			return fmt.Errorf("%s has no files under %s/", p.Target.CompanionRepo, strings.Join(dirs, ", "))
 		}
+		// 026: each earlier slice's hidden tests, for the grader's G8 (never a worker input, P11).
+		for i, e := range earlier {
+			etar, ec, err := grader.Overlay(cdir, p.Target.CompanionRepo, commit, e, item)
+			if err == nil && ec.FileCount == 0 {
+				err = fmt.Errorf("%s has no files under %s/ (an earlier slice)", p.Target.CompanionRepo, e)
+			}
+			if err == nil {
+				err = os.WriteFile(filepath.Join(d, fmt.Sprintf("earlier-%d.tar", i)), etar, 0o600)
+			}
+			if err != nil {
+				_ = os.RemoveAll(cdir)
+				return err
+			}
+		}
+		_ = os.RemoveAll(cdir)
 		if err := os.WriteFile(overlay, tarb, 0o600); err != nil {
 			return err
 		}
 		if err := grader.WriteCompanion(run.Dir, c); err != nil {
 			return err
 		}
-		run.State["companion"] = map[string]any{"repo": c.Repo, "commit": c.Commit, "dir": c.Dir, "file_count": c.FileCount, "files_sha256": c.FilesSHA256}
+		comp := map[string]any{"repo": c.Repo, "commit": c.Commit, "dir": c.Dir, "file_count": c.FileCount, "files_sha256": c.FilesSHA256}
+		if len(earlier) > 0 || len(dirs) > 1 {
+			comp["folders"] = toAnyList(append(append([]string{}, earlier...), dirs...))
+		}
+		run.State["companion"] = comp
 		_ = run.Save()
 	}
 	if err := grader.EnsureNamespace(p.L, p.C, p.itemGrading(run), run.ID); err != nil {
@@ -429,7 +475,8 @@ func (p *P) workerItem(run *evidence.Run) *worker.Item {
 	for _, x := range anyList(r["tests_may_change"]) {
 		mayChange = append(mayChange, fmt.Sprint(x))
 	}
-	return &worker.Item{TestPaths: p.Target.TestPaths, TestsMayChange: mayChange, SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"), SnapshotCommit: commit,
+	sliceID, phases, earlierPhases := sliceOf(run)
+	return &worker.Item{Slice: sliceID, SlicePhases: phases, EarlierPhases: earlierPhases, TestPaths: p.Target.TestPaths, TestsMayChange: mayChange, SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"), SnapshotCommit: commit,
 		SpecDir: specDir, AllowedPaths: allowed, Toolchain: p.Target.Toolchain, TestCommand: p.Target.TestCommand,
 		CommandTimeout: p.commandTimeout(), InputLimit: p.inputLimit(),
 		ProxyNS: proxyNS, ProxyURL: "http://proxy." + proxyNS + ".svc.cluster.local:8888",
@@ -450,6 +497,14 @@ func (p *P) itemGrading(run *evidence.Run) grader.ItemGrading {
 		deadline = p.Target.GraderDeadlineS
 	}
 	ov, _ := os.ReadFile(filepath.Join(p.itemDir(run), "overlay.tar"))
+	var earlier [][]byte
+	for i := 0; ; i++ { // 026: earlier slices' overlays, written by prepareItem
+		e, err := os.ReadFile(filepath.Join(p.itemDir(run), fmt.Sprintf("earlier-%d.tar", i)))
+		if err != nil {
+			break
+		}
+		earlier = append(earlier, e)
+	}
 	tc, _ := run.State["toolchain"].(map[string]any)
 	image, _ := tc["image"].(string)
 	cache, size := len(p.Target.RegistryHosts) > 0 && p.Target.InstallCommand != "", "2Gi"
@@ -460,7 +515,7 @@ func (p *P) itemGrading(run *evidence.Run) grader.ItemGrading {
 		size = p.Target.CacheSize
 	}
 	return grader.ItemGrading{NS: grader.NS(item), SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"),
-		Overlay: ov, DeadlineS: deadline, CPU: cpu, Memory: mem, InputLimit: p.inputLimit(),
+		Overlay: ov, Earlier: earlier, DeadlineS: deadline, CPU: cpu, Memory: mem, InputLimit: p.inputLimit(),
 		ToolchainImage: image, ToolchainSpec: toolchainSpec(run), Cache: cache, CacheSize: size,
 		PrefetchProxyNS: cluster.PrefetchProxyNS(p.Target.Name)}
 }
@@ -485,9 +540,13 @@ func (p *P) inputLimit() string {
 func (p *P) baselineMeta(run *evidence.Run) map[string]any {
 	it := p.workerItem(run)
 	item, _ := run.State["item"].(string)
-	return grader.BaselineMeta(map[string]any{"run_id": run.ID, "task": item, "item_id": item, "base_revision": it.SnapshotCommit,
+	m := map[string]any{"run_id": run.ID, "task": item, "item_id": item, "base_revision": it.SnapshotCommit,
 		"allowed_paths": toAnyList(it.AllowedPaths), "induction": nil, "test_command": it.TestCommand, "hidden_mode": "overlay",
-		"toolchain": it.Toolchain, "command_timeout_s": it.CommandTimeout})
+		"toolchain": it.Toolchain, "command_timeout_s": it.CommandTimeout}
+	if sm := it.SliceMeta(); sm != nil { // 026: the slice baseline (G8 passes, G5 fails)
+		m["slice"] = sm
+	}
+	return grader.BaselineMeta(m)
 }
 
 func toAnyList(xs []string) []any {
@@ -528,4 +587,92 @@ func StartedBy(v string) string {
 		return v
 	}
 	return ""
+}
+
+// overlayFolders is the run's companion folders: the ones to overlay (readiness's "overlay", or
+// the item folder for runs from before 026) and each earlier slice's (slice runs only).
+func overlayFolders(run *evidence.Run, itemDir string) (dirs, earlier []string) {
+	r, _ := run.State["readiness"].(map[string]any)
+	for _, x := range anyList(r["overlay"]) {
+		dirs = append(dirs, fmt.Sprint(x))
+	}
+	if len(dirs) == 0 {
+		dirs = []string{itemDir}
+	}
+	for _, x := range anyList(r["earlier"]) {
+		earlier = append(earlier, fmt.Sprint(x))
+	}
+	return dirs, earlier
+}
+
+// sliceOf is a slice run's slice id, its phases and each earlier slice's phases, from the readiness
+// record ("" for a whole-item run). It reads both a fresh *readiness.SliceInfo and the map a
+// resumed run.json gives.
+func sliceOf(run *evidence.Run) (string, []string, [][]string) {
+	r, _ := run.State["readiness"].(map[string]any)
+	switch s := r["slice"].(type) {
+	case *readiness.SliceInfo:
+		return s.ID, s.Phases, s.EarlierPhases
+	case map[string]any:
+		id, _ := s["id"].(string)
+		var phases []string
+		for _, x := range anyList(s["phases"]) {
+			phases = append(phases, fmt.Sprint(x))
+		}
+		var earlier [][]string
+		for _, e := range anyList(s["earlier_phases"]) {
+			var ph []string
+			for _, x := range anyList(e) {
+				ph = append(ph, fmt.Sprint(x))
+			}
+			earlier = append(earlier, ph)
+		}
+		return id, phases, earlier
+	}
+	return "", nil, nil
+}
+
+// SlicesLast reports whether a run builds the item's last slice, or is a whole-item run (both end
+// with the status proposal, 026 FR-017).
+func SlicesLast(run *evidence.Run) bool {
+	if run.Slice() == "" {
+		return true
+	}
+	last, _ := run.State["slices_last"].(bool)
+	return last
+}
+
+// PriorSlices is the slicing local slice runs of item on target recorded, for SLICE_MAP_CHANGED:
+// for each slice id, the phases and slice count of its newest succeeded run (skipping exceptRun).
+func PriorSlices(root, target, item, exceptRun string) map[string]readiness.PriorSlice {
+	out := map[string]readiness.PriorSlice{}
+	newest := map[string]string{}
+	entries, _ := os.ReadDir(root)
+	for _, e := range entries {
+		if !e.IsDir() || e.Name() == exceptRun {
+			continue
+		}
+		r, err := evidence.OpenRun(filepath.Join(root, e.Name()))
+		if err != nil || r.Kind() != evidence.KindItem || itemOf(r) != item || r.Slice() == "" {
+			continue
+		}
+		if t, _ := r.State["target"].(map[string]any); t["name"] != target {
+			continue
+		}
+		if st, _ := r.State["state"].(string); st != "succeeded" {
+			continue
+		}
+		id, phases, _ := sliceOf(r)
+		rd, _ := r.State["readiness"].(map[string]any)
+		sm, _ := rd["slice"].(map[string]any)
+		if id == "" || e.Name() < newest[id] {
+			continue
+		}
+		newest[id] = e.Name()
+		out[id] = readiness.PriorSlice{Phases: phases, Of: asInt(sm["of"])}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }

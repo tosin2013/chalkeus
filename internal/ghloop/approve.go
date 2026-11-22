@@ -357,7 +357,7 @@ func (l *Loop) FindApproval(run *evidence.Run, p *decisions.Pending) (*Found, er
 // operator, or "".
 func (l *Loop) Collect(run *evidence.Run) string {
 	p := decisions.PendingStep(run)
-	if p == nil || (p.Step != "mode" && p.Step != "retry") {
+	if p == nil || (p.Step != "mode" && p.Step != "retry" && p.Step != "acceptance") {
 		return ""
 	}
 	if decisions.Recorded(run, p.Step, p.Task, p.N) { // already collected (the watcher, then resume)

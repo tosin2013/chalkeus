@@ -57,6 +57,9 @@ type WatchEnv struct {
 	Baseline Baseline
 	// Only limits a pass to one item ("" = every candidate); step mode (021) drafts one item.
 	Only string
+	// Slices gives an item's current slice (026: the first one not merged), "" for an item that
+	// isn't sliced. Nil: every item is drafted whole, as before.
+	Slices func(statusJSON, item string) string
 }
 
 // Outcome of one watcher pass.
@@ -84,22 +87,30 @@ func Pass(ctx context.Context, w WatchEnv) (string, error) {
 		if ctx.Err() != nil {
 			return PassStopped, nil
 		}
-		why, specSHA, err := w.skip(ctx, c.ID)
+		ww := w
+		if w.Slices != nil {
+			ww.Slice = w.Slices(js, c.ID)
+		}
+		why, specSHA, err := ww.skip(ctx, c.ID)
 		if err != nil {
 			return "", err
 		}
+		label := c.ID
+		if ww.Slice != "" {
+			label += " " + ww.Slice
+		}
 		if why != "" {
-			fmt.Fprintf(w.Out, "skip %s: %s\n", c.ID, why)
+			fmt.Fprintf(w.Out, "skip %s: %s\n", label, why)
 			continue
 		}
-		return w.draft(ctx, c.ID, specSHA)
+		return ww.draft(ctx, c.ID, specSHA)
 	}
 	return PassIdle, nil
 }
 
 // skip says why an item isn't eligible ("" if it is) (024 R2).
 func (w WatchEnv) skip(ctx context.Context, item string) (string, string, error) {
-	res, err := w.Ready(w.Target, item)
+	res, err := w.Ready(w.Target, item, w.Slice)
 	if err != nil {
 		return "", "", err
 	}
@@ -121,7 +132,7 @@ func (w WatchEnv) skip(ctx context.Context, item string) (string, string, error)
 	} else if len(open) > 0 {
 		return "a draft pull request is open (" + open[0] + ")", "", nil
 	}
-	if prev := w.previousAuto(item, res.SpecSHA256); prev != "" {
+	if prev := w.previousAuto(item, w.Slice, res.SpecSHA256); prev != "" {
 		return "already drafted automatically for this spec version (" + prev + "); change the spec or draft by hand", "", nil
 	}
 	return "", res.SpecSHA256, nil
@@ -129,9 +140,9 @@ func (w WatchEnv) skip(ctx context.Context, item string) (string, string, error)
 
 // AutoDrafted reports whether an automatic draft of this item for this spec version already got
 // as far as a check (021: step mode then stops asking for a redraft).
-func AutoDrafted(evidenceRoot, target, item, specSHA string) bool {
+func AutoDrafted(evidenceRoot, target, item, slice, specSHA string) bool {
 	w := WatchEnv{Env: Env{EvidenceRoot: evidenceRoot, Target: config.Target{Name: target}}}
-	return w.previousAuto(item, specSHA) != ""
+	return w.previousAuto(item, slice, specSHA) != ""
 }
 
 // previousAuto is the id of an earlier automatic draft of this item for the same spec that got as
@@ -141,7 +152,7 @@ func AutoDrafted(evidenceRoot, target, item, specSHA string) bool {
 // It looks in every draft folder of the checkout, not only the active feature's: changing the
 // active Spec Kit feature moves the evidence root, and the earlier drafts must still count, or an
 // item would be drafted again (021 audit known limit; fixed in 025).
-func (w WatchEnv) previousAuto(item, specSHA string) string {
+func (w WatchEnv) previousAuto(item, slice, specSHA string) string {
 	for _, root := range DraftRoots(w.EvidenceRoot) {
 		entries, _ := os.ReadDir(root)
 		for _, e := range entries {
@@ -149,7 +160,7 @@ func (w WatchEnv) previousAuto(item, specSHA string) string {
 				continue
 			}
 			d, err := LoadDraft(root, e.Name(), "", "")
-			if err == nil && d.Trigger == "auto" && d.Target == w.Target.Name && d.Item == item && d.SpecSHA256 == specSHA &&
+			if err == nil && d.Trigger == "auto" && d.Target == w.Target.Name && d.Item == item && d.Slice == slice && d.SpecSHA256 == specSHA &&
 				(len(d.Checks) > 0 || d.State == "submitted") {
 				return d.ID
 			}

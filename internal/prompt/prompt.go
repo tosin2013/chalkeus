@@ -91,6 +91,9 @@ type Item struct {
 	TestCommand       string
 	TestPaths         []string // the project's test files; when set, the change must add tests
 	TestsMayChange    []string // existing tests the spec allows to change
+	// 026: a slice run builds only these phases of the task list (Slice is the id, e.g. "US2").
+	Slice       string
+	SlicePhases []string
 }
 
 // BuildItem is the prompt for one item of a target repository. It has no induction and no
@@ -104,8 +107,14 @@ func BuildItem(it Item) (string, error) {
 	}
 	var b strings.Builder
 	b.WriteString("You are a coding agent working in a git repository (the current directory).\n")
-	b.WriteString("Implement the specification below completely, then mark every task in the task list as\n")
-	b.WriteString("done by changing `- [ ]` to `- [X]` in that tasks.md file.\n\nRules:\n")
+	if it.Slice != "" {
+		fmt.Fprintf(&b, "Build only slice %s of the specification below: the tasks under the phases listed after\n", it.Slice)
+		b.WriteString("the task list. Then mark exactly those tasks as done by changing `- [ ]` to `- [X]` in that\n")
+		b.WriteString("tasks.md file. Leave every other task as it is.\n\nRules:\n")
+	} else {
+		b.WriteString("Implement the specification below completely, then mark every task in the task list as\n")
+		b.WriteString("done by changing `- [ ]` to `- [X]` in that tasks.md file.\n\nRules:\n")
+	}
 	b.WriteString("- Change only files matching these paths (`*` also matches `/`):\n")
 	for _, p := range it.AllowedPaths {
 		fmt.Fprintf(&b, "  - `%s`\n", p)
@@ -126,6 +135,14 @@ func BuildItem(it Item) (string, error) {
 		fmt.Fprintf(&b, "\n# Plan\n\n%s\n", p)
 	}
 	fmt.Fprintf(&b, "\n# Task list (`%s`)\n\n%s\n", it.TasksPath, strings.TrimSpace(it.Tasks))
+	if it.Slice != "" {
+		fmt.Fprintf(&b, "\n# This run: slice %s\n\nBuild only slice %s: do and tick only the tasks under these phases of the task list.\n", it.Slice, it.Slice)
+		b.WriteString("Earlier slices are already merged; later slices are built in later runs, so leave their\n")
+		b.WriteString("tasks unticked and don't start their work.\n\n")
+		for _, ph := range it.SlicePhases {
+			fmt.Fprintf(&b, "- %s\n", ph)
+		}
+	}
 	return b.String(), nil
 }
 

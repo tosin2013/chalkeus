@@ -57,7 +57,7 @@ func TestLoadTargetGood(t *testing.T) {
 		TestCommand: "mvn -B test", RegistryHosts: []string{"repo.maven.apache.org", "repo1.example.org"},
 		CompanionRepo: "me/greeting-service-acceptance", GithubIssues: "off", GithubApprovals: "on", MaxInputMB: 50, ChangeType: "feat",
 		PublisherEnv: filepath.Join(c.TargetsDir(), "greeting.publisher.env"), SecurityLevel: LevelMinimal,
-		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env"), AuthorAuto: "off", AuthorIntervalS: 120, AuthorAttempts: 2,
+		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env"), AuthorAuto: "off", SliceRuns: "off", AuthorIntervalS: 120, AuthorAttempts: 2,
 		ProposeLabel: "pilot/go", StepIntervalS: 120}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\n got %+v\nwant %+v", got, want)
@@ -98,6 +98,7 @@ func TestLoadTargetRefusals(t *testing.T) {
 		"PILOT_GRADER_DEADLINE_S":    goodTarget + "PILOT_GRADER_DEADLINE_S=-1\n",
 		"PILOT_MAX_INPUT_MB":         goodTarget + "PILOT_MAX_INPUT_MB=x\n",
 		"PILOT_AUTHOR_AUTO":          goodTarget + "PILOT_AUTHOR_AUTO=yes\n",
+		"PILOT_SLICE_RUNS":           goodTarget + "PILOT_SLICE_RUNS=maybe\n",
 		"PILOT_AUTHOR_INTERVAL_S":    goodTarget + "PILOT_AUTHOR_INTERVAL_S=5\n",
 		"PILOT_AUTHOR_AUTO_ATTEMPTS": goodTarget + "PILOT_AUTHOR_AUTO_ATTEMPTS=4\n",
 		"PILOT_STEP_INTERVAL_S":      goodTarget + "PILOT_STEP_INTERVAL_S=10\n",
@@ -255,5 +256,30 @@ func TestTargetAuthorAuto(t *testing.T) {
 	got, err = c.LoadTarget("g", "")
 	if err != nil || got.AuthorAuto != "on" || got.AuthorIntervalS != 60 || got.AuthorAttempts != 1 {
 		t.Fatalf("%+v %v", got, err)
+	}
+}
+
+func TestCompanionSliceDirAndLayout(t *testing.T) {
+	tg := Target{CompanionPath: "stockroom"}
+	if got := tg.CompanionSliceDir("006", "US2"); got != "stockroom/items/006/US2" {
+		t.Fatalf("CompanionSliceDir = %q", got)
+	}
+	ids := []string{"US1", "US2"}
+	cases := []struct {
+		entries  map[string]bool
+		perSlice bool
+		stray    []string
+	}{
+		{map[string]bool{}, false, nil},
+		{map[string]bool{"src": true, "pom.xml": false}, false, nil},
+		{map[string]bool{"US1": true, "US2": true}, true, nil},
+		{map[string]bool{"US1": true, "src": true}, true, []string{"src"}},
+		{map[string]bool{"US1": false}, false, nil}, // a file named US1 is not a slice folder
+	}
+	for i, c := range cases {
+		ps, stray := SliceLayout(c.entries, ids)
+		if ps != c.perSlice || strings.Join(stray, ",") != strings.Join(c.stray, ",") {
+			t.Errorf("case %d: perSlice=%v stray=%v, want %v %v", i, ps, stray, c.perSlice, c.stray)
+		}
 	}
 }

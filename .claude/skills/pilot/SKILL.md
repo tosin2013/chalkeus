@@ -53,8 +53,10 @@ matching troubleshooting entry before suggesting any fix.
 | `pilot/pilot targets` | list the human's configured target repositories (no secrets) |
 | `pilot/pilot gate --target <name> --item NNN` | check an item of a target is prepared (no cluster); exit 10 = refused, with a code |
 | `pilot/pilot run --target <name> --item NNN` | an item run of the human's own repository: readiness, mode, baseline, attempts, draft PR on the target |
+| `pilot/pilot slices --target <name> --item NNN` | list an item's slices (026), their state and the current one (read-only) |
+| `pilot/pilot run --target <name> --item NNN --slice USn` | build one slice of the item: its own PR; only the last slice leads to the status change |
 | `pilot/pilot resume --run <id>` | continue a paused run |
-| `pilot/pilot approve --run <id> mode\|retry\|reconcile` | record the human's yes for the one pending step |
+| `pilot/pilot approve --run <id> mode\|retry\|reconcile\|acceptance` | record the human's yes for the one pending step |
 | `pilot/pilot audit [--run <id>]` | evidence audit AU01–AU11 |
 | `pilot/pilot down` | tear down and verify |
 
@@ -108,11 +110,18 @@ Without a terminal, the pilot pauses at each decision and prints
      attempt's `grade.json`). The first attempt of A fails on purpose (AU11 induction).
    - `reconcile`: the roadmap change it proposes (for example `001: planned → verified`) and
      that A's PR was merged with tasks at 100%. Saying yes unblocks task B.
+   - `acceptance` (026): the item's spec lists acceptance checks under `## Item acceptance`
+     (for example a live check by a human). Read them out. Saying yes records that the human did
+     them and they passed; only then does the status change follow. Never say yes for them.
 2. **Ask the human:** "Do you approve <step>?" Wait for their answer. Silence or anything but
    a clear yes means no.
 3. On yes: run `pilot/pilot approve --run <id> <step>`. The harness asks them again; that
    click is the approval. Then run `pilot/pilot resume --run <id>`.
 4. On no: leave it. For a retry, the run stays paused; for the mode, nothing was started.
+
+For a slice run (026, `--slice USn`), a slice before the item's last ends with
+`slice USn merged; next: --slice USm` after the human merges its PR, and no status change: tell
+the human which slice is next, and start it only when they ask.
 
 `approve` only accepts the step the run is waiting for, after it was shown, and each approval
 is used once. If it refuses, read its message to the human; don't retry with another step.

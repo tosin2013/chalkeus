@@ -1,7 +1,14 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.29.2 → 1.30.0 (this revision)
+Version change: 1.30.0 → 1.30.1 (this revision)
+Bump rationale: PATCH — a status transition.
+Changes this revision (owner decision 2026-11-22, Tosin Akinosho):
+  - 026 planned → specced: spec, plan, design and tasks merged (#151, #156); implementation starts.
+Specs affected: 026
+Open questions added/resolved: none
+
+Prior: Version change: 1.29.2 → 1.30.0
 Bump rationale: MINOR — a new planned item (027) and a new dependency for 013. Nothing verified
 is invalidated.
 Changes this revision (owner decision 2026-11-22, Tosin Akinosho):
@@ -1762,7 +1769,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     after its item is verified; the status-change commit says why it failed without a git
     identity; the 024 docs match the output.
 
-### 026 — Slice runs  [status: planned]
+### 026 — Slice runs  [status: specced]
 
 - **Description:** Let a run build one slice of a roadmap item (one user-story phase of its
   approved `tasks.md`) instead of the whole item. The roadmap item stays the unit that is
@@ -2050,4 +2057,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.30.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
+**Version**: 1.30.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22

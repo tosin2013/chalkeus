@@ -16,6 +16,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/gate"
+	"github.com/tosin2013/specfoundry/internal/slice"
 )
 
 // Deps are readiness's outside world, injected so tests need no network.
@@ -31,6 +32,11 @@ type Deps struct {
 	// SkipHidden is the test author's readiness (018 `author start`): an empty companion folder
 	// doesn't refuse; HiddenFiles reports how many files are already there.
 	SkipHidden bool
+	// Slice is the slice to check (026 `run --slice`); "" checks the whole item.
+	Slice string
+	// PriorSlices is the slicing local slice runs of this item recorded (slice id -> phases and
+	// the slice count then), for SLICE_MAP_CHANGED. Nil when there are none.
+	PriorSlices map[string]PriorSlice
 }
 
 // Rule is one readiness rule's outcome, recorded in gate/<seq>-<NNN>.readiness.json.
@@ -56,6 +62,14 @@ type Result struct {
 	CompanionCommit string         `json:"companion_commit,omitempty"`
 	HiddenFiles     int            `json:"hidden_files,omitempty"`
 	InputBytes      int64          `json:"input_bytes,omitempty"`
+	// 026: the slice a slice run builds, whether it is the item's last, the companion folders the
+	// grader overlays (this slice or the whole item) and the earlier slices' folders (G8), and the
+	// item-level acceptance checks the spec declares.
+	Slice      *SliceInfo `json:"slice,omitempty"`
+	SlicesLast bool       `json:"slices_last,omitempty"`
+	Overlay    []string   `json:"overlay,omitempty"`
+	Earlier    []string   `json:"earlier,omitempty"`
+	Acceptance []string   `json:"acceptance,omitempty"`
 }
 
 var (
@@ -147,6 +161,16 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		rule("gate", true, "allow")
 	}
 	doc, itemDoc := statusItem(stdout, item)
+	var heads []string
+	var headsErr error
+	headsRead := false
+	openHeads := func() ([]string, error) {
+		if !headsRead {
+			heads, headsErr = d.OpenPRHeads(t.Repo)
+			headsRead = true
+		}
+		return heads, headsErr
+	}
 
 	// 2. Spec and tasks.
 	specDir, _ := itemDoc["spec_dir"].(string)
@@ -179,6 +203,85 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		}
 	}
 
+	// 2b. Slices (026, contracts/slices.md): resolved here because the allowed paths and the
+	// hidden tests below depend on the slice.
+	ss := readSlices(itemDoc)
+	var sl *slice.Slice
+	var earlier []slice.Slice
+	switch {
+	case d.Slice != "":
+		switch found, ok := slice.Find(ss.slices, d.Slice); {
+		case !ss.known:
+			if fail("SLICE_UNEVALUABLE", "spec status reports no tasks.phases for item "+item+" (needs spec-status 0.4.0+ and a readable tasks.md)") {
+				return finish()
+			}
+		case ss.err != nil:
+			if fail("SLICE_UNKNOWN", ss.err.Error()) {
+				return finish()
+			}
+		case !ok:
+			if fail("SLICE_UNKNOWN", fmt.Sprintf("%q is not a slice of item %s; its slices are %s (run the whole item without --slice)", d.Slice, item, strings.Join(slice.IDs(ss.slices), ", "))) {
+				return finish()
+			}
+		default:
+			sl, earlier = &found, slice.Earlier(ss.slices, found)
+			res.SlicesLast = slice.Last(ss.slices, found)
+			info := &SliceInfo{ID: found.ID, Index: found.Index, Of: len(ss.slices), Phases: found.Phases,
+				Earlier: slice.IDs(earlier), EarlierPhases: [][]string{}, DefaultRevision: commit, All: slice.IDs(ss.slices)}
+			for _, e := range earlier {
+				info.EarlierPhases = append(info.EarlierPhases, e.Phases)
+			}
+			res.Slice = info
+			ok := true
+			if why := mapChanged(d.PriorSlices, ss.slices); why != "" {
+				ok = false
+				if fail("SLICE_MAP_CHANGED", why+"; the pilot never re-maps slices: fix tasks.md or plan a new item") {
+					return finish()
+				}
+			}
+			hs, herr := openHeads()
+			open := openSlices(hs, item, slice.IDs(earlier))
+			var notMerged []string
+			for _, e := range earlier {
+				if slice.State(e) != slice.Merged || open[e.ID] {
+					notMerged = append(notMerged, e.ID)
+				}
+			}
+			if herr != nil {
+				ok = false
+				if fail("SLICE_EARLIER_OPEN", "could not list open PRs on "+t.Repo+": "+herr.Error()) {
+					return finish()
+				}
+			} else if len(notMerged) > 0 {
+				ok = false
+				if fail("SLICE_EARLIER_OPEN", fmt.Sprintf("earlier slice(s) %s of item %s are not merged on %s@%s; build and merge them first", strings.Join(notMerged, ", "), item, t.Repo, short(commit))) {
+					return finish()
+				}
+			}
+			if st := slice.State(found); st != slice.Untouched {
+				ok = false
+				if fail("SLICE_STARTED", fmt.Sprintf("slice %s already has %d of %d tasks ticked on %s@%s", found.ID, found.Checked, found.Total, t.Repo, short(commit))) {
+					return finish()
+				}
+			}
+			if ok {
+				rule("slice", true, fmt.Sprintf("%s (%d of %d); earlier %s merged", found.ID, found.Index+1, len(ss.slices), strings.Join(slice.IDs(earlier), ", ")))
+			}
+		}
+	case ss.known && ss.err == nil && slice.Sliced(ss.slices):
+		var begun []string
+		for _, x := range ss.slices {
+			if slice.State(x) != slice.Untouched {
+				begun = append(begun, x.ID)
+			}
+		}
+		if len(begun) > 0 {
+			if fail("ITEM_PARTLY_SLICED", fmt.Sprintf("item %s has slices %s, and %s already have ticked tasks; run the remaining slices with --slice", item, strings.Join(slice.IDs(ss.slices), ", "), strings.Join(begun, ", "))) {
+				return finish()
+			}
+		}
+	}
+
 	// 3. Open questions: spec markers, and unresolved roadmap open questions naming the item.
 	roadmap := ".specify/memory/roadmap.md"
 	if src, ok := doc["source"].(map[string]any); ok {
@@ -202,16 +305,22 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 	if questionsOK {
 		rule("open_questions", true, "none")
 	}
+	if specOK {
+		res.Acceptance = Acceptance(string(spec))
+	}
 
 	// 4. Allowed paths.
 	if !specOK {
 		skip("allowed_paths", "needs the spec")
-	} else if allowed, err := AllowedPaths(string(spec), specDir, otherSpecDirs(doc, item)); err != nil {
+	} else if allowed, source, err := allowedFor(string(spec), specDir, sl, otherSpecDirs(doc, item)); err != nil {
 		r := err.(*Refusal)
 		if fail(r.Code, r.Detail) {
 			return finish()
 		}
 	} else {
+		if res.Slice != nil {
+			res.Slice.AllowedPathsSource = source
+		}
 		res.AllowedPaths = allowed
 		res.TestsMayChange = TestsMayChange(string(spec))
 		rule("allowed_paths", true, strings.Join(allowed, ", "))
@@ -225,13 +334,30 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 	} else {
 		defer func() { _ = os.RemoveAll(cdir) }()
 		itemDir := filepath.Join(cdir, filepath.FromSlash(t.CompanionItemDir(item)))
-		n := countFiles(itemDir)
+		overlay, earlierDirs, stray := overlayDirs(t, item, ss, sl, earlier, companionLayout(itemDir))
+		res.Overlay, res.Earlier = overlay, earlierDirs
+		n := countDirs(cdir, overlay)
+		var emptyEarlier []string
+		for i, e := range earlierDirs {
+			if countDirs(cdir, []string{e}) == 0 {
+				emptyEarlier = append(emptyEarlier, earlier[i].ID)
+			}
+		}
 		res.CompanionCommit, res.HiddenFiles = ccommit, n
+		where := strings.Join(overlay, ", ")
 		switch {
+		case len(stray) > 0 && !d.SkipHidden:
+			if fail("ITEM_NO_HIDDEN_TESTS", t.CompanionRepo+": "+t.CompanionItemDir(item)+"/ mixes slice folders with other entries ("+strings.Join(stray, ", ")+"); keep only one folder per slice") {
+				return finish()
+			}
 		case d.SkipHidden:
-			rule("hidden_tests", true, fmt.Sprintf("skipped (test author): %d file(s) already at %s", n, t.CompanionItemDir(item)))
+			rule("hidden_tests", true, fmt.Sprintf("skipped (test author): %d file(s) already at %s", n, where))
 		case n == 0:
-			if fail("ITEM_NO_HIDDEN_TESTS", t.CompanionRepo+" has no files under "+t.CompanionItemDir(item)+"/") {
+			if fail("ITEM_NO_HIDDEN_TESTS", t.CompanionRepo+" has no files under "+where+"/") {
+				return finish()
+			}
+		case len(emptyEarlier) > 0:
+			if fail("ITEM_NO_HIDDEN_TESTS", "earlier slice(s) "+strings.Join(emptyEarlier, ", ")+" have no hidden tests in "+t.CompanionRepo+"; the grader re-runs them (G8)") {
 				return finish()
 			}
 		default:
@@ -263,19 +389,13 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		}
 	}
 
-	// 7. No open pilot PR for this item on the target.
-	heads, err := d.OpenPRHeads(t.Repo)
+	// 7. No open pilot PR for this item (or, 026, a slice that blocks this run) on the target.
+	hs, err := openHeads()
 	openPR := ""
 	if err != nil {
 		openPR = "could not list open PRs on " + t.Repo + ": " + err.Error()
-	} else {
-		itemHead := regexp.MustCompile(`^pilot/[^/]+/` + item + `$`)
-		for _, h := range heads {
-			if itemHead.MatchString(h) {
-				openPR = "an open PR from " + h + " exists; merge or close it first"
-				break
-			}
-		}
+	} else if blocking := openHeadsFor(hs, item, sl, earlier); len(blocking) > 0 {
+		openPR = "an open PR from " + blocking[0] + " exists; merge or close it first"
 	}
 	if openPR != "" {
 		fail("OPEN_ITEM_PR", openPR)
@@ -482,4 +602,14 @@ func mappingReport(itemDir, specSHA string) map[string]any {
 		unc = append(unc, u)
 	}
 	return map[string]any{"present": true, "valid": true, "uncovered": unc, "stale": m.SpecSHA256 != specSHA}
+}
+
+// allowedFor is the run's allowed paths: the item's, or for a slice run the slice's own list when
+// the spec has one (026). source is "item" or "slice".
+func allowedFor(specText, specDir string, sl *slice.Slice, others []string) ([]string, string, error) {
+	if sl == nil {
+		g, err := AllowedPaths(specText, specDir, others)
+		return g, "item", err
+	}
+	return SliceAllowedPaths(specText, specDir, sl.ID, others)
 }

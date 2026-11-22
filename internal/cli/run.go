@@ -96,8 +96,11 @@ func credsForTarget(cfg *config.Config, t config.Target) (pipeline.Creds, error)
 func runRun(cmd *cobra.Command, _ []string) error {
 	item, _ := cmd.Flags().GetString("item")
 	name, _ := cmd.Flags().GetString("target")
+	sliceFlag, _ := cmd.Flags().GetString("slice")
 	isTarget := name != "" && name != config.FixtureTarget
 	switch {
+	case sliceFlag != "" && item == "":
+		return Exit(ExitError, "--slice needs --item NNN: a slice is part of one item")
 	case item != "" && !isTarget:
 		return Exit(ExitError, "--item needs --target <name>: the fixture always runs A then B")
 	case isTarget && item == "":
@@ -108,7 +111,7 @@ func runRun(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	if item != "" {
-		return Code(p.RunItem(item))
+		return Code(p.RunItem(item, sliceFlag))
 	}
 	return Code(p.Run())
 }

@@ -270,7 +270,9 @@ slice 2; then the status proposal follows.
 - **FR-023**: Automatic drafting (024) MUST draft hidden tests per slice, and MUST trigger for a
   slice that is ready but has no hidden tests.
 - **FR-024**: Step mode (021) MUST run an item's slices in order, wait for each slice's PR merge
-  before the next, and require a mode approval for each slice run.
+  before the next, and require a mode approval for each slice run. It (and automatic drafting)
+  does so only for a target that opts in (`PILOT_SLICE_RUNS=on`); otherwise every item is built
+  whole, as before (FR-005).
 - **FR-025**: Humans MUST still prepare and approve the slicing; the pilot MUST never pick up a
   slice by itself (C-12).
 

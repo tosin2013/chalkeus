@@ -55,5 +55,7 @@ audit result, then the newest run's full audit. `pilot audit [--run <id>]` is un
 
 ## `pilot step`
 
-No new flags. When a proposed item has slices, step runs `doctor --baseline --slice <current>`
-and then `run --slice <current>`.
+No new flags. When the target's profile sets `PILOT_SLICE_RUNS=on` (default off) and a proposed
+item has two or more slices, step runs `doctor --baseline --slice <current>` and then
+`run --slice <current>`, and `author watch` drafts the current slice. Off, both build every item
+whole, exactly as before (FR-005).

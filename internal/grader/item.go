@@ -25,9 +25,12 @@ type ItemGrading struct {
 	NS             string // pilot-g-<item>
 	SnapshotBundle string
 	Overlay        []byte // the companion overlay tar (grader.Overlay)
-	DeadlineS      int
-	CPU, Memory    string
-	InputLimit     string
+	// Earlier holds each earlier slice's overlay tar, in order (026 slice runs; staged as
+	// grading/earlier/<n>, for G8). Empty for a whole-item run.
+	Earlier     [][]byte
+	DeadlineS   int
+	CPU, Memory string
+	InputLimit  string
 	// Toolchain and dependencies (014 R5, R7): the toolchain image and its checked
 	// toolchain.json (none: built into the tools image), and whether the run has a dependency cache
 	// (a PVC filled by the prefetch Job through PrefetchProxyNS, mounted read-only into graders).
@@ -152,6 +155,12 @@ func GradeItem(l paths.Layout, c *k8s.Client, rn runner.Runner, run *evidence.Ru
 			fail("grader_error", err)
 			return
 		}
+		for i, e := range g.Earlier { // 026: earlier slices' hidden tests, for G8 (grader only, P11)
+			if err := t.AddTar(fmt.Sprintf("grading/earlier/%d", i), e); err != nil {
+				fail("grader_error", err)
+				return
+			}
+		}
 		tarb, err := t.Bytes()
 		if err != nil {
 			fail("grader_error", err)
@@ -237,6 +246,8 @@ func BaselineReason(report map[string]any) string {
 	switch {
 	case by["G4_visible_tests"] == "fail":
 		return "BASELINE_SUITE_FAILS"
+	case by["G8_earlier_slices_kept"] == "fail": // 026: a merged slice's tests fail on the default branch
+		return "EARLIER_SLICE_BROKEN_ON_BASE"
 	case by["G4_visible_tests"] == "pass" && by["G5_hidden_tests"] == "fail":
 		return "BASELINE_HIDDEN_PASSES"
 	}

@@ -17,6 +17,8 @@ const (
 // ItemState is everything the decision needs about one candidate item (research R4).
 type ItemState struct {
 	ID string
+	// Slice is the item's current slice (026: the first not merged), "" for an item built whole.
+	Slice string
 	// Proposed: the proposal label is on its issue and an approver added it last.
 	Proposed  bool
 	NotWhy    string // why it isn't proposed ("" when proposed)

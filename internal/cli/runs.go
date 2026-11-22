@@ -29,6 +29,21 @@ func runAudit(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	id, _ := cmd.Flags().GetString("run")
+	if item, _ := cmd.Flags().GetString("item"); item != "" { // 026: the item view
+		name, _ := cmd.Flags().GetString("target")
+		if name == "" || id != "" {
+			return Exit(ExitError, "--item needs --target <name> (and no --run)")
+		}
+		cfg, _ := config.Load(l.Root, false, false)
+		ok, err := audit.ItemView(l.EvidenceRoot(), name, item, cfg, cmd.OutOrStdout())
+		if err != nil {
+			return Exit(ExitError, "%v", err)
+		}
+		if !ok {
+			return Code(ExitFail)
+		}
+		return nil
+	}
 	r, err := evidence.LoadRun(l.EvidenceRoot(), id)
 	if err != nil {
 		return Exit(ExitError, "%v", err)

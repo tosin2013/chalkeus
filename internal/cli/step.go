@@ -75,14 +75,16 @@ func stepCmd() *cobra.Command {
 				}
 				return m, nil
 			}
-			src := step.Source{Status: targetStatus(t), Issues: issues, Approvers: approvers, AutoDraft: t.AuthorAuto == "on", Log: log,
+			src := step.Source{Status: targetStatus(t), Issues: issues, Approvers: approvers, AutoDraft: t.AuthorAuto == "on", SliceRuns: t.SliceRuns == "on", Log: log,
 				Repo: t.Repo, Label: t.ProposeLabel,
 				Planning: func(ctx context.Context) ([]string, error) { return ghloop.PlanningPRs(ctx, opGH, t.Repo) },
-				Drafted:  func(item, specSHA string) bool { return author.AutoDrafted(e.EvidenceRoot, t.Name, item, specSHA) },
+				Drafted: func(item, sl, specSHA string) bool {
+					return author.AutoDrafted(e.EvidenceRoot, t.Name, item, sl, specSHA)
+				},
 				Proposal: func(ctx context.Context, n int) (ghloop.Proposal, error) {
 					return ghloop.ProposedBy(ctx, opGH, t.Repo, n, t.ProposeLabel)
 				},
-				Ready: func(item string) (readiness.Result, error) { return e.Ready(t, item) },
+				Ready: func(item, sl string) (readiness.Result, error) { return e.Ready(t, item, sl) },
 				TestsPR: func(ctx context.Context, item string) (bool, error) {
 					id, err := e.Identity(ctx, t)
 					if err != nil {
@@ -91,8 +93,8 @@ func stepCmd() *cobra.Command {
 					open, err := e.OpenAuthorPRs(ctx, id, t.CompanionRepo, "author/"+item+"-")
 					return len(open) > 0, err
 				},
-				Run: func(item string) (step.RunInfo, bool) {
-					return step.NewestRun(e.EvidenceRoot, log.RunDirs(), t.Name, item, func(d string) bool {
+				Run: func(item, sl string) (step.RunInfo, bool) {
+					return step.NewestRun(e.EvidenceRoot, log.RunDirs(), t.Name, item, sl, func(d string) bool {
 						return watcher.Status(d, filepath.Base(d)).Running
 					})
 				}}

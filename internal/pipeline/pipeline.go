@@ -562,6 +562,11 @@ func (p *P) Resume(runID string) int {
 	case "paused(awaiting-publish)":
 		task, _ := pend["task"].(string)
 		return p.publishTask(run, task)
+	case "paused(awaiting-acceptance)": // 026: back to the merge check, then the acceptance decision
+		if p.approvalsOn() {
+			return p.reconcileGitHub(run, pend)
+		}
+		return p.reconcileA(run)
 	case "paused(awaiting-merge)":
 		if p.approvalsOn() { // 004 R6: the status change is approved by merging a status-change PR
 			return p.reconcileGitHub(run, pend)
@@ -608,6 +613,18 @@ func (p *P) reconcileA(run *evidence.Run) int {
 	pr, _ := tA["pr"].(map[string]any)
 	if p.item() {
 		rec.Where = p.repo() + "'s roadmap"
+	}
+	if !SlicesLast(run) { // 026: a slice before the item's last: no status change
+		defer cleanup()
+		return p.sliceMerged(run, rec, task, n, changed, "terminal")
+	}
+	if len(acceptanceChecks(run)) > 0 && run.State["acceptance_recorded"] != true { // 026 FR-018
+		if c, _, _ := rec.Check(task, run.ItemOf(task), asInt(pr["number"]), changed); c == 0 {
+			if goOn, ec := p.acceptanceGate(run, task); !goOn {
+				cleanup()
+				return ec
+			}
+		}
 	}
 	code, r := rec.Run(task, run.ItemOf(task), asInt(pr["number"]), changed)
 	cleanup()

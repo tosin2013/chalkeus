@@ -34,6 +34,12 @@ import tempfile
 
 CHECKS = ["G1_bundle_applies", "G2_allowed_paths", "G3_tasks_checked", "G4_visible_tests", "G5_hidden_tests"]
 TEST_CHECKS = ["G6_tests_changed", "G7_existing_tests_kept"]
+SLICE_CHECKS = ["G8_earlier_slices_kept"]  # 026: only in slice runs with earlier slices
+
+
+def earlier_slices(meta):
+    """026: the earlier slices of a slice run (each a list of phase headings), or []."""
+    return list((meta.get("slice") or {}).get("earlier") or [])
 AUTHOR_OUTPUT: list = []  # author_check only: the hidden tests' output, never put in grade.json
 
 
@@ -92,18 +98,22 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
         changed = [p for p in out.splitlines() if p]
         bad = [p for p in changed if not any(fnmatch.fnmatch(p, g) for g in meta["allowed_paths"])]
         if add("G2_allowed_paths", rc == 0 and not bad and bool(changed), f"changed={changed} disallowed={bad}"):
-            rc, out, err = run_full(["spec", "status", "--json", "--root", repo])
-            pct, why = None, ""
-            try:
-                items = json.loads(out if rc in (0, 1) else "{}")["items"]
-                item = next((i for i in items if i["id"] == meta["item_id"]), None)
-                if item is None:
-                    why = f" (item {meta['item_id']} not in spec status output)"
-                else:
-                    pct = (item.get("tasks") or {}).get("percent")
-            except Exception as e:  # noqa: BLE001
-                why = f" (spec status unreadable: rc={rc} {type(e).__name__}; {err.strip()[:200]})"
-            if add("G3_tasks_checked", pct == 100, f"tasks percent={pct}{why}"):
+            if meta.get("slice"):
+                g3_ok, g3_detail = slice_tasks_checked(meta, repo, work, base)
+            else:
+                rc, out, err = run_full(["spec", "status", "--json", "--root", repo])
+                pct, why = None, ""
+                try:
+                    items = json.loads(out if rc in (0, 1) else "{}")["items"]
+                    item = next((i for i in items if i["id"] == meta["item_id"]), None)
+                    if item is None:
+                        why = f" (item {meta['item_id']} not in spec status output)"
+                    else:
+                        pct = (item.get("tasks") or {}).get("percent")
+                except Exception as e:  # noqa: BLE001
+                    why = f" (spec status unreadable: rc={rc} {type(e).__name__}; {err.strip()[:200]})"
+                g3_ok, g3_detail = pct == 100, f"tasks percent={pct}{why}"
+            if add("G3_tasks_checked", g3_ok, g3_detail):
                 if meta.get("test_command"):  # an item run (014)
                     if not meta.get("test_paths") or tests_changed(meta, repo, base, add):
                         visible_and_hidden(meta, grading, repo, add, work, base)
@@ -119,7 +129,8 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
                         rc, out = run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
                                        os.path.join(tdir, os.path.basename(hidden))], cwd=tdir, env=env)
                         add("G5_hidden_tests", rc == 0, out)
-    expected = CHECKS + (TEST_CHECKS if meta.get("test_command") and meta.get("test_paths") else [])
+    expected = CHECKS + (TEST_CHECKS if meta.get("test_command") and meta.get("test_paths") else []) \
+        + (SLICE_CHECKS if earlier_slices(meta) else [])
     done = {r["id"] for r in results}
     for cid in expected:
         if cid not in done:
@@ -135,13 +146,94 @@ def project_tests(meta, repo, limit=3000):
     return run(["sh", "-c", meta["test_command"]], cwd=repo, timeout=int(meta.get("command_timeout_s") or 180), limit=limit)
 
 
-def overlay(grading, repo):
+def overlay(grading, repo, name="overlay"):
     """Copy the item's hidden tests over the project; they mirror its layout, and win."""
-    src = os.path.join(grading, "overlay")
+    src = os.path.join(grading, name)
     if not os.path.isdir(src) or not os.listdir(src):
-        return False, "no hidden tests in /grading/overlay"
+        return False, f"no hidden tests in /grading/{name}"
     shutil.copytree(src, repo, dirs_exist_ok=True)
     return True, ""
+
+
+def earlier_kept(meta, grading, repo, add, result=None):
+    """026 G8: overlay every earlier slice's hidden tests in order (grading/earlier/<n>), then run
+    the project's tests. In an attempt they must pass; in the baseline too (result maps the
+    outcome to the baseline's pass/fail strings). Only a summary is recorded (C-14)."""
+    n = len(earlier_slices(meta))
+    for i in range(n):
+        ok, why = overlay(grading, repo, f"earlier/{i}")
+        if not ok:
+            return add("G8_earlier_slices_kept", result("fail") if result else False, why)
+    rc, out = project_tests(meta, repo)
+    ok = rc == 0
+    detail = (f"{n} earlier slice(s)' hidden tests pass\n" if ok else
+              f"{n} earlier slice(s)' hidden tests FAIL: this change broke an earlier slice\n") + hidden_summary(rc, out)
+    return add("G8_earlier_slices_kept", (result("pass" if ok else "fail") if result else ok), detail)
+
+
+def slice_counts(status_out, item_id):
+    """026: an item's per-phase task counts from `spec status --json` (spec-status 0.4.0+):
+    ({heading: (checked, total)}, checked tasks outside any phase), or None when tasks.phases is
+    absent or null (an older spec-status, or the tasks file wasn't read)."""
+    items = json.loads(status_out)["items"]
+    item = next((i for i in items if i["id"] == item_id), None)
+    if item is None:
+        return None
+    tasks = item.get("tasks") or {}
+    phases = tasks.get("phases")
+    if phases is None:
+        return None
+    by = {p["heading"]: (int(p["checked"]), int(p["total"])) for p in phases}
+    outside = int(tasks.get("checked") or 0) - sum(c for c, _ in by.values())
+    return by, outside
+
+
+def status_counts(root, item_id):
+    """slice_counts for the checkout at root, or (None, why)."""
+    rc, out, err = run_full(["spec", "status", "--json", "--root", root])
+    try:
+        got = slice_counts(out if rc in (0, 1) else "{}", item_id)
+    except Exception as e:  # noqa: BLE001
+        return None, f"spec status unreadable: rc={rc} {type(e).__name__}; {err.strip()[:200]}"
+    if got is None:
+        return None, f"spec status has no tasks.phases for item {item_id} (needs spec-status 0.4.0+)"
+    return got, ""
+
+
+def slice_tasks_checked(meta, repo, work, base):
+    """026 G3 for a slice run (contracts/grading.md): every phase of this slice is fully ticked,
+    and every other phase, plus the tasks outside phases, has exactly the checked count it had on
+    the base. Phases are matched by exact heading."""
+    mine = list(meta["slice"]["phases"])
+    after, why = status_counts(repo, meta["item_id"])
+    if after is None:
+        return False, why
+    tree = os.path.join(work, "base-tree")
+    rc, out = run(["git", "worktree", "add", "--quiet", "--detach", tree, base], cwd=repo)
+    if rc != 0:
+        return False, f"could not check out the base for G3: {out}"
+    before, why = status_counts(tree, meta["item_id"])
+    run(["git", "worktree", "remove", "--force", tree], cwd=repo)
+    if before is None:
+        return False, "base: " + why
+    (a, a_out), (b, b_out) = after, before
+    problems = []
+    for h in sorted(set(a) ^ set(b)):
+        problems.append(f"heading changed: {h!r}")
+    for h in mine:
+        if h not in a:
+            problems.append(f"slice phase missing: {h!r}")
+        elif a[h][0] != a[h][1]:
+            problems.append(f"slice phase not fully ticked: {h!r} {a[h][0]}/{a[h][1]}")
+    for h in sorted(set(a) & set(b)):
+        if h not in mine and a[h][0] != b[h][0]:
+            problems.append(f"another slice's phase changed: {h!r} checked {b[h][0]} -> {a[h][0]}")
+    if a_out != b_out:
+        problems.append(f"tasks outside phases changed: checked {b_out} -> {a_out}")
+    sid = meta["slice"].get("id", "?")
+    if problems:
+        return False, f"slice {sid}: " + "; ".join(problems)
+    return True, f"slice {sid}: {len(mine)} phase(s) fully ticked; other phases unchanged"
 
 
 def changes(repo, base):
@@ -204,12 +296,18 @@ def visible_and_hidden(meta, grading, repo, add, work=None, base=None):
     if add("G4_visible_tests", rc == 0, out):
         if meta.get("test_paths") and not existing_tests_kept(meta, repo, work, base, add):
             return
+        if earlier_slices(meta) and not earlier_kept(meta, grading, repo, add):
+            return
         ok, why = overlay(grading, repo)
         if not ok:
             add("G5_hidden_tests", False, why)
             return
         rc, out = project_tests(meta, repo)
         add("G5_hidden_tests", rc == 0, hidden_summary(rc, out))
+
+
+def by_id(results, cid):
+    return next((r["result"] for r in results if r["id"] == cid), None)
 
 
 def baseline(meta, inp, grading, work, repo):
@@ -227,7 +325,11 @@ def baseline(meta, inp, grading, work, repo):
         add("G2_allowed_paths", "skipped", "baseline: no change")
         add("G3_tasks_checked", "skipped", "baseline: no change")
         rc, out = project_tests(meta, repo)
-        if add("G4_visible_tests", "pass" if rc == 0 else "fail", out):
+        earlier_ok = True
+        if add("G4_visible_tests", "pass" if rc == 0 else "fail", out) and earlier_slices(meta):
+            # 026: a merged slice's hidden tests must still pass on this slice's base.
+            earlier_ok = earlier_kept(meta, grading, repo, add, result=lambda r: r)
+        if by_id(results, "G4_visible_tests") == "pass" and earlier_ok:
             ok, why = overlay(grading, repo)
             if not ok:
                 add("G5_hidden_tests", "fail", why)
@@ -240,13 +342,15 @@ def baseline(meta, inp, grading, work, repo):
                     ("hidden tests fail on the base revision (expected)\n" if rc != 0 else
                      "hidden tests PASS on the base revision: they carry no signal\n") + hidden_summary(rc, out))
     done = {r["id"] for r in results}
-    for cid in CHECKS:
+    for cid in CHECKS + (SLICE_CHECKS if earlier_slices(meta) else []):
         if cid not in done:
             results.append({"id": cid, "result": "skipped", "detail": "earlier check failed"})
     by = {r["id"]: r["result"] for r in results}
-    passed = by["G1_bundle_applies"] == "pass" and by["G4_visible_tests"] == "pass" and by["G5_hidden_tests"] == "pass"
+    passed = by["G1_bundle_applies"] == "pass" and by["G4_visible_tests"] == "pass" and by["G5_hidden_tests"] == "pass" \
+        and by.get("G8_earlier_slices_kept", "pass") == "pass"
+    failure = "EARLIER_SLICE_BROKEN_ON_BASE" if by.get("G8_earlier_slices_kept") == "fail" else None
     return {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),
-            "mode": "baseline", "result": "pass" if passed else "fail", "failure": None,
+            "mode": "baseline", "result": "pass" if passed else "fail", "failure": failure,
             "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
 
 

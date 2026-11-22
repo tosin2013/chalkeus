@@ -70,3 +70,25 @@ func TestTestsMayChange(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+// 026 T013: a slice's own "## Allowed paths (<id>)" list wins; otherwise the item's applies, and
+// the item-wide rules hold for either.
+func TestSliceAllowedPaths(t *testing.T) {
+	sliced := spec + "\n## Allowed paths (US2)\n\n- `src/main/java/com/example/stock/*`\n\n## Allowed paths (US3)\n\n- `.specify/memory/*`\n"
+	got, src, err := SliceAllowedPaths(sliced, "specs/003-x", "US2", nil)
+	if err != nil || src != "slice" || !reflect.DeepEqual(got, []string{"src/main/java/com/example/stock/*", "specs/003-x/tasks.md"}) {
+		t.Fatalf("US2: %v %s %v", got, src, err)
+	}
+	got, src, err = SliceAllowedPaths(sliced, "specs/003-x", "US1", nil)
+	if err != nil || src != "item" || len(got) != 3 {
+		t.Fatalf("US1 falls back to the item's: %v %s %v", got, src, err)
+	}
+	if _, _, err := SliceAllowedPaths(sliced, "specs/003-x", "US3", nil); err == nil || err.(*Refusal).Code != "ITEM_PATHS_TOO_WIDE" {
+		t.Fatalf("US3 must be refused as too wide, got %v", err)
+	}
+	// "## Allowed paths (US2)" must not be read as the item's own list.
+	only := "# F\n\n## Allowed paths (US2)\n\n- `src/*`\n"
+	if _, err := AllowedPaths(only, "specs/003-x", nil); err == nil {
+		t.Fatal("a slice-only list is not the item's list")
+	}
+}

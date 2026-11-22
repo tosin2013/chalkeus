@@ -19,6 +19,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/fixture"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/specfoundry/internal/slice"
 )
 
 // changeBundle is the attempt's change on the real base: the replayed bundle of an item run
@@ -81,7 +82,10 @@ func statusRE(item string) *regexp.Regexp {
 type Reconciler struct {
 	PRView       func(n int) (map[string]any, error) // state, mergedAt, mergeCommit
 	TasksPercent func(item string) any               // the item's tasks percent from spec status, or nil
-	DefaultFile  func(p string) []byte               // nil if missing
+	// ItemStatus is the item's object from spec status on the merged default branch (026: the
+	// per-phase counts a slice's merge is checked against), or nil.
+	ItemStatus   func(item string) map[string]any
+	DefaultFile  func(p string) []byte // nil if missing
 	GradedFile   func(p string) []byte
 	RoadmapText  func() string
 	Push         func(text string) (string, error)
@@ -153,6 +157,71 @@ func (r Reconciler) Check(task, item string, pr int, changed []string) (int, map
 	r.Say(fmt.Sprintf("Reconcile proposal for task %s (item %s), PR #%d merged (%v), tasks 100%%, graded tree matches:\n%s",
 		task, item, pr, rec["merge_commit"], strings.Join(diff, "\n")))
 	return 0, rec, edited
+}
+
+// CheckSlice is the merge check for a slice that isn't the item's last (026 R7): the PR is merged,
+// every phase of the slice is fully ticked on the default branch, and the merged tree matches the
+// graded attempt. It never proposes a status and never edits the roadmap (FR-017). Codes are
+// Check's: 0 ok (record "slice_merged"), 1 a check failed, 4 not merged.
+func (r Reconciler) CheckSlice(task, item, sliceID string, phases []string, pr int, changed []string) (int, map[string]any) {
+	rec := NewRecord(task, item, pr)
+	rec["slice"] = sliceID
+	view, err := r.PRView(pr)
+	if err != nil {
+		view = map[string]any{}
+	}
+	merged := view["state"] == "MERGED" && view["mergedAt"] != nil && view["mergedAt"] != ""
+	rec["pr_merged"] = merged
+	if mc, ok := view["mergeCommit"].(map[string]any); ok {
+		rec["merge_commit"] = mc["oid"]
+	}
+	if !merged {
+		rec["reason"] = "NOT_MERGED"
+		return 4, rec
+	}
+	var st map[string]any
+	if r.ItemStatus != nil {
+		st = r.ItemStatus(item)
+	}
+	got, ok := slice.Parse(st)
+	if !ok {
+		rec["reason"] = "SLICE_UNEVALUABLE"
+		return 1, rec
+	}
+	counts := map[string][2]int{}
+	for _, p := range got {
+		counts[p.Heading] = [2]int{p.Checked, p.Total}
+	}
+	var open []any
+	for _, h := range phases {
+		c, found := counts[h]
+		if !found || c[0] != c[1] {
+			open = append(open, h)
+		}
+	}
+	rec["slice_phases_open"] = open
+	if len(open) > 0 {
+		rec["reason"] = "SLICE_TASKS_INCOMPLETE"
+		return 1, rec
+	}
+	var mism []any
+	for _, p := range changed {
+		if string(r.DefaultFile(p)) != string(r.GradedFile(p)) || (r.DefaultFile(p) == nil) != (r.GradedFile(p) == nil) {
+			mism = append(mism, p)
+		}
+	}
+	rec["tree_matches_graded"] = len(mism) == 0
+	rec["mismatched_paths"] = mism
+	if len(mism) > 0 {
+		rec["reason"] = "TREE_MISMATCH"
+		return 1, rec
+	}
+	rec["proposed"] = "slice_merged"
+	if r.Say != nil {
+		r.Say(fmt.Sprintf("Slice %s of item %s merged (PR #%d, %v): its tasks are ticked and the graded tree matches. No status change until the item's last slice.",
+			sliceID, item, pr, rec["merge_commit"]))
+	}
+	return 0, rec
 }
 
 // Run checks, asks, and pushes the edit on yes. Codes: 0 applied, 1 check failed, 4 not merged,
@@ -275,6 +344,20 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 				view["mergeCommit"] = map[string]any{"oid": pr.GetMergeCommitSHA()}
 			}
 			return view, nil
+		},
+		ItemStatus: func(item string) map[string]any {
+			out, _ := exec.Command("spec", "status", "--json", "--root", clone).Output()
+			var doc map[string]any
+			if evidence.Decode(out, &doc) != nil {
+				return nil
+			}
+			items, _ := doc["items"].([]any)
+			for _, x := range items {
+				if it, _ := x.(map[string]any); it["id"] == item {
+					return it
+				}
+			}
+			return nil
 		},
 		TasksPercent: func(item string) any {
 			out, _ := exec.Command("spec", "status", "--json", "--root", clone).Output()

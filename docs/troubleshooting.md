@@ -36,6 +36,8 @@ instead.
 | The run fails with `STATUS_PR_EDITED`, `STATUS_PR_NOT_APPROVER` or `STATUS_PR_MERGED_BY_PUBLISHER` | [Status-change PR refused](#status-pr-refused) |
 | `GitHub App: NOT OK`, or `GitHub App token: …` | [GitHub App problems](#github-app) |
 | An item run refuses with `ITEM_…`, `INPUT_TOO_LARGE`, `OPEN_ITEM_PR` or `TOOLCHAIN_UNAVAILABLE` | [Item not prepared](#item-not-ready) |
+| A slice run refuses with `SLICE_…` or `ITEM_PARTLY_SLICED` | [Slice refused](#slice-refused) |
+| A slice baseline fails with `EARLIER_SLICE_BROKEN_ON_BASE` | [Slice baseline](#slice-earlier-broken) |
 | An item run fails with `BASELINE_SUITE_FAILS` or `BASELINE_HIDDEN_PASSES` | [Baseline fails](#item-baseline) |
 | An item run fails with `PREPARE` or `REPLAY_MISMATCH`, or `target … needs its own publisher token` | [Item run setup](#item-setup) |
 | An item run fails with `TOOLCHAIN_CONTRACT` or `PREFETCH_FAILED` | [Toolchain or dependencies](#item-toolchain) |
@@ -396,6 +398,41 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   one ([targets](targets.md#your-own-toolchain-image)).
 - **Confirm:** `pilot/pilot gate --target <name> --item NNN` prints `"decision": "allow"`.
 - **Source:** `internal/readiness/readiness.go`.
+
+<a id="slice-refused"></a>
+### Slice refused: `SLICE_…` or `ITEM_PARTLY_SLICED`
+
+- **Symptom:** `pilot/pilot run --target <name> --item NNN --slice USn` (or a run without
+  `--slice`) refuses with exit 10 and one of these codes. Nothing starts.
+- **Cause and fix, by code:**
+  - `SLICE_UNEVALUABLE`: spec-status reports no per-phase counts for the item. Install
+    spec-status 0.4.0 or later (the version in `pilot/pins.env`), and check that the item's
+    `tasks.md` is readable.
+  - `SLICE_UNKNOWN`: the slice id isn't one of the item's (`pilot/pilot slices` lists them), or
+    two phases name the same user story. Fix `tasks.md`, or run the whole item without `--slice`.
+  - `SLICE_EARLIER_OPEN`: an earlier slice isn't merged yet, or its PR is still open. Build and
+    merge the slices in order; the detail names the earlier slice.
+  - `SLICE_STARTED`: this slice already has ticked tasks on the default branch. Someone merged
+    part of it outside the pilot; untick them, or plan the rest as a new item.
+  - `SLICE_MAP_CHANGED`: `tasks.md` now groups phases differently from when a merged slice was
+    built. The pilot never re-maps slices: restore the phases, or plan a new item.
+  - `ITEM_PARTLY_SLICED`: a whole-item run of an item whose slices have begun. Run the remaining
+    slices with `--slice`.
+- **Confirm:** `pilot/pilot slices --target <name> --item NNN` shows the slice you want as
+  `current`, and `pilot/pilot doctor --target <name> --item NNN --slice USn` passes.
+- **Source:** `internal/readiness/slices.go`, `internal/slice/slice.go`.
+
+<a id="slice-earlier-broken"></a>
+### Slice baseline: `EARLIER_SLICE_BROKEN_ON_BASE`
+
+- **Symptom:** a slice run's baseline fails before any attempt, with this reason.
+- **Cause:** an earlier slice's hidden tests fail on today's default branch: something merged
+  after that slice broke it.
+- **Fix:** fix the default branch so the earlier slice's hidden tests pass again, then start the
+  slice run again. `<run>/baseline/grade.json` shows G8's summary.
+- **Confirm:** `pilot/pilot doctor --target <name> --item NNN --slice USn --baseline` reports the
+  earlier slices' hidden tests passing.
+- **Source:** `pilot/images/tools/grade.py` (G8), `internal/grader/item.go`.
 
 <a id="item-baseline"></a>
 ### Baseline fails: `BASELINE_SUITE_FAILS` or `BASELINE_HIDDEN_PASSES`

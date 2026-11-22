@@ -4,6 +4,10 @@
 
 ## Allowed paths
 
+> **Sliced items (026):** a spec may also give `## Allowed paths (<slice>)` per slice, and the
+> companion may hold one folder per slice (`items/NNN/US1/` …). See
+> `specs/026-slice-runs/contracts/slices.md`.
+
 ```markdown
 ## Allowed paths
 
