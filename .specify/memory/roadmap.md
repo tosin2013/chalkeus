@@ -1,7 +1,24 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.30.0 → 1.30.1 (this revision)
+Version change: 1.30.1 → 1.31.0 (this revision)
+Bump rationale: MINOR — 005 scope, title and acceptance change (remote clusters,
+community validation, macOS host check). Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-22, Tosin Akinosho):
+  - 005 title: M4 OpenShift and remote clusters (laptop mode). Status stays planned.
+  - 005 description, outcome, scope: Chalkeus targets any conformant Kubernetes by
+    design; OpenShift is the maintainer-validated target; other distributions have a
+    documented community validation path; docs list validation status.
+  - 005 acceptance (macOS host), recorded in Notes (Acceptance is not a roadmap field
+    spec-status parses): a macOS arm64 host running the darwin binary drives a remote
+    cluster and passes the same full audit (AU01-AU11); depends on multi-arch images
+    from issue #143, built before release.
+  - 013 notes: issue #143 also covers local macOS (multi-arch images and kind on Docker
+    Desktop), built before the laptop release. No scope or status change to 013.
+Specs affected: 005, 013
+Open questions added/resolved: none
+
+Prior: Version change: 1.30.0 → 1.30.1
 Bump rationale: PATCH — a status transition.
 Changes this revision (owner decision 2026-11-22, Tosin Akinosho):
   - 026 planned → specced: spec, plan, design and tasks merged (#151, #156); implementation starts.
@@ -975,19 +992,31 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   approval replies on GitHub (FR-019) and the walk-away watcher (issue #25).
 - **Spec dir:** specs/004-github-loop/
 
-### 005 — M4 OpenShift target (laptop mode)  [status: planned]
+### 005 — M4 OpenShift and remote clusters (laptop mode)  [status: planned]
 
 - **Description:** ~~Optional in-cluster planning Job, and OpenShift as a target
-  platform.~~ OpenShift as a target platform, driven by the laptop CLI (C-11 laptop mode).
-  *(Amended 2026-11-15: in-cluster planning moved to 011.)*
+  platform.~~ ~~OpenShift as a target platform, driven by the laptop CLI (C-11 laptop mode).~~
+  Remote clusters as targets, driven by the laptop CLI. Chalkeus targets any conformant
+  Kubernetes cluster by design; OpenShift is the maintainer-validated target.
+  *(Amended 2026-11-15: in-cluster planning moved to 011. Amended 2026-11-22: any
+  conformant Kubernetes by design; OpenShift is the maintainer-validated target.)*
 - **Outcome:** ~~Planning location is configurable per project (local or
-  in-cluster) with the same handoff, and the pilot runs on OpenShift.~~ The pilot runs on a
-  remote OpenShift cluster from the laptop CLI and passes the same full audit as on kind.
+  in-cluster) with the same handoff, and the pilot runs on OpenShift.~~ ~~The pilot runs on a
+  remote OpenShift cluster from the laptop CLI and passes the same full audit as on kind.~~
+  The laptop CLI runs on a remote OpenShift cluster and passes the same full audit as on
+  kind (AU01-AU11). The docs list each cluster distribution with its validation status.
 - **Scope (in):** ~~planning Job, per-project planning setting, OpenShift runner
-  validation.~~ OpenShift runner validation; a configurable kube context; preflight checks
+  validation.~~ ~~OpenShift runner validation; a configurable kube context; preflight checks
   instead of creating a cluster; namespaces the user may not be able to create; image
-  variants or mirrors for OpenShift (Quay).
-- **Scope (out):** hosted SaaS or UI.
+  variants or mirrors for OpenShift (Quay).~~ OpenShift runner validation; a configurable
+  kube context; preflight checks instead of creating a cluster; namespaces the user may
+  not be able to create; image variants or mirrors for OpenShift (Quay); a documented
+  community validation path: a contributor adds a target profile and docs for another
+  distribution (EKS, GKE, AKS and others), passes the same full audit, and records the
+  evidence; a validation status table in the docs (maintainer-validated,
+  community-validated, untested).
+- **Scope (out):** ~~hosted SaaS or UI.~~ Hosted SaaS or UI; maintainer validation of
+  distributions other than OpenShift (left to the community).
 - **Depends on:** 003
 - **Addresses:** docs/prd.md §9 M4, F2, N1
 - **Notes:** In-cluster planning is optional per the PRD; OpenShift is the
@@ -1002,6 +1031,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   instead of the hard-coded kind context, preflight checks instead of creating a cluster,
   and enterprise namespace permissions (users often cannot create namespaces).
   Orchestration inside the cluster is 011.
+  **Acceptance (macOS host):** a macOS arm64 host running the darwin binary drives a remote
+  cluster and passes the same full audit (AU01-AU11); depends on the multi-arch images from
+  issue #143 (https://github.com/tosin2013/specfoundry/issues/143), built before release.
+  **Owner decision 2026-11-22:** any conformant Kubernetes by design, OpenShift
+  maintainer-validated, others community-validated; macOS host is an acceptance check
+  (issue #143, https://github.com/tosin2013/specfoundry/issues/143).
 
 ### 006 — Operator guide: repeat the pilot from zero  [status: verified]
 
@@ -1123,7 +1158,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   when users cannot create them. Depends on spec-status shipping a CLI container image for
   the in-cluster gate (PRD §8). The GitHub App is the recommended publisher credential here.
   **Owner decision 2026-11-15:** develop and test on kind first, then make the same full
-  audit on OpenShift the release check. 005 (OpenShift in laptop mode) comes first, so the
+  audit on OpenShift the release check. 005 (OpenShift and remote clusters, laptop mode) comes first, so the
   operator is designed around OpenShift's constraints (SCC, arbitrary UIDs, namespace
   permissions, egress). The operator lives in `operator/` in this repo until Q9's split
   trigger is met. It runs released waves (015) in the cluster, reusing the same wave scheduler.
@@ -1209,6 +1244,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   to `forge` to fit the smith theme. The opt-in alias is `chk`.
   The repo rename to tosin2013/chalkeus is planned after this revision merges and before 013
   ships (see Q1); this item's docs also carry the smith brand story.
+  **Owner decision 2026-11-22:** issue #143 (https://github.com/tosin2013/specfoundry/issues/143)
+  covers multi-arch images and kind on Docker Desktop for local macOS, built before the
+  laptop release.
 
 ### 014 — Any project, any item  [status: verified]
 
@@ -1270,7 +1308,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   This exercises a JDK/Maven toolchain, Maven egress (plus the Red Hat Maven repository if EAP
   artifacts are used), and OpenShift's restricted SCC. The story is that specfoundry governs the
   upgrade (plan, isolation, independent grading, draft PR, audit) and the Red Hat tools do the
-  analysis inside it. The EAP validation therefore also needs 005 (OpenShift target) and an
+  analysis inside it. The EAP validation therefore also needs 005 (OpenShift and remote clusters) and an
   in-cluster model endpoint. The fixture stays the fast, deterministic regression test (its A/1
   induction is the only reliable retry exercise).
 
@@ -2011,7 +2049,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   4. 009 Period spend budget (015 depends on it).
   5. 015 Released waves, with a small laptop concurrency limit (for example 2).
   6. 013 Installable pilot release: the first release includes scaling.
-  7. 005 OpenShift target (laptop mode).
+  7. 005 OpenShift and remote clusters (laptop mode).
   8. 014's EAP validation on OpenShift with an in-cluster model.
   9. Then 007, 008, 010 and 011.
 - spec-status asks drafted in PRD §8 (report-only skills, per-item readiness exit
@@ -2057,4 +2095,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.30.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
+**Version**: 1.31.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
