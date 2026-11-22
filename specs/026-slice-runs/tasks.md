@@ -34,7 +34,7 @@ labels on the owner's behalf (AGENTS.md).
 ## Phase 1: Setup
 
 - [X] T001 **Owner** Merge PR #154 (spec-status 0.4.0 pin: `pilot/pins.env`, operator guide, docs check). Then confirm on `main` that `.github/workflows/go.yml` installs 0.4.0, and that `spec status --json --root .` gives item 014 seven `tasks.phases` (research R1).
-- [ ] T002 **Owner** Merge the image-digest PR the `pilot-images` workflow opens for the 0.4.0 pin, so the tools image's grader has `tasks.phases` (C-09). Live runs (T047, T048) need it.
+- [X] T002 **Owner** Merge the image-digest PR the `pilot-images` workflow opens for the 0.4.0 pin, so the tools image's grader has `tasks.phases` (C-09). Live runs (T047, T048) need it.
 - [X] T003 [P] Create `internal/slice/testdata/` with spec-status JSON fixtures: `phases-014.json` (014's 7 phases, copied from real 0.4.0 output), `phases-none.json` (`"phases": []`), `phases-null.json` (`"phases": null`), `phases-absent.json` (0.3.0 shape, no field), and `phases-dup-story.json` (two phases with `story: 2`).
 
 ---
