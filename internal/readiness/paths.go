@@ -59,6 +59,25 @@ func AllowedPaths(specText, specDir string, otherSpecDirs []string) ([]string, e
 	if len(globs) == 0 {
 		return nil, &Refusal{"ITEM_NO_ALLOWED_PATHS", specDir + "/spec.md has no \"## Allowed paths\" list of backticked globs"}
 	}
+	return checkGlobs(globs, specDir, otherSpecDirs)
+}
+
+// SliceAllowedPaths is a slice run's allowed paths (026, contracts/slices.md): the spec's
+// "## Allowed paths (<slice>)" list when it has one (source "slice"), otherwise the item's
+// "## Allowed paths" (source "item"). Every AllowedPaths rule applies to either list.
+func SliceAllowedPaths(specText, specDir, sliceID string, otherSpecDirs []string) (globs []string, source string, err error) {
+	heading := regexp.MustCompile(`^##\s+Allowed paths\s*\(\s*` + regexp.QuoteMeta(sliceID) + `\s*\)\s*$`)
+	if own := section(specText, heading); len(own) > 0 {
+		g, err := checkGlobs(own, specDir, otherSpecDirs)
+		return g, "slice", err
+	}
+	g, err := AllowedPaths(specText, specDir, otherSpecDirs)
+	return g, "item", err
+}
+
+// checkGlobs refuses globs that could match a protected path or another item's spec folder, then
+// adds the item's own tasks.md.
+func checkGlobs(globs []string, specDir string, otherSpecDirs []string) ([]string, error) {
 	probes := append([]string{}, protected...)
 	for _, d := range otherSpecDirs {
 		probes = append(probes, strings.TrimSuffix(d, "/")+"/spec.md")

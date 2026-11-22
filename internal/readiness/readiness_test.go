@@ -77,6 +77,8 @@ type world struct {
 	companionPath     string
 	skipHidden        bool
 	allRules          bool
+	slice             string                // 026: the slice to check
+	prior             map[string]PriorSlice // 026: locally recorded slicing
 }
 
 func newWorld() *world {
@@ -113,6 +115,8 @@ func (w *world) check(t *testing.T, item string, maxMB int) (Result, string) {
 		OpenPRHeads: func(string) ([]string, error) { return w.heads, w.headsErr },
 		SkipHidden:  w.skipHidden,
 		AllRules:    w.allRules,
+		Slice:       w.slice,
+		PriorSlices: w.prior,
 	}
 	tg := config.Target{Name: "t", Repo: "me/target", Branch: "main", CompanionRepo: "me/target-acceptance", CompanionPath: w.companionPath, MaxInputMB: maxMB}
 	res, err := Check(d, tg, item, 3, out)

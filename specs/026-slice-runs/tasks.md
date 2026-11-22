@@ -67,8 +67,8 @@ labels on the owner's behalf (AGENTS.md).
 **Independent Test:** the committed evidence audits with the same results, and the fixture run passes its full audit, with no `--slice` (SC-001).
 
 - [X] T010 [US1] Reuse `TestGolden` (`internal/audit/golden_test.go`, `specs/016-go-pilot/golden/audit-expected.json`) as FR-022's guard. Check that it covers at least one evidence record each from 014, 021 and 024. Add any that are missing to `audit-expected.json` with their current rows, **before T007** (before any 026 code lands). No new snapshot file.
-- [ ] T011 [P] [US1] Add a whole-item case to `pilot/images/tests/test_grade_slices.py`: a meta with no `slice` key produces exactly the checks G1–G5 (plus G6, G7 when test paths are set), with no G8, and G3's detail is `tasks percent=…` as today.
-- [ ] T012 [US1] In `internal/readiness/readiness_test.go`, add a case: an item whose spec-status output has no `tasks.phases` field (0.3.0 shape), run without a slice, is allowed exactly as before. The result has no slice rules (`SLICE_*` absent).
+- [X] T011 [P] [US1] Add a whole-item case to `pilot/images/tests/test_grade_slices.py`: a meta with no `slice` key produces exactly the checks G1–G5 (plus G6, G7 when test paths are set), with no G8, and G3's detail is `tasks percent=…` as today.
+- [X] T012 [US1] In `internal/readiness/readiness_test.go`, add a case: an item whose spec-status output has no `tasks.phases` field (0.3.0 shape), run without a slice, is allowed exactly as before. The result has no slice rules (`SLICE_*` absent).
 
 **Checkpoint:** US1's guards are green. Each later phase must keep them green.
 
@@ -80,14 +80,14 @@ labels on the owner's behalf (AGENTS.md).
 
 **Independent Test:** slice attempts that tick another slice's task, or edit outside the slice's allowed paths, fail grading (SC-004).
 
-- [ ] T013 [P] [US3] In `internal/readiness/paths.go`, read `## Allowed paths (<id>)` (same list shape as `## Allowed paths`). Add `SliceAllowedPaths(spec, specDir, item, sliceID string) (globs []string, source string, err error)`: the slice's list if present, else the item's, with `source` `slice` or `item`. Every existing rule still applies: protected paths give `ITEM_PATHS_TOO_WIDE`, `<specDir>/tasks.md` is always added, and another item's spec is refused. Add tests in `internal/readiness/paths_test.go`.
-- [ ] T014 [US3] Add `slice_counts(status_json, item_id)` to `pilot/images/tools/grade.py`. It returns `{heading: (checked, total)}` plus the item's out-of-phase checked count (item `checked` minus the sum over phases), or `None` when `tasks.phases` is absent or null.
-- [ ] T015 [US3] Make G3 slice-aware in `pilot/images/tools/grade.py` when `meta.slice` is set, per contracts/grading.md:
+- [X] T013 [P] [US3] In `internal/readiness/paths.go`, read `## Allowed paths (<id>)` (same list shape as `## Allowed paths`). Add `SliceAllowedPaths(spec, specDir, item, sliceID string) (globs []string, source string, err error)`: the slice's list if present, else the item's, with `source` `slice` or `item`. Every existing rule still applies: protected paths give `ITEM_PATHS_TOO_WIDE`, `<specDir>/tasks.md` is always added, and another item's spec is refused. Add tests in `internal/readiness/paths_test.go`.
+- [X] T014 [US3] Add `slice_counts(status_json, item_id)` to `pilot/images/tools/grade.py`. It returns `{heading: (checked, total)}` plus the item's out-of-phase checked count (item `checked` minus the sum over phases), or `None` when `tasks.phases` is absent or null.
+- [X] T015 [US3] Make G3 slice-aware in `pilot/images/tools/grade.py` when `meta.slice` is set, per contracts/grading.md:
   - run `spec status --json` on the base too (a `git worktree` at `base`);
   - pass only when every heading in `meta.slice.phases` has `checked == total`, and every other heading, plus the out-of-phase count, equals the base;
   - the detail names each offending heading;
   - a heading missing on either side fails with `heading changed: …`.
-- [ ] T016 [P] [US3] Add slice G2 and G3 cases to `pilot/images/tests/test_grade_slices.py`:
+- [X] T016 [P] [US3] Add slice G2 and G3 cases to `pilot/images/tests/test_grade_slices.py`:
   - ticking all of US1's tasks passes;
   - also ticking a US2 task fails G3;
   - leaving a US1 task unticked fails G3;
@@ -107,18 +107,18 @@ labels on the owner's behalf (AGENTS.md).
 **Independent Test:** on a two-slice item, US2 is refused before US1 merges; after both merges, exactly one `verified` proposal exists (SC-002, SC-003, SC-005).
 
 Readiness and CLI:
-- [ ] T017 [US2] Parse `tasks.phases` into readiness's status item in `internal/readiness/readiness.go` with `slice.Parse` (no gate decision change; `internal/gate/gate.go` stays as is). Add `Request.Slice string`. When it is set, evaluate the contracts/slices.md rules in this order, each failing closed with its reason code:
+- [X] T017 [US2] Parse `tasks.phases` into readiness's status item in `internal/readiness/readiness.go` with `slice.Parse` (no gate decision change; `internal/gate/gate.go` stays as is). Add `Request.Slice string`. When it is set, evaluate the contracts/slices.md rules in this order, each failing closed with its reason code:
   - `SLICE_UNEVALUABLE`
   - `SLICE_UNKNOWN`
   - `SLICE_EARLIER_OPEN` (earlier slices not `merged` on the fresh clone)
   - `SLICE_STARTED`
 
   Also check `SLICE_MAP_CHANGED`: a local slice run of this item recorded different phase headings for a slice that is now merged, or the slice count changed since a slice merged. `SLICE_EARLIER_OPEN`'s detail names the earlier slice ids. Record `readiness.slice = {id, index, of, phases, earlier, allowed_paths_source, default_revision}`, using T013 for the allowed paths.
-- [ ] T018 [US2] In `internal/readiness/readiness.go`:
+- [X] T018 [US2] In `internal/readiness/readiness.go`:
   - add `ITEM_PARTLY_SLICED`: no slice named, 2+ slices, and any slice merged or started;
   - widen `OPEN_ITEM_PR` to match heads `^pilot/[^/]+/<item>(-us[0-9]+)?$`, refusing on an open PR for this slice, an earlier slice or the whole item; a whole-item run is refused by any slice PR;
   - make `ITEM_NO_HIDDEN_TESTS` check the slice's companion folder, or every slice folder for a whole-item run of a sliced item, using T008. A mixed layout fails with the stray entries in the detail.
-- [ ] T019 [P] [US2] Add `internal/readiness/slices_test.go`. Use the T003 fixtures and fake PR heads. It covers:
+- [X] T019 [P] [US2] Add `internal/readiness/slices_test.go`. Use the T003 fixtures and fake PR heads. It covers:
   - one case per reason code in contracts/slices.md, including `SLICE_MAP_CHANGED`;
   - `SLICE_EARLIER_OPEN`'s detail naming the earlier slice;
   - allow cases for US1 of a fresh item and for US2 after US1 is merged;
