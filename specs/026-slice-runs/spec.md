@@ -169,7 +169,9 @@ slice 2; then the status proposal follows.
 
 - **Re-slicing after a slice merged:** if the approved `tasks.md` phases change after a slice of
   the item merged, the run is refused until a human resolves it; the pilot never re-maps
-  slices.
+  slices. When the pilot has a local record of the earlier slicing, the refusal is
+  `SLICE_MAP_CHANGED`. Otherwise the slice rules on tick state (`SLICE_STARTED`,
+  `SLICE_EARLIER_OPEN`) catch what they can.
 - **A slice id that doesn't exist** in the approved `tasks.md`: refused before anything starts.
 - **Running without a slice on an item that already has a merged slice:** refused; the owner
   must run the remaining slices.
@@ -199,7 +201,6 @@ slice 2; then the status proposal follows.
   `USN`. Phases that aren't user stories join a story slice: phases before the first story
   (Setup, Foundational) join the first story's slice, and phases after the last story (Polish)
   join the last story's slice. A non-story phase between two stories joins the story before it.
-  An item with no "User Story" phases has one slice, the whole item.
 - **FR-004**: Per-slice task counts MUST come from spec-status's JSON report. The pilot MUST NOT
   read `tasks.md` phases itself to decide whether a slice may start or is complete (C-01).
 
@@ -207,7 +208,8 @@ slice 2; then the status proposal follows.
 
 - **FR-005**: The owner MUST be able to name a slice when running an item. Running without one
   MUST behave exactly as today for an item with one slice.
-- **FR-006**: The gate for a slice MUST refuse (failing closed) unless all of these hold:
+- **FR-006**: Readiness for a slice (which includes the gate) MUST refuse (failing closed)
+  unless all of these hold:
   - the item's dependencies are verified;
   - every earlier slice of the item is merged;
   - every task of this slice is unticked;
@@ -215,7 +217,7 @@ slice 2; then the status proposal follows.
 - **FR-007**: Slices MUST run in `tasks.md` order. Marking slices independent, so they can run
   without waiting for earlier ones, is not in this version (see Q12 and 015).
 - **FR-008**: An item with an open slice MUST NOT be treated as already verified or already
-  implemented by the gate.
+  implemented by the gate or readiness.
 - **FR-009**: Readiness MUST refuse a slice when that slice already has an open PR, and when an
   earlier slice that this one must follow has an open PR.
 
@@ -244,6 +246,9 @@ slice 2; then the status proposal follows.
 
 - **FR-016**: Each slice run MUST open its own draft PR, merged only by a human (C-04), titled
   with the item and the slice (for example `feat(NNN): <title> (US2)`).
+- **FR-016a**: A non-last slice's PR MUST reference the item's issue without closing it
+  (`Part of #N`). Only the item's last slice PR closes it, as a whole-item run's PR does today.
+  The status proposal is unchanged.
 - **FR-017**: The pilot MUST propose `verified` only after the item's last slice merges, and
   exactly once per item. It MUST NOT write any intermediate roadmap status.
 - **FR-018**: When the item's spec declares an item-level acceptance check, the pilot MUST NOT
@@ -294,16 +299,16 @@ slice 2; then the status proposal follows.
 - **SC-005**: Slice 2's grading runs slice 1's hidden tests, shown in its grading evidence
   (summary only, never test contents).
 - **SC-006**: The item's audit lists both slice runs under one item and passes.
-- **SC-007**: Each slice's PR contains only that slice's work, so a reviewer reviews a smaller
-  diff than the whole item's.
+- **SC-007**: Each slice's PR changes only files within that slice's allowed paths and ticks
+  only its own tasks.
 - **SC-008**: A two-slice item goes from label to `verified` in step mode with only GitHub
   answers: one mode approval and one merge per slice, then the status merge.
 
 ## Assumptions
 
-- spec-status will report per-phase task counts (each phase's heading, line and checked/total)
-  in `status --json`. Until it does, slice runs are refused and whole-item runs work. spec-status
-  0.3.0, pinned 2026-11-21, reports only item-level counts.
+- spec-status reports per-phase task counts (each phase's heading, line, story and
+  checked/total) in `status --json` from 0.4.0 (released 2026-11-22, pinned by PR #154). With
+  an older spec-status, slice runs are refused and whole-item runs work.
 - Spec Kit's `tasks.md` already groups tasks into phases, most of them one user story each.
 - One slice is built at a time per item. Running slices or `[P]` tasks of one item in parallel is
   out of scope (Q12, 015).

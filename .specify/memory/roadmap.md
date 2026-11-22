@@ -1,7 +1,15 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.28.0 → 1.29.0 (this revision)
+Version change: 1.29.0 → 1.29.1 (this revision)
+Bump rationale: PATCH — a note update. Nothing changes in scope, status or dependencies.
+Changes this revision (2026-11-22):
+  - 026 note: spec-status 0.4.0 shipped per-phase task counts (spec-status#66); PR #154 pins it in
+    `pilot/pins.env`. 026's external dependency is met, and its plan and tasks are written.
+Specs affected: 026
+Open questions added/resolved: none
+
+Prior: Version change: 1.28.0 → 1.29.0
 Bump rationale: MINOR — a new planned item (026) and a new dependency for 013. Nothing verified
 is invalidated.
 Changes this revision (owner decisions 2026-11-21, Tosin Akinosho; issue #142):
@@ -1767,8 +1775,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - **Tick state from spec-status (owner decision 2026-11-21):** per-slice tick state comes from
     spec-status, which will report per-phase task counts. 026 also depends on that spec-status
     release (not a roadmap item, so it isn't listed in `Depends on`). The pilot doesn't parse `tasks.md`
-    phases itself, so C-01 is unchanged. spec-status 0.3.0 (pinned 2026-11-21) still reports
-    only item-level `tasks.percent`.
+    phases itself, so C-01 is unchanged. ~~spec-status 0.3.0 (pinned 2026-11-21) still reports
+    only item-level `tasks.percent`.~~ **2026-11-22:** spec-status 0.4.0 shipped
+    `tasks.phases` (spec-status#66 closed); PR #154 pins it, so 026 is no longer waiting on it.
+    Plan: `specs/026-slice-runs/plan.md`.
   - **Code today assumes one run per item** (found 2026-11-21):
     - `pilot run` flags;
     - G3 and reconcile need `tasks.percent == 100`;
@@ -1963,4 +1973,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.29.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
+**Version**: 1.29.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
