@@ -126,14 +126,14 @@ then sign in:
 gh auth login          # GitHub.com → HTTPS → authenticate in the browser
 ```
 
-**spec 0.3.0** ([spec-status](https://github.com/tosin2013/spec-status)), the gate.
+**spec 0.4.0** ([spec-status](https://github.com/tosin2013/spec-status)), the gate.
 Verify the checksum before installing:
 
 ```sh
 mkdir -p ~/.local/bin /tmp/spec && cd /tmp/spec
-gh release download v0.3.0 -R tosin2013/spec-status -p 'spec_0.3.0_linux_amd64.tar.gz' -p 'spec_0.3.0_checksums.txt'
-sha256sum -c --ignore-missing spec_0.3.0_checksums.txt          # must print: ... OK
-tar -xzf spec_0.3.0_linux_amd64.tar.gz && install -m 0755 spec_0.3.0_linux_amd64/spec ~/.local/bin/spec
+gh release download v0.4.0 -R tosin2013/spec-status -p 'spec_0.4.0_linux_amd64.tar.gz' -p 'spec_0.4.0_checksums.txt'
+sha256sum -c --ignore-missing spec_0.4.0_checksums.txt          # must print: ... OK
+tar -xzf spec_0.4.0_linux_amd64.tar.gz && install -m 0755 spec_0.4.0_linux_amd64/spec ~/.local/bin/spec
 cd ~
 ```
 
@@ -168,7 +168,7 @@ kind v0.27.0 and kubectl v1.32.2 into `~/.local/bin`, verifying their checksums.
 docker run --rm hello-world && gh auth status && spec --version && ~/.local/go/bin/go version
 ```
 
-You should see Docker's hello message, `Logged in to github.com`, `spec 0.3.0`, and
+You should see Docker's hello message, `Logged in to github.com`, `spec 0.4.0`, and
 `go version go1.27.4`.
 
 ---
