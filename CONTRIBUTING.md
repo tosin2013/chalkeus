@@ -86,9 +86,9 @@ go test -tags integration -run TestAutoDraft ./test/integration/   # one scenari
   `PILOT_*` from its environment.
 - **Every test run fails its own audit on AU12** ("not a test run"), by design: a run against
   the fake can never count as real evidence. The scenarios expect that.
-- **On failure,** `test/integration/out/` holds each run's evidence and the kind logs (CI
-  uploads the same folder). `out/coverage.txt` shows how much of the glue packages the
-  scenarios ran.
+- **On failure,** the run leaves an `out` folder in `test/integration/` (git ignores it) with
+  each run's evidence and the kind logs; CI uploads the same folder. Its `coverage.txt` shows how
+  much of the glue packages the scenarios ran.
 - **A new scenario** usually needs a target under `test/integration/fixtures/<name>` (and
   `<name>-acceptance` for its companion), and canned agent output under
   `pilot/images/stub/scenarios/<name>/` (see `pilot/images/stub/stub-opencode`).
