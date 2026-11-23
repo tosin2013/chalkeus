@@ -194,9 +194,13 @@ Operators who pull the published images never see it.
     **you** before that command runs; say yes only if you agree. Then run
     `pilot/pilot resume --run <run-id>`. See the `pilot` skill
     (`.claude/skills/pilot/SKILL.md`).
-    - **Claude Code:** this repo's `.claude/settings.json` already has the ask rule.
-    - **OpenCode:** add the rule once to your own config, `~/.config/opencode/opencode.json`,
-      so it covers every project (the repo-root `opencode.json` is gitignored):
+    - **Claude Code:** this repo's `.claude/settings.json` already has the ask rules. They cover
+      `approve` and the nine other commands that decide, destroy or hold credentials:
+      `reset-fixture`, `down`, `publisher-token`, `app-key`, `app-token`, `author`, `step`, `run`
+      and `resume`.
+    - **OpenCode:** add the rules once to your own config, `~/.config/opencode/opencode.json`,
+      so they cover every project (the repo-root `opencode.json` is gitignored). Add one pair for
+      each of the ten commands; `approve` is shown:
 
       ```json
       "permission": { "bash": {

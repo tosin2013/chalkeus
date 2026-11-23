@@ -39,6 +39,12 @@ matching troubleshooting entry before suggesting any fix.
    GitHub token, or the model host.
 5. Don't run `reset-fixture`, `down` or `publisher-token` without the human asking; `reset-fixture`
    force-resets their fixture repo.
+5a. **The harness asks before ten commands** (027 command audit,
+   `specs/027-chalkeus-rename/contracts/command-audit.md`): `approve`, `reset-fixture`, `down`,
+   `publisher-token`, `app-key`, `app-token`, `author`, `step`, `run` and `resume`. This repo's
+   `.claude/settings.json` holds the rules, and a test keeps them complete. A prompt for `run` or
+   `resume` is expected: say what the command does, and let the human answer. The rules back up
+   these instructions; they don't replace them (rules 1, 5 and 7 still apply).
 6. **Run every command exactly as `pilot/pilot …` from the repository root.** Never use an
    absolute path, `bash pilot/pilot`, `python3 -m …` or another wrapper: the harness rules that
    make `approve` ask the human match that exact prefix.
