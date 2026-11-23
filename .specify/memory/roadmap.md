@@ -1,7 +1,15 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.32.0 → 1.33.0 (this revision)
+Version change: 1.33.0 → 1.33.1 (this revision)
+Bump rationale: PATCH — a new dependency for 013. Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
+  - 013 depends on 029 (brownfield intake, including failed Dependabot PRs, ships with
+    the laptop release).
+Specs affected: 013, 029
+Open questions added/resolved: none
+
+Prior: Version change: 1.32.0 → 1.33.0
 Bump rationale: MINOR — a new planned item (029). Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
   - 029 (new, planned): brownfield intake, a read-only tech-debt triage report and dependency
@@ -1253,9 +1261,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   README and install docs (the spec is the raw metal, the worker build is the forging, the
   grader is the testing and tempering, and the draft PR is the proven piece a human inspects).
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
-- **Depends on:** 016, 024, 021, 026, 027 (2026-11-22: it ships under the new name. 2026-11-19: the laptop release includes auto-draft and the
+- **Depends on:** 016, 024, 021, 026, 027, 029 (2026-11-23: brownfield intake including failed Dependabot PRs ships with the laptop release. 2026-11-22: it ships under the new name. 2026-11-19: the laptop release includes auto-draft and the
   manager loop. 2026-11-21: it also ships slice runs)
-- **Notes:** **Owner decision 2026-11-21 (issue #142):** the laptop release ships with slice
+- **Notes:** **Owner decision 2026-11-23:** brownfield intake (029), including failed
+  Dependabot PRs, ships with the laptop release. **Owner decision 2026-11-21 (issue #142):** the laptop release ships with slice
   runs (026), so items with several stories of different risk can be built and reviewed one
   story at a time. **Owner decision 2026-11-19:** the laptop-mode release ships with the test
   author's auto-draft (024), so a released pilot drafts an item's hidden tests on its own once
@@ -2154,13 +2163,16 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   3. 017 Greenfield bootstrap, end to end on a laptop (kind or minikube).
   4. 009 Period spend budget (015 depends on it).
   5. 015 Released waves, with a small laptop concurrency limit (for example 2).
-  6. 013 Installable pilot release: the first release includes scaling.
+  6. 013 Installable pilot release: the first release includes scaling, and brownfield
+     intake (029), including failed Dependabot PRs.
   7. 005 OpenShift and remote clusters (laptop mode).
   8. 014's EAP validation on OpenShift with an in-cluster model.
   9. Then 007, 008, 010 and 011.
   028 (work governance) builds on 014 and 021, already verified, and does not block 013.
-  Specify it after the remaining laptop close-out (026, 027), or in parallel once those
+  Specify it after the remaining laptop close-out (026, 027, 029), or in parallel once those
   are in progress.
+  029 (brownfield intake, including failed Dependabot PRs) ships with the laptop release
+  (013 depends on it; owner, 2026-11-23).
 - spec-status asks drafted in PRD §8 (report-only skills, per-item readiness exit
   code, CLI container image) gate 002 and 003 in practice; track them as upstream
   issues. **002 workarounds in place:** the gate runs on the host (no CLI image); the
