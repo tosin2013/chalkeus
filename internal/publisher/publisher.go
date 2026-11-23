@@ -90,11 +90,11 @@ func body(l paths.Layout, run *evidence.Run, task string, n int, closes int) str
 	if run.Kind() == evidence.KindItem {
 		return itemBody(run, task, n, gs, rows, imgs, closes)
 	}
-	b := fmt.Sprintf("Opened by the specfoundry M1 pilot **publisher** (run `%s`, task %s, fixture item %s).\n\n"+
+	b := fmt.Sprintf("Opened by the Chalkeus M1 forge **publisher** (run `%s`, task %s, fixture item %s).\n\n"+
 		"Passing attempt: **%d**. Gate decisions: %s.\n\n"+
 		"| Attempt | Induction | Grade | Cost (USD) | Tokens |\n|---|---|---|---|---|\n%s\n\n"+
 		"Images: worker `%s`, grader/publisher `%s`.\n\n"+
-		"Evidence: `specs/002-m1-gated-pilot/evidence/%s/` in the specfoundry repository.\n\n"+
+		"Evidence: `specs/002-m1-gated-pilot/evidence/%s/` in the Chalkeus repository.\n\n"+
 		"This is a **draft**. A human reviews and merges it; the pilot never merges.\n",
 		run.ID, task, paths.Tasks[task], n, gs, strings.Join(rows, "\n"), imgs["worker"], imgs["tools"], run.ID)
 	if closes > 0 {
@@ -293,7 +293,7 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 // itemBody is an item run's PR body (014): the target and item instead of the fixture wording,
 // and the run's evidence location on the operator's machine.
 func itemBody(run *evidence.Run, task string, n int, gs string, rows []string, imgs map[string]string, closes int) string {
-	b := fmt.Sprintf("Opened by the specfoundry pilot **publisher** (run `%s`, item %s of `%s`).\n\n"+
+	b := fmt.Sprintf("Opened by the Chalkeus forge **publisher** (run `%s`, item %s of `%s`).\n\n"+
 		"Passing attempt: **%d**. Gate and readiness decisions: %s.\n\n"+
 		"| Attempt | Induction | Grade | Cost (USD) | Tokens |\n|---|---|---|---|---|\n%s\n\n"+
 		"Images: worker `%s`, grader/publisher `%s`.\n\n"+
@@ -343,7 +343,7 @@ func StatusBody(run *evidence.Run, task string, closes int) string {
 	if closes > 0 {
 		issue = fmt.Sprintf(" Item issue: #%d.", closes)
 	}
-	return fmt.Sprintf("Opened by the specfoundry pilot **publisher** (run `%s`) after task %s's PR was merged "+
+	return fmt.Sprintf("Opened by the Chalkeus forge **publisher** (run `%s`) after task %s's PR was merged "+
 		"and checked (merged, tasks 100%%, merged tree matches the graded attempt).\n\n"+
 		"It changes exactly one line: item %s `"+from+"` → `verified` in `.specify/memory/roadmap.md`.%s\n\n"+
 		"**Merging this PR approves the status change.** The pilot checks that the merged change is exactly "+

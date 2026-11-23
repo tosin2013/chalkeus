@@ -34,7 +34,7 @@ const LabelPrefix = "status:"
 var labelColors = map[string]string{"verified": "0e8a16", "implemented": "1d76db", "in-progress": "fbca04", "planned": "c5def5"}
 
 var (
-	itemMarker = regexp.MustCompile(`<!-- specfoundry:item=([^ ]+) -->`)
+	itemMarker = regexp.MustCompile(`<!-- (?:chalkeus|specfoundry):item=([^ ]+) -->`) // the old form: issues synced before 027
 	taskLine   = regexp.MustCompile(`^- \[( |x|X)\] (.+)$`)
 )
 
@@ -139,7 +139,7 @@ func IssueBody(item map[string]any, tasks *string) string {
 	if truthy(item["outcome"]) {
 		outcome = pyStr(item["outcome"])
 	}
-	lines := []string{"<!-- specfoundry:item=" + pyStr(item["id"]) + " -->", head, "", desc, "", "**Outcome:** " + outcome}
+	lines := []string{"<!-- chalkeus:item=" + pyStr(item["id"]) + " -->", head, "", desc, "", "**Outcome:** " + outcome}
 	if tl := Checklist(tasks); len(tl) > 0 {
 		src := "tasks.md"
 		if s := tasksSource(item); truthy(s) {
@@ -147,7 +147,7 @@ func IssueBody(item map[string]any, tasks *string) string {
 		}
 		lines = append(append(lines, "", "### Tasks (from "+src+")"), tl...)
 	}
-	lines = append(lines, "", "_Generated from the roadmap by specfoundry. Edits here are overwritten by `./chalkeus forge github sync`._")
+	lines = append(lines, "", "_Generated from the roadmap by Chalkeus. Edits here are overwritten by `./chalkeus forge github sync`._")
 	return strings.Join(lines, "\n") + "\n"
 }
 

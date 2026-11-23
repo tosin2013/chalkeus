@@ -110,7 +110,7 @@ func TestManagerApproverLabelOnly(t *testing.T) {
 	w.labels[41] = ghloop.Proposal{Labelled: true, AddedBy: "mallory"}
 	w.pass(t)
 	out := w.m.Out.(*strings.Builder).String()
-	if len(w.calls) != 1 || !strings.Contains(out, "@mallory, who is not in PILOT_APPROVERS") {
+	if len(w.calls) != 1 || !strings.Contains(out, "@mallory, who is not in FORGE_APPROVERS") {
 		t.Fatalf("%v\n%s", w.calls, out)
 	}
 }

@@ -76,7 +76,7 @@ func Gather(ctx context.Context, src Source) ([]ItemState, error) {
 			case !p.Labelled:
 				s.NotWhy = fmt.Sprintf("to start it, add the label %q to https://github.com/%s/issues/%d", src.Label, src.Repo, n)
 			case !ghloop.IsApprover(p.AddedBy, src.Approvers):
-				s.NotWhy = fmt.Sprintf("the label was last added by @%s, who is not in PILOT_APPROVERS; an approver must remove and re-add it on https://github.com/%s/issues/%d", p.AddedBy, src.Repo, n)
+				s.NotWhy = fmt.Sprintf("the label was last added by @%s, who is not in FORGE_APPROVERS; an approver must remove and re-add it on https://github.com/%s/issues/%d", p.AddedBy, src.Repo, n)
 			default:
 				s.Proposed = true
 			}

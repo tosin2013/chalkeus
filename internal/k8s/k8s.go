@@ -37,7 +37,7 @@ import (
 )
 
 // FieldManager names the pilot in server-side apply.
-const FieldManager = "specfoundry-pilot"
+const FieldManager = "chalkeus-forge"
 
 // Client is a connection to one kubeconfig context.
 type Client struct {

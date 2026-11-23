@@ -1,6 +1,6 @@
 // Package toolchain reads and checks a toolchain image's /opt/toolchain/toolchain.json and turns
 // it into a pod's environment (014 R5, specs/014-any-project/contracts/toolchain-image.md). The
-// same rules hold for specfoundry's catalog images and for operator-supplied ones.
+// same rules hold for Chalkeus's catalog images and for operator-supplied ones.
 package toolchain
 
 import (

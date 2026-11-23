@@ -34,7 +34,7 @@ func TestStepGaps(t *testing.T) {
 
 	must(t, w.fake.Label(repo, issue, "stranger", "chalkeus:proposed", false))
 	out := step("after a non-approver's label")
-	if !strings.Contains(out, "not in PILOT_APPROVERS") || !strings.Contains(out, "next: 001: waiting for an approver") {
+	if !strings.Contains(out, "not in FORGE_APPROVERS") || !strings.Contains(out, "next: 001: waiting for an approver") {
 		t.Errorf("the pass should say the label's adder is not an approver, and that an approver must relabel")
 	}
 	if acts := actionsOf(t, "gaps"); len(acts) != 0 {

@@ -65,3 +65,12 @@ func TestNoMarkersUnderGoTest(t *testing.T) {
 		t.Fatalf("default notice folder under go test: %q", d)
 	}
 }
+
+func TestDisplay(t *testing.T) {
+	for in, want := range map[string]string{"PILOT_MODEL": "FORGE_MODEL", "PILOT_SCM_TOKEN": "PILOT_SCM_TOKEN",
+		"FORGE_MODEL": "FORGE_MODEL", "CHALKEUS_CONFIG": "CHALKEUS_CONFIG"} {
+		if got := Display(in); got != want {
+			t.Errorf("Display(%s) = %s, want %s", in, got, want)
+		}
+	}
+}

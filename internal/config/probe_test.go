@@ -51,7 +51,7 @@ func TestProbeModel(t *testing.T) {
 	if err != nil || p.Status != 200 || auth != "Bearer sk-PROBE" || p.Provider != "gw" {
 		t.Fatalf("%+v %v %q", p, err, auth)
 	}
-	if !strings.HasPrefix(session, "specfoundry-doctor-") || agent != "specfoundry-pilot" {
+	if !strings.HasPrefix(session, "chalkeus-doctor-") || agent != "chalkeus-forge" {
 		t.Fatalf("session %q, user agent %q", session, agent)
 	}
 	blocked = true

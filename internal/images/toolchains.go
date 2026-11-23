@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/names"
 	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
@@ -135,18 +136,18 @@ func ToolchainImage(c Catalog, lock map[string]string, name string) (string, err
 func CheckTarget(c Catalog, lock map[string]string, t config.Target) error {
 	if t.ToolchainImage != "" {
 		if _, ok := c[t.Toolchain]; ok {
-			return &config.Error{Code: 2, Msg: fmt.Sprintf("TARGET_INVALID: targets/%s.env: PILOT_TOOLCHAIN %q is a specfoundry toolchain; "+
-				"with PILOT_TOOLCHAIN_IMAGE use your own name for it, or drop PILOT_TOOLCHAIN_IMAGE", t.Name, t.Toolchain)}
+			return &config.Error{Code: 2, Msg: fmt.Sprintf("TARGET_INVALID: targets/%s.env: FORGE_TOOLCHAIN %q is a Chalkeus toolchain; "+
+				"with FORGE_TOOLCHAIN_IMAGE use your own name for it, or drop FORGE_TOOLCHAIN_IMAGE", t.Name, t.Toolchain)}
 		}
 		if _, err := ValidateRef(t.ToolchainImage); err != nil {
-			return &config.Error{Code: 2, Msg: fmt.Sprintf("TARGET_INVALID: targets/%s.env: PILOT_TOOLCHAIN_IMAGE %v", t.Name, err)}
+			return &config.Error{Code: 2, Msg: fmt.Sprintf("TARGET_INVALID: targets/%s.env: FORGE_TOOLCHAIN_IMAGE %v", t.Name, err)}
 		}
 	} else if _, err := ToolchainImage(c, lock, t.Toolchain); err != nil {
 		return err
 	}
 	tc, _ := c.For(t)
 	low := func(key, why string) error {
-		return &config.Error{Code: 2, Msg: fmt.Sprintf("TARGET_INVALID: targets/%s.env: %s %s", t.Name, key, why)}
+		return &config.Error{Code: 2, Msg: fmt.Sprintf("TARGET_INVALID: targets/%s.env: %s %s", t.Name, names.Display(key), why)}
 	}
 	if tc.Grader != nil {
 		if t.GraderMemory != "" && quantityMi(t.GraderMemory) < quantityMi(tc.Grader.Memory) {

@@ -124,7 +124,7 @@ func (c *Config) Credential() (string, error) {
 		return v, nil
 	}
 	if exists(c.AppKey()) && exists(c.PublisherEnv) {
-		return "", errf(2, "both a publisher token and a GitHub App key exist: set PILOT_PUBLISHER_CREDENTIAL=token or =app in pilot.env")
+		return "", errf(2, "both a publisher token and a GitHub App key exist: set FORGE_PUBLISHER_CREDENTIAL=token or =app in forge.env")
 	}
 	if exists(c.AppKey()) {
 		return "app", nil
@@ -318,7 +318,7 @@ func OriginRepo(root string) string {
 // RepoGuard refuses anything but a throwaway "-pilot-fixture" repo that isn't this repo's origin.
 func RepoGuard(repo, origin string) error {
 	if !repoRE.MatchString(repo) {
-		return errf(3, "PILOT_FIXTURE_REPO must be owner/name, got %s", pyrepr.Str(repo))
+		return errf(3, "FORGE_FIXTURE_REPO must be owner/name, got %s", pyrepr.Str(repo))
 	}
 	_, name, _ := strings.Cut(repo, "/")
 	if !strings.HasSuffix(name, "-pilot-fixture") {
@@ -344,11 +344,11 @@ func ValidateValues(values map[string]string) (map[string]string, error) {
 	var missing []string
 	for _, k := range Required {
 		if v[k] == "" {
-			missing = append(missing, k)
+			missing = append(missing, names.Display(k))
 		}
 	}
 	if len(missing) > 0 {
-		return nil, errf(2, "pilot.env missing %s", pyrepr.Strings(missing))
+		return nil, errf(2, "forge.env missing %s", pyrepr.Strings(missing))
 	}
 	rl, err := strconv.Atoi(v["RETRY_LIMIT"])
 	if err != nil {
@@ -358,10 +358,10 @@ func ValidateValues(values map[string]string) (map[string]string, error) {
 		return nil, errf(2, "RETRY_LIMIT must be between 0 and 2 in M1")
 	}
 	if _, err := strconv.ParseFloat(strings.TrimSpace(v["PILOT_SPEND_CAP_USD"]), 64); err != nil {
-		return nil, errf(2, "PILOT_SPEND_CAP_USD / PILOT_TOKEN_CAP must be numeric")
+		return nil, errf(2, "FORGE_SPEND_CAP_USD / FORGE_TOKEN_CAP must be numeric")
 	}
 	if _, err := strconv.Atoi(strings.TrimSpace(v["PILOT_TOKEN_CAP"])); err != nil {
-		return nil, errf(2, "PILOT_SPEND_CAP_USD / PILOT_TOKEN_CAP must be numeric")
+		return nil, errf(2, "FORGE_SPEND_CAP_USD / FORGE_TOKEN_CAP must be numeric")
 	}
 	for _, k := range []string{"PILOT_GITHUB_ISSUES", "PILOT_GITHUB_APPROVALS"} {
 		if v[k] != "on" && v[k] != "off" {
@@ -369,16 +369,16 @@ func ValidateValues(values map[string]string) (map[string]string, error) {
 		}
 	}
 	if v["PILOT_GITHUB_APPROVALS"] == "on" && len(splitList(v["PILOT_APPROVERS"], false)) == 0 {
-		return nil, errf(2, "PILOT_GITHUB_APPROVALS=on needs PILOT_APPROVERS (comma-separated GitHub logins)")
+		return nil, errf(2, "FORGE_GITHUB_APPROVALS=on needs FORGE_APPROVERS (comma-separated GitHub logins)")
 	}
 	cred := v["PILOT_PUBLISHER_CREDENTIAL"]
 	if cred != "" && cred != "token" && cred != "app" {
-		return nil, errf(2, "PILOT_PUBLISHER_CREDENTIAL must be token or app")
+		return nil, errf(2, "FORGE_PUBLISHER_CREDENTIAL must be token or app")
 	}
 	if cred == "app" {
 		for _, k := range []string{"PILOT_APP_ID", "PILOT_APP_INSTALLATION_ID"} {
 			if _, err := strconv.ParseUint(v[k], 10, 64); err != nil {
-				return nil, errf(2, "PILOT_PUBLISHER_CREDENTIAL=app needs a numeric %s", k)
+				return nil, errf(2, "FORGE_PUBLISHER_CREDENTIAL=app needs a numeric %s", names.Display(k))
 			}
 		}
 	}

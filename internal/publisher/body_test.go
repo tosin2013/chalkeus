@@ -20,8 +20,8 @@ func bodyRun(kind string) *evidence.Run {
 
 func TestFixtureBodyUnchanged(t *testing.T) {
 	b := body(paths.At(t.TempDir()), bodyRun(evidence.KindFixture), "A", 1, 18)
-	for _, want := range []string{"Opened by the specfoundry M1 pilot **publisher** (run `20990101T000000Z`, task A, fixture item 001).",
-		"Evidence: `specs/002-m1-gated-pilot/evidence/20990101T000000Z/` in the specfoundry repository.", "\nCloses #18\n"} {
+	for _, want := range []string{"Opened by the Chalkeus M1 forge **publisher** (run `20990101T000000Z`, task A, fixture item 001).",
+		"Evidence: `specs/002-m1-gated-pilot/evidence/20990101T000000Z/` in the Chalkeus repository.", "\nCloses #18\n"} {
 		if !strings.Contains(b, want) {
 			t.Errorf("missing %q", want)
 		}

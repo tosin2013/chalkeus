@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/names"
 	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
@@ -73,7 +74,7 @@ func TestCheckTargetOverridesOnlyRaise(t *testing.T) {
 		"PILOT_CACHE_SIZE":        {Name: "g", Toolchain: "jdk21-maven", CacheSize: "512Mi"},
 	} {
 		err := CheckTarget(c, lock, tg)
-		if err == nil || !strings.Contains(err.Error(), key) || !strings.HasPrefix(err.Error(), "TARGET_INVALID:") {
+		if err == nil || !strings.Contains(err.Error(), names.Display(key)) || !strings.HasPrefix(err.Error(), "TARGET_INVALID:") {
 			t.Errorf("%s: %v", key, err)
 		}
 	}

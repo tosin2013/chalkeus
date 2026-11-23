@@ -29,7 +29,7 @@ func importOpencodeCmd() *cobra.Command {
 		RunE: runImportOpenCode}
 	c.Flags().String("from", "~/.config/opencode", "OpenCode config dir")
 	c.Flags().String("model", "", "<provider>/<model> to use (default: the config's \"model\")")
-	c.Flags().String("fixture-repo", "", "owner/name of your -pilot-fixture repo, written to a new pilot.env")
+	c.Flags().String("fixture-repo", "", "owner/name of your -pilot-fixture repo, written to a new forge.env")
 	c.Flags().Bool("force", false, "replace an existing worker OpenCode config")
 	c.Flags().Bool("from-login", false, "use your OpenCode login (an API key added with /connect or `opencode auth login`) instead of key files; needs --model")
 	c.Flags().String("auth-file", "", "OpenCode's login file (default: $XDG_DATA_HOME/opencode/auth.json, else ~/.local/share/opencode/auth.json); - reads `opencode auth export` from stdin (OpenCode 2.2+)")

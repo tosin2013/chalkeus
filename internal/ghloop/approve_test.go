@@ -72,12 +72,12 @@ func TestTrackingIssueAndPostAreIdempotent(t *testing.T) {
 		t.Fatal(a.f.ops)
 	}
 	body := a.f.comments[a.issue][0].Body
-	for _, want := range []string{"<!-- specfoundry:decision run=20261116T101500Z step=retry task=A n=2 -->", "/approve retry", "@alice"} {
+	for _, want := range []string{"<!-- chalkeus:decision run=20261116T101500Z step=retry task=A n=2 -->", "/approve retry", "@alice"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("post lacks %q", want)
 		}
 	}
-	want := "<!-- specfoundry:decision run=20261116T101500Z step=retry task=A n=2 -->\n**Decision pending: retry task A (attempt 2).**\n\n" +
+	want := "<!-- chalkeus:decision run=20261116T101500Z step=retry task=A n=2 -->\n**Decision pending: retry task A (attempt 2).**\n\n" +
 		"To approve, reply with exactly:\n\n    /approve retry\n\nAllowed approvers: @alice. To cancel your approval before the run resumes: `/withdraw retry`.\n"
 	if body != want {
 		t.Fatalf("post body\n%q", body)
@@ -259,7 +259,7 @@ func TestRepliesToApprovals(t *testing.T) {
 	}
 	want := []string{
 		"❌ `/approve mode` from @alice not accepted (`wrong_step`): the pending step is `retry`; reply exactly `/approve retry`. The run stays paused.",
-		"❌ `/approve retry` from @bob not accepted (`not_an_approver`): @bob is not in PILOT_APPROVERS. The run stays paused.",
+		"❌ `/approve retry` from @bob not accepted (`not_an_approver`): @bob is not in FORGE_APPROVERS. The run stays paused.",
 	}
 	if got := bodies(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("replies\n%q", got)
@@ -352,5 +352,27 @@ func TestCloseTrackingErrorLeavesItOpenForARetry(t *testing.T) {
 	}
 	if LoadTracking(a.run).Closed {
 		t.Fatal("recorded closed although closing failed")
+	}
+}
+
+// 027: a run paused before the rename recorded its decision post with the old marker; after the
+// upgrade it must find that post instead of posting the decision again.
+func TestOldMarkerDecisionNotPostedAgain(t *testing.T) {
+	a := setupApprove(t)
+	tr := LoadTracking(a.run)
+	for _, d := range tr.Decisions {
+		d["marker"] = strings.Replace(d["marker"].(string), "<!-- chalkeus:", "<!-- specfoundry:", 1)
+	}
+	if err := saveTracking(a.run, tr); err != nil {
+		t.Fatal(err)
+	}
+	again, err := a.l.PostDecision(a.run, a.p)
+	if err != nil || fmt.Sprint(again["comment_id"]) != fmt.Sprint(a.d["comment_id"]) || a.f.count("comment") != 1 {
+		t.Fatalf("%v %v %v", again, err, a.f.ops)
+	}
+	for _, m := range []string{"<!-- specfoundry:decision run=R step=mode task=- n=- -->", "<!-- chalkeus:decision run=R step=mode task=- n=- -->"} {
+		if g := DecisionMarker.FindStringSubmatch(m); g == nil || g[1] != "R" || g[2] != "mode" {
+			t.Errorf("%s: %v", m, g)
+		}
 	}
 }

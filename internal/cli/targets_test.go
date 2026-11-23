@@ -42,7 +42,7 @@ func TestTargetsListsFixtureAndProfiles(t *testing.T) {
 		t.Fatalf("%d %s", code, errs)
 	}
 	for _, want := range []string{
-		"fixture\to/x-pilot-fixture@main\ttoolchain=python\t(pilot.env)\n",
+		"fixture\to/x-pilot-fixture@main\ttoolchain=python\t(forge.env)\n",
 		"pysample\tme/pysample@main\ttoolchain=python\tregistries=pypi.org,files.pythonhosted.org\tcompanion=me/pysample-acceptance\tlevel=minimal\n",
 		"broken\tinvalid: TARGET_INVALID:",
 		"java\tme/j@main\ttoolchain=jdk21-maven\t", // a catalog toolchain with a locked image

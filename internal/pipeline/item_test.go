@@ -29,7 +29,7 @@ func itemP(t *testing.T) (*P, *evidence.Run) {
 func TestItemModeText(t *testing.T) {
 	p, r := itemP(t)
 	got := p.modeExtra(r)
-	want := "  target greeting (me/greeting-service@main), item 002, toolchain python\n  egress: model host(s) 1 (from pilot.env); registries: pypi.org" +
+	want := "  target greeting (me/greeting-service@main), item 002, toolchain python\n  egress: model host(s) 1 (from forge.env); registries: pypi.org" +
 		"\n  security level: minimal; hidden tests: 0 file(s), no coverage map"
 	if got != want {
 		t.Fatalf("%q", got)

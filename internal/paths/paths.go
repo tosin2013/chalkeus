@@ -47,7 +47,7 @@ func Root() (string, error) {
 		}
 		parent := filepath.Dir(d)
 		if parent == d {
-			return "", errors.New("not inside a specfoundry checkout (no pilot/pins.env above the working directory)")
+			return "", errors.New("not inside a Chalkeus checkout (no pilot/pins.env above the working directory)")
 		}
 		d = parent
 	}

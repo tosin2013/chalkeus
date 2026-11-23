@@ -29,8 +29,18 @@ import (
 
 var allowedPermissions = map[string]bool{"admin": true, "maintain": true, "write": true}
 
-// DecisionMarker matches a decision post's first line.
-var DecisionMarker = regexp.MustCompile(`<!-- specfoundry:decision run=(\S+) step=(\S+) task=(\S+) n=(\S+) -->`)
+// DecisionMarker matches a decision post's first line, in the new form or the old
+// `<!-- specfoundry:… -->` one (posts and tracking records from before 027).
+var DecisionMarker = regexp.MustCompile(`<!-- (?:chalkeus|specfoundry):decision run=(\S+) step=(\S+) task=(\S+) n=(\S+) -->`)
+
+// currentMarker rewrites a marker from before the rename (`<!-- specfoundry:`) to today's form, so a
+// run paused before the upgrade finds the decision it already posted instead of posting it again.
+func currentMarker(m string) string {
+	if rest, ok := strings.CutPrefix(m, "<!-- specfoundry:"); ok {
+		return "<!-- chalkeus:" + rest
+	}
+	return m
+}
 
 // Tracking is github/tracking.json.
 type Tracking struct {
@@ -91,7 +101,7 @@ func (l *Loop) EnsureTracking(run *evidence.Run) (int, error) {
 	if n, ok := num(t.Issue); ok && n > 0 {
 		return n, nil
 	}
-	body := fmt.Sprintf("<!-- specfoundry:run=%s -->\nDecisions for pilot run `%s` are posted here. "+
+	body := fmt.Sprintf("<!-- chalkeus:run=%s -->\nDecisions for pilot run `%s` are posted here. "+
 		"Allowed approvers reply with the exact command shown in each post.\n\n"+
 		"_The pilot never merges, and a merge is never approved here._\n", run.ID, run.ID)
 	w, err := l.W()
@@ -115,12 +125,12 @@ func dash(v any) string {
 
 // Marker is the decision post marker for pending step p.
 func Marker(run *evidence.Run, p *decisions.Pending) string {
-	return fmt.Sprintf("<!-- specfoundry:decision run=%s step=%s task=%s n=%s -->", run.ID, p.Step, dash(p.Task), dash(p.N))
+	return fmt.Sprintf("<!-- chalkeus:decision run=%s step=%s task=%s n=%s -->", run.ID, p.Step, dash(p.Task), dash(p.N))
 }
 
 func findDecision(t Tracking, marker string) map[string]any {
 	for _, d := range t.Decisions {
-		if d["marker"] == marker {
+		if s, _ := d["marker"].(string); currentMarker(s) == currentMarker(marker) {
 			return d
 		}
 	}
@@ -400,7 +410,7 @@ var refusalWhy = map[string]string{
 	"app_authored":       "it was made through a GitHub App or by a bot",
 	"publisher_identity": "it was made with the publisher's identity",
 	"edited":             "the comment was edited; post a new one instead",
-	"not_an_approver":    "@{login} is not in PILOT_APPROVERS",
+	"not_an_approver":    "@{login} is not in FORGE_APPROVERS",
 	"withdrawn":          "it was withdrawn by a later `/withdraw {step}`",
 	"no_write_access":    "@{login} no longer has write access to the repository",
 	"duplicate":          "an earlier approval of this step was already accepted",

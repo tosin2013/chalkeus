@@ -68,7 +68,7 @@ func replaceOn(d *Draft) bool { b, _ := d.Readiness["replace"].(bool); return b 
 func PRBody(d *Draft, criteria []Criterion, m Map) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Hidden acceptance tests for **%s** item **%s**: %s\n\n", d.Repo, d.Item, d.Title)
-	fmt.Fprintf(&b, "- Drafted by the test author (specfoundry 018), level `%s`, identity `%s`.\n", d.Level, d.Identity)
+	fmt.Fprintf(&b, "- Drafted by the test author (Chalkeus 018), level `%s`, identity `%s`.\n", d.Level, d.Identity)
 	last := d.Checks[len(d.Checks)-1]
 	fmt.Fprintf(&b, "- Checked on the unchanged base `%s`: the project's tests pass and these tests fail (`%s`, draft `%s`).\n", short(d.BaseRevision), last.Result, short(last.DraftHash))
 	fmt.Fprintf(&b, "- Spec SHA-256 `%s`.\n- Files only under `%s/`.\n\n", short(d.SpecSHA256), d.CompanionDir)

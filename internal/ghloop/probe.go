@@ -27,8 +27,8 @@ import (
 var API = "https://api.github.com"
 
 var (
-	blobProbe   = map[string]string{"content": "specfoundry publisher token scope probe (unreferenced blob)", "encoding": "utf-8"}
-	issuesProbe = map[string]string{"name": "specfoundry-probe", "color": "not-a-color"}
+	blobProbe   = map[string]string{"content": "chalkeus publisher token scope probe (unreferenced blob)", "encoding": "utf-8"}
+	issuesProbe = map[string]string{"name": "chalkeus-probe", "color": "not-a-color"}
 )
 
 // ProbeResult is the probe outcome (the reference's JSON line).
@@ -94,7 +94,7 @@ func call(token secret.Value, method, path string, body any) (int, map[string]an
 	req.Header.Set("Authorization", "Bearer "+token.Reveal())
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	req.Header.Set("User-Agent", "specfoundry-pilot-token-check")
+	req.Header.Set("User-Agent", "chalkeus-forge-token-check")
 	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
 	if err != nil {
 		return 0, nil, nil
