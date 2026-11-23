@@ -1,7 +1,15 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.30.1 → 1.31.0 (this revision)
+Version change: 1.31.0 → 1.31.1 (this revision)
+Bump rationale: PATCH — a status transition (027 planned → specced) and its Spec dir.
+Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
+  - 027 planned → specced: spec merged (#161; hard switch, command audit first, FORGE_*
+    settings); plan, research, contracts and tasks in this revision. Spec dir added.
+Specs affected: 027
+Open questions added/resolved: none
+
+Prior: Version change: 1.30.1 → 1.31.0
 Bump rationale: MINOR — 005 scope, title and acceptance change (remote clusters,
 community validation, macOS host check). Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-22, Tosin Akinosho):
@@ -1887,7 +1895,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     - ~~exactly how G6 and G7 apply per slice~~ per slice, against the base the slice starts from
       (spec default, FR-014).
 
-### 027 — Rename to Chalkeus  [status: planned]
+### 027 — Rename to Chalkeus  [status: specced]
 
 - **Description:** Carry out Q7 and Q1: the product, its Go module, binary, commands, docs and
   repository become Chalkeus, without breaking existing setups or their evidence.
@@ -1912,6 +1920,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   the `chk` alias (013); the chalkeus.dev domain (an open money call); renaming the
   `specfoundry`-named Spec Kit artifacts of past items (history).
 - **Depends on:** none
+- **Spec dir:** specs/027-chalkeus-rename/
 - **Notes:** Added 2026-11-22 (owner): the rename is its own item rather than Q1's single
   unplanned change, because about 1,600 mentions in 540 files go beyond the module path, and
   several (the config folder, image names, labels in evidence) need a migration decision.
@@ -2095,4 +2104,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.31.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-22
+**Version**: 1.31.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
