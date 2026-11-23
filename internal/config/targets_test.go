@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/tosin2013/chalkeus/internal/names"
 )
 
 func targetCfg(t *testing.T) *Config {
@@ -107,8 +109,8 @@ func TestLoadTargetRefusals(t *testing.T) {
 		writeTarget(t, c, "t", body)
 		_, err := c.LoadTarget("t", "")
 		wantCode(t, err, "TARGET_INVALID")
-		if !strings.Contains(err.Error(), key) {
-			t.Errorf("%s: message doesn't name the key: %v", key, err)
+		if !strings.Contains(err.Error(), names.Display(key)) || strings.Contains(err.Error(), "PILOT_") {
+			t.Errorf("%s: message doesn't name the key as %s: %v", key, names.Display(key), err)
 		}
 	}
 }

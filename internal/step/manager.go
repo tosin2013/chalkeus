@@ -283,7 +283,7 @@ func (m *Manager) Pass(ctx context.Context) (bool, error) {
 			_ = m.Log.Add(Entry{Item: a.Item, Action: Draft, Reason: "drafting pass: " + res})
 			m.Next = draftNext(a.Item, res)
 		case NeedsTests:
-			m.comment(ctx, a.Item, "needs-tests:"+a.Item, "Hidden tests are needed before this item can run. Auto-draft is off for this target: write them in the companion repository, or turn on `PILOT_AUTHOR_AUTO`.")
+			m.comment(ctx, a.Item, "needs-tests:"+a.Item, "Hidden tests are needed before this item can run. Auto-draft is off for this target: write them in the companion repository, or turn on `FORGE_AUTHOR_AUTO`.")
 		case RunFailedAct:
 			failed = failed || !m.Log.Posted("run-failed:"+st.RunID) // report a failure once
 			m.comment(ctx, a.Item, "run-failed:"+st.RunID, fmt.Sprintf("Run %s ended without verifying this item. Step mode leaves it until the proposal label is added again.", st.RunID))

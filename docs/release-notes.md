@@ -1,5 +1,22 @@
 # Release notes
 
+## Chalkeus: forge's own output (027, stage 5)
+
+Forge's messages, help and GitHub text now use the new names too:
+
+| Before | Now |
+|---|---|
+| messages that name a setting, for example `not in PILOT_APPROVERS` | `FORGE_*`, for example `not in FORGE_APPROVERS` (the `PILOT_SCM_*` publisher keys keep their names) |
+| `… in pilot.env` | `… in forge.env` |
+| PR and issue text "Opened by the specfoundry … publisher", "Generated from the roadmap by specfoundry" | Chalkeus |
+| hidden issue markers `<!-- specfoundry:item=…` and `<!-- specfoundry:decision …` | `<!-- chalkeus:… -->` |
+| commit trailer `Specfoundry-Run: <run id>` | `Chalkeus-Run: <run id>` |
+
+Nothing to do. Forge still reads the old markers: an issue synced before is matched to its item,
+and its next sync rewrites the body with the new marker; a run paused before the update finds the
+decision it already posted instead of posting it again. Commits made before keep their old
+trailer. Scripts that matched the old message text need the new names.
+
 ## Chalkeus: the cluster, labels and images (027, stage 4)
 
 | Before | Now |

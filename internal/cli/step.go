@@ -42,7 +42,7 @@ func stepCmd() *cobra.Command {
 			}
 			t := e.Target
 			if !stepGitHubOn(t) {
-				return Exit(ExitError, "step mode needs GitHub approvals for target %s (PILOT_GITHUB_APPROVALS=on in its profile or pilot.env): items are proposed on their issues and every gate is answered on GitHub", t.Name)
+				return Exit(ExitError, "step mode needs GitHub approvals for target %s (FORGE_GITHUB_APPROVALS=on in its profile or forge.env): items are proposed on their issues and every gate is answered on GitHub", t.Name)
 			}
 			p, err := pipelineFor(cmd)
 			if err != nil {
@@ -50,7 +50,7 @@ func stepCmd() *cobra.Command {
 			}
 			approvers := p.Cfg.Approvers()
 			if len(approvers) == 0 {
-				return Exit(ExitError, "step mode needs PILOT_APPROVERS in pilot.env: only an approver's label proposes an item")
+				return Exit(ExitError, "step mode needs FORGE_APPROVERS in forge.env: only an approver's label proposes an item")
 			}
 			loop, err := p.GitHubLoop()
 			if err != nil {

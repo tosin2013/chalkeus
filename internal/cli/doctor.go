@@ -65,7 +65,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 
 	// Profile.
 	cfg, err := config.Load(l.Root, false, false)
-	if !r.OK("profile", "pilot.env", err, "") {
+	if !r.OK("profile", "forge.env", err, "") {
 		return Code(ExitFail)
 	}
 	t, err := loadTarget(cmd, l, cfg)
@@ -82,12 +82,12 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	if t.AuthorAuto == "on" { // 024: who drafts hidden tests, as information only
 		r.Add("profile", "auto-draft", doctor.Info, fmt.Sprintf("on: `./chalkeus forge author watch --target %s` drafts ready items (every %d s, up to %d author Job(s) each)", t.Name, t.AuthorIntervalS, t.AuthorAttempts))
 	} else {
-		r.Add("profile", "auto-draft", doctor.Info, "off: hidden tests are drafted by hand (set PILOT_AUTHOR_AUTO=on to let `author watch` draft them)")
+		r.Add("profile", "auto-draft", doctor.Info, "off: hidden tests are drafted by hand (set FORGE_AUTHOR_AUTO=on to let `author watch` draft them)")
 	}
 
 	// Machine and cluster.
 	if hosts := cfg.ModelHosts(); len(hosts) == 0 {
-		r.Add("cluster", "model host", doctor.Fail, "PILOT_MODEL_EGRESS_HOSTS is empty in pilot.env")
+		r.Add("cluster", "model host", doctor.Fail, "FORGE_MODEL_EGRESS_HOSTS is empty in forge.env")
 	} else {
 		r.Add("cluster", "model host", doctor.Pass, fmt.Sprintf("%d host(s) configured", len(hosts)))
 	}
@@ -263,7 +263,7 @@ func doctorOverlay(t config.Target, item string, res readiness.Result) ([]byte, 
 		return nil, false, err
 	}
 	defer func() { _ = os.RemoveAll(d) }()
-	if err := os.WriteFile(filepath.Join(d, ".specfoundry-doctor"), []byte("placeholder, not a test\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(d, ".chalkeus-doctor"), []byte("placeholder, not a test\n"), 0o644); err != nil {
 		return nil, false, err
 	}
 	tarb, _, err := grader.Overlay(d, t.CompanionRepo, "none", ".", item)

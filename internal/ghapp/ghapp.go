@@ -1,6 +1,6 @@
 // Package ghapp is the GitHub App as the publisher credential (reference: ghapp.py and
 // the former pilot/tools/app_token.py; 004 research R5). The App's private key
-// (~/.config/specfoundry/github-app.pem, mode 600) never leaves this host and is never copied
+// (~/.config/chalkeus/github-app.pem, mode 600) never leaves this host and is never copied
 // to the cluster. A 1-hour installation token is minted, limited to the target repository with
 // contents, pull requests and issues write, and written to app-token.env (mode 600, next to the
 // key), which is then used exactly like publisher.env. Only non-secret facts (bot login,
@@ -116,7 +116,7 @@ func call(method, path, bearer string, body any) (int, map[string]any) {
 	req.Header.Set("Authorization", "Bearer "+bearer)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	req.Header.Set("User-Agent", "specfoundry-pilot-app-token")
+	req.Header.Set("User-Agent", "chalkeus-forge-app-token")
 	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
 	if err != nil {
 		return 0, nil
@@ -141,13 +141,13 @@ func MintToken(keyPath, appID, installationID, repo, outEnv string, now time.Tim
 	}
 	st, app := call("GET", "/app", j, nil)
 	if st != 200 {
-		return Result{Problems: []string{fmt.Sprintf("GitHub rejected the App JWT (HTTP %d): check PILOT_APP_ID and the key", st)}}
+		return Result{Problems: []string{fmt.Sprintf("GitHub rejected the App JWT (HTTP %d): check FORGE_APP_ID and the key", st)}}
 	}
 	slug, _ := app["slug"].(string)
 	login := slug + "[bot]"
 	inst, err := strconv.Atoi(installationID)
 	if err != nil {
-		return Result{Login: login, Problems: []string{"PILOT_APP_INSTALLATION_ID must be numeric"}}
+		return Result{Login: login, Problems: []string{"FORGE_APP_INSTALLATION_ID must be numeric"}}
 	}
 	st, tok := call("POST", fmt.Sprintf("/app/installations/%d/access_tokens", inst), j, TokenRequest(repo))
 	if st != 201 {

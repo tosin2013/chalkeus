@@ -168,7 +168,7 @@ func (p *P) modeExtra(run *evidence.Run) string {
 		tc += " (operator-supplied " + p.Target.ToolchainImage + ")"
 	}
 	item, _ := run.State["item"].(string)
-	return fmt.Sprintf("  target %s (%s@%s), item %s, toolchain %s\n  egress: model host(s) %d (from pilot.env); registries: %s\n  security level: %s; hidden tests: %s",
+	return fmt.Sprintf("  target %s (%s@%s), item %s, toolchain %s\n  egress: model host(s) %d (from forge.env); registries: %s\n  security level: %s; hidden tests: %s",
 		p.Target.Name, p.Target.Repo, p.Target.Branch, item, tc, len(p.Cfg.ModelHosts()), regs, p.Target.SecurityLevel, coverage(run))
 }
 
@@ -429,7 +429,7 @@ func (p *P) replay(run *evidence.Run, task string, n int) error {
 	// The PR's Conventional Commits title goes on the commit too: GitHub squash-merges a one-commit
 	// PR with the commit's message, which becomes the target's changelog entry.
 	head, err := fixture.ReplayAs(clone, base, commit, filepath.Join(adir, "change.bundle"), out,
-		publisher.ItemTitle(run, task), "Specfoundry-Run: "+run.ID)
+		publisher.ItemTitle(run, task), "Chalkeus-Run: "+run.ID)
 	if err != nil {
 		return err
 	}

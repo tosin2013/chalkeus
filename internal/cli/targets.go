@@ -37,7 +37,7 @@ func runTargets(cmd *cobra.Command, _ []string) error {
 	}
 	out := cmd.OutOrStdout()
 	f := cfg.Fixture()
-	fmt.Fprintf(out, "%s\t%s@%s\ttoolchain=%s\t(pilot.env)\n", f.Name, f.Repo, f.Branch, f.Toolchain)
+	fmt.Fprintf(out, "%s\t%s@%s\ttoolchain=%s\t(forge.env)\n", f.Name, f.Repo, f.Branch, f.Toolchain)
 	cat, _ := images.LoadCatalog(l)
 	lock, _ := images.ReadLock(l)
 	origin := config.OriginRepo(l.Root)

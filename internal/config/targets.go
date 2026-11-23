@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/tosin2013/chalkeus/internal/names"
 )
 
 // Target profiles (014, specs/014-any-project/contracts/target-profile.md): one file per target
@@ -75,11 +77,11 @@ func (t Target) AuthorToken() (string, error) {
 	}
 	raw, err := os.ReadFile(t.AuthorEnv)
 	if err != nil {
-		return "", targetErr("TARGET_INVALID", "the recommended level needs %s with PILOT_AUTHOR_TOKEN (a token that can write only the companion)", t.AuthorEnv)
+		return "", targetErr("TARGET_INVALID", "the recommended level needs %s with FORGE_AUTHOR_TOKEN (a token that can write only the companion)", t.AuthorEnv)
 	}
 	tok := strings.TrimSpace(ParseSettings(string(raw), t.AuthorEnv)["PILOT_AUTHOR_TOKEN"])
 	if tok == "" {
-		return "", targetErr("TARGET_INVALID", "%s has no PILOT_AUTHOR_TOKEN", t.AuthorEnv)
+		return "", targetErr("TARGET_INVALID", "%s has no FORGE_AUTHOR_TOKEN", t.AuthorEnv)
 	}
 	return tok, nil
 }
@@ -217,7 +219,7 @@ func (c *Config) LoadTarget(name, origin string) (Target, error) {
 
 func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	invalid := func(key, why string) error {
-		return targetErr("TARGET_INVALID", "targets/%s.env: %s %s", name, key, why)
+		return targetErr("TARGET_INVALID", "targets/%s.env: %s %s", name, names.Display(key), why)
 	}
 	t := Target{Name: name, Repo: v["PILOT_TARGET_REPO"], Branch: v["PILOT_TARGET_BRANCH"], Toolchain: v["PILOT_TOOLCHAIN"],
 		ToolchainImage: v["PILOT_TOOLCHAIN_IMAGE"],
@@ -242,7 +244,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		t.Toolchain = "operator-supplied"
 	}
 	if t.Toolchain == "" {
-		return Target{}, invalid("PILOT_TOOLCHAIN", "is required (a name from pilot/images/toolchains.json, or set PILOT_TOOLCHAIN_IMAGE to your own image)")
+		return Target{}, invalid("PILOT_TOOLCHAIN", "is required (a name from pilot/images/toolchains.json, or set FORGE_TOOLCHAIN_IMAGE to your own image)")
 	}
 	if t.TestCommand == "" {
 		return Target{}, invalid("PILOT_TEST_COMMAND", "is required")
@@ -254,7 +256,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		return Target{}, invalid("PILOT_COMPANION_PATH", "must be a relative folder of letters, digits, '.', '_', '-' and '/', without '..'")
 	}
 	if strings.EqualFold(t.CompanionRepo, t.Repo) {
-		return Target{}, invalid("PILOT_COMPANION_REPO", "must differ from PILOT_TARGET_REPO")
+		return Target{}, invalid("PILOT_COMPANION_REPO", "must differ from FORGE_TARGET_REPO")
 	}
 	for _, h := range splitList(v["PILOT_REGISTRY_HOSTS"], false) {
 		if !hostRE.MatchString(h) {
@@ -263,7 +265,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		t.RegistryHosts = append(t.RegistryHosts, h)
 	}
 	if t.InstallCommand != "" && len(t.RegistryHosts) == 0 {
-		return Target{}, invalid("PILOT_INSTALL_COMMAND", "needs PILOT_REGISTRY_HOSTS: dependencies are downloaded from the registries you list")
+		return Target{}, invalid("PILOT_INSTALL_COMMAND", "needs FORGE_REGISTRY_HOSTS: dependencies are downloaded from the registries you list")
 	}
 	for _, g := range splitList(v["PILOT_TEST_PATHS"], false) {
 		if strings.HasPrefix(g, "/") || strings.Contains(g, "..") {

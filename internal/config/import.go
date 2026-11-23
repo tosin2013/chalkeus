@@ -160,7 +160,7 @@ func install(args ...string) error {
 	return nil
 }
 
-// RunImport copies the plan into ~/.config/specfoundry/opencode and writes or checks pilot.env.
+// RunImport copies the plan into the config folder's opencode/ and writes or checks forge.env (or an existing pilot.env).
 func RunImport(src, model, fixtureRepo, root string, force bool, out io.Writer) error {
 	p, err := PlanImport(src, model)
 	if err != nil {

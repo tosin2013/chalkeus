@@ -55,7 +55,7 @@ func TestBodyHasMarkerStatusAndChecklist(t *testing.T) {
 			t.Errorf("body lacks %q", want)
 		}
 	}
-	if !strings.HasPrefix(b, "<!-- specfoundry:item=001 -->") || strings.Contains(b, "not a task") {
+	if !strings.HasPrefix(b, "<!-- chalkeus:item=001 -->") || strings.Contains(b, "not a task") {
 		t.Errorf("body: %q", b)
 	}
 	if d[0].Label != "status:planned" || strings.Contains(d[1].Body, "### Tasks") {
@@ -67,9 +67,9 @@ func TestBodyHasMarkerStatusAndChecklist(t *testing.T) {
 // not rewrite every issue.
 func TestBodyMatchesReference(t *testing.T) {
 	got := DesiredState(doc(t, nil), texts())[0].Body
-	want := "<!-- specfoundry:item=001 -->\n**001 — Slug function** · status `planned` · spec `specs/001-slugify`\n\nA slugify.\n\n" +
+	want := "<!-- chalkeus:item=001 -->\n**001 — Slug function** · status `planned` · spec `specs/001-slugify`\n\nA slugify.\n\n" +
 		"**Outcome:** It works.\n\n### Tasks (from specs/001-slugify/tasks.md)\n- [x] T001 Implement slugify\n- [ ] T002 Export it\n\n" +
-		"_Generated from the roadmap by specfoundry. Edits here are overwritten by `./chalkeus forge github sync`._\n"
+		"_Generated from the roadmap by Chalkeus. Edits here are overwritten by `./chalkeus forge github sync`._\n"
 	if got != want {
 		t.Fatalf("got\n%q\nwant\n%q", got, want)
 	}
@@ -284,5 +284,18 @@ func TestItemRunMapsByItemID(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(run.Dir, "github", "issues.json"), []byte(`{"issues": {"001": 1, "002": 2}}`), 0o644)
 	if IssueFor(run, "002") != 2 {
 		t.Fatal("IssueFor by item id")
+	}
+}
+
+// 027: issues synced before the rename carry the old marker and are still matched to their item.
+func TestOldItemMarkerStillMatches(t *testing.T) {
+	idx, _ := ByItem([]Issue{{Number: 7, Body: "<!-- specfoundry:item=001 -->\nold", State: "open"},
+		{Number: 8, Body: "<!-- chalkeus:item=002 -->\nnew", State: "open"}})
+	got := map[string]int{}
+	for _, i := range idx {
+		got[i.Item] = i.Issue.Number
+	}
+	if got["001"] != 7 || got["002"] != 8 {
+		t.Fatalf("%+v", idx)
 	}
 }

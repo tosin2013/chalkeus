@@ -276,7 +276,6 @@ var (
 		{"", "specfoundry-acceptance", "the owner's companion repository keeps its name"},
 		{"", ".config/specfoundry", "the old config folder, still read"},
 		{"README.md", "this project was specfoundry, and `pilot/pilot` is now", "the rename note"},
-		{"docs/targets.md", "Specfoundry-Run:", "the commit trailer forge still writes"},
 		{"docs/troubleshooting.md", "specfoundry-m1", "the old-cluster entry"},
 		{"docs/troubleshooting.md", "specfoundry-registry", "the old-cluster entry"},
 		{"docs/operator-guide.md", "canary: tosin2013/specfoundry", "quoted output of a run from before the rename"},

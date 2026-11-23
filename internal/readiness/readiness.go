@@ -381,7 +381,7 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 	} else {
 		res.InputBytes = size
 		if limit := int64(t.MaxInputMB) << 20; size > limit {
-			if fail("INPUT_TOO_LARGE", fmt.Sprintf("snapshot is %d MB, over PILOT_MAX_INPUT_MB=%d", size>>20, t.MaxInputMB)) {
+			if fail("INPUT_TOO_LARGE", fmt.Sprintf("snapshot is %d MB, over FORGE_MAX_INPUT_MB=%d", size>>20, t.MaxInputMB)) {
 				return finish()
 			}
 		} else {

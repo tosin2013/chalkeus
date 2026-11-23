@@ -61,8 +61,8 @@ func (c *Config) ProbeModel(ctx context.Context) (ModelProbe, error) {
 	req.Header.Set("Content-Type", "application/json")
 	// Coding-agent gateways (OpenCode Go) refuse requests without a session id, and ask clients to
 	// name themselves rather than send a generic HTTP library's user agent.
-	req.Header.Set("User-Agent", "specfoundry-pilot")
-	req.Header.Set("X-Opencode-Session", fmt.Sprintf("specfoundry-doctor-%d", time.Now().UnixNano()))
+	req.Header.Set("User-Agent", "chalkeus-forge")
+	req.Header.Set("X-Opencode-Session", fmt.Sprintf("chalkeus-doctor-%d", time.Now().UnixNano()))
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return ModelProbe{Provider: prov}, fmt.Errorf("could not reach the model provider: %v", strings.ReplaceAll(err.Error(), key, "[key]"))

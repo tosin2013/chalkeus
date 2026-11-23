@@ -169,7 +169,7 @@ FORGE_GITHUB_ISSUES=off
   `test`, `docs`, `build`, `ci`, `style` or `chore`) when the item isn't a feature. The
   status-change PR and its commit are `docs(roadmap): <item> verified`. The item's commit
   carries the same title as its PR, because GitHub squash-merges a one-commit PR with the
-  commit's message; the worker's message and a `Specfoundry-Run: <run id>` trailer follow. The
+  commit's message; the worker's message and a `Chalkeus-Run: <run id>` trailer follow. The
   run id is also in each PR's branch name and body.
 - **Authorship and sign-off.** The pilot's commits are authored by its publisher identity (your
   GitHub App or token), which is the truth: you didn't write the code. The pilot never adds

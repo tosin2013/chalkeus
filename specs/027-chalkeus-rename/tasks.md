@@ -50,6 +50,8 @@ form end to end.
   Done as (2026-11-23): [evidence/README.md](evidence/README.md): go, pilot-images and integration succeed on `main` of `tosin2013/chalkeus` (integration on a commit with stage 4); the old address redirects.
 - [X] T022 The owner's own setup upgraded in place (SC-001): a fixture run and an approval after the steps in the release notes; privacy check; the 027 debrief
   Done as (2026-11-23): fixture run [20261123T160836Z](evidence/20261123T160836Z/) on the owner's setup (still on the old config folder) succeeded, with GitHub approvals for mode and retry and the status change approved by merging fixture PR #64; audit rows run in place all pass (AU07 needs the teardown). Privacy scan: 0 model-host, 0 token/key, 0 config-content hits. Debrief: [roadmap-reviews/debrief-20261123T171808Z.md](roadmap-reviews/debrief-20261123T171808Z.md) (⚠️ SC-004 command output open).
+- [X] T023 SC-004 for command output (debrief F1, owner choice 2026-11-23: finish it in 027)
+  Done as (2026-11-23): messages and help name settings as `FORGE_*` (`names.Display`; `PILOT_SCM_*` and the names inside the images unchanged) and `forge.env`; PR, issue and commit text say Chalkeus (`Chalkeus-Run:` trailer, `<!-- chalkeus:… -->` markers, user agents, field manager). The old markers are still read (`DecisionMarker`, the item marker, `currentMarker` in `findDecision`): tests `TestOldMarkerDecisionNotPostedAgain`, `TestOldItemMarkerStillMatches`, `TestDisplay`. Release notes: the stage 5 section.
 
 ## Dependencies
 

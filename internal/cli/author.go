@@ -92,7 +92,7 @@ func authorCmd() *cobra.Command {
 // terminal; the session that drives runs never does.
 func authorWatchCmd() *cobra.Command {
 	c := &cobra.Command{Use: "watch", Args: cobra.NoArgs,
-		Short: "024: draft hidden tests automatically for a target's ready items (PILOT_AUTHOR_AUTO=on); never run by the session that drives runs",
+		Short: "024: draft hidden tests automatically for a target's ready items (FORGE_AUTHOR_AUTO=on); never run by the session that drives runs",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			// Unattended work is easier to follow with diagnostics, so `author watch` defaults to
 			// -vv (pod phases, events, the author proxy's refusals). -v or PILOT_VERBOSE choose
@@ -108,7 +108,7 @@ func authorWatchCmd() *cobra.Command {
 				return err
 			}
 			if e.Target.AuthorAuto != "on" {
-				return Exit(ExitError, "auto-draft is off for target %s: set PILOT_AUTHOR_AUTO=on in its profile to let `author watch` draft its items", e.Target.Name)
+				return Exit(ExitError, "auto-draft is off for target %s: set FORGE_AUTHOR_AUTO=on in its profile to let `author watch` draft its items", e.Target.Name)
 			}
 			p, err := pipelineFor(cmd)
 			if err != nil {
