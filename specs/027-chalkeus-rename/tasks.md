@@ -39,8 +39,8 @@ form end to end.
 - [X] T017 [US3] Set `chalkeus.io/*` labels in `pilot/manifests/` and select on them in `internal/checks`; the audit accepts both prefixes in evidence; the golden audit passes unchanged
   Done as (2026-11-23): manifests and A05 use `chalkeus.io/*`. The audit never read labels, so "accepts both prefixes" needs no code; the golden audit passes unchanged.
 - [X] T018 [US3] Regenerate the fixture-parity golden on purpose, in its own commit, with a diff of only the label prefix and image names (research R5)
-- [ ] T019 [US2] The image workflow publishes `ghcr.io/tosin2013/chalkeus-*`; `images.lock` keys and digests follow through the bot's PR; old images stay published
-  In progress (2026-11-23): the workflow publishes `chalkeus-*` (stage 4 PR). Done when the bot's digest PR after the merge updates `pilot/images.lock` and the owner confirms the new packages are public.
+- [X] T019 [US2] The image workflow publishes `ghcr.io/tosin2013/chalkeus-*`; `images.lock` keys and digests follow through the bot's PR; old images stay published
+  Done as (2026-11-23): #172's merge ran pilot-images on `main`, which published the seven `chalkeus-*` images; the bot's digest PR #173 updated `pilot/images.lock`. Each locked digest pulls without credentials (anonymous GHCR token, HTTP 200), and `./chalkeus forge up` created `chalkeus-m1` from them (doctor: images match the lock).
 
 ## Phase 5: Close (US4)
 
