@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
 // Toolchains (014 R5, contracts/toolchain-image.md). The worker and tools images stay ours, one
@@ -21,7 +21,7 @@ import (
 // 2026-11-17).
 
 // RequestForm is where a missing toolchain image is asked for (014 FR-012).
-const RequestForm = "https://github.com/tosin2013/specfoundry/issues/new?template=toolchain-image.yml"
+const RequestForm = "https://github.com/tosin2013/chalkeus/issues/new?template=toolchain-image.yml"
 
 // Toolchain is one catalog entry.
 type Toolchain struct {

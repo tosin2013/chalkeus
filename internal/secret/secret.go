@@ -5,7 +5,7 @@ package secret
 import (
 	"fmt"
 
-	"github.com/tosin2013/specfoundry/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/verbose"
 )
 
 const redacted = "[redacted]"

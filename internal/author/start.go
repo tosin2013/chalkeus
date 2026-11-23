@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/readiness"
 )
 
 // Env is what the author commands need from the CLI.
@@ -42,7 +42,7 @@ func (e Env) companionDir(item string) string {
 	return e.Target.CompanionItemDir(item)
 }
 
-// Start is `pilot author start` (018 T007): checks, then the workspace the skill works in.
+// Start is `./chalkeus forge author start` (018 T007): checks, then the workspace the skill works in.
 func Start(ctx context.Context, e Env, item string, replace bool) (*Draft, error) {
 	id, err := e.Identity(ctx, e.Target)
 	if err != nil {
@@ -100,7 +100,7 @@ func Start(ctx context.Context, e Env, item string, replace bool) (*Draft, error
 	if d.CanWriteTarget {
 		fmt.Fprintf(w, "  note: %s can also write the target %s (minimal level). Protect its main branch so changes arrive only by reviewed PR.\n", d.Identity, d.Repo)
 	}
-	fmt.Fprintf(w, "  write tests under %s/draft/ (laid out like the project) and %s/draft/%s,\n  then run: pilot/pilot author check --target %s --item %s\n",
+	fmt.Fprintf(w, "  write tests under %s/draft/ (laid out like the project) and %s/draft/%s,\n  then run: ./chalkeus forge author check --target %s --item %s\n",
 		d.Workspace, d.Workspace, MapFile, d.Target, item)
 	return d, nil
 }

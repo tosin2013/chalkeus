@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/readiness"
 )
 
 const roadmap = `{"items":[

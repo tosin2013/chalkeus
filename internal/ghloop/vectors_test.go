@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/reconcile"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/reconcile"
 )
 
 // T043 / FR-011: the Go pilot passes every shared vector in specs/004-github-loop/contracts/vectors/

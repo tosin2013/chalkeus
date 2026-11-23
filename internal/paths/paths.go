@@ -5,7 +5,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"github.com/tosin2013/specfoundry/internal/names"
+	"github.com/tosin2013/chalkeus/internal/names"
 	"os"
 	"path/filepath"
 	"strings"

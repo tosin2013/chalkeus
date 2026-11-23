@@ -4,7 +4,7 @@
 //
 // With a terminal, the pilot asks there (channel tty) and any pending approval for the run is
 // discarded: the terminal answer is the current decision. Without one, nothing is assumed: the
-// run pauses, and a human approves the one pending step with `pilot approve` (channel harness)
+// run pauses, and a human approves the one pending step with `./chalkeus forge approve` (channel harness)
 // or on GitHub (channel github, 004). An approval is accepted only for the step the run is
 // paused at, after it was shown; it is bound to that step (task, attempt, merge commit) and
 // used at most once; every decision is recorded with its channel.
@@ -20,8 +20,8 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/names"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/names"
 )
 
 func file(run *evidence.Run) string { return filepath.Join(run.Dir, "approvals", "pending.json") }
@@ -187,7 +187,7 @@ func Describe(p *Pending) string {
 	return "merge"
 }
 
-// Record approves exactly the pending step (`pilot approve`: channel harness; 004: github with
+// Record approves exactly the pending step (`./chalkeus forge approve`: channel harness; 004: github with
 // the approver's login and comment id). It returns (exit code, message).
 func Record(run *evidence.Run, step, channel, approver string, commentID any) (int, string) {
 	p := PendingStep(run)
@@ -197,10 +197,10 @@ func Record(run *evidence.Run, step, channel, approver string, commentID any) (i
 	if p.Step == "merge" {
 		if p.Task != "A" {
 			return 4, fmt.Sprintf("the run is waiting for you to merge %v's PR on GitHub; merging is never approved here. "+
-				"Merge it, run `pilot/pilot resume`, then approve the reconcile proposal it shows.", p.Task)
+				"Merge it, run `./chalkeus forge resume`, then approve the reconcile proposal it shows.", p.Task)
 		}
 		return 4, "the run is waiting for you to merge A's PR on GitHub; merging is never approved here. " +
-			"Merge it, run `pilot/pilot resume`, then approve the reconcile proposal it shows."
+			"Merge it, run `./chalkeus forge resume`, then approve the reconcile proposal it shows."
 	}
 	if p.Step != step {
 		return 2, fmt.Sprintf("run %s is waiting for '%s', not '%s': %s", run.ID, p.Step, step, Describe(p))
@@ -225,7 +225,7 @@ func Record(run *evidence.Run, step, channel, approver string, commentID any) (i
 	if channel == "github" {
 		by = " by @" + approver + " on GitHub"
 	}
-	return 0, fmt.Sprintf("approved%s: %s. Now run: pilot/pilot resume --run %s", by, Describe(p), run.ID)
+	return 0, fmt.Sprintf("approved%s: %s. Now run: ./chalkeus forge resume --run %s", by, Describe(p), run.ID)
 }
 
 func eq(a, b any) bool {
@@ -282,7 +282,7 @@ func Decide(run *evidence.Run, step, question string, task, n any, say func(stri
 			ch = "harness"
 		}
 		run.LastApproval = a
-		how := "approved with `pilot/pilot approve`"
+		how := "approved with `./chalkeus forge approve`"
 		if ch == "github" {
 			how = fmt.Sprintf("approved on GitHub by @%v", a["approver"])
 		}
@@ -314,7 +314,7 @@ func Note(run *evidence.Run, step string, task, n any, approved bool, channel, a
 
 // Hint tells a no-terminal caller how to continue.
 func Hint(run *evidence.Run, step string) string {
-	return fmt.Sprintf("no terminal: approve with `pilot/pilot approve --run %s %s` (your agent harness asks you first), then `pilot/pilot resume --run %s`",
+	return fmt.Sprintf("no terminal: approve with `./chalkeus forge approve --run %s %s` (your agent harness asks you first), then `./chalkeus forge resume --run %s`",
 		run.ID, step, run.ID)
 }
 

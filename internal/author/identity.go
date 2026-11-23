@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/go-github/v85/github"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/secret"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/secret"
 )
 
 // Identity is who opens the companion pull request, by security level (roadmap C-14):

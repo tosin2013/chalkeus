@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/decisions"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/readiness"
-	"github.com/tosin2013/specfoundry/internal/reconcile"
+	"github.com/tosin2013/chalkeus/internal/decisions"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/reconcile"
 )
 
 // slicedRun is item 006's slice run of US1 (of US1, US2), with a merged-looking task and PR.

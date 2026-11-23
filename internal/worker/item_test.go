@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/prompt"
-	"github.com/tosin2013/specfoundry/internal/toolchain"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/prompt"
+	"github.com/tosin2013/chalkeus/internal/toolchain"
 	"sigs.k8s.io/yaml"
 )
 

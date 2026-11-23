@@ -1,6 +1,6 @@
-// Package doctor is `pilot doctor` (014): a read-only preflight that reports every problem with a
+// Package doctor is `./chalkeus forge doctor` (014): a read-only preflight that reports every problem with a
 // target (and optionally one item) in one pass, before anyone prepares tests or starts a run.
-// Runs and `pilot author start` still refuse at their own checks; doctor only reports.
+// Runs and `./chalkeus forge author start` still refuse at their own checks; doctor only reports.
 package doctor
 
 import (
@@ -8,7 +8,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/readiness"
 )
 
 // Status of one check.

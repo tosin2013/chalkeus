@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/verbose"
 )
 
 // FR-018: -v changes only stderr; stdout and the exit code stay as they are.

@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/decisions"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/readiness"
-	"github.com/tosin2013/specfoundry/internal/reconcile"
+	"github.com/tosin2013/chalkeus/internal/decisions"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/reconcile"
 )
 
 // 026: what happens after a slice's PR merges, and the item-level acceptance decision.
@@ -53,7 +53,7 @@ func (p *P) sliceMerged(run *evidence.Run, rec reconcile.Reconciler, task string
 	switch code {
 	case ExitAwaitMerge:
 		p.pause(run, "awaiting-merge", map[string]any{"task": task})
-		p.say("%s's slice %s PR is not merged yet. Merge it on GitHub, then run `pilot resume` (or `pilot github watch`).", task, id)
+		p.say("%s's slice %s PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` (or `./chalkeus forge github watch`).", task, id)
 		p.ensureWatcher(run)
 		return ExitAwaitMerge
 	case 0:
@@ -103,7 +103,7 @@ func (p *P) acceptanceGate(run *evidence.Run, task string) (bool, int) {
 	p.pause(run, "awaiting-acceptance", map[string]any{"task": task})
 	_ = run.Event("status", task, nil, "acceptance_wait", strings.Join(checks, "; "))
 	if ch == "tty" {
-		p.say("acceptance not recorded; the status change waits. Run `pilot resume` when the checks are done.")
+		p.say("acceptance not recorded; the status change waits. Run `./chalkeus forge resume` when the checks are done.")
 		return false, ExitDeclined
 	}
 	p.say("waiting for the item's acceptance checks. %s", decisions.Hint(run, "acceptance"))

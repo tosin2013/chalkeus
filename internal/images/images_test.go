@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
 // Ported from the former Python pilot's test_pins.py, plus BuildArgs against pilot/images/build_args.py.

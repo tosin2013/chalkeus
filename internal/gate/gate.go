@@ -19,7 +19,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 var startable = map[string]bool{"planned": true, "specced": true, "in-progress": true}

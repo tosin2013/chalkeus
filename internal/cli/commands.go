@@ -48,7 +48,7 @@ func runCmd() *cobra.Command {
 	c := &cobra.Command{Use: "run", Short: "start a new pilot run (the fixture, or --target <name> --item NNN)", Args: cobra.NoArgs,
 		RunE: runRun}
 	c.Flags().String("item", "", "run this prepared roadmap item of the --target repository (014)")
-	c.Flags().String("slice", "", "with --item: build only this slice of the item, e.g. US2 (026; see `pilot slices`)")
+	c.Flags().String("slice", "", "with --item: build only this slice of the item, e.g. US2 (026; see `./chalkeus forge slices`)")
 	addTargetFlag(c)
 	return c
 }
@@ -68,7 +68,7 @@ func approveCmd() *cobra.Command {
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		RunE:      runApprove,
 	}
-	c.Flags().String("run", "", "run id (see `pilot status`)")
+	c.Flags().String("run", "", "run id (see `./chalkeus forge status`)")
 	_ = c.MarkFlagRequired("run")
 	return c
 }

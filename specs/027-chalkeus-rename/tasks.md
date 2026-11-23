@@ -22,13 +22,16 @@ form end to end.
 
 ## Phase 3: The rename and the hard switch (US1, US2) — stage 3; the owner renames the repository the same day
 
-- [ ] T009 [US2] Change the module path to `github.com/tosin2013/chalkeus` in `go.mod` and every import
-- [ ] T010 [US2] Rename `cmd/pilot` to `cmd/chalkeus`: root `chalkeus`, every command under `forge`, `version` at both levels; the command-audit test now walks `forge`
-- [ ] T011 [US2] Add the `./chalkeus` shim (builds `./cmd/chalkeus` to `pilot/.build/bin/chalkeus`) and remove `pilot/pilot`
-- [ ] T012 [US1] Switch `.claude/settings.json` ask rules to `./chalkeus forge <cmd>` and `chalkeus forge <cmd>`; the test checks the new forms; rename `.claude/skills/pilot` to `.claude/skills/forge` and rewrite it for the new form; update `AGENTS.md`
-- [ ] T013 [US2] Change the step-mode label default to `chalkeus:proposed` in `internal/config/targets.go`; step mode says when a profile relies on the old default and issues carry `pilot/go`
-- [ ] T014 [US2] Update every doc, `README.md`, `CONTRIBUTING.md`, CI badges, workflow steps (`go.yml` builds `./cmd/chalkeus`), the integration harness (builds `./cmd/chalkeus`, runs `forge`) and the stub's references
-- [ ] T015 [US1] Release notes in `docs/` for stage 3: the owner's rename day and each operator's steps (the new command, their own harness rules, the config move)
+- [X] T009 [US2] Change the module path to `github.com/tosin2013/chalkeus` in `go.mod` and every import
+- [X] T010 [US2] Rename `cmd/pilot` to `cmd/chalkeus`: root `chalkeus`, every command under `forge`, `version` at both levels; the command-audit test now walks `forge`
+  Done as (2026-11-23): `NewRoot` is `chalkeus` (`version`, `forge`); `NewForge` holds every command. The watcher and step mode re-run the binary as `forge github watch` and `forge run|doctor`. An unknown command under `forge` exits 2.
+- [X] T011 [US2] Add the `./chalkeus` shim (builds `./cmd/chalkeus` to `pilot/.build/bin/chalkeus`) and remove `pilot/pilot`
+- [X] T012 [US1] Switch `.claude/settings.json` ask rules to `./chalkeus forge <cmd>` and `chalkeus forge <cmd>`; the test checks the new forms; rename `.claude/skills/pilot` to `.claude/skills/forge` and rewrite it for the new form; update `AGENTS.md`
+- [X] T013 [US2] Change the step-mode label default to `chalkeus:proposed` in `internal/config/targets.go`; step mode says when a profile relies on the old default and issues carry `pilot/go`
+  Done as (2026-11-23): `config.DefaultProposeLabel`; a profile without a label gets `ProposeLabelDefault`, and `step` prints a notice naming open issues that still carry `pilot/go` (`TestOldLabelNotice`).
+- [X] T014 [US2] Update every doc, `README.md`, `CONTRIBUTING.md`, CI badges, workflow steps (`go.yml` builds `./cmd/chalkeus`), the integration harness (builds `./cmd/chalkeus`, runs `forge`) and the stub's references
+  Done as (2026-11-23): commands, the config folder, `forge.env`, `FORGE_*` (publisher credential keys `PILOT_SCM_*` unchanged), the product name and GitHub links in README, CONTRIBUTING, AGENTS, `pilot/README.md`, `docs/`, both skills and the issue template; `go.yml` (shim, build, coverage floor module path); the integration harness; the docs and wording checks. Left for stage 4: cluster, registry, image and label names. Left for stage 5 (T020): `PILOT_*` names in error messages, the `pilot:` status-PR and commit titles, and history (`.specify/memory/roadmap.md`, past specs).
+- [X] T015 [US1] Release notes in `docs/` for stage 3: the owner's rename day and each operator's steps (the new command, their own harness rules, the config move)
 
 ## Phase 4: Cluster, labels and images (US2, US3) — stage 4
 

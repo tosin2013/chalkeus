@@ -12,10 +12,10 @@ import (
 
 	"github.com/google/go-github/v85/github"
 
-	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
 )
 
-// Submit is `pilot author submit` (018 T011): only a draft whose last check passed, unchanged
+// Submit is `./chalkeus forge author submit` (018 T011): only a draft whose last check passed, unchanged
 // since; one pull request on the companion, adding the files under the item's folder. A human
 // merges it.
 func Submit(ctx context.Context, e Env, item string) (*Draft, error) {
@@ -32,7 +32,7 @@ func Submit(ctx context.Context, e Env, item string) (*Draft, error) {
 		return d, err
 	}
 	if len(d.Checks) == 0 || d.Checks[len(d.Checks)-1].Result != CodeDraftOK || d.Checks[len(d.Checks)-1].DraftHash != hash {
-		return d, refuse(CodeDraftNotChecked, "the draft changed since its last passing check, or never passed one; run pilot/pilot author check first")
+		return d, refuse(CodeDraftNotChecked, "the draft changed since its last passing check, or never passed one; run ./chalkeus forge author check first")
 	}
 	id, err := e.Identity(ctx, e.Target)
 	if err != nil {

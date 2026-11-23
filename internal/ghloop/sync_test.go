@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
 )
 
 // Cases ported from the former Python pilot's tests/test_ghsync.py (004 US1: roadmap -> item issues, labels,
@@ -69,7 +69,7 @@ func TestBodyMatchesReference(t *testing.T) {
 	got := DesiredState(doc(t, nil), texts())[0].Body
 	want := "<!-- specfoundry:item=001 -->\n**001 — Slug function** · status `planned` · spec `specs/001-slugify`\n\nA slugify.\n\n" +
 		"**Outcome:** It works.\n\n### Tasks (from specs/001-slugify/tasks.md)\n- [x] T001 Implement slugify\n- [ ] T002 Export it\n\n" +
-		"_Generated from the roadmap by specfoundry. Edits here are overwritten by `pilot github sync`._\n"
+		"_Generated from the roadmap by specfoundry. Edits here are overwritten by `./chalkeus forge github sync`._\n"
 	if got != want {
 		t.Fatalf("got\n%q\nwant\n%q", got, want)
 	}

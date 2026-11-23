@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/audit"
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/audit"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 var issueRE = regexp.MustCompile(`/issues/(\d+)`)

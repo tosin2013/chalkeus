@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/names"
+	"github.com/tosin2013/chalkeus/internal/names"
 )
 
 // notices captures the rename notices (027) with markers in a temporary folder.

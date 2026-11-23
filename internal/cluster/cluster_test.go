@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
 func TestAllowlistLikePythonReEscape(t *testing.T) {

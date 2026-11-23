@@ -11,9 +11,12 @@ import (
 // 027 US1a: every command is classified, and every ask command has a harness rule for each
 // command form, so the harness (not only the skill's text) asks the human first.
 func TestCommandAudit(t *testing.T) {
-	root := NewRoot("test")
+	forge := Forge(NewRoot("test"))
+	if forge == nil {
+		t.Fatal("no forge command under the chalkeus root")
+	}
 	seen := map[string]bool{}
-	for _, c := range root.Commands() {
+	for _, c := range forge.Commands() {
 		name := c.Name()
 		if name == "help" || name == "completion" {
 			continue

@@ -2,7 +2,7 @@
 // close the terminal during a run (issue #25; specs/016-go-pilot/contracts/watcher.md).
 //
 // One watcher per run: github/watch.pid names it, with a liveness check. It is the same binary
-// running `pilot github watch --run <id>` in a new session (no controlling terminal, so it can
+// running `./chalkeus forge github watch --run <id>` in a new session (no controlling terminal, so it can
 // never answer a prompt), stdin from /dev/null, output appended to github/watch.log. It exits,
 // and removes the pidfile, when the run is no longer paused.
 package watcher
@@ -76,10 +76,10 @@ func Spawn(cmd *exec.Cmd) (int, error) {
 	return pid, nil
 }
 
-// Command builds the watcher command: exe github watch --run <id>, in a new session, stdin
+// Command builds the watcher command: exe forge github watch --run <id>, in a new session, stdin
 // from /dev/null, stdout and stderr to log, working directory root.
 func Command(exe, root, runID string, log *os.File, devnull *os.File) *exec.Cmd {
-	cmd := exec.Command(exe, "github", "watch", "--run", runID)
+	cmd := exec.Command(exe, "forge", "github", "watch", "--run", runID)
 	cmd.Dir = root
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = devnull, log, log
 	cmd.SysProcAttr = detached()

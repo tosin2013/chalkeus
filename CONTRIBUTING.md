@@ -1,13 +1,13 @@
-# Contributing to specfoundry
+# Contributing to Chalkeus
 
-Thanks for your interest. specfoundry is early and experimental, so issues, questions and
+Thanks for your interest. Chalkeus is early and experimental, so issues, questions and
 design discussion are as welcome as code.
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Ground rules
 
-specfoundry is built with its own method, so a few rules are firmer than usual. They come
+Chalkeus is built with its own method, so a few rules are firmer than usual. They come
 from the [constitution](.specify/memory/constitution.md):
 
 - **The roadmap is the source of truth.** Work is scheduled only from
@@ -25,7 +25,7 @@ from the [constitution](.specify/memory/constitution.md):
 ## Ways to contribute
 
 - **Report a bug or ask a question:** open an issue with what you ran, what you expected and
-  what happened. Include `pilot/pilot status` output and redacted logs. Never include tokens
+  what happened. Include `./chalkeus forge status` output and redacted logs. Never include tokens
   or keys.
 - **Propose a feature:** open an issue describing the outcome you want. If it fits, it becomes
   a roadmap entry.
@@ -61,7 +61,7 @@ For image changes (`pilot/images/**`), also run the arbitrary-UID smoke test aga
 builds:
 
 ```sh
-pilot/pilot up --local-build      # or build the images yourself
+./chalkeus forge up --local-build      # or build the images yourself
 WORKER=<ref> TOOLS=<ref> EGRESS=<ref> pilot/images/smoke.sh
 ```
 
@@ -81,9 +81,9 @@ go test -tags integration -run TestAutoDraft ./test/integration/   # one scenari
 ```
 
 - **It builds and deletes its own `specfoundry-m1` kind cluster,** and refuses to start if one
-  exists, so run `pilot/pilot down` first. It never touches your setup: it runs from a temporary
+  exists, so run `./chalkeus forge down` first. It never touches your setup: it runs from a temporary
   copy of `pilot/` with a temporary config folder, and drops `GH_TOKEN`, `GITHUB_TOKEN` and
-  `PILOT_*` from its environment.
+  `FORGE_*` from its environment.
 - **Every test run fails its own audit on AU12** ("not a test run"), by design: a run against
   the fake can never count as real evidence. The scenarios expect that.
 - **On failure,** the run leaves an `out` folder in `test/integration/` (git ignores it) with
@@ -99,7 +99,7 @@ why in the PR.
 
 ### Style
 
-- **Pilot (`cmd/pilot`, `internal/`):** Go (the version in `go.mod`); `gofmt`, `go vet` and
+- **Chalkeus (`cmd/chalkeus`, `internal/`):** Go (the version in `go.mod`); `gofmt`, `go vet` and
   golangci-lint clean. Scripts that run inside the images (`pilot/images/**`, `pilot/grading/`)
   stay Python 3.12, standard library only; their tests are in `pilot/images/tests/`.
 - **Images:** thin, non-root, no sudo, upstream inputs verified by checksum, runnable as any

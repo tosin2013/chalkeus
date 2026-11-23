@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 // Entry is one line of decisions.jsonl (FR-006): names, steps and reasons only.
@@ -308,7 +308,7 @@ func (m *Manager) doctorThenRun(ctx context.Context, st ItemState) (bool, error)
 	if code != 0 {
 		_ = m.Log.Add(Entry{Item: st.ID, Action: DoctorFailed, Reason: fmt.Sprintf("doctor exit %d", code), Commits: st.Commits})
 		m.Next = st.ID + ": waiting for you: doctor found problems (listed in the comment on its issue); fix them, and step mode tries again once the target or the companion changes"
-		m.comment(ctx, st.ID, "doctor-failed@"+st.Commits, "`pilot doctor --baseline` found problems, so this item didn't start. Step mode tries again when the target or the companion changes.\n\n```text\n"+findings(dlog)+"\n```")
+		m.comment(ctx, st.ID, "doctor-failed@"+st.Commits, "`./chalkeus forge doctor --baseline` found problems, so this item didn't start. Step mode tries again when the target or the companion changes.\n\n```text\n"+findings(dlog)+"\n```")
 		return true, nil
 	}
 	_ = m.Log.Add(Entry{Item: st.ID, Action: "doctor-ok", Reason: "doctor --baseline passed", Commits: st.Commits})

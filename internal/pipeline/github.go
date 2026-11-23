@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/decisions"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
-	"github.com/tosin2013/specfoundry/internal/reconcile"
-	"github.com/tosin2013/specfoundry/internal/watcher"
+	"github.com/tosin2013/chalkeus/internal/decisions"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/reconcile"
+	"github.com/tosin2013/chalkeus/internal/watcher"
 )
 
 // The 004 GitHub loop inside a run (reference: the github_* functions, reconcile_github,
@@ -103,7 +103,7 @@ func (p *P) ensureWatcher(run *evidence.Run) {
 	}
 	pid, started, err := ensure(run)
 	if err != nil {
-		p.say("  (could not start the watcher: %v; run `pilot/pilot github watch --run %s` instead)", err, run.ID)
+		p.say("  (could not start the watcher: %v; run `./chalkeus forge github watch --run %s` instead)", err, run.ID)
 		return
 	}
 	if started {
@@ -217,7 +217,7 @@ func (p *P) closes(run *evidence.Run) func(task string) (int, error) {
 }
 
 // refreshSecret puts a fresh App token in pilot-publish/scm-token (the 1-hour token may have
-// expired since `pilot up`).
+// expired since `./chalkeus forge up`).
 func (p *P) refreshSecret() error {
 	env, err := p.Creds.Env()
 	if err != nil {
@@ -282,9 +282,9 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 	if code == ExitAwaitMerge {
 		p.pause(run, "awaiting-merge", map[string]any{"task": task})
 		if task == "A" {
-			p.say("A's PR is not merged yet. Merge it on GitHub, then run `pilot resume` (or `pilot github watch`).") // the guide quotes this
+			p.say("A's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` (or `./chalkeus forge github watch`).") // the guide quotes this
 		} else {
-			p.say("%s's PR is not merged yet. Merge it on GitHub, then run `pilot resume` (or `pilot github watch`).", task)
+			p.say("%s's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` (or `./chalkeus forge github watch`).", task)
 		}
 		p.ensureWatcher(run)
 		return ExitAwaitMerge
@@ -300,13 +300,13 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 	if err != nil {
 		_ = run.Event("publish", task, nil, "status_pr_failed", fmt.Sprintf("%s: %s", errName(err), clip(err.Error(), 300)))
 		p.pause(run, "awaiting-merge", map[string]any{"task": task})
-		p.say("could not open the status-change PR: %v\n`pilot resume` tries again.", err)
+		p.say("could not open the status-change PR: %v\n`./chalkeus forge resume` tries again.", err)
 		p.ensureWatcher(run)
 		return ExitFail
 	}
 	p.pause(run, "awaiting-merge", statusPending(task, asInt(spr["number"]), base))
 	p.say("\nStatus-change PR: %v\nIt changes only item %s to `verified`. "+
-		"Merging it on GitHub approves the status change; then run `pilot resume` (or `pilot github watch`).", spr["url"], run.ItemOf(task))
+		"Merging it on GitHub approves the status change; then run `./chalkeus forge resume` (or `./chalkeus forge github watch`).", spr["url"], run.ItemOf(task))
 	p.ensureWatcher(run)
 	return ExitAwaitMerge
 }
@@ -341,7 +341,7 @@ func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
 	}
 	if view.State != "MERGED" {
 		p.pause(run, "awaiting-merge", statusPending(task, num, base))
-		p.say("status-change PR #%d is not merged yet. Merge it on GitHub to approve, then `pilot resume`.", num)
+		p.say("status-change PR #%d is not merged yet. Merge it on GitHub to approve, then `./chalkeus forge resume`.", num)
 		p.ensureWatcher(run)
 		return ExitAwaitMerge
 	}
@@ -477,7 +477,7 @@ func (p *P) Watch(runID string, interval time.Duration, sleep func(time.Duration
 		st := fmt.Sprint(run.State["state"])
 		if st == "paused(awaiting-publish)" { // nothing on GitHub resumes this: hand it back
 			watcher.Release(run.Dir, os.Getpid())
-			p.say("run %s is paused at the publish step, which only `pilot/pilot resume --run %s` retries; stopped watching", runID, runID)
+			p.say("run %s is paused at the publish step, which only `./chalkeus forge resume --run %s` retries; stopped watching", runID, runID)
 			return ExitError
 		}
 		if !strings.HasPrefix(st, "paused") {

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
 )
 
 // LoginSource turns an OpenCode login (`/connect` or `opencode auth login`, stored in OpenCode's
@@ -29,7 +29,7 @@ func LoginSource(authFile, cfgDir, cacheDir, model, baseURL string) (string, fun
 	if err != nil {
 		return "", noop, cerr("no OpenCode login at %s: log in with OpenCode first (/connect in the TUI, or `opencode auth login`). "+
 			"OpenCode 2.2 and later keep logins in their database: pipe them in with "+
-			"`opencode auth export | pilot/pilot import-opencode --from-login --auth-file - --model <provider>/<model>`", authFile)
+			"`opencode auth export | ./chalkeus forge import-opencode --from-login --auth-file - --model <provider>/<model>`", authFile)
 	}
 	auth, err := parseLogins(raw)
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 // Port of the record/take/decide parts of the former Python pilot's tests/test_approvals.py.

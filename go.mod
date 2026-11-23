@@ -1,4 +1,4 @@
-module github.com/tosin2013/specfoundry
+module github.com/tosin2013/chalkeus
 
 go 1.26.0
 

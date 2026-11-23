@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/verbose"
 )
 
 // Verbose diagnostics while a unit runs (016 FR-018). Nothing here feeds Collect, Status or

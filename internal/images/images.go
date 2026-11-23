@@ -16,9 +16,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
 )
 
 // Names are the three pilot images, in the reference's order.
@@ -69,7 +69,7 @@ func ReadLock(l paths.Layout) (map[string]string, error) {
 	return m, err
 }
 
-// Load reads the images chosen at `pilot up` (pilot/.build/images.json).
+// Load reads the images chosen at `./chalkeus forge up` (pilot/.build/images.json).
 func Load(l paths.Layout) (map[string]string, error) {
 	raw, err := os.ReadFile(l.ImagesJSON)
 	if err != nil {
@@ -245,7 +245,7 @@ func Build(l paths.Layout, name string, args map[string]string, say func(string)
 	return "", fmt.Errorf("no registry digest for %s", ref)
 }
 
-// BuildAll builds the three images (`pilot up --local-build`) and saves images.json.
+// BuildAll builds the three images (`./chalkeus forge up --local-build`) and saves images.json.
 func BuildAll(l paths.Layout, say func(string)) (map[string]string, error) {
 	pins, err := paths.ReadEnv(l.Pins)
 	if err != nil {
