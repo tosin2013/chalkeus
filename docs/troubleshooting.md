@@ -485,7 +485,9 @@ These entries apply only with `PILOT_GITHUB_ISSUES=on` or `PILOT_GITHUB_APPROVAL
   import-opencode` (or `--from-login`), or replace the key file in
   `~/.config/specfoundry/opencode/` (mode 0600).
 - **Confirm:** `pilot/pilot doctor --target <name>` shows `PASS model key`. Each new attempt
-  reads the key file again, so a paused run can then retry.
+  reads the key file again, so a paused run can then retry. That holds only for a new key with
+  the same model: a run keeps the `pilot.env` it started with, so after changing `PILOT_MODEL`
+  or the provider (for example to OpenCode Go), start a new run.
 - **Source:** `internal/config/probe.go`, `internal/config/import_login.go`.
 
 <a id="hidden-in-target"></a>
