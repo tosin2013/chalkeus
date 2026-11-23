@@ -1,0 +1,22 @@
+{
+  "closed": true,
+  "decisions": [
+    {
+      "at": "2026-11-23T04:25:39Z",
+      "comment_id": 7091571222,
+      "marker": "<!-- specfoundry:decision run=20261123T042536Z step=mode task=- n=- -->",
+      "n": null,
+      "step": "mode",
+      "task": null
+    },
+    {
+      "at": "2026-11-23T04:32:16Z",
+      "comment_id": 7091662387,
+      "marker": "<!-- specfoundry:decision run=20261123T042536Z step=retry task=A n=2 -->",
+      "n": 2,
+      "step": "retry",
+      "task": "A"
+    }
+  ],
+  "issue": 58
+}

@@ -1,0 +1,32 @@
+{
+  "pilot_env": {
+    "PILOT_APPROVERS": "tosin2013",
+    "PILOT_APP_ID": "5778430",
+    "PILOT_APP_INSTALLATION_ID": "182433248",
+    "PILOT_FIXTURE_BRANCH": "main",
+    "PILOT_FIXTURE_REPO": "tosin2013/craz3-pilot-fixture",
+    "PILOT_GITHUB_APPROVALS": "on",
+    "PILOT_GITHUB_ISSUES": "on",
+    "PILOT_MODEL": "opencode-go/deepseek-v4-pro",
+    "PILOT_MODEL_EGRESS_HOSTS": "sha256:15f3d522b114416a",
+    "PILOT_PROVIDER_CAP_DECLARED": "false",
+    "PILOT_PUBLISHER_CREDENTIAL": "app",
+    "PILOT_SPEND_CAP_USD": "1.00",
+    "PILOT_TOKEN_CAP": "2000000",
+    "RETRY_LIMIT": "2"
+  },
+  "secret_files": {
+    "opencode/litellm_api_key": {
+      "sha256": "65c563b434e7d92469e2faa5580ef16a37bf3e670ff79910932ea14285b1402a"
+    },
+    "opencode/opencode-go_api_key": {
+      "sha256": "6316b7b7c2405237a9ea27c1af62f1376c1c986735c0954342a93507e6f513d6"
+    },
+    "opencode/opencode.json": {
+      "sha256": "d7838555db15756e3f719a0c62c5c3f297b892e5472757272b5b732b426c6752"
+    },
+    "publisher.env": {
+      "sha256": "475b784ee6aa9716f9fdc4dd083c8a25fd832bbfbc5cd454647017c11b335526"
+    }
+  }
+}

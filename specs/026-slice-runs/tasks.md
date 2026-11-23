@@ -217,7 +217,7 @@ Merge and status:
 - [X] T043 [P] Update `docs/targets.md` (sliced items, `## Allowed paths (<id>)`, companion layout, `## Item acceptance`), `docs/operator-guide.md` (`pilot slices`, `--slice`), and `docs/troubleshooting.md` (each new reason code and its fix). `go test ./internal/cli/` (the docs check) must pass.
 - [X] T044 [P] Update `specs/014-any-project/contracts/item-spec.md` and `grading.md` with a one-line pointer each to 026's contracts for sliced items.
 - [X] T045 Run `go vet ./... && go test ./...` and `python3 -m unittest discover -s pilot/images/tests`. Fix any failures.
-- [ ] T046 Run the fixture with no `--slice` (quickstart §2): audit 11/11 after `down`. Record the run id in `specs/026-slice-runs/evidence/README.md`.
+- [X] T046 Run the fixture with no `--slice` (quickstart §2): audit 11/11 after `down`. Record the run id in `specs/026-slice-runs/evidence/README.md`. Done: run `20261123T042536Z`, 11/11.
 - [ ] T047 **Owner** Choose a live target item with 2+ stories of different risk. Prepare its tasks, `## Allowed paths (<id>)` where wanted, and its per-slice hidden tests (drafted by the test author or by hand, reviewed and merged by the owner).
 - [ ] T048 Run the live item slice by slice on kind (quickstart §5), with the owner approving each mode and merging each PR. Put the evidence in `specs/026-slice-runs/evidence/`; the last run audits fully after `down`.
 - [ ] T049 [P] Run `speckit-roadmap-debrief` for 026, and propose the status change to the owner. The pilot never records `verified` by itself.
