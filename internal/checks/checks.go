@@ -22,6 +22,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/gate"
 	"github.com/tosin2013/specfoundry/internal/k8s"
+	envnames "github.com/tosin2013/specfoundry/internal/names"
 	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
 )
@@ -230,7 +231,7 @@ func (d Deps) RunWorkerChecks(run *evidence.Run, imgs map[string]string, task st
 			}
 		}
 		mh, _ := os.ReadFile(d.L.ModelHost)
-		host := os.Getenv("PILOT_PROBE_MODEL_URL")
+		host := envnames.Env("PROBE_MODEL_URL")
 		if host == "" {
 			host = "https://" + strings.TrimSpace(string(mh)) + "/"
 		}

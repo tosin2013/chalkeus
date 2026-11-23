@@ -13,6 +13,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/evidence"
 	"github.com/tosin2013/specfoundry/internal/fixture"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/specfoundry/internal/names"
 	"github.com/tosin2013/specfoundry/internal/verbose"
 )
 
@@ -45,7 +46,7 @@ func Execute(args []string, version string, stdout, stderr io.Writer) int {
 	root.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		n, _ := cmd.Flags().GetCount("verbose")
 		if n == 0 {
-			n, _ = strconv.Atoi(os.Getenv("PILOT_VERBOSE"))
+			n, _ = strconv.Atoi(names.Env("VERBOSE"))
 		}
 		verbose.Set(n, stderr)
 		return applyTestMode()

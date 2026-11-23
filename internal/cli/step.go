@@ -17,6 +17,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/author"
 	"github.com/tosin2013/specfoundry/internal/config"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/specfoundry/internal/names"
 	"github.com/tosin2013/specfoundry/internal/readiness"
 	"github.com/tosin2013/specfoundry/internal/step"
 	"github.com/tosin2013/specfoundry/internal/verbose"
@@ -30,7 +31,7 @@ func stepCmd() *cobra.Command {
 		Short: "021: carry approver-labelled items through every automatic step, waiting at each human gate; never run by the session that drives runs",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			n, _ := cmd.Flags().GetCount("verbose")
-			_, envSet := os.LookupEnv("PILOT_VERBOSE")
+			_, envSet := names.LookupEnv("VERBOSE")
 			if l := watchVerbosity(n, envSet); l != verbose.Level() {
 				verbose.Set(l, cmd.ErrOrStderr())
 			}
@@ -189,7 +190,7 @@ func runPilot(ctx context.Context, exe, root string, args []string, logPath stri
 	// Never the operator's terminal: without PILOT_NO_TTY and a new session (no controlling
 	// terminal), a run's mode question appeared in the terminal step mode runs in, and an answer
 	// there approved the mode (found live, 2026-11-19). Every gate goes to GitHub.
-	c.Env = append(os.Environ(), "PILOT_STARTED_BY=step", "PILOT_VERBOSE=0", "PILOT_NO_TTY=1")
+	c.Env = append(os.Environ(), "FORGE_STARTED_BY=step", "FORGE_VERBOSE=0", "FORGE_NO_TTY=1")
 	c.SysProcAttr = watcher.DetachedAttr()
 	if err := c.Run(); err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {

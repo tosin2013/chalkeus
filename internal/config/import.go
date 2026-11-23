@@ -206,16 +206,16 @@ func RunImport(src, model, fixtureRepo, root string, force bool, out io.Writer) 
 	if len(p.DroppedSettings) > 0 {
 		fmt.Fprintf(out, "  left out settings the worker can't use: %s\n", strings.Join(p.DroppedSettings, ", "))
 	}
-	pilotEnv := filepath.Join(d, "pilot.env")
+	pilotEnv := SettingsFile(d) // forge.env, or an existing pilot.env (027)
 	if !exists(pilotEnv) {
-		body := fmt.Sprintf("PILOT_FIXTURE_REPO=%s\nPILOT_FIXTURE_BRANCH=main\nPILOT_MODEL=%s\nPILOT_MODEL_EGRESS_HOSTS=%s\n"+
-			"PILOT_SPEND_CAP_USD=1.00\nPILOT_TOKEN_CAP=2000000\nPILOT_PROVIDER_CAP_DECLARED=false\n", fixtureRepo, p.Model, p.Host)
+		body := fmt.Sprintf("FORGE_FIXTURE_REPO=%s\nFORGE_FIXTURE_BRANCH=main\nFORGE_MODEL=%s\nFORGE_MODEL_EGRESS_HOSTS=%s\n"+
+			"FORGE_SPEND_CAP_USD=1.00\nFORGE_TOKEN_CAP=2000000\nFORGE_PROVIDER_CAP_DECLARED=false\n", fixtureRepo, p.Model, p.Host)
 		if err := os.WriteFile(pilotEnv, []byte(body), 0o600); err != nil {
 			return err
 		}
 		fmt.Fprintf(out, "wrote %s (model, its egress host, default caps)\n", pilotEnv)
 		if fixtureRepo == "" {
-			fmt.Fprintln(out, "  next: set PILOT_FIXTURE_REPO=<you>/<you>-pilot-fixture in it")
+			fmt.Fprintln(out, "  next: set FORGE_FIXTURE_REPO=<you>/<you>-pilot-fixture in it")
 		}
 		return nil
 	}
@@ -223,14 +223,15 @@ func RunImport(src, model, fixtureRepo, root string, force bool, out io.Writer) 
 	if err != nil {
 		return err
 	}
-	values := ParseEnv(string(envRaw))
+	values := ParseSettings(string(envRaw), pilotEnv)
+	base := filepath.Base(pilotEnv)
 	ok := true
 	if values["PILOT_MODEL"] != p.Model {
 		cur := values["PILOT_MODEL"]
 		if cur == "" {
 			cur = "unset"
 		}
-		fmt.Fprintf(out, "  pilot.env: set PILOT_MODEL=%s (it is %s)\n", p.Model, cur)
+		fmt.Fprintf(out, "  %s: set FORGE_MODEL=%s (it is %s)\n", base, p.Model, cur)
 		ok = false
 	}
 	found := false
@@ -238,13 +239,13 @@ func RunImport(src, model, fixtureRepo, root string, force bool, out io.Writer) 
 		found = found || h == p.Host
 	}
 	if !found {
-		fmt.Fprintln(out, "  pilot.env: PILOT_MODEL_EGRESS_HOSTS doesn't include your provider's host; set it to the host part of the provider's baseURL")
+		fmt.Fprintf(out, "  %s: FORGE_MODEL_EGRESS_HOSTS doesn't include your provider's host; set it to the host part of the provider's baseURL\n", base)
 		ok = false
 	}
 	verdict := "needs the changes above"
 	if ok {
 		verdict = "matches"
 	}
-	fmt.Fprintf(out, "pilot.env: %s (%s left unchanged)\n", verdict, pilotEnv)
+	fmt.Fprintf(out, "%s: %s (%s left unchanged)\n", base, verdict, pilotEnv)
 	return nil
 }

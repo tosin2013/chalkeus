@@ -20,6 +20,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/gate"
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/images"
+	"github.com/tosin2013/specfoundry/internal/names"
 	"github.com/tosin2013/specfoundry/internal/pipeline"
 	"github.com/tosin2013/specfoundry/internal/readiness"
 	"github.com/tosin2013/specfoundry/internal/slice"
@@ -98,7 +99,7 @@ func authorWatchCmd() *cobra.Command {
 			// another level; PILOT_VERBOSE=0 silences it. The agent's live stream (-vvv) is never
 			// shown for the author: it would print the drafted tests.
 			n, _ := cmd.Flags().GetCount("verbose")
-			_, envSet := os.LookupEnv("PILOT_VERBOSE")
+			_, envSet := names.LookupEnv("VERBOSE")
 			if l := watchVerbosity(n, envSet); l != verbose.Level() {
 				verbose.Set(l, cmd.ErrOrStderr())
 			}

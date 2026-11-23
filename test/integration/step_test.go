@@ -19,7 +19,7 @@ import (
 //  2. the owner labels item 001's issue `pilot/go`; the next pass drafts its hidden tests and
 //     opens the companion PR;
 //  3. the owner merges it; the next pass runs doctor and starts the run, which pauses for the
-//     mode approval on GitHub (no terminal: PILOT_NO_TTY);
+//     mode approval on GitHub (no terminal: FORGE_NO_TTY);
 //  4. the owner approves the mode on the run's tracking issue and merges the item PR and the
 //     status PR as the run asks;
 //  5. the run ends failed, only because AU12 marks it a test run; 001 is verified on the roadmap

@@ -6,7 +6,7 @@
 //	go test -tags integration -timeout 45m ./test/integration/
 //
 // It never touches the operator's own setup: the pilot runs from a temporary copy of pilot/
-// (PILOT_ROOT) with a temporary config folder (SPECFOUNDRY_CONFIG), and it refuses to start if
+// (FORGE_ROOT) with a temporary config folder (CHALKEUS_CONFIG), and it refuses to start if
 // a pilot cluster already exists, because it creates and deletes its own.
 package integration
 
@@ -121,28 +121,28 @@ func setUp() (*world, error) {
 		return x, err
 	}
 	// notes: automatic drafting (T011), at most one author Job per draft.
-	if err := x.addTarget("notes", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\n"); err != nil {
+	if err := x.addTarget("notes", "FORGE_AUTHOR_AUTO=on\nFORGE_AUTHOR_AUTO_ATTEMPTS=1\n"); err != nil {
 		return x, err
 	}
 	// tally: step mode (T012), with GitHub issues and approvals and automatic drafting.
-	if err := x.addTarget("tally", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\nPILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\nPILOT_STEP_INTERVAL_S=30\n"); err != nil {
+	if err := x.addTarget("tally", "FORGE_AUTHOR_AUTO=on\nFORGE_AUTHOR_AUTO_ATTEMPTS=1\nFORGE_GITHUB_ISSUES=on\nFORGE_GITHUB_APPROVALS=on\nFORGE_STEP_INTERVAL_S=30\n"); err != nil {
 		return x, err
 	}
 	// gaps: step mode's debrief gaps (T013): a non-approver's label, a failing doctor.
-	// PILOT_GITHUB_ISSUES is left unset on purpose: issues follow approvals (the 021 bug fixed by
+	// FORGE_GITHUB_ISSUES is left unset on purpose: issues follow approvals (the 021 bug fixed by
 	// #121 refused this profile; 025 SC-001).
-	if err := x.addTarget("gaps", "PILOT_GITHUB_APPROVALS=on\n"); err != nil {
+	if err := x.addTarget("gaps", "FORGE_GITHUB_APPROVALS=on\n"); err != nil {
 		return x, err
 	}
 	// slices: an item built in two slices (026), with GitHub approvals.
-	if err := x.addTarget("slices", "PILOT_GITHUB_APPROVALS=on\n"); err != nil {
+	if err := x.addTarget("slices", "FORGE_GITHUB_APPROVALS=on\n"); err != nil {
 		return x, err
 	}
 	if err := os.MkdirAll(filepath.Join(x.out, "cover"), 0o755); err != nil {
 		return x, err
 	}
-	x.baseEnv = []string{"GOCOVERDIR=" + filepath.Join(x.out, "cover"), "PILOT_ROOT=" + x.root, "SPECFOUNDRY_CONFIG=" + x.config, "PILOT_TEST_MODE=1",
-		"PILOT_TEST_GITHUB_API=" + x.api, "PILOT_TEST_GIT_BASE=" + x.api + "/git/", "GH_TOKEN=" + ownerToken, "PILOT_NO_TTY=1",
+	x.baseEnv = []string{"GOCOVERDIR=" + filepath.Join(x.out, "cover"), "FORGE_ROOT=" + x.root, "CHALKEUS_CONFIG=" + x.config, "FORGE_TEST_MODE=1",
+		"FORGE_TEST_GITHUB_API=" + x.api, "FORGE_TEST_GIT_BASE=" + x.api + "/git/", "GH_TOKEN=" + ownerToken, "FORGE_NO_TTY=1",
 		// The pilot commits the status change with the operator's own git identity; a CI runner
 		// has none.
 		"GIT_AUTHOR_NAME=" + ownerLogin, "GIT_AUTHOR_EMAIL=owner@example.invalid",
@@ -210,8 +210,8 @@ func (x *world) startFake(gw, dir string) error {
 // calls a model). The model host is a public site only so the P06 probe has something to reach.
 func (x *world) writeConfig() error {
 	files := map[string]string{
-		"pilot.env": "PILOT_FIXTURE_REPO=" + fixtureRepo + "\nPILOT_MODEL=stub/stub\nPILOT_MODEL_EGRESS_HOSTS=example.com\n" +
-			"PILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\nPILOT_APPROVERS=" + ownerLogin + "\nPILOT_PUBLISHER_CREDENTIAL=token\n",
+		"forge.env": "FORGE_FIXTURE_REPO=" + fixtureRepo + "\nFORGE_MODEL=stub/stub\nFORGE_MODEL_EGRESS_HOSTS=example.com\n" +
+			"FORGE_GITHUB_ISSUES=on\nFORGE_GITHUB_APPROVALS=on\nFORGE_APPROVERS=" + ownerLogin + "\nFORGE_PUBLISHER_CREDENTIAL=token\n",
 		"publisher.env": "PILOT_SCM_TOKEN=" + botToken + "\n",
 		// doctor's model check calls providers.<p>.settings.baseURL: the fake's stand-in model.
 		"opencode/opencode.json": `{"model":"stub/stub","providers":{"stub":{"settings":{"baseURL":"` + x.local +
@@ -248,8 +248,8 @@ func (x *world) addTarget(name, extra string) error {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
-	profile := "PILOT_TARGET_REPO=" + repo + "\nPILOT_TARGET_BRANCH=main\nPILOT_TOOLCHAIN=python\n" +
-		"PILOT_TEST_COMMAND=python3 -m pytest -q tests/\nPILOT_COMPANION_REPO=" + companion + "\n" + extra
+	profile := "FORGE_TARGET_REPO=" + repo + "\nFORGE_TARGET_BRANCH=main\nFORGE_TOOLCHAIN=python\n" +
+		"FORGE_TEST_COMMAND=python3 -m pytest -q tests/\nFORGE_COMPANION_REPO=" + companion + "\n" + extra
 	if err := os.WriteFile(filepath.Join(dir, name+".env"), []byte(profile), 0o600); err != nil {
 		return err
 	}
@@ -322,7 +322,7 @@ func (x *world) pilot(args ...string) (string, int) {
 }
 
 // pilotTTY runs a pilot command under a pseudo-terminal (util-linux `script`) and without
-// PILOT_NO_TTY, as an operator runs `pilot step` in their terminal. A run step mode starts must
+// FORGE_NO_TTY, as an operator runs `pilot step` in their terminal. A run step mode starts must
 // still never ask on that terminal (the 021 bug fixed by #122; 025 SC-001).
 func (x *world) pilotTTY(args ...string) (string, int) {
 	quoted := []string{shellQuote(x.bin)}
@@ -333,7 +333,7 @@ func (x *world) pilotTTY(args ...string) (string, int) {
 	c.Dir = x.root
 	var env []string
 	for _, kv := range append(cleanEnv(), x.baseEnv...) {
-		if !strings.HasPrefix(kv, "PILOT_NO_TTY=") {
+		if !strings.HasPrefix(kv, "PILOT_NO_TTY=") && !strings.HasPrefix(kv, "FORGE_NO_TTY=") {
 			env = append(env, kv)
 		}
 	}
@@ -398,7 +398,7 @@ func cleanEnv() []string {
 	var out []string
 	for _, kv := range os.Environ() {
 		k, _, _ := strings.Cut(kv, "=")
-		if k == "GH_TOKEN" || k == "GITHUB_TOKEN" || strings.HasPrefix(k, "PILOT_") || k == "SPECFOUNDRY_CONFIG" {
+		if k == "GH_TOKEN" || k == "GITHUB_TOKEN" || strings.HasPrefix(k, "PILOT_") || strings.HasPrefix(k, "FORGE_") || k == "SPECFOUNDRY_CONFIG" || k == "CHALKEUS_CONFIG" {
 			continue
 		}
 		out = append(out, kv)

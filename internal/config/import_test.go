@@ -116,14 +116,14 @@ func TestWritesPilotEnvWithoutPrintingHost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pe := filepath.Join(e.cfg, "pilot.env")
+	pe := filepath.Join(e.cfg, "forge.env") // 027: a new settings file is forge.env, with FORGE_ names
 	raw, _ := os.ReadFile(pe)
 	env := ParseEnv(string(raw))
-	if env["PILOT_MODEL"] != "corp/m1" || env["PILOT_MODEL_EGRESS_HOSTS"] != importHost || env["PILOT_FIXTURE_REPO"] != "me/me-pilot-fixture" {
-		t.Errorf("pilot.env: %v", env)
+	if env["FORGE_MODEL"] != "corp/m1" || env["FORGE_MODEL_EGRESS_HOSTS"] != importHost || env["FORGE_FIXTURE_REPO"] != "me/me-pilot-fixture" {
+		t.Errorf("forge.env: %v", env)
 	}
 	if m := mode(t, pe); m != 0o600 {
-		t.Errorf("pilot.env mode %o", m)
+		t.Errorf("forge.env mode %o", m)
 	}
 	if strings.Contains(out, importHost) || strings.Contains(out, "secret-value") {
 		t.Error("output leaks the host or the key")

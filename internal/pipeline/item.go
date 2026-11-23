@@ -14,6 +14,7 @@ import (
 	"github.com/tosin2013/specfoundry/internal/ghloop"
 	"github.com/tosin2013/specfoundry/internal/grader"
 	"github.com/tosin2013/specfoundry/internal/images"
+	"github.com/tosin2013/specfoundry/internal/names"
 	"github.com/tosin2013/specfoundry/internal/paths"
 	"github.com/tosin2013/specfoundry/internal/publisher"
 	"github.com/tosin2013/specfoundry/internal/readiness"
@@ -65,7 +66,7 @@ func (p *P) RunItem(item, sliceID string) int {
 	pins, _ := paths.ReadEnv(p.L.Pins)
 	_ = evidence.WriteVersions(run, pins, p.L.Build, paths.Context, paths.Cluster, imgs)
 	_ = run.Event("run", nil, nil, "run_started", p.Target.Repo)
-	if by := StartedBy(os.Getenv("PILOT_STARTED_BY")); by != "" { // 021 FR-007: started by step mode
+	if by := StartedBy(names.Env("STARTED_BY")); by != "" { // 021 FR-007: started by step mode
 		_ = run.Event("run", nil, nil, "run_started_by", by)
 	}
 

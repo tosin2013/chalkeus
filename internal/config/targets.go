@@ -74,7 +74,7 @@ func (t Target) AuthorToken() (string, error) {
 	if err != nil {
 		return "", targetErr("TARGET_INVALID", "the recommended level needs %s with PILOT_AUTHOR_TOKEN (a token that can write only the companion)", t.AuthorEnv)
 	}
-	tok := strings.TrimSpace(ParseEnv(string(raw))["PILOT_AUTHOR_TOKEN"])
+	tok := strings.TrimSpace(ParseSettings(string(raw), t.AuthorEnv)["PILOT_AUTHOR_TOKEN"])
 	if tok == "" {
 		return "", targetErr("TARGET_INVALID", "%s has no PILOT_AUTHOR_TOKEN", t.AuthorEnv)
 	}
@@ -193,7 +193,7 @@ func (c *Config) LoadTarget(name, origin string) (Target, error) {
 	if err != nil {
 		return Target{}, err
 	}
-	t, err := parseTarget(name, ParseEnv(string(raw)), c)
+	t, err := parseTarget(name, ParseSettings(string(raw), p), c)
 	if err != nil {
 		return Target{}, err
 	}
@@ -341,7 +341,7 @@ func (c *Config) checkCanary(t Target, origin string) error {
 		if err != nil {
 			continue
 		}
-		v := ParseEnv(string(raw))
+		v := ParseSettings(string(raw), filepath.Join(c.TargetsDir(), other+".env"))
 		if strings.EqualFold(v["PILOT_COMPANION_REPO"], t.Repo) {
 			return targetErr("TARGET_IS_CANARY", "%s is target %q's companion repository; hidden tests must never be a build target", t.Repo, other)
 		}
