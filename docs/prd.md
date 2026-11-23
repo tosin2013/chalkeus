@@ -1,6 +1,6 @@
-# PRD: Roadmap-to-Release SDLC on Kubernetes (working name: specfoundry)
+# PRD: Roadmap-to-Release SDLC on Kubernetes (working name: Chalkeus)
 
-Status: DRAFT · Owner: specfoundry maintainers · Date: 2026-11-12 (MST)
+Status: DRAFT · Owner: Chalkeus maintainers · Date: 2026-11-12 (MST)
 Name is a placeholder, not decided.
 
 ## 1. Problem
@@ -78,7 +78,7 @@ Pod runners (plain Kubernetes Jobs now, OpenShift next) are a pluggable build en
 ## 7. Out of scope (v1)
 
 - Auto-merge, or any merge without a human.
-- Building a general-purpose agent runner. specfoundry competes on governed, least-privilege delivery, not on runner features.
+- Building a general-purpose agent runner. Chalkeus competes on governed, least-privilege delivery, not on runner features.
 - Hosted SaaS or a UI. CLI, CRDs and GitHub are the interface.
 - Publishing official agent images for every harness. We recommend images rather than maintain them, except for one reference thin OpenCode image.
 

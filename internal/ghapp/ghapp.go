@@ -30,10 +30,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
-	"github.com/tosin2013/specfoundry/internal/secret"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/secret"
 )
 
 // Margin: re-mint when less than 5 minutes are left.
@@ -250,7 +250,7 @@ func (a App) Mint(key, out string) (Result, error) {
 		out = a.EnvPath()
 	}
 	if _, err := os.Stat(key); err != nil {
-		return Result{}, &config.Error{Msg: fmt.Sprintf("no GitHub App key at %s: store it with `pilot/pilot app-key`", key), Code: 2}
+		return Result{}, &config.Error{Msg: fmt.Sprintf("no GitHub App key at %s: store it with `./chalkeus forge app-key`", key), Code: 2}
 	}
 	if err := config.CheckMode(key); err != nil {
 		return Result{}, err
@@ -307,7 +307,7 @@ func (a App) Discard() {
 	_ = os.Remove(a.InfoPath())
 }
 
-// Check is `pilot app-token --check`: mint a token, run the write probe with it, discard it.
+// Check is `./chalkeus forge app-token --check`: mint a token, run the write probe with it, discard it.
 // canary is this repository (the probe's must-fail write target).
 func (a App) Check(out io.Writer, key, canary string) int {
 	tmp := filepath.Join(a.Cfg.ConfigDir, "app-token.check.env")
@@ -334,7 +334,7 @@ func (a App) Check(out io.Writer, key, canary string) int {
 	return 1
 }
 
-// StoreKey is `pilot app-key`: copy the PEM from in to a staging file (mode 600) and keep it
+// StoreKey is `./chalkeus forge app-key`: copy the PEM from in to a staging file (mode 600) and keep it
 // only if Check passes (the 006 F3 rule).
 func (a App) StoreKey(in io.Reader, out io.Writer, canary string) int {
 	key := a.Cfg.AppKey()

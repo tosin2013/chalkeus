@@ -5,11 +5,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/ghapp"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/pipeline"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/ghapp"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/pipeline"
 )
 
 // pipelineFor builds the pipeline for the command's target: --target on `run`, or the target an
@@ -21,7 +21,7 @@ func pipelineFor(cmd *cobra.Command) (*pipeline.P, error) {
 		return nil, err
 	}
 	if _, err := os.Stat(l.UpOK); err != nil {
-		return nil, &config.Error{Msg: "`pilot up` has not completed (missing pilot/.build/up.ok)", Code: ExitError}
+		return nil, &config.Error{Msg: "`./chalkeus forge up` has not completed (missing pilot/.build/up.ok)", Code: ExitError}
 	}
 	cfg, err := config.Load(l.Root, true, true)
 	if err != nil {

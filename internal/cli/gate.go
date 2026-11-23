@@ -11,13 +11,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/gate"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/gate"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/readiness"
 )
 
 // activeRun is the latest run when it is in progress or paused (the reference active_run).
@@ -87,7 +87,7 @@ func runGate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// runItemReadiness is `pilot gate --target <name> --item NNN` (014 US2): the readiness rules
+// runItemReadiness is `./chalkeus forge gate --target <name> --item NNN` (014 US2): the readiness rules
 // only, against a fresh clone of the target; no cluster, no run.
 func runItemReadiness(cmd *cobra.Command, l paths.Layout, item string) error {
 	name, _ := cmd.Flags().GetString("target")

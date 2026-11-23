@@ -8,7 +8,7 @@ body:
       value: |
         The pilot runs a project's items with a toolchain image built by this repository's image
         workflow from verified upstream releases and pinned by digest (constraint C-09). Use this
-        form when `pilot/pilot run --target … --item …` refused with `TOOLCHAIN_UNAVAILABLE`.
+        form when `./chalkeus forge run --target … --item …` refused with `TOOLCHAIN_UNAVAILABLE`.
         Don't paste tokens, private repository names or internal hostnames.
   - type: input
     id: language
@@ -28,7 +28,7 @@ body:
     id: registries
     attributes:
       label: Package registry hosts the build needs
-      description: One hostname per line. These become the target's PILOT_REGISTRY_HOSTS.
+      description: One hostname per line. These become the target's FORGE_REGISTRY_HOSTS.
       placeholder: "registry.npmjs.org"
     validations:
       required: true

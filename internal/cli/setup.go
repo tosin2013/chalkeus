@@ -11,14 +11,14 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"github.com/tosin2013/specfoundry/internal/cluster"
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/ghapp"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/images"
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/pipeline"
+	"github.com/tosin2013/chalkeus/internal/cluster"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/ghapp"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/images"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/pipeline"
 )
 
 // credentialEnv is the env file holding the publisher credential (token, or a fresh App token).
@@ -76,7 +76,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 			return err
 		}
 		if res := verifyPublisher(cmd, l, cfg, credEnv); !res.OK {
-			return Exit(ExitError, "publisher token check failed; fix it with `pilot publisher-token`")
+			return Exit(ExitError, "publisher token check failed; fix it with `./chalkeus forge publisher-token`")
 		}
 	}
 	if err := cluster.UpCluster(e, localBuild); err != nil {
@@ -116,7 +116,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	if err := cluster.ApplyAll(e, c, cfg.ModelHosts(), imgs, credEnv); err != nil {
 		return Exit(ExitError, "%v", err)
 	}
-	// The live probes (P06, and the author's A03, which can run before any `pilot run`) read the
+	// The live probes (P06, and the author's A03, which can run before any `./chalkeus forge run`) read the
 	// model host from here; the model proxy just applied uses the same hosts. Never in evidence.
 	if hosts := cfg.ModelHosts(); len(hosts) > 0 {
 		if err := os.WriteFile(l.ModelHost, []byte(hosts[0]+"\n"), 0o644); err != nil {

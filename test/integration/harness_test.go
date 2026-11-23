@@ -6,7 +6,7 @@
 //	go test -tags integration -timeout 45m ./test/integration/
 //
 // It never touches the operator's own setup: the pilot runs from a temporary copy of pilot/
-// (PILOT_ROOT) with a temporary config folder (SPECFOUNDRY_CONFIG), and it refuses to start if
+// (FORGE_ROOT) with a temporary config folder (CHALKEUS_CONFIG), and it refuses to start if
 // a pilot cluster already exists, because it creates and deletes its own.
 package integration
 
@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/fakegh"
-	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/fakegh"
+	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
 const (
@@ -39,7 +39,7 @@ const (
 	botToken    = "bot-token"
 )
 
-// world is the shared setup: one fake GitHub and one `pilot up` for every scenario.
+// world is the shared setup: one fake GitHub and one `./chalkeus forge up` for every scenario.
 type world struct {
 	repo    string // this checkout
 	root    string // the pilot's temporary root (a copy of pilot/)
@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 }
 
 func setUp() (*world, error) {
-	for _, tool := range []string{"docker", "git", "spec", "go"} { // kind and kubectl: `pilot up` installs its pinned ones
+	for _, tool := range []string{"docker", "git", "spec", "go"} { // kind and kubectl: `./chalkeus forge up` installs its pinned ones
 		if _, err := exec.LookPath(tool); err != nil {
 			return nil, fmt.Errorf("%s is not installed", tool)
 		}
@@ -81,7 +81,7 @@ func setUp() (*world, error) {
 		kind = "kind"
 	}
 	if out, _ := exec.Command(kind, "get", "clusters").Output(); strings.Contains(string(out), paths.Cluster) {
-		return nil, fmt.Errorf("a %s cluster already exists; the integration tests create and delete their own, so run `pilot/pilot down` first", paths.Cluster)
+		return nil, fmt.Errorf("a %s cluster already exists; the integration tests create and delete their own, so run `./chalkeus forge down` first", paths.Cluster)
 	}
 	repo, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
@@ -92,7 +92,7 @@ func setUp() (*world, error) {
 		return nil, err
 	}
 	x := &world{repo: repo, root: filepath.Join(tmp, "root"), config: filepath.Join(tmp, "config"),
-		bin: filepath.Join(tmp, "bin", "pilot"), out: filepath.Join(repo, "test", "integration", "out")}
+		bin: filepath.Join(tmp, "bin", "chalkeus"), out: filepath.Join(repo, "test", "integration", "out")}
 	_ = os.RemoveAll(x.out)
 	if err := os.MkdirAll(x.out, 0o755); err != nil {
 		return x, err
@@ -100,13 +100,13 @@ func setUp() (*world, error) {
 	say("building the pilot")
 	// Built with coverage on (SC-004): every pilot process the scenarios start, watchers included,
 	// writes its counters to out/cover, and tearDown reports the glue packages' coverage.
-	if out, err := run(repo, nil, "go", "build", "-cover", "-coverpkg=github.com/tosin2013/specfoundry/...", "-o", x.bin, "./cmd/pilot"); err != nil {
+	if out, err := run(repo, nil, "go", "build", "-cover", "-coverpkg=github.com/tosin2013/chalkeus/...", "-o", x.bin, "./cmd/chalkeus"); err != nil {
 		return x, fmt.Errorf("go build: %v\n%s", err, out)
 	}
 	if err := copyPilot(filepath.Join(repo, "pilot"), filepath.Join(x.root, "pilot")); err != nil {
 		return x, err
 	}
-	// `pilot up` installs kind and kubectl with this script, from its root.
+	// `./chalkeus forge up` installs kind and kubectl with this script, from its root.
 	if err := copyPilot(filepath.Join(repo, "test", "isolation"), filepath.Join(x.root, "test", "isolation")); err != nil {
 		return x, err
 	}
@@ -121,28 +121,28 @@ func setUp() (*world, error) {
 		return x, err
 	}
 	// notes: automatic drafting (T011), at most one author Job per draft.
-	if err := x.addTarget("notes", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\n"); err != nil {
+	if err := x.addTarget("notes", "FORGE_AUTHOR_AUTO=on\nFORGE_AUTHOR_AUTO_ATTEMPTS=1\n"); err != nil {
 		return x, err
 	}
 	// tally: step mode (T012), with GitHub issues and approvals and automatic drafting.
-	if err := x.addTarget("tally", "PILOT_AUTHOR_AUTO=on\nPILOT_AUTHOR_AUTO_ATTEMPTS=1\nPILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\nPILOT_STEP_INTERVAL_S=30\n"); err != nil {
+	if err := x.addTarget("tally", "FORGE_AUTHOR_AUTO=on\nFORGE_AUTHOR_AUTO_ATTEMPTS=1\nFORGE_GITHUB_ISSUES=on\nFORGE_GITHUB_APPROVALS=on\nFORGE_STEP_INTERVAL_S=30\n"); err != nil {
 		return x, err
 	}
 	// gaps: step mode's debrief gaps (T013): a non-approver's label, a failing doctor.
-	// PILOT_GITHUB_ISSUES is left unset on purpose: issues follow approvals (the 021 bug fixed by
+	// FORGE_GITHUB_ISSUES is left unset on purpose: issues follow approvals (the 021 bug fixed by
 	// #121 refused this profile; 025 SC-001).
-	if err := x.addTarget("gaps", "PILOT_GITHUB_APPROVALS=on\n"); err != nil {
+	if err := x.addTarget("gaps", "FORGE_GITHUB_APPROVALS=on\n"); err != nil {
 		return x, err
 	}
 	// slices: an item built in two slices (026), with GitHub approvals.
-	if err := x.addTarget("slices", "PILOT_GITHUB_APPROVALS=on\n"); err != nil {
+	if err := x.addTarget("slices", "FORGE_GITHUB_APPROVALS=on\n"); err != nil {
 		return x, err
 	}
 	if err := os.MkdirAll(filepath.Join(x.out, "cover"), 0o755); err != nil {
 		return x, err
 	}
-	x.baseEnv = []string{"GOCOVERDIR=" + filepath.Join(x.out, "cover"), "PILOT_ROOT=" + x.root, "SPECFOUNDRY_CONFIG=" + x.config, "PILOT_TEST_MODE=1",
-		"PILOT_TEST_GITHUB_API=" + x.api, "PILOT_TEST_GIT_BASE=" + x.api + "/git/", "GH_TOKEN=" + ownerToken, "PILOT_NO_TTY=1",
+	x.baseEnv = []string{"GOCOVERDIR=" + filepath.Join(x.out, "cover"), "FORGE_ROOT=" + x.root, "CHALKEUS_CONFIG=" + x.config, "FORGE_TEST_MODE=1",
+		"FORGE_TEST_GITHUB_API=" + x.api, "FORGE_TEST_GIT_BASE=" + x.api + "/git/", "GH_TOKEN=" + ownerToken, "FORGE_NO_TTY=1",
 		// The pilot commits the status change with the operator's own git identity; a CI runner
 		// has none.
 		"GIT_AUTHOR_NAME=" + ownerLogin, "GIT_AUTHOR_EMAIL=owner@example.invalid",
@@ -210,8 +210,8 @@ func (x *world) startFake(gw, dir string) error {
 // calls a model). The model host is a public site only so the P06 probe has something to reach.
 func (x *world) writeConfig() error {
 	files := map[string]string{
-		"pilot.env": "PILOT_FIXTURE_REPO=" + fixtureRepo + "\nPILOT_MODEL=stub/stub\nPILOT_MODEL_EGRESS_HOSTS=example.com\n" +
-			"PILOT_GITHUB_ISSUES=on\nPILOT_GITHUB_APPROVALS=on\nPILOT_APPROVERS=" + ownerLogin + "\nPILOT_PUBLISHER_CREDENTIAL=token\n",
+		"forge.env": "FORGE_FIXTURE_REPO=" + fixtureRepo + "\nFORGE_MODEL=stub/stub\nFORGE_MODEL_EGRESS_HOSTS=example.com\n" +
+			"FORGE_GITHUB_ISSUES=on\nFORGE_GITHUB_APPROVALS=on\nFORGE_APPROVERS=" + ownerLogin + "\nFORGE_PUBLISHER_CREDENTIAL=token\n",
 		"publisher.env": "PILOT_SCM_TOKEN=" + botToken + "\n",
 		// doctor's model check calls providers.<p>.settings.baseURL: the fake's stand-in model.
 		"opencode/opencode.json": `{"model":"stub/stub","providers":{"stub":{"settings":{"baseURL":"` + x.local +
@@ -248,8 +248,8 @@ func (x *world) addTarget(name, extra string) error {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
-	profile := "PILOT_TARGET_REPO=" + repo + "\nPILOT_TARGET_BRANCH=main\nPILOT_TOOLCHAIN=python\n" +
-		"PILOT_TEST_COMMAND=python3 -m pytest -q tests/\nPILOT_COMPANION_REPO=" + companion + "\n" + extra
+	profile := "FORGE_TARGET_REPO=" + repo + "\nFORGE_TARGET_BRANCH=main\nFORGE_TOOLCHAIN=python\n" +
+		"FORGE_TEST_COMMAND=python3 -m pytest -q tests/\nFORGE_COMPANION_REPO=" + companion + "\n" + extra
 	if err := os.WriteFile(filepath.Join(dir, name+".env"), []byte(profile), 0o600); err != nil {
 		return err
 	}
@@ -303,8 +303,9 @@ func (x *world) tearDown(failed bool) {
 	}
 }
 
-// pilot runs a pilot command from the temporary root and returns its output and exit code.
+// pilot runs a `./chalkeus forge` command from the temporary root and returns its output and exit code.
 func (x *world) pilot(args ...string) (string, int) {
+	args = append([]string{"forge"}, args...)
 	c := exec.Command(x.bin, args...)
 	c.Dir = x.root
 	c.Env = append(cleanEnv(), x.baseEnv...)
@@ -322,9 +323,10 @@ func (x *world) pilot(args ...string) (string, int) {
 }
 
 // pilotTTY runs a pilot command under a pseudo-terminal (util-linux `script`) and without
-// PILOT_NO_TTY, as an operator runs `pilot step` in their terminal. A run step mode starts must
+// FORGE_NO_TTY, as an operator runs `./chalkeus forge step` in their terminal. A run step mode starts must
 // still never ask on that terminal (the 021 bug fixed by #122; 025 SC-001).
 func (x *world) pilotTTY(args ...string) (string, int) {
+	args = append([]string{"forge"}, args...)
 	quoted := []string{shellQuote(x.bin)}
 	for _, a := range args {
 		quoted = append(quoted, shellQuote(a))
@@ -333,7 +335,7 @@ func (x *world) pilotTTY(args ...string) (string, int) {
 	c.Dir = x.root
 	var env []string
 	for _, kv := range append(cleanEnv(), x.baseEnv...) {
-		if !strings.HasPrefix(kv, "PILOT_NO_TTY=") {
+		if !strings.HasPrefix(kv, "PILOT_NO_TTY=") && !strings.HasPrefix(kv, "FORGE_NO_TTY=") {
 			env = append(env, kv)
 		}
 	}
@@ -353,10 +355,11 @@ func (x *world) pilotTTY(args ...string) (string, int) {
 
 func shellQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
 
-// background starts a long-running pilot command (as an operator leaves `pilot step` running) and
+// background starts a long-running pilot command (as an operator leaves `./chalkeus forge step` running) and
 // returns a function that reads its output so far, and one that stops it with an interrupt (as
 // Ctrl-C does) and returns all of it.
 func (x *world) background(args ...string) (func() string, func() string) {
+	args = append([]string{"forge"}, args...)
 	c := exec.Command(x.bin, args...)
 	c.Dir = x.root
 	c.Env = append(cleanEnv(), x.baseEnv...)
@@ -398,7 +401,7 @@ func cleanEnv() []string {
 	var out []string
 	for _, kv := range os.Environ() {
 		k, _, _ := strings.Cut(kv, "=")
-		if k == "GH_TOKEN" || k == "GITHUB_TOKEN" || strings.HasPrefix(k, "PILOT_") || k == "SPECFOUNDRY_CONFIG" {
+		if k == "GH_TOKEN" || k == "GITHUB_TOKEN" || strings.HasPrefix(k, "PILOT_") || strings.HasPrefix(k, "FORGE_") || k == "SPECFOUNDRY_CONFIG" || k == "CHALKEUS_CONFIG" {
 			continue
 		}
 		out = append(out, kv)
@@ -406,7 +409,7 @@ func cleanEnv() []string {
 	return out
 }
 
-// status is `pilot status --run id` as JSON.
+// status is `./chalkeus forge status --run id` as JSON.
 func (x *world) status(t *testing.T, id string) map[string]any {
 	t.Helper()
 	out, code := x.pilot("status", "--run", id)
@@ -476,14 +479,14 @@ var glue = []string{"cli", "pipeline", "worker", "checks", "cluster", "grader", 
 func (x *world) coverage() {
 	var pkgs []string
 	for _, g := range glue {
-		pkgs = append(pkgs, "github.com/tosin2013/specfoundry/internal/"+g)
+		pkgs = append(pkgs, "github.com/tosin2013/chalkeus/internal/"+g)
 	}
 	out, err := run(x.repo, nil, "go", "tool", "covdata", "percent", "-i", filepath.Join(x.out, "cover"), "-pkg", strings.Join(pkgs, ","))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "coverage: %v\n%s\n", err, out)
 		return
 	}
-	text := strings.ReplaceAll(out, "github.com/tosin2013/specfoundry/", "")
+	text := strings.ReplaceAll(out, "github.com/tosin2013/chalkeus/", "")
 	_ = os.WriteFile(filepath.Join(x.out, "coverage.txt"), []byte(text), 0o644)
 	say("coverage of the glue packages by the scenarios:\n" + text)
 }

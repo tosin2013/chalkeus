@@ -1,9 +1,13 @@
-# specfoundry
+# Chalkeus
+
+<p align="center">
+  <img src="logos/chalkeus-logo.png" alt="Chalkeus: a bronze robot smith forging code on an anvil" width="320">
+</p>
 
 **Governed, least-privilege delivery for AI coding agents, on a laptop or in an enterprise
 cluster.**
 
-specfoundry takes a [Spec Kit](https://github.com/github/spec-kit) roadmap from an approved item
+Chalkeus takes a [Spec Kit](https://github.com/github/spec-kit) roadmap from an approved item
 to a merged pull request.
 - A deterministic gate decides what may start.
 - Each worker runs isolated, without credentials.
@@ -12,6 +16,9 @@ to a merged pull request.
 
 > **Status: early and experimental.** The working name, interfaces and layout may change. See
 > [the roadmap](.specify/memory/roadmap.md) for what is verified and what is planned.
+>
+> **Renamed:** this project was specfoundry, and `pilot/pilot` is now `./chalkeus forge`. If you
+> used it before, follow [the release notes](docs/release-notes.md).
 
 ## Why
 
@@ -21,7 +28,7 @@ Coding agents can write code. The hard part is trusting the process around them:
 - Who checked the result?
 - Can a security team audit what happened afterwards?
 
-specfoundry is built around those questions. [The approach](docs/approach.md) explains the
+Chalkeus is built around those questions. [The approach](docs/approach.md) explains the
 process (humans plan and release, agents build in isolation) and the research behind it.
 
 The promises:
@@ -96,17 +103,17 @@ machine to an audited run, explaining every prompt. If something fails, see
 In short:
 
 ```sh
-pilot/pilot publisher-token      # store and check the repo-scoped token (hidden prompt)
-pilot/pilot up                   # kind + Calico, images pulled by digest, proxies, publisher namespace
-pilot/pilot reset-fixture        # load the fixture into your throwaway repo
-pilot/pilot run                  # confirm the mode; A/1 fails on purpose; confirm the retry; PR for A
+./chalkeus forge publisher-token      # store and check the repo-scoped token (hidden prompt)
+./chalkeus forge up                   # kind + Calico, images pulled by digest, proxies, publisher namespace
+./chalkeus forge reset-fixture        # load the fixture into your throwaway repo
+./chalkeus forge run                  # confirm the mode; A/1 fails on purpose; confirm the retry; PR for A
 #   ... review and merge A's draft PR on GitHub ...
-pilot/pilot resume               # approve "A verified"; B runs; PR for B; audit
-pilot/pilot down && pilot/pilot audit
+./chalkeus forge resume               # approve "A verified"; B runs; PR for B; audit
+./chalkeus forge down && ./chalkeus forge audit
 ```
 
 **Your own repository:** describe it in a target profile and run one prepared item with
-`pilot/pilot run --target <name> --item NNN`. See [targets](docs/targets.md), or
+`./chalkeus forge run --target <name> --item NNN`. See [targets](docs/targets.md), or
 [greenfield](docs/greenfield.md) to start from an empty repository.
 
 Pilot reference: [pilot/README.md](pilot/README.md) · configuration contract:
@@ -114,7 +121,7 @@ Pilot reference: [pilot/README.md](pilot/README.md) · configuration contract:
 
 ## How it's built
 
-specfoundry is developed with its own method: every change starts as a Spec Kit spec, is
+Chalkeus is developed with its own method: every change starts as a Spec Kit spec, is
 gated by `spec status`, and lands with evidence.
 
 | Path | What |
@@ -124,11 +131,11 @@ gated by `spec status`, and lands with evidence.
 | [`docs/prd.md`](docs/prd.md) | Product requirements |
 | [`docs/approach.md`](docs/approach.md) | The approach and the research behind it |
 | [`specs/`](specs/) | One folder per roadmap item: spec, plan, tasks, contracts, evidence |
-| [`pilot/`](pilot/) | The pilot's command (`pilot/pilot`), images, manifests, fixture, hidden grading tests |
+| [`pilot/`](pilot/) | The pilot's command (`./chalkeus forge`), images, manifests, fixture, hidden grading tests |
 | [`test/isolation/`](test/isolation/) | The M0 isolation suite |
 | [`.github/workflows/pilot-images.yml`](.github/workflows/pilot-images.yml) | Builds the digest-pinned images from verified upstream releases |
 
-The pilot is written in Go ([`cmd/pilot`](cmd/pilot), [`internal/`](internal/)). Run the tests
+Chalkeus is written in Go ([`cmd/chalkeus`](cmd/chalkeus), [`internal/`](internal/)). Run the tests
 with:
 
 ```sh
@@ -138,7 +145,7 @@ go test ./...
 ## How it compares
 
 Agent runners such as [Kelos](https://github.com/kelos-dev/kelos) focus on running and
-orchestrating agents conveniently. specfoundry focuses on the governed lifecycle around the
+orchestrating agents conveniently. Chalkeus focuses on the governed lifecycle around the
 agent. A factual, cited comparison against our security bar is in
 [specs/003-m2-kelos-backend/kelos-review.md](specs/003-m2-kelos-backend/kelos-review.md).
 

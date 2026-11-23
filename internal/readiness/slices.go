@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/slice"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/slice"
 )
 
 // SliceInfo is what readiness records about the slice a run builds (026, data-model.md).

@@ -10,8 +10,8 @@ The pilot treats a new project like any other target ([targets.md](targets.md)).
 the order: **everything is planned before anything is built.** The first item is a scaffold, and
 each later item grows the project from there.
 
-Before you start, set up specfoundry with the [operator guide](operator-guide.md): `pilot.env`, a
-model key, the GitHub App, and `pilot/pilot up`.
+Before you start, set up Chalkeus with the [operator guide](operator-guide.md): `forge.env`, a
+model key, the GitHub App, and `./chalkeus forge up`.
 
 ## 1. Create an empty repository
 
@@ -53,22 +53,22 @@ CI check if you like, so every change arrives reviewed.
 
 ## 3. Add a target profile
 
-Create `~/.config/specfoundry/targets/<name>.env` ([targets.md §2](targets.md)). Stockroom's:
+Create `~/.config/chalkeus/targets/<name>.env` ([targets.md §2](targets.md)). Stockroom's:
 
 ```sh
-PILOT_TARGET_REPO=tosin2013/stockroom
-PILOT_TARGET_BRANCH=main
-PILOT_TOOLCHAIN=jdk21-maven
-PILOT_INSTALL_COMMAND=pilot-maven-prefetch
-PILOT_TEST_COMMAND=mvn -B test
-PILOT_REGISTRY_HOSTS=repo.maven.apache.org
-PILOT_COMPANION_REPO=tosin2013/specfoundry-acceptance
-PILOT_COMPANION_PATH=stockroom
-PILOT_TEST_PATHS=src/test/*
-PILOT_CHANGE_TYPE=feat
+FORGE_TARGET_REPO=tosin2013/stockroom
+FORGE_TARGET_BRANCH=main
+FORGE_TOOLCHAIN=jdk21-maven
+FORGE_INSTALL_COMMAND=pilot-maven-prefetch
+FORGE_TEST_COMMAND=mvn -B test
+FORGE_REGISTRY_HOSTS=repo.maven.apache.org
+FORGE_COMPANION_REPO=tosin2013/specfoundry-acceptance
+FORGE_COMPANION_PATH=stockroom
+FORGE_TEST_PATHS=src/test/*
+FORGE_CHANGE_TYPE=feat
 ```
 
-`PILOT_TEST_PATHS` makes every item add or edit a test. `pilot/pilot targets` checks the file.
+`FORGE_TEST_PATHS` makes every item add or edit a test. `./chalkeus forge targets` checks the file.
 
 ## 4. Write the first item's hidden tests
 
@@ -85,8 +85,8 @@ because the code doesn't exist yet).
 ## 5. Check, then run
 
 ```sh
-pilot/pilot doctor --target stockroom --item 001 --baseline
-pilot/pilot run --target stockroom --item 001
+./chalkeus forge doctor --target stockroom --item 001 --baseline
+./chalkeus forge run --target stockroom --item 001
 ```
 
 `doctor` reports every problem at once. With `--baseline` it also fills the cache and runs the
@@ -171,4 +171,4 @@ item's source for a literal string (such as `problem+json`) can fail a correct i
 the same thing another way (`MediaType.APPLICATION_PROBLEM_JSON`); the grader already requires
 the item to add tests (check G6).
 
-`pilot/pilot doctor --target <name>` shows the whole roadmap and what each item still needs.
+`./chalkeus forge doctor --target <name>` shows the whole roadmap and what each item still needs.

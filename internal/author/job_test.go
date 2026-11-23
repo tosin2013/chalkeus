@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/frame"
-	"github.com/tosin2013/specfoundry/internal/runner"
+	"github.com/tosin2013/chalkeus/internal/frame"
+	"github.com/tosin2013/chalkeus/internal/runner"
 )
 
 type fakeCluster struct {
@@ -155,7 +155,7 @@ func TestRunJobNeedsImages(t *testing.T) {
 	c, r := &fakeCluster{}, &fakeRunner{}
 	je, d := jobEnv(t, c, r)
 	je.Images = map[string]string{}
-	if rec := RunJob(context.Background(), je, d, 1, "p"); !strings.Contains(rec.Error, "pilot/pilot up") || len(c.applied) != 0 {
+	if rec := RunJob(context.Background(), je, d, 1, "p"); !strings.Contains(rec.Error, "./chalkeus forge up") || len(c.applied) != 0 {
 		t.Fatalf("%+v", rec)
 	}
 }

@@ -15,8 +15,8 @@ import (
 
 	"github.com/google/go-github/v85/github"
 
-	"github.com/tosin2013/specfoundry/internal/fakegh"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/fakegh"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
 )
 
 func post(t *testing.T, base, path string, body map[string]any) map[string]any {

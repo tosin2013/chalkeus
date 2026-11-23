@@ -8,19 +8,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/cluster"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/grader"
-	"github.com/tosin2013/specfoundry/internal/images"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/publisher"
-	"github.com/tosin2013/specfoundry/internal/readiness"
-	"github.com/tosin2013/specfoundry/internal/slice"
-	"github.com/tosin2013/specfoundry/internal/toolchain"
-	"github.com/tosin2013/specfoundry/internal/verbose"
-	"github.com/tosin2013/specfoundry/internal/worker"
+	"github.com/tosin2013/chalkeus/internal/cluster"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/grader"
+	"github.com/tosin2013/chalkeus/internal/images"
+	"github.com/tosin2013/chalkeus/internal/names"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/publisher"
+	"github.com/tosin2013/chalkeus/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/slice"
+	"github.com/tosin2013/chalkeus/internal/toolchain"
+	"github.com/tosin2013/chalkeus/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/worker"
 )
 
 // An item run (014, specs/014-any-project): one prepared item of a target repository, under
@@ -40,13 +41,13 @@ func (p *P) RunItem(item, sliceID string) int {
 	sliceID = slice.Normalize(sliceID)
 	imgs, err := images.Load(p.L)
 	if err != nil {
-		p.say("pilot: %v", err)
+		p.say("chalkeus: %v", err)
 		return ExitError
 	}
 	p.Imgs = imgs
 	run, err := evidence.NewRun(p.L.EvidenceRoot())
 	if err != nil {
-		p.say("pilot: %v", err)
+		p.say("chalkeus: %v", err)
 		return ExitError
 	}
 	if sliceID != "" {
@@ -65,7 +66,7 @@ func (p *P) RunItem(item, sliceID string) int {
 	pins, _ := paths.ReadEnv(p.L.Pins)
 	_ = evidence.WriteVersions(run, pins, p.L.Build, paths.Context, paths.Cluster, imgs)
 	_ = run.Event("run", nil, nil, "run_started", p.Target.Repo)
-	if by := StartedBy(os.Getenv("PILOT_STARTED_BY")); by != "" { // 021 FR-007: started by step mode
+	if by := StartedBy(names.Env("STARTED_BY")); by != "" { // 021 FR-007: started by step mode
 		_ = run.Event("run", nil, nil, "run_started_by", by)
 	}
 

@@ -8,29 +8,31 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/author"
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/readiness"
-	"github.com/tosin2013/specfoundry/internal/step"
-	"github.com/tosin2013/specfoundry/internal/verbose"
-	"github.com/tosin2013/specfoundry/internal/watcher"
+	"github.com/tosin2013/chalkeus/internal/author"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/names"
+	"github.com/tosin2013/chalkeus/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/step"
+	"github.com/tosin2013/chalkeus/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/watcher"
 )
 
-// stepCmd is `pilot step` (021, contracts/step.md): the laptop manager loop. The owner starts it
+// stepCmd is `./chalkeus forge step` (021, contracts/step.md): the laptop manager loop. The owner starts it
 // in their own terminal; the session that drives runs never does (it may draft tests, 024).
 func stepCmd() *cobra.Command {
 	c := &cobra.Command{Use: "step", Args: cobra.NoArgs,
 		Short: "021: carry approver-labelled items through every automatic step, waiting at each human gate; never run by the session that drives runs",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			n, _ := cmd.Flags().GetCount("verbose")
-			_, envSet := os.LookupEnv("PILOT_VERBOSE")
+			_, envSet := names.LookupEnv("VERBOSE")
 			if l := watchVerbosity(n, envSet); l != verbose.Level() {
 				verbose.Set(l, cmd.ErrOrStderr())
 			}
@@ -120,7 +122,7 @@ func stepCmd() *cobra.Command {
 					// A doctor or run that has started finishes even if the manager is stopped (T010):
 					// killing `run` while it prepares would leave a half-made run. Its output also
 					// goes to this terminal, so the owner follows it without asking.
-					return runPilot(context.WithoutCancel(ctx), exe, p.L.Root, args, logPath, out)
+					return runPilot(context.WithoutCancel(ctx), exe, p.L.Root, append([]string{"forge"}, args...), logPath, out)
 				},
 				Post: func(ctx context.Context, n int, body string) error {
 					w, err := loop.W()
@@ -135,6 +137,13 @@ func stepCmd() *cobra.Command {
 			once, _ := cmd.Flags().GetBool("once")
 			fmt.Fprintf(out, "step: target %s, label %q (approvers: %s), every %d s; Ctrl-C stops it\n", t.Name, t.ProposeLabel, strings.Join(approvers, ", "), t.StepIntervalS)
 			fmt.Fprintf(out, "step: how it works: every %d s (15 s while a run is in flight) it checks the roadmap, labels and PRs and takes the next automatic step. Lines below say what it did; \"next:\" says what you do next, and where. You answer on GitHub; it never approves or merges.\n", t.StepIntervalS)
+			if t.ProposeLabelDefault {
+				if all, err := loop.R.Issues(ctx, t.Repo); err == nil {
+					if msg := oldLabelNotice(all, t.Name, t.Repo); msg != "" {
+						fmt.Fprintf(out, "step: %s\n", msg)
+					}
+				}
+			}
 			lastNext := ""
 			for {
 				failed, err := m.Pass(ctx)
@@ -189,7 +198,7 @@ func runPilot(ctx context.Context, exe, root string, args []string, logPath stri
 	// Never the operator's terminal: without PILOT_NO_TTY and a new session (no controlling
 	// terminal), a run's mode question appeared in the terminal step mode runs in, and an answer
 	// there approved the mode (found live, 2026-11-19). Every gate goes to GitHub.
-	c.Env = append(os.Environ(), "PILOT_STARTED_BY=step", "PILOT_VERBOSE=0", "PILOT_NO_TTY=1")
+	c.Env = append(os.Environ(), "FORGE_STARTED_BY=step", "FORGE_VERBOSE=0", "FORGE_NO_TTY=1")
 	c.SysProcAttr = watcher.DetachedAttr()
 	if err := c.Run(); err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
@@ -237,4 +246,27 @@ func stepWait(busy bool, intervalS int) time.Duration {
 		return 15 * time.Second
 	}
 	return time.Duration(intervalS) * time.Second
+}
+
+// oldLabelNotice says when open issues still carry the label that proposed items before 027 while
+// the profile relies on the default, which changed (027 FR-007); "" otherwise.
+func oldLabelNotice(issues []ghloop.Issue, target, repo string) string {
+	var nums []string
+	for _, is := range issues {
+		if is.State != "open" {
+			continue
+		}
+		for _, l := range is.Labels {
+			if l == config.OldProposeLabel {
+				nums = append(nums, "#"+strconv.Itoa(is.Number))
+				break
+			}
+		}
+	}
+	if len(nums) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("open issues in %s carry the old label %q (%s), but step mode now looks for %q. "+
+		"Relabel them, or keep the old label with FORGE_PROPOSE_LABEL=%s in targets/%s.env.",
+		repo, config.OldProposeLabel, strings.Join(nums, ", "), config.DefaultProposeLabel, config.OldProposeLabel, target)
 }

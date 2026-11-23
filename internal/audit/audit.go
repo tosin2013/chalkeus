@@ -16,9 +16,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/prompt"
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/prompt"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
 )
 
 // Patterns are the token-like strings that must never appear in evidence.

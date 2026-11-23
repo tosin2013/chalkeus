@@ -58,7 +58,7 @@ func TestLoadTargetGood(t *testing.T) {
 		CompanionRepo: "me/greeting-service-acceptance", GithubIssues: "off", GithubApprovals: "on", MaxInputMB: 50, ChangeType: "feat",
 		PublisherEnv: filepath.Join(c.TargetsDir(), "greeting.publisher.env"), SecurityLevel: LevelMinimal,
 		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env"), AuthorAuto: "off", SliceRuns: "off", AuthorIntervalS: 120, AuthorAttempts: 2,
-		ProposeLabel: "pilot/go", StepIntervalS: 120}
+		ProposeLabel: "chalkeus:proposed", ProposeLabelDefault: true, StepIntervalS: 120}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\n got %+v\nwant %+v", got, want)
 	}

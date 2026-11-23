@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
 )
 
 // Cases ported from the former Python pilot's tests/test_ghapp.py (004 US4), with a throwaway key; no network.
@@ -235,7 +235,7 @@ func TestMintFailureFailsClosed(t *testing.T) {
 func TestMissingKeyIsAConfigError(t *testing.T) {
 	_, err := app(t).Mint("", "")
 	var ce *config.Error
-	if !errors.As(err, &ce) || ce.Code != 2 || !strings.Contains(ce.Msg, "pilot/pilot app-key") {
+	if !errors.As(err, &ce) || ce.Code != 2 || !strings.Contains(ce.Msg, "./chalkeus forge app-key") {
 		t.Fatal(err)
 	}
 }

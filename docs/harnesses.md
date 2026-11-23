@@ -7,7 +7,7 @@ a scratch workspace, emit one result frame on stdout.
 
 ## Harness options
 
-| Harness | Status in specfoundry | What the worker needs | Headless run | Spend signal |
+| Harness | Status in Chalkeus | What the worker needs | Headless run | Spend signal |
 |---|---|---|---|---|
 | **OpenCode** | Used in M1 (v2.2.7) | the `opencode` binary; its config dir (`opencode.json` + key file) | `opencode run --standalone --format json --auto --model <provider>/<model> "<prompt>"` | `step_finish` events carry `cost` and `tokens` |
 | Claude Code | Later (not yet verified here) | the `claude` binary; an API key or provider config | `claude -p "<prompt>" --output-format stream-json` | result events carry usage and cost |
@@ -23,7 +23,7 @@ Until then, OpenCode is the only supported harness. Open design points for 008:
   environment variable. The pilot keeps keys in files, mounted from a per-attempt Secret
   (with OpenCode, `{env:...}` references did not work in the worker), so each harness needs
   a file-based way to get its key.
-- **An import command per harness**, like `pilot/pilot import-opencode`, to reuse a
+- **An import command per harness**, like `./chalkeus forge import-opencode`, to reuse a
   working host setup without exposing the key.
 - **Spend accounting** from each harness's own usage events, mapped onto the same watchdog
   and AU06 check.
@@ -44,8 +44,8 @@ from an operator's machine:
 - The build verifies the archive against the release's `SHA256SUMS` **and** the pinned
   `OPENCODE_ASSET_SHA256`, then checks the extracted binary against `OPENCODE_SHA256`. A
   mismatch fails the build, with no fallback.
-- Images are published as public packages, and `pilot up` pulls them by the digests in
-  `pilot/images.lock`. `pilot up --local-build` builds the same Dockerfiles locally for
+- Images are published as public packages, and `./chalkeus forge up` pulls them by the digests in
+  `pilot/images.lock`. `./chalkeus forge up --local-build` builds the same Dockerfiles locally for
   development.
 
 Update checks, model-catalogue fetches and free-model discovery are switched off in the
@@ -62,11 +62,11 @@ image (`OPENCODE_DISABLE_AUTOUPDATE`, `OPENCODE_DISABLE_MODELS_FETCH`,
 - **Mirrored or air-gapped registries:** copy the images by digest into your registry and
   point `pilot/images.lock` at the copies. The digests don't change.
 - **Kelos users:** the worker image also provides `/kelos_entrypoint.sh`, a compatibility shim
-  so it can run where Kelos's agent-image contract is expected. specfoundry itself does not
+  so it can run where Kelos's agent-image contract is expected. Chalkeus itself does not
   use or depend on Kelos.
 
 ## Configuring a model provider
 
 Provider setup for the default harness (OpenCode), spend caps and price declarations are in
 [providers.md](providers.md). The quickest path, if you already use OpenCode, is
-`pilot/pilot import-opencode`.
+`./chalkeus forge import-opencode`.

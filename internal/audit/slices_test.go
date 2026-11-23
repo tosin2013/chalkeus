@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 // 026 T035: AU03's slice variant and AU13, on synthetic slice runs of item 006.

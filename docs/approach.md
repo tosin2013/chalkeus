@@ -1,6 +1,6 @@
 # The approach: humans plan, agents build
 
-specfoundry splits software delivery between people and coding agents along one line:
+Chalkeus splits software delivery between people and coding agents along one line:
 **humans decide what gets built and when, and agents build only what a human released.**
 This document describes that process, and the external research and industry practice
 behind each part of it. It also says where the evidence is thin.
@@ -102,12 +102,12 @@ build, in *what order*, with *which trade-offs*, is judgment that stays with peo
   process: the spec drives the plan, the tasks and the implementation. [5] Thoughtworks
   placed spec-driven development in the *Assess* ring of its Technology Radar (November 2025).
   It noted that teams were experimenting with Spec Kit, and warned that some workflows produce
-  long specs that are hard to review. [6] specfoundry builds on Spec Kit: the roadmap, spec,
+  long specs that are hard to review. [6] Chalkeus builds on Spec Kit: the roadmap, spec,
   plan and tasks are the human-owned inputs, and `spec status` reads them deterministically.
 - **Predictable paths where predictability matters.** Anthropic's guidance on building agents
   separates *workflows* (predefined code paths around model calls) from *agents* (models
   directing their own steps). It recommends the simplest pattern that works, stopping
-  conditions, and pausing for human feedback at checkpoints. [7] specfoundry is deliberately
+  conditions, and pausing for human feedback at checkpoints. [7] Chalkeus is deliberately
   a workflow on the outside: gate, build, grade, publish. The agent's freedom is limited to
   the inside of one isolated build.
 - **Release as a decision.** A roadmap naturally contains items that block other items. The
@@ -136,7 +136,7 @@ behave.
   prompt-level defences fail under adaptive attack, and that isolation, egress control and
   keeping secrets apart are what limit the damage. [10]
 
-How specfoundry applies this:
+How Chalkeus applies this:
 
 ```mermaid
 flowchart TB
@@ -285,7 +285,7 @@ flowchart LR
   the next wave starts only when a human releases it. More agents than reviewers produces a
   queue, not speed.
 
-This is the main difference from agent runners that execute tasks: specfoundry executes **the
+This is the main difference from agent runners that execute tasks: Chalkeus executes **the
 roadmap**. It follows dependencies, gates each item, isolates each build, and keeps evidence
 for each one, while people keep the decisions.
 
@@ -296,7 +296,7 @@ for each one, while people keep the decisions.
 The planning comes first either way. The project gets a constitution and a roadmap, and each
 item gets a spec, a plan and tasks before any build worker runs (C-12).
 
-- **Existing projects (brownfield).** This is the case specfoundry targets first (roadmap item
+- **Existing projects (brownfield).** This is the case Chalkeus targets first (roadmap item
   014). Items are specified against the code that already exists. The repository's own test
   suite is the visible check (G4). The item's acceptance tests, which build workers never see
   (G5, C-14), are written by a human or drafted by the test-author agent and merged by a human

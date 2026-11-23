@@ -32,7 +32,7 @@ func TestStepGaps(t *testing.T) {
 		t.Fatalf("no issue for item 001")
 	}
 
-	must(t, w.fake.Label(repo, issue, "stranger", "pilot/go", false))
+	must(t, w.fake.Label(repo, issue, "stranger", "chalkeus:proposed", false))
 	out := step("after a non-approver's label")
 	if !strings.Contains(out, "not in PILOT_APPROVERS") || !strings.Contains(out, "next: 001: waiting for an approver") {
 		t.Errorf("the pass should say the label's adder is not an approver, and that an approver must relabel")
@@ -41,8 +41,8 @@ func TestStepGaps(t *testing.T) {
 		t.Errorf("a non-approver's label must start nothing; decisions: %v", acts)
 	}
 
-	must(t, w.fake.Label(repo, issue, "stranger", "pilot/go", true))
-	must(t, w.fake.Label(repo, issue, ownerLogin, "pilot/go", false))
+	must(t, w.fake.Label(repo, issue, "stranger", "chalkeus:proposed", true))
+	must(t, w.fake.Label(repo, issue, ownerLogin, "chalkeus:proposed", false))
 	out = step("after the owner's label")
 	if !strings.Contains(out, "next: 001: waiting for you: doctor found problems") {
 		t.Errorf("after the failed doctor, the next line should point at its findings")

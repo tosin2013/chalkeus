@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/author"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/readiness"
-	"github.com/tosin2013/specfoundry/internal/slice"
+	"github.com/tosin2013/chalkeus/internal/author"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/slice"
 )
 
 // RunInfo is the newest item run of a target and item, as the evidence records it.

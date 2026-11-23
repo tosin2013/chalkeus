@@ -27,7 +27,7 @@ type ModelProbe struct {
 func (c *Config) ProbeModel(ctx context.Context) (ModelProbe, error) {
 	raw, err := os.ReadFile(filepath.Join(c.ModelDir, "opencode.json"))
 	if err != nil {
-		return ModelProbe{}, fmt.Errorf("no worker model config: run `pilot/pilot import-opencode`")
+		return ModelProbe{}, fmt.Errorf("no worker model config: run `./chalkeus forge import-opencode`")
 	}
 	var doc map[string]any
 	if err := json.Unmarshal(raw, &doc); err != nil {

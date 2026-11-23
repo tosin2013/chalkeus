@@ -89,7 +89,7 @@ func (s *Server) Merge(repo string, pr int, login string) (string, error) {
 	return sha, nil
 }
 
-// serveModel answers `pilot doctor`'s one-token model check (an OpenAI-compatible
+// serveModel answers `./chalkeus forge doctor`'s one-token model check (an OpenAI-compatible
 // POST <base>/chat/completions with a bearer key). The stub harness never calls a model; this only
 // lets doctor's check pass in the integration tests without a real provider.
 func serveModel(w http.ResponseWriter, r *http.Request) {

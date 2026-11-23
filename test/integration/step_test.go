@@ -9,17 +9,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
 )
 
 // TestStepMode is the step-mode scenario (T012) on the tally target, one `step --once` pass at a
 // time, with the owner acting through the fake between passes:
 //  1. the first pass mirrors the roadmap to issues; nothing is proposed yet;
-//  2. the owner labels item 001's issue `pilot/go`; the next pass drafts its hidden tests and
+//  2. the owner labels item 001's issue `chalkeus:proposed`; the next pass drafts its hidden tests and
 //     opens the companion PR;
 //  3. the owner merges it; the next pass runs doctor and starts the run, which pauses for the
-//     mode approval on GitHub (no terminal: PILOT_NO_TTY);
+//     mode approval on GitHub (no terminal: FORGE_NO_TTY);
 //  4. the owner approves the mode on the run's tracking issue and merges the item PR and the
 //     status PR as the run asks;
 //  5. the run ends failed, only because AU12 marks it a test run; 001 is verified on the roadmap
@@ -42,7 +42,7 @@ func TestStepMode(t *testing.T) {
 	if issue == 0 {
 		t.Fatalf("no issue for item 001 after the first pass")
 	}
-	must(t, w.fake.Label(repo, issue, ownerLogin, "pilot/go", false))
+	must(t, w.fake.Label(repo, issue, ownerLogin, "chalkeus:proposed", false))
 
 	out := step("after the label")
 	if !strings.Contains(out, "DRAFT_OK") {
@@ -99,7 +99,7 @@ func TestStepMode(t *testing.T) {
 	if tracking == 0 {
 		t.Fatalf("run %s has no tracking issue", id)
 	}
-	// The operator leaves `pilot step` running while the run goes on: it relays the run's watcher
+	// The operator leaves `./chalkeus forge step` running while the run goes on: it relays the run's watcher
 	// log, including the lines written after the run ends (the 021 bug fixed by #124 lost them).
 	output, stop := w.background("step", "--target", "tally")
 	seen, reason := w.drive(t, repo, id, tracking)

@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/frame"
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/runner"
-	"github.com/tosin2013/specfoundry/internal/stage"
-	"github.com/tosin2013/specfoundry/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/frame"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/runner"
+	"github.com/tosin2013/chalkeus/internal/stage"
+	"github.com/tosin2013/chalkeus/internal/verbose"
 )
 
 // JobCluster is what an author Job needs from the cluster (a *k8s.Client in production).
@@ -62,7 +62,7 @@ func RunJob(ctx context.Context, je JobEnv, d *Draft, attempt int, prompt string
 		return rec
 	}
 	if je.Images["worker"] == "" || je.Images["tools"] == "" {
-		return fail("harness_error", fmt.Errorf("no worker or tools image: run `pilot/pilot up`"))
+		return fail("harness_error", fmt.Errorf("no worker or tools image: run `./chalkeus forge up`"))
 	}
 	je.Cluster.DeleteNS(ns, true)
 	defer je.Cluster.DeleteNS(ns, false)

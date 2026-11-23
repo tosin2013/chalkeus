@@ -9,23 +9,23 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/ghapp"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
-	"github.com/tosin2013/specfoundry/internal/watcher"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/ghapp"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/watcher"
 )
 
-// `pilot github sync|drift|watch` and `pilot app-key|app-token` (reference: cmd_github and the
+// `./chalkeus forge github sync|drift|watch` and `./chalkeus forge app-key|app-token` (reference: cmd_github and the
 // app-key/app-token branches in cli.py).
 
 func githubErr(cmd *cobra.Command, err error) error {
-	fmt.Fprintf(cmd.ErrOrStderr(), "pilot: github: %v\n", err)
+	fmt.Fprintf(cmd.ErrOrStderr(), "chalkeus: github: %v\n", err)
 	return Code(ExitError)
 }
 
-// loopFor builds the GitHub loop for `pilot github` commands.
+// loopFor builds the GitHub loop for `./chalkeus forge github` commands.
 func loopFor(cfg *config.Config) (*ghloop.Loop, error) {
 	r, err := ghloop.NewReader()
 	if err != nil {
@@ -178,7 +178,7 @@ func watchControl(cmd *cobra.Command, detach bool) error {
 		fmt.Fprintf(out, "watcher stopped (pid %d)\n", pid)
 		return nil
 	}
-	if _, err := pipelineFor(cmd); err != nil { // the watcher needs `pilot up` and a valid config
+	if _, err := pipelineFor(cmd); err != nil { // the watcher needs `./chalkeus forge up` and a valid config
 		return err
 	}
 	if st, _ := run.State["state"].(string); !strings.HasPrefix(st, "paused") {

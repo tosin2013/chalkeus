@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/watcher"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/watcher"
 )
 
 // A minimal in-memory GitHub for the pipeline's 004 hooks.
@@ -187,7 +187,7 @@ func TestWatcherHandsBackAPublishFailure(t *testing.T) {
 	if code := p.Watch(r.ID, time.Millisecond, func(time.Duration) { t.Fatal("kept waiting") }); code != ExitError {
 		t.Fatal(code)
 	}
-	if _, err := os.Stat(watcher.PidFile(runDir)); err == nil || !strings.Contains(out.String(), "only `pilot/pilot resume --run "+r.ID+"` retries") {
+	if _, err := os.Stat(watcher.PidFile(runDir)); err == nil || !strings.Contains(out.String(), "only `./chalkeus forge resume --run "+r.ID+"` retries") {
 		t.Fatalf("%v %q", err, out.String())
 	}
 }

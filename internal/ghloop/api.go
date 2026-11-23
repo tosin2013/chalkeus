@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/go-github/v85/github"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 // The GitHub reads and writes of the 004 loop (reference: ghsync.py / ghapprove.py reads with the

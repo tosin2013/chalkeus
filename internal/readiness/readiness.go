@@ -13,10 +13,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/gate"
-	"github.com/tosin2013/specfoundry/internal/slice"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/gate"
+	"github.com/tosin2013/chalkeus/internal/slice"
 )
 
 // Deps are readiness's outside world, injected so tests need no network.
@@ -26,7 +26,7 @@ type Deps struct {
 	Clone func(repo, branch string) (dir, commit string, err error)
 	// OpenPRHeads lists the head branches of the target repository's open pull requests.
 	OpenPRHeads func(repo string) ([]string, error)
-	// AllRules is `pilot doctor`: evaluate every rule and record every failure instead of stopping
+	// AllRules is `./chalkeus forge doctor`: evaluate every rule and record every failure instead of stopping
 	// at the first (the decision is still refuse if any rule fails).
 	AllRules bool
 	// SkipHidden is the test author's readiness (018 `author start`): an empty companion folder

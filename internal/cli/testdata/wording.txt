@@ -5,7 +5,7 @@ Calico manifest hash mismatch: expected
 Confirm this mode and start staging workers? [y/N]
 GitHub App token
 GitHub App: NOT OK
-Review and merge it on GitHub yourself, then run: pilot/pilot resume
+Review and merge it on GitHub yourself, then run: ./chalkeus forge resume
 Run mode for this pilot
 SA and pod automount off; no token file
 app-token --check
@@ -18,12 +18,12 @@ not a digest reference
 one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1
 only, withholding exactly the acceptance section
 open pilot PRs exist on
-pilot/pilot app-key
-pilot/pilot approve
-pilot/pilot approve --run
-pilot/pilot publisher-token
-pilot/pilot resume
-pilot/pilot resume --run
+./chalkeus forge app-key
+./chalkeus forge approve
+./chalkeus forge approve --run
+./chalkeus forge publisher-token
+./chalkeus forge resume
+./chalkeus forge resume --run
 planned → verified
 planned → verified' to the fixture roadmap? [y/N]
 publisher namespace

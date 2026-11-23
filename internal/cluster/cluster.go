@@ -1,4 +1,4 @@
-// Package cluster is `pilot up` / `pilot down`: kind + Calico + local registry + the pilot's
+// Package cluster is `./chalkeus forge up` / `./chalkeus forge down`: kind + Calico + local registry + the pilot's
 // long-lived infrastructure (reference: the former Python pilot's cluster.py and infra.py).
 //
 // kind and kubectl are the pinned binaries installed by test/isolation/tools.sh (versions from
@@ -18,10 +18,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/verbose"
 )
 
 // Env carries what up/down need; Say prints a step line.
@@ -192,7 +192,7 @@ func UpCluster(e Env, localBuild bool) error {
 	return nil
 }
 
-// UpOK is the marker written when `pilot up` completes.
+// UpOK is the marker written when `./chalkeus forge up` completes.
 type UpOK struct {
 	At          string            `json:"at"`
 	Images      map[string]string `json:"images"`

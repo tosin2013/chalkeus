@@ -9,13 +9,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/gate"
-	"github.com/tosin2013/specfoundry/internal/slice"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/gate"
+	"github.com/tosin2013/chalkeus/internal/slice"
 )
 
-// slicesCmd is `pilot slices --target <name> --item NNN [--json]` (026, contracts/cli.md): a
+// slicesCmd is `./chalkeus forge slices --target <name> --item NNN [--json]` (026, contracts/cli.md): a
 // read-only view of an item's slices, from spec status on a fresh clone of the default branch.
 func slicesCmd() *cobra.Command {
 	c := &cobra.Command{
@@ -60,7 +60,7 @@ func runSlices(cmd *cobra.Command, _ []string) error {
 	return printSlices(cmd.OutOrStdout(), item, stdout, src.Version(), commit, asJSON)
 }
 
-// sliceRow is one line of `pilot slices --json`.
+// sliceRow is one line of `./chalkeus forge slices --json`.
 type sliceRow struct {
 	ID      string   `json:"id"`
 	Index   int      `json:"index"`

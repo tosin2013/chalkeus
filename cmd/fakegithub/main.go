@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/tosin2013/specfoundry/internal/fakegh"
+	"github.com/tosin2013/chalkeus/internal/fakegh"
 )
 
 func main() {

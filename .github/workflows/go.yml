@@ -53,7 +53,7 @@ jobs:
           fail=0
           while read -r pkg floor; do
             case "$pkg" in ''|'#'*) continue;; esac
-            got=$(awk -v p="github.com/tosin2013/specfoundry/$pkg" '$0 ~ "(^|[ \t])" p "[ \t]" && /coverage:/ {for (i = 1; i <= NF; i++) if ($i == "coverage:") {sub(/%/, "", $(i + 1)); print $(i + 1)}}' test.out)
+            got=$(awk -v p="github.com/tosin2013/chalkeus/$pkg" '$0 ~ "(^|[ \t])" p "[ \t]" && /coverage:/ {for (i = 1; i <= NF; i++) if ($i == "coverage:") {sub(/%/, "", $(i + 1)); print $(i + 1)}}' test.out)
             if [ -z "$got" ]; then echo "::error::$pkg: no coverage in the test output"; fail=1; continue; fi
             if awk -v g="$got" -v f="$floor" 'BEGIN {exit !(g < f)}'; then
               echo "::error::$pkg coverage ${got}% is below its floor ${floor}% (.github/coverage-floor.txt)"; fail=1
@@ -73,10 +73,10 @@ jobs:
             echo
             echo '| Package | Coverage |'
             echo '|---|---|'
-            awk '/coverage: [0-9.]+% of statements/ {for (i = 1; i <= NF; i++) { if ($i ~ /^github.com\//) p = $i; if ($i == "coverage:") c = $(i + 1) }; sub(/^github.com\/tosin2013\/specfoundry\//, "", p); print "| " p " | " c " |"}' test.out | sort
+            awk '/coverage: [0-9.]+% of statements/ {for (i = 1; i <= NF; i++) { if ($i ~ /^github.com\//) p = $i; if ($i == "coverage:") c = $(i + 1) }; sub(/^github.com\/tosin2013\/chalkeus\//, "", p); print "| " p " | " c " |"}' test.out | sort
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Build the pilot through its shim
-        run: pilot/pilot version
+      - name: Build Chalkeus through its shim
+        run: ./chalkeus forge version
       - name: Tests of the in-image Python scripts (worker, tools, grading)
         run: python3 -m unittest discover -s pilot/images/tests -t pilot/images/tests
 
@@ -99,4 +99,4 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
-        run: go build -trimpath -o /dev/null ./cmd/pilot
+        run: go build -trimpath -o /dev/null ./cmd/chalkeus

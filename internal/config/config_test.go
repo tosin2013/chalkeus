@@ -90,7 +90,7 @@ func TestMissingFilesSayWhatToDo(t *testing.T) {
 	}
 	e.write("pilot.env", pilotEnv, 0o600)
 	_ = os.Remove(filepath.Join(e.d, "publisher.env"))
-	if _, err := Load(".", true, false); err == nil || !strings.Contains(err.Error(), "pilot/pilot publisher-token") {
+	if _, err := Load(".", true, false); err == nil || !strings.Contains(err.Error(), "./chalkeus forge publisher-token") {
 		t.Fatalf("%v", err)
 	}
 }

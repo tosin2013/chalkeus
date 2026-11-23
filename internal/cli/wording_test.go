@@ -21,7 +21,7 @@ import (
 
 var (
 	wordingDocs = []string{"docs/operator-guide.md", "docs/troubleshooting.md", "docs/github-loop.md", "docs/github-app.md",
-		".claude/skills/pilot/SKILL.md"}
+		".claude/skills/forge/SKILL.md"}
 	fenceRE = regexp.MustCompile("(?s)```[^\\n]*\\n(.*?)```")
 	spanRE  = regexp.MustCompile("`([^`\\n]+)`")
 	holeRE  = regexp.MustCompile(`<[^>]+>|\{[^}]+\}|\.\.\.|…|\d{8}T\d{6}Z|#\d+|\b\d+\b`)
@@ -68,7 +68,10 @@ func docChunks(t *testing.T, root string) []string {
 	var out []string
 	for _, s := range spans {
 		for _, c := range holeRE.Split(strings.TrimPrefix(s, "== "), -1) {
-			c = strings.Trim(c, " .:;,()'\"")
+			c = strings.TrimRight(strings.Trim(c, " :;,()'\""), ".")
+			if !strings.HasPrefix(c, "./") { // keep the shim's ./ (027)
+				c = strings.TrimLeft(c, ".")
+			}
 			if len(c) >= 15 && strings.Contains(c, " ") && !seen[c] {
 				seen[c] = true
 				out = append(out, c)

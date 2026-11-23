@@ -3,7 +3,7 @@
 The fixture shows the pilot's guarantees on two built-in items. A **target** is one of your own
 repositories. You prepare its items with Spec Kit; the pilot then runs only items that are
 prepared, under the same guarantees. This page covers configuring targets, checking whether an item
-is ready, and running it (roadmap item 014). Today you can use `PILOT_TOOLCHAIN=python3.13`, with
+is ready, and running it (roadmap item 014). Today you can use `FORGE_TOOLCHAIN=python3.13`, with
 packages installed from PyPI, or the built-in `python` (Python 3.11 with pytest) for a project
 whose tests need no packages. The other toolchains follow.
 
@@ -34,7 +34,7 @@ For each item you want the pilot to build:
 - **Hidden acceptance tests** live in a separate **private** repository: the *companion*. They
   go in `items/<NNN>/`, laid out like the project (for example `items/002/src/test/java/…`).
   - **One companion can serve all your targets**, in any languages. Give each target its own
-    folder and name it with `PILOT_COMPANION_PATH` (section 2):
+    folder and name it with `FORGE_COMPANION_PATH` (section 2):
 
     ```text
     my-acceptance/                                  (private)
@@ -59,11 +59,11 @@ For each item you want the pilot to build:
 ## 2. Configure the target
 
 Target settings live on your machine, never in the target repository. They go in a `targets`
-folder next to `pilot.env`:
+folder next to `forge.env`:
 
 ```text
-~/.config/specfoundry/              # or $SPECFOUNDRY_CONFIG, if you set it
-├── pilot.env                       # shared: model, approvers, publisher mode
+~/.config/chalkeus/              # or $CHALKEUS_CONFIG, if you set it
+├── forge.env                       # shared: model, approvers, publisher mode
 ├── publisher.env                   # token mode only: the fixture's token
 └── targets/                        # you create this folder; the pilot doesn't
     ├── greeting.env                # the profile for `--target greeting`
@@ -74,41 +74,41 @@ folder next to `pilot.env`:
   A name is lower-case letters, digits and `-`.
 - **Create the folder and the file yourself, readable only by you.** For example, on a machine
   where your home is `/home/ubuntu`, the full path is
-  `/home/ubuntu/.config/specfoundry/targets/greeting.env`:
+  `/home/ubuntu/.config/chalkeus/targets/greeting.env`:
 
 ```sh
-install -d -m 0700 ~/.config/specfoundry/targets
-install -m 600 /dev/null ~/.config/specfoundry/targets/greeting.env
-$EDITOR ~/.config/specfoundry/targets/greeting.env
+install -d -m 0700 ~/.config/chalkeus/targets
+install -m 600 /dev/null ~/.config/chalkeus/targets/greeting.env
+$EDITOR ~/.config/chalkeus/targets/greeting.env
 ```
 
 - **The pilot checks the modes:** the folder must be `0700` and each file `0600`, otherwise it
   stops with `TARGET_MODE`. If you made them with `mkdir` or an editor, run
-  `chmod 700 ~/.config/specfoundry/targets` and `chmod 600 ~/.config/specfoundry/targets/*.env`.
-- **Check your profiles** with `pilot/pilot targets`: it lists each one, or says why it's invalid.
+  `chmod 700 ~/.config/chalkeus/targets` and `chmod 600 ~/.config/chalkeus/targets/*.env`.
+- **Check your profiles** with `./chalkeus forge targets`: it lists each one, or says why it's invalid.
 - **If the file is missing**, the pilot stops with `TARGET_UNKNOWN: no target "greeting":
   create …/targets/greeting.env`, and prints the full path it looked for.
 
 The profile's contents:
 
 ```sh
-PILOT_TARGET_REPO=you/greeting-service
-PILOT_TARGET_BRANCH=main
-PILOT_TOOLCHAIN=jdk21-maven
-PILOT_TEST_COMMAND=mvn -B test
-PILOT_REGISTRY_HOSTS=repo.maven.apache.org
-PILOT_COMPANION_REPO=you/my-acceptance
-PILOT_COMPANION_PATH=greeting-service       # optional: this target's folder in a shared companion
-PILOT_GITHUB_ISSUES=off
+FORGE_TARGET_REPO=you/greeting-service
+FORGE_TARGET_BRANCH=main
+FORGE_TOOLCHAIN=jdk21-maven
+FORGE_TEST_COMMAND=mvn -B test
+FORGE_REGISTRY_HOSTS=repo.maven.apache.org
+FORGE_COMPANION_REPO=you/my-acceptance
+FORGE_COMPANION_PATH=greeting-service       # optional: this target's folder in a shared companion
+FORGE_GITHUB_ISSUES=off
 ```
 
 - **Your repository declares none of this.** No agent change or merged PR can widen what the
   worker may reach.
-- **`PILOT_TOOLCHAIN`** names a toolchain specfoundry builds: `jdk21-maven`, `node24`,
+- **`FORGE_TOOLCHAIN`** names a toolchain Chalkeus builds: `jdk21-maven`, `node24`,
   `python3.13` or `go` (`pilot/images/toolchains.json`). Until its image is published, the pilot
   refuses with `TOOLCHAIN_UNAVAILABLE`.
-- **Dependencies:** list the package registries in `PILOT_REGISTRY_HOSTS` and set
-  `PILOT_INSTALL_COMMAND`. The install runs twice: once for the agent (with the registries
+- **Dependencies:** list the package registries in `FORGE_REGISTRY_HOSTS` and set
+  `FORGE_INSTALL_COMMAND`. The install runs twice: once for the agent (with the registries
   reachable), and once, before any attempt, into a cache built from your unchanged code plus the
   hidden tests. The grader then runs offline from that cache, so **an attempt can't add
   dependencies**; add new ones to the project yourself when you prepare the item. The registries
@@ -119,10 +119,10 @@ PILOT_GITHUB_ISSUES=off
   (`python3.13`):
 
   ```sh
-  PILOT_TOOLCHAIN=python3.13
-  PILOT_REGISTRY_HOSTS=pypi.org,files.pythonhosted.org
-  PILOT_INSTALL_COMMAND=pip install -r requirements.txt      # dependencies only, not -e .
-  PILOT_TEST_COMMAND=PYTHONPATH=src python -m pytest -q -p no:cacheprovider tests
+  FORGE_TOOLCHAIN=python3.13
+  FORGE_REGISTRY_HOSTS=pypi.org,files.pythonhosted.org
+  FORGE_INSTALL_COMMAND=pip install -r requirements.txt      # dependencies only, not -e .
+  FORGE_TEST_COMMAND=PYTHONPATH=src python -m pytest -q -p no:cacheprovider tests
   ```
 
   The packages go into a virtual environment the pilot creates; your tests must find the project's
@@ -130,7 +130,7 @@ PILOT_GITHUB_ISSUES=off
 
   The other catalog toolchains, as tested offline in `pilot/images/toolchain-samples/`:
 
-  | `PILOT_TOOLCHAIN` | `PILOT_REGISTRY_HOSTS` | `PILOT_INSTALL_COMMAND` | `PILOT_TEST_COMMAND` |
+  | `FORGE_TOOLCHAIN` | `FORGE_REGISTRY_HOSTS` | `FORGE_INSTALL_COMMAND` | `FORGE_TEST_COMMAND` |
   |---|---|---|---|
   | `node24` | `registry.npmjs.org` | `npm ci` | `npm ci --offline && npm test` |
   | `go` | `proxy.golang.org,sum.golang.org` | `go mod download` | `go test ./...` |
@@ -149,8 +149,8 @@ PILOT_GITHUB_ISSUES=off
     project), it runs the test phase again with one trivial test in their place. Only your
     `pom.xml` decides what is downloaded.
 - **Any other language:** bring your own toolchain image (next section), or ask for one with the
-  [toolchain image request form](https://github.com/tosin2013/specfoundry/issues/new?template=toolchain-image.yml).
-- **If the project requires tests with every change**, set `PILOT_TEST_PATHS` to its test files
+  [toolchain image request form](https://github.com/tosin2013/chalkeus/issues/new?template=toolchain-image.yml).
+- **If the project requires tests with every change**, set `FORGE_TEST_PATHS` to its test files
   (for example `tests/*` or `src/test/*`). The grader then adds two checks:
   - **G6:** the change must add or edit at least one test file. A change without tests fails,
     and the agent is told to add them.
@@ -160,12 +160,12 @@ PILOT_GITHUB_ISSUES=off
     file in the spec under `## Tests that may change`.
 
   The test paths must also be in the item's `## Allowed paths`, or the agent can't add tests.
-  The project's other gates (coverage, linters) can go in `PILOT_TEST_COMMAND` if they pass on
+  The project's other gates (coverage, linters) can go in `FORGE_TEST_COMMAND` if they pass on
   your current code; the baseline check confirms that before any attempt. Either way, your
   repository's own CI runs on the PR.
 - **PR titles follow [Conventional Commits](https://www.conventionalcommits.org/)**, because many
   projects squash-merge and use the PR title as the changelog entry. The item's PR is
-  `feat(<item>): <the item's roadmap title>`; set `PILOT_CHANGE_TYPE` (`fix`, `refactor`, `perf`,
+  `feat(<item>): <the item's roadmap title>`; set `FORGE_CHANGE_TYPE` (`fix`, `refactor`, `perf`,
   `test`, `docs`, `build`, `ci`, `style` or `chore`) when the item isn't a feature. The
   status-change PR and its commit are `docs(roadmap): <item> verified`. The item's commit
   carries the same title as its PR, because GitHub squash-merges a one-commit PR with the
@@ -177,8 +177,8 @@ PILOT_GITHUB_ISSUES=off
   project wants a human sign-off on every change (for example a DCO policy), turn on **Settings →
   General → Require contributors to sign off on web-based commits** in the target repository:
   when you squash-merge a pilot PR in the web interface, GitHub adds **your** `Signed-off-by`.
-- **Optional keys** may only raise the toolchain's defaults: `PILOT_GRADER_MEMORY`,
-  `PILOT_GRADER_DEADLINE_S` and `PILOT_CACHE_SIZE`. `PILOT_MAX_INPUT_MB` (default 50) limits
+- **Optional keys** may only raise the toolchain's defaults: `FORGE_GRADER_MEMORY`,
+  `FORGE_GRADER_DEADLINE_S` and `FORGE_CACHE_SIZE`. `FORGE_MAX_INPUT_MB` (default 50) limits
   the repository snapshot.
 - **The target repository can't be this one or any target's companion.** The pilot refuses
   with `TARGET_IS_CANARY`.
@@ -187,18 +187,18 @@ PILOT_GITHUB_ISSUES=off
 
 A toolchain image only supplies a language's tools. It holds `/opt/toolchain/` with a
 `toolchain.json` describing them. The pilot copies them into the agent's and the grader's
-pods; the agent's sandbox and the grader stay specfoundry's own images. The format is in
+pods; the agent's sandbox and the grader stay Chalkeus's own images. The format is in
 [the toolchain image contract](../specs/014-any-project/contracts/toolchain-image.md). A
 template is coming: a UBI Dockerfile for Red Hat and OpenShift, a Debian one for elsewhere, and
 a GitHub Actions workflow that builds and attests the image.
 
 ```sh
-PILOT_TOOLCHAIN=rust-1.83
-PILOT_TOOLCHAIN_IMAGE=quay.io/you/toolchain-rust@sha256:<64 hex>
+FORGE_TOOLCHAIN=rust-1.83
+FORGE_TOOLCHAIN_IMAGE=quay.io/you/toolchain-rust@sha256:<64 hex>
 ```
 
 - The image must be pinned by digest; a tag is refused.
-- Its name can't be one of specfoundry's toolchains.
+- Its name can't be one of Chalkeus's toolchains.
 - The mode approval shows it as operator-supplied, and the run's evidence records it so.
 - It runs your project's tests inside the grader, so keep it trustworthy, as you would any base
   image.
@@ -206,19 +206,19 @@ PILOT_TOOLCHAIN_IMAGE=quay.io/you/toolchain-rust@sha256:<64 hex>
 List what's configured:
 
 ```sh
-pilot/pilot targets
+./chalkeus forge targets
 ```
 
 It prints each target's repository, toolchain, registries and companion, or why the target is
 invalid. It never prints a secret or your model host. `fixture` is always listed; it is the
-repository in `pilot.env`.
+repository in `forge.env`.
 
-`pilot/pilot reset-fixture` only ever acts on the fixture. With `--target` naming any other
+`./chalkeus forge reset-fixture` only ever acts on the fixture. With `--target` naming any other
 target it refuses with `NOT_A_FIXTURE`, because it force-pushes.
 
 ### AI-driven apps
 
-specfoundry builds AI-driven apps like any other: the worker codes with its own model, and the
+Chalkeus builds AI-driven apps like any other: the worker codes with its own model, and the
 grader checks the change with your deterministic tests, offline. Write hidden tests for the code
 around the model (how prompts are built, how tools are wired, how structured output is parsed,
 retries and guardrails) with a **fake model** or recorded responses; Spring AI, LangChain4j and
@@ -227,7 +227,7 @@ most SDKs let tests swap one in.
 Judging what a live model actually does ("is the answer good?", "does retrieval find the right
 document?") is **evaluation**, not grading: it is probabilistic and depends on the model version.
 That belongs to your own evaluation tools and CI, which you can read before you merge the PR.
-specfoundry doesn't run live-model evaluations, and its graders have no model access (roadmap
+Chalkeus doesn't run live-model evaluations, and its graders have no model access (roadmap
 C-16).
 
 ### Hidden tests: who can see what, and why
@@ -239,10 +239,10 @@ tricked it (a prompt injection), or a bug carries them over. The next run's snap
 contain them. The pilot refuses such a run (`HIDDEN_TESTS_IN_TARGET`), and the **security level**
 in the target's profile decides who may write the target and read the companion:
 
-| `PILOT_SECURITY_LEVEL` | For | The test author's identity | What keeps tests out of the target |
+| `FORGE_SECURITY_LEVEL` | For | The test author's identity | What keeps tests out of the target |
 |---|---|---|---|
 | `minimal` (default) | one developer on a laptop | your own git access | branch protection on the target, your review of every PR, the skill's rules, the `HIDDEN_TESTS_IN_TARGET` check |
-| `recommended` | teams | a token that can write **only** the companion, in `targets/<name>.author.env` as `PILOT_AUTHOR_TOKEN` (mode 0600) | GitHub itself: that identity can't write the target |
+| `recommended` | teams | a token that can write **only** the companion, in `targets/<name>.author.env` as `FORGE_AUTHOR_TOKEN` (mode 0600) | GitHub itself: that identity can't write the target |
 | `strict` | enterprise, cluster mode | a separate GitHub App, companion only, in its own Job | as recommended, plus enforced network limits (arrives with cluster mode) |
 
 Build-worker isolation is the same at every level. Separate identities are recommended for
@@ -258,10 +258,10 @@ draft them. Open a new session (not the one that runs the pilot), load the test-
 (`.claude/skills/test-author/`), and give it the target and item. It runs:
 
 ```sh
-pilot/pilot author start --target greeting --item 002    # checks the item; prints a workspace
-pilot/pilot author check --target greeting --item 002    # on the cluster: your tests pass, the drafted tests fail
-pilot/pilot author submit --target greeting --item 002   # opens a pull request on the companion
-pilot/pilot author status --target greeting --item 002   # where the draft stands
+./chalkeus forge author start --target greeting --item 002    # checks the item; prints a workspace
+./chalkeus forge author check --target greeting --item 002    # on the cluster: your tests pass, the drafted tests fail
+./chalkeus forge author submit --target greeting --item 002   # opens a pull request on the companion
+./chalkeus forge author status --target greeting --item 002   # where the draft stands
 ```
 
 - The pull request touches only the item's folder in the companion and includes a coverage
@@ -277,22 +277,22 @@ ready except for its hidden tests (you merged its spec and tasks, and the compan
 and no open draft for it), drafts them, and opens the same companion pull request. You still
 review and merge it, and you still approve every run.
 
-1. In the target's profile, set `PILOT_AUTHOR_AUTO=on`. Optional: `PILOT_AUTHOR_INTERVAL_S`
-   (seconds between checks, default 120) and `PILOT_AUTHOR_AUTO_ATTEMPTS` (author Jobs per
+1. In the target's profile, set `FORGE_AUTHOR_AUTO=on`. Optional: `FORGE_AUTHOR_INTERVAL_S`
+   (seconds between checks, default 120) and `FORGE_AUTHOR_AUTO_ATTEMPTS` (author Jobs per
    draft, default 2).
-2. Run `pilot/pilot up`. It creates the author's proxy, which lets it reach only your model.
+2. Run `./chalkeus forge up`. It creates the author's proxy, which lets it reach only your model.
 3. In **your own terminal**, start the watcher:
 
    ```sh
-   pilot/pilot author watch --target greeting           # Ctrl-C stops it
-   pilot/pilot author watch --target greeting --once    # one check, then exit
+   ./chalkeus forge author watch --target greeting           # Ctrl-C stops it
+   ./chalkeus forge author watch --target greeting --once    # one check, then exit
    ```
 
 It prints one line per decision: `skip NNN: <why>`, `draft NNN: started …`, then
 `DRAFT_OK, opened <url>`, or `attempt <n> <code>` for each failed attempt and then
 `failed, no PR`. It runs at `-vv` by default, printing the author Job's
 pod phases and events, checks A01-A05, its spend, and anything the author's proxy refused, on
-stderr. Pass `-v` for less, or set `PILOT_VERBOSE=0` to turn it off. The agent's live activity
+stderr. Pass `-v` for less, or set `FORGE_VERBOSE=0` to turn it off. The agent's live activity
 (`-vvv` for build workers) is never shown for the author, because it would print the drafted
 tests.
 
@@ -305,8 +305,8 @@ tests.
 - **A failed check gets one more try:** a second Job sees the failure. After that, the item
   waits until its spec changes, or you draft by hand. An item is never drafted twice for the
   same spec.
-- `pilot/pilot doctor --target <name>` shows whether auto-draft is on.
-- The session that drives runs (your coding agent with the pilot skill) never starts the
+- `./chalkeus forge doctor --target <name>` shows whether auto-draft is on.
+- The session that drives runs (your coding agent with the forge skill) never starts the
   watcher or reads its drafts.
 
 ### Step mode: leave it running
@@ -315,17 +315,17 @@ Step mode carries items through every automatic step and stops at each of your d
 you can leave it running and answer from GitHub. You start it in **your own terminal**:
 
 ```sh
-pilot/pilot step --target greeting           # Ctrl-C stops it
-pilot/pilot step --target greeting --once    # one pass, then exit
+./chalkeus forge step --target greeting           # Ctrl-C stops it
+./chalkeus forge step --target greeting --once    # one pass, then exit
 ```
 
-It needs GitHub approvals on for the target (`PILOT_GITHUB_APPROVALS=on`, in its profile or in
-`pilot.env`; item issues follow, as for runs) and `PILOT_APPROVERS` in `pilot.env`.
+It needs GitHub approvals on for the target (`FORGE_GITHUB_APPROVALS=on`, in its profile or in
+`forge.env`; item issues follow, as for runs) and `FORGE_APPROVERS` in `forge.env`.
 
 1. **Propose an item:** add the label "pilot/go" to the item's GitHub issue. Set
-   `PILOT_PROPOSE_LABEL` to use another name. The label counts only when an approver added it
+   `FORGE_PROPOSE_LABEL` to use another name. The label counts only when an approver added it
    last, so anyone else labelling the issue starts nothing.
-2. **Each pass** (every `PILOT_STEP_INTERVAL_S`, default 120 s), for the first proposed item in
+2. **Each pass** (every `FORGE_STEP_INTERVAL_S`, default 120 s), for the first proposed item in
    roadmap order:
    - **No hidden tests:** with auto-draft on, it drafts them as `author watch` does. Otherwise
      it comments once on the issue that tests are needed. You review and merge the tests PR.
@@ -333,7 +333,7 @@ It needs GitHub approvals on for the target (`PILOT_GITHUB_APPROVALS=on`, in its
      it's clean, it starts the run, which waits for your `/approve mode` on its tracking issue.
    - **While the run waits for you** (mode, retries, the item PR, the status PR), it waits too.
    - **When the run succeeds,** it moves to the next proposed item. For an item built in
-     slices (`PILOT_SLICE_RUNS=on`), it moves to the item's next slice first
+     slices (`FORGE_SLICE_RUNS=on`), it moves to the item's next slice first
      ([one slice at a time](#one-slice-at-a-time)).
 3. **When something fails,** it comments once and leaves the item:
    - a failed `doctor` is tried again when the target or the companion changes;
@@ -355,7 +355,7 @@ runs never starts it, because it may draft hidden tests.
 ## 3. Check that an item is ready
 
 ```sh
-pilot/pilot gate --target greeting --item 002
+./chalkeus forge gate --target greeting --item 002
 ```
 
 The check needs no cluster. It clones the target, runs `spec status`, reads the companion
@@ -372,25 +372,25 @@ then uses the committed HEAD of your local checkout instead of the branch on Git
 | `ITEM_OPEN_QUESTIONS` | Resolve the spec's clarification markers, or the roadmap open question naming the item |
 | `ITEM_NO_ALLOWED_PATHS` / `ITEM_PATHS_TOO_WIDE` | Add or narrow `## Allowed paths` |
 | `ITEM_NO_HIDDEN_TESTS` | Add `items/<NNN>/` to the companion repository, or check that your git access can read it |
-| `INPUT_TOO_LARGE` | The snapshot exceeds `PILOT_MAX_INPUT_MB` |
+| `INPUT_TOO_LARGE` | The snapshot exceeds `FORGE_MAX_INPUT_MB` |
 | `OPEN_ITEM_PR` | A pilot PR for this item is still open; merge or close it |
 | `HIDDEN_TESTS_IN_TARGET` | A hidden test's content is already in the target; remove it (see [hidden tests: who can see what](#hidden-tests-who-can-see-what-and-why)) |
 
-### Check everything at once: `pilot/pilot doctor`
+### Check everything at once: `./chalkeus forge doctor`
 
 `gate` stops at the first problem. Before you prepare tests or start a run, `doctor` lists
 **every** problem in one pass, and changes nothing:
 
 ```sh
-pilot/pilot doctor --target greeting                       # profile, cluster, GitHub access
-pilot/pilot doctor --target greeting --item 002            # plus every readiness rule for the item
-pilot/pilot doctor --target greeting --item 002 --baseline # plus, on the cluster, offline:
+./chalkeus forge doctor --target greeting                       # profile, cluster, GitHub access
+./chalkeus forge doctor --target greeting --item 002            # plus every readiness rule for the item
+./chalkeus forge doctor --target greeting --item 002 --baseline # plus, on the cluster, offline:
                                                            # the install and test commands pass today
 ```
 
 - **Profile:** the target's file, modes, keys and pinned toolchain; the test author's token at
   the recommended level.
-- **Cluster:** `pilot/pilot up` completed, its images match `pilot/images.lock`, a model host is
+- **Cluster:** `./chalkeus forge up` completed, its images match `pilot/images.lock`, a model host is
   set.
 - **GitHub:** your token reads the target and the companion; the test author's identity for the
   level; a warning if the target's branch isn't protected (or can't be checked).
@@ -408,10 +408,10 @@ Exit 0 means no failures (warnings allowed); exit 1 means at least one failure.
 
 ## 4. Run the item
 
-With the cluster up (`pilot/pilot up`):
+With the cluster up (`./chalkeus forge up`):
 
 ```sh
-pilot/pilot run --target greeting --item 002
+./chalkeus forge run --target greeting --item 002
 ```
 
 The run follows the fixture's steps, for one item:
@@ -420,7 +420,7 @@ The run follows the fixture's steps, for one item:
 2. **Mode approval.** The mode is shown with the target, item, toolchain and the hosts the
    worker may reach (`model host(s) N` and your registries). Approve it in the terminal, through
    your agent's harness, or on GitHub with `/approve mode` if GitHub approvals are on for the
-   target (`PILOT_GITHUB_APPROVALS=on` in its profile).
+   target (`FORGE_GITHUB_APPROVALS=on` in its profile).
 3. **Prepare.** The pilot snapshots the target at the checked commit (one commit, no history)
    and reads the item's hidden tests from the companion repository. The hidden tests go only to
    the grader; the evidence keeps their names and hashes in `companion.json`, never their
@@ -436,7 +436,7 @@ The run follows the fixture's steps, for one item:
    A failed attempt waits for your retry approval, as for the fixture.
 6. **Draft PR.** The passing change is replayed onto the real base revision, exactly as graded,
    and opened as a draft PR on the target by the publisher. **You review and merge it.**
-7. **Status change.** After your merge, `pilot/pilot resume --run <id>` (or the watcher) proposes
+7. **Status change.** After your merge, `./chalkeus forge resume --run <id>` (or the watcher) proposes
    the item's one-line roadmap change to `verified`. Approve it in the terminal, or merge the
    status-change PR on GitHub.
 8. **Audit.** The run ends with the audit. Item runs use the item-run versions of AU01, AU02,
@@ -454,9 +454,9 @@ after its last slice.
   Phases before the first story (Setup, Foundational) join the first story's slice, and a phase
   after a story (Polish) joins the slice before it. You decide the split when you approve the
   tasks; the pilot never re-slices. An item with no story phases runs whole, as before.
-- **See them:** `pilot/pilot slices --target greeting --item 006` lists each slice, its state
+- **See them:** `./chalkeus forge slices --target greeting --item 006` lists each slice, its state
   (`untouched`, `started`, `merged`) and the current one.
-- **Run one:** `pilot/pilot run --target greeting --item 006 --slice US1`. Without `--slice`
+- **Run one:** `./chalkeus forge run --target greeting --item 006 --slice US1`. Without `--slice`
   the whole item runs, exactly as before; an item with a slice already merged must go on slice
   by slice (`ITEM_PARTLY_SLICED`).
 - **Order:** slices run in `tasks.md` order. A slice starts only when every earlier slice is
@@ -473,21 +473,21 @@ after its last slice.
 - **Item acceptance:** if the spec has `## Item acceptance` (a list, for example "a human checks
   the stock page"), the status change after the last slice waits until you approve
   `acceptance` (`/approve acceptance` on GitHub, or in the terminal).
-- **Audit:** each slice run audits on its own, plus AU13 (slice order). `pilot/pilot audit
+- **Audit:** each slice run audits on its own, plus AU13 (slice order). `./chalkeus forge audit
   --target greeting --item 006` lists every local run of the item.
 
 **Step mode and automatic drafting** build every item whole unless you turn slices on for the
-target with `PILOT_SLICE_RUNS=on` in its profile (off by default, because almost every Spec Kit
+target with `FORGE_SLICE_RUNS=on` in its profile (off by default, because almost every Spec Kit
 `tasks.md` has user-story phases, and existing companions keep their tests in `items/NNN/`). With
 it on, they follow each item's current slice: they draft its hidden tests into `items/NNN/USn/`,
 run `doctor --baseline --slice` and `run --slice`, and go on to the next slice after you merge.
 Each slice run still waits for your `/approve mode`.
 
-`pilot/pilot resume` and `pilot/pilot approve` take only `--run`: a paused run always continues
+`./chalkeus forge resume` and `./chalkeus forge approve` take only `--run`: a paused run always continues
 against the target it started with. If that target's profile now names another repository, the
 pilot refuses to continue.
 
 **Publishing credential:**
 - **GitHub App:** install it on the target too; the pilot mints a token for that repository only.
 - **Token mode:** give each target its own fine-grained token in
-  `~/.config/specfoundry/targets/<name>.publisher.env` (`PILOT_SCM_TOKEN=…`, mode 0600).
+  `~/.config/chalkeus/targets/<name>.publisher.env` (`PILOT_SCM_TOKEN=…`, mode 0600).
