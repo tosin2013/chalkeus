@@ -1,7 +1,16 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.31.1 → 1.32.0 (this revision)
+Version change: 1.32.0 → 1.33.0 (this revision)
+Bump rationale: MINOR — a new planned item (029). Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
+  - 029 (new, planned): brownfield intake, a read-only tech-debt triage report and dependency
+    items (an owner-approved manifest change built and graded like any item). From the documcp
+    onboarding for 026's live run.
+Specs affected: 029 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.31.1 → 1.32.0
 Bump rationale: MINOR — a new planned item (028). Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
   - 028 (new, planned): work governance. Bring repo-governor's core rules into Chalkeus:
@@ -1981,6 +1990,39 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   draft PR; a proposal becomes a run only after the owner approves it, and the gate and
   mode confirmation still decide.
 
+### 029 — Brownfield intake: tech-debt triage and dependency items  [status: planned]
+
+- **Description:** Help an owner bring an existing repository with tech debt (red CI, piles of
+  bot dependency PRs, a fragile test baseline) into the forge loop: a read-only triage report,
+  and a new item kind that lets an owner-approved dependency change be built and graded.
+- **Outcome:** for a target, the owner gets one report that groups its open bot PRs by shared
+  root cause and marks each as superseded, safe or needing code changes, and flags baseline
+  problems the forge would trip on; and an owner can approve a manifest change as an item's plan
+  so a worker fixes the code it breaks, graded offline from a cache built from that manifest,
+  with the same isolation, hidden tests and audit as any item.
+- **Scope (in):**
+  - **triage report** (read-only, for example `forge debt --target <t>`): open bot PRs (Dependabot
+    first) grouped by shared failing checks; superseded by the default branch's lockfile; semver
+    level; advisories fixed; baseline flags (flaky tests, tests that write into the working
+    tree, `--forceExit`-style workarounds). It proposes; the owner merges, batches or closes;
+  - **dependency items:** the item names an approved manifest change (a bot PR's branch or a
+    planned bump); the dependency cache is prefetched from that manifest; G2 allows the manifest
+    files the plan names and nothing else in them changes; hidden tests guard what must not
+    change (for example a snapshot of a tool's public schemas);
+  - docs for brownfield onboarding (what to clean before the first run, and how).
+- **Scope (out):** merging, closing or approving PRs (the owner's, C-04); posting on bot PRs;
+  automatic upgrade policies; package managers without a toolchain image.
+- **Depends on:** 014
+- **Governed by:** C-01, C-04, C-12, C-14
+- **Notes:** Added 2026-11-23 (owner), from onboarding tosin2013/documcp for 026's live slice
+  run: all 22 open Dependabot PRs failed one shared check (the production `npm audit`, red since
+  new advisories landed on `main`), so the repository's auto-merge stalled and the pile grew;
+  many were already superseded by one `npm audit fix`. A forge worker couldn't help: the grader
+  installs offline from a cache built from the unchanged manifest, so a dependency change can't
+  be graded, and a major bump that needs code changes (zod 3 → 4, which changes every MCP tool's
+  published input schema) has no path through the forge today. The friction log is in
+  specs/026-slice-runs/evidence/documcp-onboarding.md.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2162,4 +2204,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.32.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
+**Version**: 1.33.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
