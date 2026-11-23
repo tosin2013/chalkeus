@@ -14,10 +14,11 @@ form end to end.
 
 ## Phase 2: Config folder and settings (US1) — stage 2
 
-- [ ] T005 [US1] In `internal/config`, resolve the config folder (`CHALKEUS_CONFIG`, `~/.config/chalkeus`, then `SPECFOUNDRY_CONFIG`, `~/.config/specfoundry`, default `~/.config/chalkeus`), with a once-per-machine notice whose marker lives outside the config folder (research R3)
-- [ ] T006 [US1] Read `forge.env`, else `pilot.env`; for every setting and every CLI environment variable, `FORGE_X`, else `PILOT_X`; when both are set, the new one wins and the notice names the ignored one (one lookup function used everywhere)
-- [ ] T007 [US1] Unit tests in `internal/config/`: every folder combination, both files, both setting names, the notice once; the tool never writes into either folder
-- [ ] T008 [US1] The audit and the evidence `config.json` accept settings recorded under either prefix; a golden-audit check that nothing changes
+- [X] T005 [US1] In `internal/config`, resolve the config folder (`CHALKEUS_CONFIG`, `~/.config/chalkeus`, then `SPECFOUNDRY_CONFIG`, `~/.config/specfoundry`, default `~/.config/chalkeus`), with a once-per-machine notice whose marker lives outside the config folder (research R3)
+- [X] T006 [US1] Read `forge.env`, else `pilot.env`; for every setting and every CLI environment variable, `FORGE_X`, else `PILOT_X`; when both are set, the new one wins and the notice names the ignored one (one lookup function used everywhere)
+- [X] T007 [US1] Unit tests in `internal/config/`: every folder combination, both files, both setting names, the notice once; the tool never writes into either folder
+- [X] T008 [US1] The audit and the evidence `config.json` accept settings recorded under either prefix; a golden-audit check that nothing changes
+  Done as (2026-11-23): by design. Inside the pilot, settings keep their PILOT_ keys (`names.Canonical` maps FORGE_X to PILOT_X), so a run's `config.json` records the same names whichever ones the operator used, and the golden audit is unchanged (`go test ./internal/audit` passes). Credential files (`publisher.env`, `<target>.publisher.env`) keep their keys too, since they become the publisher pod's Secret (research R3).
 
 ## Phase 3: The rename and the hard switch (US1, US2) — stage 3; the owner renames the repository the same day
 

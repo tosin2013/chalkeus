@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"github.com/tosin2013/specfoundry/internal/names"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,7 +18,7 @@ const (
 	RegistryHost  = "localhost:5001"
 	defaultFeat   = "specs/002-m1-gated-pilot"
 	featureJSON   = ".specify/feature.json"
-	evidenceEnvVr = "PILOT_EVIDENCE_FEATURE"
+	evidenceEnvVr = "EVIDENCE_FEATURE" // FORGE_EVIDENCE_FEATURE (old: PILOT_EVIDENCE_FEATURE)
 )
 
 // Tasks maps the pilot's task labels to the fixture roadmap items behind them.
@@ -29,7 +30,7 @@ var SpecDirs = map[string]string{"A": "specs/001-slugify", "B": "specs/002-uniqu
 // Root returns the repository root: $PILOT_ROOT, else the nearest ancestor of the working
 // directory that contains pilot/pins.env.
 func Root() (string, error) {
-	if r := os.Getenv("PILOT_ROOT"); r != "" {
+	if r := names.Env("ROOT"); r != "" {
 		return filepath.Abs(r)
 	}
 	d, err := os.Getwd()
@@ -90,7 +91,7 @@ func activeFeature(root string) (string, bool) {
 // FeatureDir is the Spec Kit feature whose evidence folder receives runs:
 // $PILOT_EVIDENCE_FEATURE, else the active feature, else specs/002-m1-gated-pilot.
 func (l Layout) FeatureDir() string {
-	if o := os.Getenv(evidenceEnvVr); o != "" {
+	if o := names.Env(evidenceEnvVr); o != "" {
 		if filepath.IsAbs(o) { // as Python's ROOT / override with an absolute override
 			return filepath.Clean(o)
 		}
@@ -105,7 +106,7 @@ func (l Layout) FeatureDir() string {
 // EvidenceRoot is where run evidence goes: <feature>/evidence for maintainers (override or an
 // active feature), otherwise pilot/runs (operators; git-ignored).
 func (l Layout) EvidenceRoot() string {
-	if os.Getenv(evidenceEnvVr) != "" {
+	if names.Env(evidenceEnvVr) != "" {
 		return filepath.Join(l.FeatureDir(), "evidence")
 	}
 	if d, ok := activeFeature(l.Root); ok {

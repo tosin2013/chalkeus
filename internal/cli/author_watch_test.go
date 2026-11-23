@@ -50,7 +50,7 @@ func TestRunPilot(t *testing.T) {
 	log := filepath.Join(t.TempDir(), "x", "run.log")
 	var echo strings.Builder
 	code, err := runPilot(context.Background(), "/bin/sh", t.TempDir(),
-		[]string{"-c", `echo "by=$PILOT_STARTED_BY notty=$PILOT_NO_TTY"; exit 5`}, log, &echo)
+		[]string{"-c", `echo "by=$FORGE_STARTED_BY notty=$FORGE_NO_TTY"; exit 5`}, log, &echo)
 	raw, _ := os.ReadFile(log)
 	if err != nil || code != 5 || !strings.Contains(string(raw), "by=step notty=1") {
 		t.Fatalf("%d %v %q", code, err, raw)
@@ -74,13 +74,14 @@ func TestStepWait(t *testing.T) {
 	}
 }
 
-// 025: a test endpoint without PILOT_TEST_MODE=1 is refused by every command, before it runs.
+// 025: a test endpoint without FORGE_TEST_MODE=1 (027: old name PILOT_TEST_MODE) is refused by every command, before it runs.
 func TestTestEndpointsNeedTestMode(t *testing.T) {
 	t.Setenv("PILOT_TEST_MODE", "")
+	t.Setenv("FORGE_TEST_MODE", "")
 	t.Setenv("PILOT_TEST_GIT_BASE", "")
 	t.Setenv("PILOT_TEST_GITHUB_API", "http://127.0.0.1:1")
 	var out, errb strings.Builder
-	if code := Execute([]string{"version"}, "test", &out, &errb); code != 2 || !strings.Contains(errb.String(), "need PILOT_TEST_MODE=1") || out.Len() != 0 {
+	if code := Execute([]string{"version"}, "test", &out, &errb); code != 2 || !strings.Contains(errb.String(), "need FORGE_TEST_MODE=1") || out.Len() != 0 {
 		t.Fatalf("code %d, stdout %q, stderr %q", code, out.String(), errb.String())
 	}
 }

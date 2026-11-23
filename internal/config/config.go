@@ -17,6 +17,8 @@ import (
 
 	"github.com/tosin2013/specfoundry/internal/pyrepr"
 	"github.com/tosin2013/specfoundry/internal/verbose"
+
+	"github.com/tosin2013/specfoundry/internal/names"
 )
 
 // Error is a configuration problem; Code is the CLI exit code (2 error, 3 repo guard).
@@ -60,6 +62,7 @@ const guide = "docs/operator-guide.md"
 
 var missingHints = map[string]string{
 	"pilot.env":     "create it first: " + guide + ", section 5 (Configure your model provider)",
+	"forge.env":     "create it first: " + guide + ", section 5 (Configure your model provider)",
 	"publisher.env": "store the token first: pilot/pilot publisher-token",
 	"opencode":      "create it first: " + guide + ", section 5 (Configure your model provider)",
 }
@@ -149,13 +152,55 @@ func (c *Config) Public() map[string]string {
 	return v
 }
 
-// Dir is $SPECFOUNDRY_CONFIG or ~/.config/specfoundry.
+// Dir is the operator's config folder (027 FR-005, FR-006): $CHALKEUS_CONFIG, else
+// ~/.config/chalkeus when it exists, else the old $SPECFOUNDRY_CONFIG or ~/.config/specfoundry
+// (each with a one-time notice saying how to move it), else ~/.config/chalkeus. It never moves,
+// copies or creates anything.
 func Dir() string {
+	if d := os.Getenv("CHALKEUS_CONFIG"); d != "" {
+		if os.Getenv("SPECFOUNDRY_CONFIG") != "" {
+			names.Notice("folder-env-both", "CHALKEUS_CONFIG is set and wins; SPECFOUNDRY_CONFIG is ignored (remove it)")
+		}
+		return d
+	}
 	if d := os.Getenv("SPECFOUNDRY_CONFIG"); d != "" {
+		names.Notice("folder-env-old:"+d, "SPECFOUNDRY_CONFIG is the old name of CHALKEUS_CONFIG; it still works, but rename it")
 		return d
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "specfoundry")
+	cur, old := filepath.Join(home, ".config", "chalkeus"), filepath.Join(home, ".config", "specfoundry")
+	if exists(cur) {
+		if exists(old) {
+			names.Notice("folder-both:"+old, "using "+cur+"; the old "+old+" is still there: remove it once you have checked nothing in it is still needed")
+		}
+		return cur
+	}
+	if exists(old) {
+		names.Notice("folder-old:"+old, "using the old config folder "+old+". Move it once, keeping its permissions: mv "+old+" "+cur)
+		return old
+	}
+	return cur
+}
+
+// SettingsFile is the config folder's main settings file: forge.env, else the old pilot.env, else
+// forge.env (the name a new file gets). Both present: forge.env wins, with a notice.
+func SettingsFile(d string) string {
+	cur, old := filepath.Join(d, "forge.env"), filepath.Join(d, "pilot.env")
+	switch {
+	case exists(cur) && exists(old):
+		names.Notice("settings-both:"+d, "both forge.env and pilot.env are in "+d+"; forge.env wins and pilot.env is ignored (remove it)")
+		return cur
+	case exists(old):
+		names.Notice("settings-old:"+d, "pilot.env is the old name of forge.env; it still works, but rename it: mv "+old+" "+cur)
+		return old
+	}
+	return cur
+}
+
+// ParseSettings parses a settings file's text and maps FORGE_* keys to the pilot's names
+// (names.Canonical); file names it in notices.
+func ParseSettings(text, file string) map[string]string {
+	return names.Canonical(ParseEnv(text), file)
 }
 
 // CheckMode requires the file to exist with no group/other permission bits.
@@ -344,7 +389,7 @@ func ValidateValues(values map[string]string) (map[string]string, error) {
 // config and publisher.env; guard applies the repo guard against root's origin.
 func Load(root string, requireSecrets, guard bool) (*Config, error) {
 	d := Dir()
-	pilotEnv := filepath.Join(d, "pilot.env")
+	pilotEnv := SettingsFile(d)
 	if err := CheckMode(pilotEnv); err != nil {
 		return nil, err
 	}
@@ -352,7 +397,7 @@ func Load(root string, requireSecrets, guard bool) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	values, err := ValidateValues(ParseEnv(string(raw)))
+	values, err := ValidateValues(ParseSettings(string(raw), pilotEnv))
 	if err != nil {
 		return nil, err
 	}

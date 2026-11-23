@@ -21,6 +21,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/specfoundry/internal/names"
 )
 
 func file(run *evidence.Run) string { return filepath.Join(run.Dir, "approvals", "pending.json") }
@@ -319,4 +320,4 @@ func Hint(run *evidence.Run, step string) string {
 
 // NoTTY: PILOT_NO_TTY=1 means a process started on the operator's behalf (step mode, 021) must
 // never ask on a terminal, even one it inherited: every decision goes to GitHub instead.
-func NoTTY() bool { return os.Getenv("PILOT_NO_TTY") == "1" }
+func NoTTY() bool { return names.Env("NO_TTY") == "1" }

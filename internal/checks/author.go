@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/tosin2013/specfoundry/internal/k8s"
+	envnames "github.com/tosin2013/specfoundry/internal/names"
 )
 
 // AuthorRow is one isolation check of an automatic draft's author namespace (024 R6).
@@ -100,7 +101,7 @@ func (d Deps) RunAuthorChecks(ns, draftID string, imgs map[string]string) []Auth
 			}
 		}
 		mh, _ := os.ReadFile(d.L.ModelHost)
-		host := os.Getenv("PILOT_PROBE_MODEL_URL")
+		host := envnames.Env("PROBE_MODEL_URL")
 		if host == "" {
 			host = "https://" + strings.TrimSpace(string(mh)) + "/"
 		}
