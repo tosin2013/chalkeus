@@ -1,0 +1,57 @@
+{"at": "2026-11-23T16:08:36Z", "attempt": null, "detail": "tosin2013/craz3-pilot-fixture", "event": "run_started", "seq": 1, "stage": "run", "task": null}
+{"at": "2026-11-23T16:08:40Z", "attempt": null, "detail": "created=0 changed=2", "event": "github_sync", "seq": 2, "stage": "github", "task": null}
+{"at": "2026-11-23T16:08:40Z", "attempt": null, "detail": "seq=1 OK", "event": "gate_allow", "seq": 3, "stage": "gate", "task": "A"}
+{"at": "2026-11-23T16:08:40Z", "attempt": null, "detail": "seq=2 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 4, "stage": "gate", "task": "B"}
+{"at": "2026-11-23T16:08:40Z", "attempt": null, "detail": "step=mode approved=false channel=none", "event": "approval_channel", "seq": 5, "stage": "approval", "task": null}
+{"at": "2026-11-23T16:08:40Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_declined", "seq": 6, "stage": "mode", "task": null}
+{"at": "2026-11-23T16:08:40Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-mode)", "seq": 7, "stage": "run", "task": null}
+{"at": "2026-11-23T16:08:41Z", "attempt": null, "detail": "step=mode issue=62 comment=7106675205", "event": "decision_posted", "seq": 8, "stage": "github", "task": null}
+{"at": "2026-11-23T16:12:00Z", "attempt": null, "detail": "step=mode channel=github approver=tosin2013 comment=7106758723", "event": "approval_recorded", "seq": 9, "stage": "approval", "task": null}
+{"at": "2026-11-23T16:12:01Z", "attempt": null, "detail": "paused(awaiting-mode)", "event": "run_resumed", "seq": 10, "stage": "run", "task": null}
+{"at": "2026-11-23T16:12:01Z", "attempt": null, "detail": "step=mode approved=true channel=github approver=tosin2013 comment=7106758723", "event": "approval_channel", "seq": 11, "stage": "approval", "task": null}
+{"at": "2026-11-23T16:12:01Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_confirmed", "seq": 12, "stage": "mode", "task": null}
+{"at": "2026-11-23T16:12:01Z", "attempt": 1, "detail": "ns=pilot-w-a-1 induction=withheld-acceptance-section", "event": "attempt_created", "seq": 13, "stage": "attempt", "task": "A"}
+{"at": "2026-11-23T16:12:01Z", "attempt": 1, "detail": "ghcr.io/tosin2013/chalkeus-worker@sha256:edd7cdfb8ee4a54f7bd00a45167c1b42b3b0f813b56639896dbb8f44e69bcbc0", "event": "attempt_running", "seq": 14, "stage": "attempt", "task": "A"}
+{"at": "2026-11-23T16:15:20Z", "attempt": 1, "detail": "", "event": "attempt_collected", "seq": 15, "stage": "attempt", "task": "A"}
+{"at": "2026-11-23T16:15:20Z", "attempt": 1, "detail": "pilot-g-a-1", "event": "grade_started", "seq": 16, "stage": "grade", "task": "A"}
+{"at": "2026-11-23T16:15:32Z", "attempt": 1, "detail": "G5_hidden_tests", "event": "grade_fail", "seq": 17, "stage": "grade", "task": "A"}
+{"at": "2026-11-23T16:15:33Z", "attempt": null, "detail": "seq=3 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 18, "stage": "gate", "task": "B"}
+{"at": "2026-11-23T16:15:33Z", "attempt": 2, "detail": "step=retry approved=false channel=none", "event": "approval_channel", "seq": 19, "stage": "approval", "task": "A"}
+{"at": "2026-11-23T16:15:33Z", "attempt": 2, "detail": "", "event": "retry_declined", "seq": 20, "stage": "retry", "task": "A"}
+{"at": "2026-11-23T16:15:33Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-retry)", "seq": 21, "stage": "run", "task": null}
+{"at": "2026-11-23T16:15:34Z", "attempt": 2, "detail": "step=retry issue=62 comment=7106855580", "event": "decision_posted", "seq": 22, "stage": "github", "task": "A"}
+{"at": "2026-11-23T16:22:41Z", "attempt": 2, "detail": "step=retry channel=github approver=tosin2013 comment=7107036909", "event": "approval_recorded", "seq": 23, "stage": "approval", "task": "A"}
+{"at": "2026-11-23T16:22:41Z", "attempt": null, "detail": "paused(awaiting-retry)", "event": "run_resumed", "seq": 24, "stage": "run", "task": null}
+{"at": "2026-11-23T16:22:41Z", "attempt": 2, "detail": "step=retry approved=true channel=github approver=tosin2013 comment=7107036909", "event": "approval_channel", "seq": 25, "stage": "approval", "task": "A"}
+{"at": "2026-11-23T16:22:41Z", "attempt": 2, "detail": "", "event": "retry_confirmed", "seq": 26, "stage": "retry", "task": "A"}
+{"at": "2026-11-23T16:22:42Z", "attempt": 2, "detail": "ns=pilot-w-a-2 induction=None", "event": "attempt_created", "seq": 27, "stage": "attempt", "task": "A"}
+{"at": "2026-11-23T16:22:42Z", "attempt": 2, "detail": "ghcr.io/tosin2013/chalkeus-worker@sha256:edd7cdfb8ee4a54f7bd00a45167c1b42b3b0f813b56639896dbb8f44e69bcbc0", "event": "attempt_running", "seq": 28, "stage": "attempt", "task": "A"}
+{"at": "2026-11-23T16:23:49Z", "attempt": 2, "detail": "", "event": "attempt_collected", "seq": 29, "stage": "attempt", "task": "A"}
+{"at": "2026-11-23T16:23:49Z", "attempt": 2, "detail": "pilot-g-a-2", "event": "grade_started", "seq": 30, "stage": "grade", "task": "A"}
+{"at": "2026-11-23T16:24:01Z", "attempt": 2, "detail": "", "event": "grade_pass", "seq": 31, "stage": "grade", "task": "A"}
+{"at": "2026-11-23T16:24:01Z", "attempt": 2, "detail": "pilot/20261123T160836Z/a", "event": "publish_started", "seq": 32, "stage": "publish", "task": "A"}
+{"at": "2026-11-23T16:24:10Z", "attempt": 2, "detail": "https://github.com/tosin2013/craz3-pilot-fixture/pull/63", "event": "pr_opened", "seq": 33, "stage": "publish", "task": "A"}
+{"at": "2026-11-23T16:24:11Z", "attempt": null, "detail": "seq=4 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 34, "stage": "gate", "task": "B"}
+{"at": "2026-11-23T16:24:11Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 35, "stage": "run", "task": null}
+{"at": "2026-11-23T17:07:58Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 36, "stage": "run", "task": null}
+{"at": "2026-11-23T17:07:58Z", "attempt": 2, "detail": "632a32be718abc703e7ba9639931fa85dbdb9042", "event": "reconcile_proposed", "seq": 37, "stage": "reconcile", "task": "A"}
+{"at": "2026-11-23T17:07:58Z", "attempt": null, "detail": "pilot/20261123T160836Z/status-001", "event": "status_pr_started", "seq": 38, "stage": "publish", "task": "A"}
+{"at": "2026-11-23T17:08:08Z", "attempt": null, "detail": "https://github.com/tosin2013/craz3-pilot-fixture/pull/64", "event": "status_pr_opened", "seq": 39, "stage": "publish", "task": "A"}
+{"at": "2026-11-23T17:08:08Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 40, "stage": "run", "task": null}
+{"at": "2026-11-23T17:14:46Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 41, "stage": "run", "task": null}
+{"at": "2026-11-23T17:14:47Z", "attempt": null, "detail": "pr=64 ok=true reason=None", "event": "status_pr_checked", "seq": 42, "stage": "reconcile", "task": "A"}
+{"at": "2026-11-23T17:14:47Z", "attempt": null, "detail": "step=reconcile approved=true channel=github approver=tosin2013 pr=64", "event": "approval_channel", "seq": 43, "stage": "approval", "task": "A"}
+{"at": "2026-11-23T17:14:47Z", "attempt": null, "detail": "ccd98ec9be693b8c53344fb89ed4d65b8b7bbc4c", "event": "task_verified", "seq": 44, "stage": "status", "task": "A"}
+{"at": "2026-11-23T17:14:49Z", "attempt": null, "detail": "created=0 changed=1", "event": "github_sync", "seq": 45, "stage": "github", "task": null}
+{"at": "2026-11-23T17:14:49Z", "attempt": null, "detail": "seq=5 OK", "event": "gate_allow", "seq": 46, "stage": "gate", "task": "B"}
+{"at": "2026-11-23T17:14:49Z", "attempt": 1, "detail": "ns=pilot-w-b-1 induction=None", "event": "attempt_created", "seq": 47, "stage": "attempt", "task": "B"}
+{"at": "2026-11-23T17:14:49Z", "attempt": 1, "detail": "ghcr.io/tosin2013/chalkeus-worker@sha256:edd7cdfb8ee4a54f7bd00a45167c1b42b3b0f813b56639896dbb8f44e69bcbc0", "event": "attempt_running", "seq": 48, "stage": "attempt", "task": "B"}
+{"at": "2026-11-23T17:16:29Z", "attempt": 1, "detail": "", "event": "attempt_collected", "seq": 49, "stage": "attempt", "task": "B"}
+{"at": "2026-11-23T17:16:29Z", "attempt": 1, "detail": "pilot-g-b-1", "event": "grade_started", "seq": 50, "stage": "grade", "task": "B"}
+{"at": "2026-11-23T17:16:41Z", "attempt": 1, "detail": "", "event": "grade_pass", "seq": 51, "stage": "grade", "task": "B"}
+{"at": "2026-11-23T17:16:41Z", "attempt": 1, "detail": "pilot/20261123T160836Z/b", "event": "publish_started", "seq": 52, "stage": "publish", "task": "B"}
+{"at": "2026-11-23T17:16:51Z", "attempt": 1, "detail": "https://github.com/tosin2013/craz3-pilot-fixture/pull/65", "event": "pr_opened", "seq": 53, "stage": "publish", "task": "B"}
+{"at": "2026-11-23T17:16:52Z", "attempt": null, "detail": "created=0 changed=0", "event": "github_sync", "seq": 54, "stage": "github", "task": null}
+{"at": "2026-11-23T17:16:53Z", "attempt": null, "detail": "10/10", "event": "audit_done", "seq": 55, "stage": "audit", "task": null}
+{"at": "2026-11-23T17:16:53Z", "attempt": null, "detail": "", "event": "run_succeeded", "seq": 56, "stage": "run", "task": null}
+{"at": "2026-11-23T17:16:54Z", "attempt": null, "detail": "issue=62", "event": "tracking_closed", "seq": 57, "stage": "github", "task": null}
