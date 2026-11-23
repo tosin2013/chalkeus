@@ -1,7 +1,17 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.31.0 → 1.31.1 (this revision)
+Version change: 1.31.1 → 1.32.0 (this revision)
+Bump rationale: MINOR — a new planned item (028). Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
+  - 028 (new, planned): work governance. Bring repo-governor's core rules into Chalkeus:
+    start only from an approved roadmap item or spec; treat TODOs as proposals, not
+    permission; stop when the item's finish line is met. A separate repo-governor is no
+    longer needed.
+Specs affected: 028 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.31.0 → 1.31.1
 Bump rationale: PATCH — a status transition (027 planned → specced) and its Spec dir.
 Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
   - 027 planned → specced: spec merged (#161; hard switch, command audit first, FORGE_*
@@ -1926,6 +1936,51 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   several (the config folder, image names, labels in evidence) need a migration decision.
   013 depends on it: the release ships under the new name.
 
+### 028 — Work governance: approved work only, TODOs as proposals, stop at the bar  [status: planned]
+
+- **Description:** Bring repo-governor's core rules into Chalkeus, so a separate
+  repo-governor is no longer needed, and Chalkeus enforces where repo-governor could only
+  instruct.
+- **Outcome:** Chalkeus starts work only from an approved roadmap item or spec. A TODO it
+  finds in code or docs is a note, never permission to start work. It flags those TODOs and
+  proposes each as a roadmap item; only the owner's approval turns a proposal into work.
+  When an item's finish line is met, the agent stops; new scope becomes a new proposed item.
+- **Scope (in):**
+  - **approved work only:** a run starts only for an approved, prepared roadmap item or
+    spec. A TODO, a leftover task, or other discovered work is never treated as
+    authorization. The existing gate already refuses unprepared and blocked items (014,
+    C-01, C-02, C-12); this item closes the remaining gap, where discovery looks like
+    permission;
+  - **TODO-to-roadmap path:** Chalkeus flags TODOs it finds and proposes each as a roadmap
+    item, consistent with the existing proposal flow: 021's `chalkeus:proposed` label,
+    honoured only when an approver adds it, and 010's rule that a proposal still goes
+    through the gate and a human mode confirmation. It discourages TODOs but does not ban
+    them;
+  - **stop at the bar:** each roadmap item has a clear finish line (the item's acceptance,
+    checked by the grader's hidden tests and the project's tests). When that bar is met,
+    the agent stops and adds no extra scope. New scope is a new proposed item, consistent
+    with 026's rule that gaps found after verification need a new item or an explicit human
+    reopen;
+  - docs and the project skill state the same rules, but the gate, the proposal path and
+    the run's evidence are what enforce them.
+- **Scope (out):** a standalone repo-governor or a multi-provider authority engine;
+  banning TODOs; starting a run from a proposal without the owner's approval; replacing or
+  weakening the grader.
+- **Depends on:** 014, 021
+- **Governed by:** C-01, C-02, C-04, C-12
+- **Addresses:** docs/prd.md F1, F8
+- **Notes:** Owner decision 2026-11-23: fold repo-governor's useful rules into Chalkeus
+  rather than revive it as a separate product. The rules to keep: discovery confers no
+  authority; admission is a human act; stop when the acceptance bar is met; "done" is
+  evidence, not a ticked task list; a deterministic gate, not a prompt. 014 already starts
+  work only from a prepared roadmap item, and 021 already proposes work with
+  `chalkeus:proposed`; this item adds the TODO path and makes the stop-at-the-bar rule
+  enforceable. 010 stays the cluster-mode event intake; this item does not replace it.
+  **Acceptance:** a TODO found during a run is recorded and proposed, and no worker starts
+  from it; a run whose grader and acceptance checks pass stops with no extra scope in the
+  draft PR; a proposal becomes a run only after the owner approves it, and the gate and
+  mode confirmation still decide.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2061,6 +2116,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   7. 005 OpenShift and remote clusters (laptop mode).
   8. 014's EAP validation on OpenShift with an in-cluster model.
   9. Then 007, 008, 010 and 011.
+  028 (work governance) builds on 014 and 021, already verified, and does not block 013.
+  Specify it after the remaining laptop close-out (026, 027), or in parallel once those
+  are in progress.
 - spec-status asks drafted in PRD §8 (report-only skills, per-item readiness exit
   code, CLI container image) gate 002 and 003 in practice; track them as upstream
   issues. **002 workarounds in place:** the gate runs on the host (no CLI image); the
@@ -2104,4 +2162,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.31.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
+**Version**: 1.32.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
