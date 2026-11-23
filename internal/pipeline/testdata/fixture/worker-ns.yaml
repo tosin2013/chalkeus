@@ -1,7 +1,7 @@
 # One worker attempt's namespace (FR-005, FR-006). Also used for the probe twin (same policies).
 apiVersion: v1
 kind: Namespace
-metadata: {name: pilot-w-a-1, labels: {specfoundry.io/role: worker, specfoundry.io/run: "R"}}
+metadata: {name: pilot-w-a-1, labels: {chalkeus.io/role: worker, chalkeus.io/run: "R"}}
 ---
 apiVersion: v1
 kind: ServiceAccount
