@@ -1,6 +1,6 @@
 # Pilot images (spec 003, constraint C-09; contract specs/003-m2-kelos-backend/contracts/image-workflow.md)
 #
-# Builds specfoundry-pilot-{worker,tools,egress} from pilot/images/ with upstream inputs verified
+# Builds chalkeus-{worker,tools,egress} (and the toolchains, chalkeus-toolchain-*; before 027: specfoundry-pilot-*) from pilot/images/ with upstream inputs verified
 # by checksum (pilot/pins.env), smoke-tests them as an arbitrary UID, and on main pushes them to a
 # public registry with build provenance and an SBOM. The new digests are proposed as a PR that
 # changes ONLY pilot/images.lock.
@@ -108,7 +108,7 @@ jobs:
           short="${GITHUB_SHA::12}"
           for i in $IMAGES; do
             args=(); while IFS= read -r kv; do args+=(--build-arg "$kv"); done < <(python3 pilot/images/build_args.py "$i")
-            ref="$REGISTRY/$NAMESPACE/specfoundry-pilot-$i"
+            ref="$REGISTRY/$NAMESPACE/chalkeus-$i"
             docker buildx build --push --provenance=mode=max --sbom=true \
               --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
               --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
@@ -133,7 +133,7 @@ jobs:
                             "bases": {"debian": pins["DEBIAN_BASE"], "alpine": pins["ALPINE_BASE"]}}}
           for i in os.environ["IMAGES"].split():
               meta = json.load(open(f"{tmp}/meta-{i}.json"))
-              out["images"][i] = f"{reg}/{ns}/specfoundry-pilot-{i}@{meta['containerimage.digest']}"
+              out["images"][i] = f"{reg}/{ns}/chalkeus-{i}@{meta['containerimage.digest']}"
               out["attestations"][i] = {"provenance": "mode=max", "sbom": "spdx"}
           json.dump(out, open("image-digests.json", "w"), indent=2)
           print(json.dumps(out["images"], indent=2))
