@@ -1,5 +1,9 @@
 # Chalkeus
 
+<p align="center">
+  <img src="logos/chalkeus-logo.png" alt="Chalkeus: a bronze robot smith forging code on an anvil" width="320">
+</p>
+
 **Governed, least-privilege delivery for AI coding agents, on a laptop or in an enterprise
 cluster.**
 
