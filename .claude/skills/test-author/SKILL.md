@@ -1,6 +1,6 @@
 ---
 name: "test-author"
-description: "Draft the hidden acceptance tests for one prepared roadmap item of a specfoundry target, and open a pull request on the private companion repository for a human to review and merge. Use only in a session dedicated to test authoring, never in the session that runs the pilot."
+description: "Draft the hidden acceptance tests for one prepared roadmap item of a Chalkeus target, and open a pull request on the private companion repository for a human to review and merge. Use only in a session dedicated to test authoring, never in the session that runs the pilot."
 ---
 
 # Test author
@@ -12,13 +12,13 @@ and the pilot only uses them after a human reviews and merges your pull request
 
 ## Before you start
 
-- This session must be **only** the test author. If this session has run `pilot/pilot run`,
+- This session must be **only** the test author. If this session has run `./chalkeus forge run`,
   `resume`, `approve` or `github`, stop and ask the human to open a fresh session.
 - Ask the human for the target name and item number (for example `cli-schema-mcp`, `006`).
 
 ## Steps
 
-1. Run `pilot/pilot author start --target <name> --item <NNN>` from the specfoundry root. It
+1. Run `./chalkeus forge author start --target <name> --item <NNN>` from the Chalkeus root. It
    checks that the item is ready, then prints a **workspace** path. Work only there. If it
    refuses, tell the human the code and its message; don't work around it.
 2. Read, in the workspace: `spec.md`, `plan.md`, `tasks.md`, `criteria.json`, and the project as
@@ -40,27 +40,27 @@ and the pilot only uses them after a human reviews and merges your pull request
     "uncovered": ["<ids from criteria.json with no test>"]}
    ```
    Cover every criterion you can; list the rest under `uncovered`, honestly.
-5. Run `pilot/pilot author check --target <name> --item <NNN>`. It runs your tests on the
+5. Run `./chalkeus forge author check --target <name> --item <NNN>`. It runs your tests on the
    unchanged project on the cluster (a few minutes) and shows you their output. Fix and re-run
    until it prints `DRAFT_OK`:
    - `DRAFT_HIDDEN_PASSES`: your tests already pass today; they must fail until the change exists.
    - `DRAFT_SUITE_FAILS`: with your tests added, the project's own tests fail; don't break them.
    - `MAP_INVALID`: fix the map as the message says.
-6. Run `pilot/pilot author submit --target <name> --item <NNN>` and give the human the pull
+6. Run `./chalkeus forge author submit --target <name> --item <NNN>` and give the human the pull
    request link. **The human reviews and merges it.** You don't.
 
 ## Automatic drafting
 
-With `PILOT_AUTHOR_AUTO=on`, `pilot/pilot author watch` runs these same rules in a sandboxed Job
+With `FORGE_AUTHOR_AUTO=on`, `./chalkeus forge author watch` runs these same rules in a sandboxed Job
 on the cluster, with no human in the session (specs/024-test-author-automation). Its prompt is
 built from steps 3 and 4 above; a test keeps the two in step, so change both together.
 
 ## Never
 
-- Run `pilot/pilot run`, `resume`, `approve`, `github`, `reset-fixture`, `up` or `down`.
+- Run `./chalkeus forge run`, `resume`, `approve`, `github`, `reset-fixture`, `up` or `down`.
 - Push to, or open a pull request on, the **target** repository, or edit its specs, tasks or
   roadmap. Your only output is the companion pull request that `submit` opens.
 - Write outside the workspace's `draft/` folder.
 - Paste test contents anywhere except the draft files (not in chat summaries for other sessions,
   issues or the target).
-- Read `~/.config/specfoundry/` or print tokens.
+- Read `~/.config/chalkeus/` or print tokens.

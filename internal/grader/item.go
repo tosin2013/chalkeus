@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/frame"
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/runner"
-	"github.com/tosin2013/specfoundry/internal/stage"
-	"github.com/tosin2013/specfoundry/internal/toolchain"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/frame"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/runner"
+	"github.com/tosin2013/chalkeus/internal/stage"
+	"github.com/tosin2013/chalkeus/internal/toolchain"
 )
 
 // Item-run grading (014 R7, R8, contracts/grading.md): one grading namespace per run holds the

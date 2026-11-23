@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/frame"
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/prompt"
-	"github.com/tosin2013/specfoundry/internal/runner"
-	"github.com/tosin2013/specfoundry/internal/stage"
-	"github.com/tosin2013/specfoundry/internal/toolchain"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/frame"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/prompt"
+	"github.com/tosin2013/chalkeus/internal/runner"
+	"github.com/tosin2013/chalkeus/internal/stage"
+	"github.com/tosin2013/chalkeus/internal/toolchain"
 )
 
 // Deadline is the worker Job's active deadline in seconds.

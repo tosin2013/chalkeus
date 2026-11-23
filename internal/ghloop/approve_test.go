@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/decisions"
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/decisions"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 // Cases ported from the former Python pilot's tests/test_ghapprove.py (004 US2): every rejection rule, posting,

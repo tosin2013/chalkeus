@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
 // configDir writes a pilot.env (and optional target profiles) into a temp SPECFOUNDRY_CONFIG.

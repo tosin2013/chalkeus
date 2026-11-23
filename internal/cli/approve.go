@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/decisions"
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/decisions"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 func runApprove(cmd *cobra.Command, args []string) error {

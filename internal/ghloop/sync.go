@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
 )
 
 // 004 GitHub loop: mirror the target roadmap as item issues, status labels and task checklists,
@@ -147,7 +147,7 @@ func IssueBody(item map[string]any, tasks *string) string {
 		}
 		lines = append(append(lines, "", "### Tasks (from "+src+")"), tl...)
 	}
-	lines = append(lines, "", "_Generated from the roadmap by specfoundry. Edits here are overwritten by `pilot github sync`._")
+	lines = append(lines, "", "_Generated from the roadmap by specfoundry. Edits here are overwritten by `./chalkeus forge github sync`._")
 	return strings.Join(lines, "\n") + "\n"
 }
 

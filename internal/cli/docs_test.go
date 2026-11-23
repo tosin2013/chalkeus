@@ -12,12 +12,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/audit"
+	"github.com/tosin2013/chalkeus/internal/audit"
 )
 
 // The docs check (spec 006, contracts/docs-check.md), run by `go test ./internal/cli`:
 //
-//	D1  every `pilot/pilot <sub> [--flags]` in an sh/bash/shell code block (or inline code) is a
+//	D1  every `./chalkeus forge <sub> [--flags]` (or `./chalkeus forge …`) in an sh/bash/shell code block (or inline code) is a
 //	    real command and flag of this CLI (read from the command tree, not from --help)
 //	D2  repo paths exist: relative Markdown links, and inline-code tokens that start with a
 //	    top-level repo entry (pilot/, specs/, docs/, …). Domains, owner/repo slugs, ~ paths,
@@ -29,12 +29,13 @@ import (
 
 var (
 	topLevel   = []string{"pilot/", "specs/", "docs/", "test/", ".github/", ".specify/", "internal/", "cmd/"}
-	topFiles   = map[string]bool{"README.md": true, "CONTRIBUTING.md": true, "CODE_OF_CONDUCT.md": true, "LICENSE": true, "AGENTS.md": true}
+	topFiles   = map[string]bool{"chalkeus": true, "README.md": true, "CONTRIBUTING.md": true, "CODE_OF_CONDUCT.md": true, "LICENSE": true, "AGENTS.md": true}
 	shellLangs = map[string]bool{"sh": true, "bash": true, "shell": true, "console": true}
 	fenceRe    = regexp.MustCompile("^\\s*```(\\S*)")
 	linkRe     = regexp.MustCompile(`\]\(([^)\s]+)\)`)
 	inlineRe   = regexp.MustCompile("`([^`\n]+)`")
-	commandRe  = regexp.MustCompile(`pilot/pilot(?:\s+([^\s;&|#]+))?((?:\s+[^\s;&|#]+)*)`)
+	forgeRe    = regexp.MustCompile(`chalkeus\s+forge`)
+	commandRe  = regexp.MustCompile(`chalkeus\s+forge(?:\s+([^\s;&|#]+))?((?:\s+[^\s;&|#]+)*)`)
 	versionRes = []struct {
 		re        *regexp.Regexp
 		key, name string
@@ -70,7 +71,7 @@ func newDocsChecker(t *testing.T) *docsChecker {
 			pins[k] = v
 		}
 	}
-	return &docsChecker{root: root, cli: NewRoot("test"), pins: pins}
+	return &docsChecker{root: root, cli: Forge(NewRoot("test")), pins: pins}
 }
 
 func subcommand(c *cobra.Command, name string) *cobra.Command {
@@ -88,7 +89,7 @@ func hasFlag(c *cobra.Command, flag string) bool {
 		c.PersistentFlags().Lookup(name) != nil || c.Root().PersistentFlags().Lookup(name) != nil
 }
 
-// checkCommand returns D1 problems for each `pilot/pilot …` in s.
+// checkCommand returns D1 problems for each `./chalkeus forge …` in s.
 func (d *docsChecker) checkCommand(s string) []string {
 	var errs []string
 	for _, m := range commandRe.FindAllStringSubmatch(s, -1) {
@@ -133,8 +134,15 @@ func (d *docsChecker) checkCommand(s string) []string {
 
 func cleanTok(tok string) string { return strings.TrimRight(strings.TrimSpace(tok), ".,;:)") }
 
+// notPaths look like repo paths but are names: the command removed by 027 and step mode's old
+// proposal label, which migration notes still mention.
+var notPaths = map[string]bool{"pilot/pilot": true, "pilot/go": true}
+
 func looksLikeRepoPath(tok string) bool {
 	tok = cleanTok(tok)
+	if notPaths[tok] {
+		return false
+	}
 	if tok == "" || strings.ContainsAny(tok, " <>*{}$") || strings.Contains(tok, "://") ||
 		strings.HasPrefix(tok, "~") || strings.HasPrefix(tok, "/") || strings.HasPrefix(tok, "-") {
 		return false
@@ -197,7 +205,7 @@ func (d *docsChecker) checkFile(path string) ([]string, error) {
 			}
 		}
 		if inBlock {
-			if shellLangs[lang] && strings.Contains(line, "pilot/pilot") {
+			if shellLangs[lang] && forgeRe.MatchString(line) {
 				for _, e := range d.checkCommand(line) {
 					errs = append(errs, fmt.Sprintf("%s %s (D1)", where, e))
 				}
@@ -220,7 +228,7 @@ func (d *docsChecker) checkFile(path string) ([]string, error) {
 				if !d.pathExists(tok, path) {
 					errs = append(errs, fmt.Sprintf("%s missing path %s (D2)", where, tok))
 				}
-			} else if strings.Contains(tok, "pilot/pilot") {
+			} else if forgeRe.MatchString(tok) {
 				for _, e := range d.checkCommand(tok) {
 					errs = append(errs, fmt.Sprintf("%s %s (D1)", where, e))
 				}
@@ -247,7 +255,7 @@ func (d *docsChecker) defaultFiles(t *testing.T) []string {
 		t.Fatal(err)
 	}
 	sort.Strings(files)
-	for _, f := range []string{"README.md", "CONTRIBUTING.md", "AGENTS.md", "pilot/README.md", ".claude/skills/pilot/SKILL.md", ".claude/skills/test-author/SKILL.md"} {
+	for _, f := range []string{"README.md", "CONTRIBUTING.md", "AGENTS.md", "pilot/README.md", ".claude/skills/forge/SKILL.md", ".claude/skills/test-author/SKILL.md"} {
 		files = append(files, filepath.Join(d.root, f))
 	}
 	return files
@@ -285,9 +293,9 @@ func TestDocsCheckRules(t *testing.T) {
 		return e
 	}
 	clean := []string{
-		"```sh\npilot/pilot run\npilot/pilot up --local-build\npilot/pilot gate A --root x\n```\n",
-		"```sh\npilot/pilot github watch --run x --detach\npilot/pilot -vv run\n```\n",
-		"```text\npilot/pilot frobnicate\n```\n",
+		"```sh\n./chalkeus forge run\n./chalkeus forge up --local-build\nchalkeus forge gate A --root x\n```\n",
+		"```sh\n./chalkeus forge github watch --run x --detach\n./chalkeus forge -vv run\n```\n",
+		"```text\n./chalkeus forge frobnicate\n```\n",
 		"See `pilot/pins.env` and [the guide](docs/harnesses.md).\n",
 		"`ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:abc` `tosin2013/craz3-pilot-fixture` " +
 			"`anomalyco/opencode` `kelos-dev/kelos` `~/.config/specfoundry/pilot.env` " +
@@ -302,9 +310,9 @@ func TestDocsCheckRules(t *testing.T) {
 		}
 	}
 	flagged := []struct{ text, needle string }{
-		{"```sh\npilot/pilot run --bogus\n```\n", "--bogus"},
-		{"```bash\ncd ~/specfoundry && pilot/pilot frobnicate\n```\n", "frobnicate"},
-		{"```sh\npilot/pilot github frob\n```\n", "github frob"},
+		{"```sh\n./chalkeus forge run --bogus\n```\n", "--bogus"},
+		{"```bash\ncd ~/chalkeus && ./chalkeus forge frobnicate\n```\n", "frobnicate"},
+		{"```sh\nchalkeus forge github frob\n```\n", "github frob"},
 		{"Edit `pilot/images/lock` first.\n", "pilot/images/lock"},
 		{"[x](specs/999-nope/spec.md)\n", "specs/999-nope"},
 		{"Installs kind v0.26.0.\n", "kind"},

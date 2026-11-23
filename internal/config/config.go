@@ -15,10 +15,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
-	"github.com/tosin2013/specfoundry/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/verbose"
 
-	"github.com/tosin2013/specfoundry/internal/names"
+	"github.com/tosin2013/chalkeus/internal/names"
 )
 
 // Error is a configuration problem; Code is the CLI exit code (2 error, 3 repo guard).
@@ -63,7 +63,7 @@ const guide = "docs/operator-guide.md"
 var missingHints = map[string]string{
 	"pilot.env":     "create it first: " + guide + ", section 5 (Configure your model provider)",
 	"forge.env":     "create it first: " + guide + ", section 5 (Configure your model provider)",
-	"publisher.env": "store the token first: pilot/pilot publisher-token",
+	"publisher.env": "store the token first: ./chalkeus forge publisher-token",
 	"opencode":      "create it first: " + guide + ", section 5 (Configure your model provider)",
 }
 

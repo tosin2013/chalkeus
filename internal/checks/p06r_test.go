@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/cluster"
+	"github.com/tosin2013/chalkeus/internal/cluster"
 )
 
 func TestRegistryProxy(t *testing.T) {

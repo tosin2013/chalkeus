@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/fakegh"
-	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/fakegh"
+	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
 const (
@@ -39,7 +39,7 @@ const (
 	botToken    = "bot-token"
 )
 
-// world is the shared setup: one fake GitHub and one `pilot up` for every scenario.
+// world is the shared setup: one fake GitHub and one `./chalkeus forge up` for every scenario.
 type world struct {
 	repo    string // this checkout
 	root    string // the pilot's temporary root (a copy of pilot/)
@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 }
 
 func setUp() (*world, error) {
-	for _, tool := range []string{"docker", "git", "spec", "go"} { // kind and kubectl: `pilot up` installs its pinned ones
+	for _, tool := range []string{"docker", "git", "spec", "go"} { // kind and kubectl: `./chalkeus forge up` installs its pinned ones
 		if _, err := exec.LookPath(tool); err != nil {
 			return nil, fmt.Errorf("%s is not installed", tool)
 		}
@@ -81,7 +81,7 @@ func setUp() (*world, error) {
 		kind = "kind"
 	}
 	if out, _ := exec.Command(kind, "get", "clusters").Output(); strings.Contains(string(out), paths.Cluster) {
-		return nil, fmt.Errorf("a %s cluster already exists; the integration tests create and delete their own, so run `pilot/pilot down` first", paths.Cluster)
+		return nil, fmt.Errorf("a %s cluster already exists; the integration tests create and delete their own, so run `./chalkeus forge down` first", paths.Cluster)
 	}
 	repo, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
@@ -92,7 +92,7 @@ func setUp() (*world, error) {
 		return nil, err
 	}
 	x := &world{repo: repo, root: filepath.Join(tmp, "root"), config: filepath.Join(tmp, "config"),
-		bin: filepath.Join(tmp, "bin", "pilot"), out: filepath.Join(repo, "test", "integration", "out")}
+		bin: filepath.Join(tmp, "bin", "chalkeus"), out: filepath.Join(repo, "test", "integration", "out")}
 	_ = os.RemoveAll(x.out)
 	if err := os.MkdirAll(x.out, 0o755); err != nil {
 		return x, err
@@ -100,13 +100,13 @@ func setUp() (*world, error) {
 	say("building the pilot")
 	// Built with coverage on (SC-004): every pilot process the scenarios start, watchers included,
 	// writes its counters to out/cover, and tearDown reports the glue packages' coverage.
-	if out, err := run(repo, nil, "go", "build", "-cover", "-coverpkg=github.com/tosin2013/specfoundry/...", "-o", x.bin, "./cmd/pilot"); err != nil {
+	if out, err := run(repo, nil, "go", "build", "-cover", "-coverpkg=github.com/tosin2013/chalkeus/...", "-o", x.bin, "./cmd/chalkeus"); err != nil {
 		return x, fmt.Errorf("go build: %v\n%s", err, out)
 	}
 	if err := copyPilot(filepath.Join(repo, "pilot"), filepath.Join(x.root, "pilot")); err != nil {
 		return x, err
 	}
-	// `pilot up` installs kind and kubectl with this script, from its root.
+	// `./chalkeus forge up` installs kind and kubectl with this script, from its root.
 	if err := copyPilot(filepath.Join(repo, "test", "isolation"), filepath.Join(x.root, "test", "isolation")); err != nil {
 		return x, err
 	}
@@ -303,8 +303,9 @@ func (x *world) tearDown(failed bool) {
 	}
 }
 
-// pilot runs a pilot command from the temporary root and returns its output and exit code.
+// pilot runs a `./chalkeus forge` command from the temporary root and returns its output and exit code.
 func (x *world) pilot(args ...string) (string, int) {
+	args = append([]string{"forge"}, args...)
 	c := exec.Command(x.bin, args...)
 	c.Dir = x.root
 	c.Env = append(cleanEnv(), x.baseEnv...)
@@ -322,9 +323,10 @@ func (x *world) pilot(args ...string) (string, int) {
 }
 
 // pilotTTY runs a pilot command under a pseudo-terminal (util-linux `script`) and without
-// FORGE_NO_TTY, as an operator runs `pilot step` in their terminal. A run step mode starts must
+// FORGE_NO_TTY, as an operator runs `./chalkeus forge step` in their terminal. A run step mode starts must
 // still never ask on that terminal (the 021 bug fixed by #122; 025 SC-001).
 func (x *world) pilotTTY(args ...string) (string, int) {
+	args = append([]string{"forge"}, args...)
 	quoted := []string{shellQuote(x.bin)}
 	for _, a := range args {
 		quoted = append(quoted, shellQuote(a))
@@ -353,10 +355,11 @@ func (x *world) pilotTTY(args ...string) (string, int) {
 
 func shellQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
 
-// background starts a long-running pilot command (as an operator leaves `pilot step` running) and
+// background starts a long-running pilot command (as an operator leaves `./chalkeus forge step` running) and
 // returns a function that reads its output so far, and one that stops it with an interrupt (as
 // Ctrl-C does) and returns all of it.
 func (x *world) background(args ...string) (func() string, func() string) {
+	args = append([]string{"forge"}, args...)
 	c := exec.Command(x.bin, args...)
 	c.Dir = x.root
 	c.Env = append(cleanEnv(), x.baseEnv...)
@@ -406,7 +409,7 @@ func cleanEnv() []string {
 	return out
 }
 
-// status is `pilot status --run id` as JSON.
+// status is `./chalkeus forge status --run id` as JSON.
 func (x *world) status(t *testing.T, id string) map[string]any {
 	t.Helper()
 	out, code := x.pilot("status", "--run", id)
@@ -476,14 +479,14 @@ var glue = []string{"cli", "pipeline", "worker", "checks", "cluster", "grader", 
 func (x *world) coverage() {
 	var pkgs []string
 	for _, g := range glue {
-		pkgs = append(pkgs, "github.com/tosin2013/specfoundry/internal/"+g)
+		pkgs = append(pkgs, "github.com/tosin2013/chalkeus/internal/"+g)
 	}
 	out, err := run(x.repo, nil, "go", "tool", "covdata", "percent", "-i", filepath.Join(x.out, "cover"), "-pkg", strings.Join(pkgs, ","))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "coverage: %v\n%s\n", err, out)
 		return
 	}
-	text := strings.ReplaceAll(out, "github.com/tosin2013/specfoundry/", "")
+	text := strings.ReplaceAll(out, "github.com/tosin2013/chalkeus/", "")
 	_ = os.WriteFile(filepath.Join(x.out, "coverage.txt"), []byte(text), 0o644)
 	say("coverage of the glue packages by the scenarios:\n" + text)
 }

@@ -5,9 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
 )
 
 func runResetFixture(cmd *cobra.Command, _ []string) error {
@@ -42,7 +42,7 @@ func runResetFixture(cmd *cobra.Command, _ []string) error {
 			return out, err
 		},
 		ClosePR: func(ctx context.Context, p fixture.PRRef) error {
-			return ghloop.ClosePR(ctx, gh, cfg.Repo(), ghloop.PR{Number: p.Number, HeadRef: p.HeadRef}, "Closed by `pilot reset-fixture`.")
+			return ghloop.ClosePR(ctx, gh, cfg.Repo(), ghloop.PR{Number: p.Number, HeadRef: p.HeadRef}, "Closed by `./chalkeus forge reset-fixture`.")
 		},
 	})
 	if err != nil {

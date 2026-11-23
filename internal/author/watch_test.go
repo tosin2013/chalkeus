@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/readiness"
 )
 
 const statusJSON = `{"items":[

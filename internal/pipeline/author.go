@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/grader"
-	"github.com/tosin2013/specfoundry/internal/images"
-	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/grader"
+	"github.com/tosin2013/chalkeus/internal/images"
+	"github.com/tosin2013/chalkeus/internal/readiness"
 )
 
-// AuthorBaseline is `pilot author check` (018 R2): the same preparation and baseline as an item
+// AuthorBaseline is `./chalkeus forge author check` (018 R2): the same preparation and baseline as an item
 // run (snapshot, grading namespace, toolchain probe, target proxies, prefetch, baseline grader),
 // with the test author's draft as the hidden tests. dir is the check's own evidence folder and id
 // its name; it is not a run and never reaches a worker. It returns the baseline report (hidden
@@ -23,7 +23,7 @@ func (p *P) AuthorBaseline(dir, id, item string, res readiness.Result, overlay [
 }
 
 // ItemBaseline runs an item's baseline outside a run: for the test author (showHidden: its own
-// tests' output comes back) or for `pilot doctor --baseline` (never: doctor runs in the session
+// tests' output comes back) or for `./chalkeus forge doctor --baseline` (never: doctor runs in the session
 // that drives runs, which must not see hidden tests).
 func (p *P) ItemBaseline(dir, id, item string, res readiness.Result, overlay []byte, showHidden bool) (map[string]any, []byte, error) {
 	imgs, err := images.Load(p.L)

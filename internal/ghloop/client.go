@@ -15,7 +15,7 @@ import (
 
 	"github.com/google/go-github/v85/github"
 
-	"github.com/tosin2013/specfoundry/internal/secret"
+	"github.com/tosin2013/chalkeus/internal/secret"
 )
 
 // ErrNoToken means no GitHub token could be found for reads.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/prompt"
+	"github.com/tosin2013/chalkeus/internal/prompt"
 )
 
 // Port of the former Python pilot's tests/evidence_builder.py + test_audit.py + test_audit_github.py + test_redaction.py.

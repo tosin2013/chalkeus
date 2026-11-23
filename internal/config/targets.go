@@ -46,15 +46,18 @@ type Target struct {
 	PublisherEnv    string // token mode: targets/<name>.publisher.env
 	SecurityLevel   string // minimal (default) | recommended | strict (roadmap C-14; 018)
 	AuthorEnv       string // targets/<name>.author.env: the test author's companion-only token (recommended level)
-	AuthorAuto      string // on|off: `pilot author watch` may draft this target's items (024)
+	AuthorAuto      string // on|off: `./chalkeus forge author watch` may draft this target's items (024)
 	// SliceRuns on|off (026): step mode and automatic drafting work an item slice by slice. Off
 	// (the default) they build every item whole, as before; `run --slice` works either way.
 	SliceRuns       string
 	AuthorIntervalS int    // seconds between the watcher's polls (024, default 120)
 	AuthorAttempts  int    // author Jobs per automatic draft (024, default 2, at most 3)
-	ProposeLabel    string // the label that proposes an item to step mode (021; its name follows Q7)
-	StepIntervalS   int    // seconds between step mode's passes (021, default 120)
-	Fixture         bool
+	ProposeLabel    string // the label that proposes an item to step mode (021; default DefaultProposeLabel)
+	// ProposeLabelDefault is true when the profile sets no label, so step mode uses the default
+	// (and says so if issues still carry OldProposeLabel, 027 FR-007).
+	ProposeLabelDefault bool
+	StepIntervalS       int // seconds between step mode's passes (021, default 120)
+	Fixture             bool
 }
 
 // Security levels (roadmap C-14): who may write the target and read the companion.
@@ -171,6 +174,13 @@ func (c *Config) ListTargets() []string {
 
 // LoadTarget reads and validates targets/<name>.env. "" or "fixture" is the fixture target.
 // origin is this checkout's origin (the canary); it may be "".
+// DefaultProposeLabel proposes an item to step mode when a profile sets no label (027 FR-007).
+// OldProposeLabel was the default before 027.
+const (
+	DefaultProposeLabel = "chalkeus:proposed"
+	OldProposeLabel     = "pilot/go"
+)
+
 func (c *Config) LoadTarget(name, origin string) (Target, error) {
 	if name == "" || name == FixtureTarget {
 		return c.Fixture(), nil
@@ -314,7 +324,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		return Target{}, invalid("PILOT_AUTHOR_AUTO_ATTEMPTS", "must be 1, 2 or 3")
 	}
 	if t.ProposeLabel == "" {
-		t.ProposeLabel = "pilot/go" // a placeholder until the product is named (roadmap Q7)
+		t.ProposeLabel, t.ProposeLabelDefault = DefaultProposeLabel, true
 	}
 	if len(t.ProposeLabel) > 50 || strings.ContainsAny(t.ProposeLabel, ",\n") {
 		return Target{}, invalid("PILOT_PROPOSE_LABEL", "must be a GitHub label name (at most 50 characters, no commas)")

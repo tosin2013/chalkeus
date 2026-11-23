@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/verbose"
 )
 
-// 024 contracts/author-watch.md: `pilot author watch --target <name> [--once]`.
+// 024 contracts/author-watch.md: `./chalkeus forge author watch --target <name> [--once]`.
 func TestAuthorWatchCommand(t *testing.T) {
 	root := NewRoot("test")
-	c, _, err := root.Find([]string{"author", "watch"})
+	c, _, err := root.Find([]string{"forge", "author", "watch"})
 	if err != nil || c.Name() != "watch" {
 		t.Fatalf("author watch: %v", err)
 	}
@@ -37,9 +37,9 @@ func TestWatchVerbosityDefaultsToVV(t *testing.T) {
 	}
 }
 
-// 021 contracts/step.md: `pilot step --target <name> [--once]`.
+// 021 contracts/step.md: `./chalkeus forge step --target <name> [--once]`.
 func TestStepCommand(t *testing.T) {
-	c, _, err := NewRoot("test").Find([]string{"step"})
+	c, _, err := NewRoot("test").Find([]string{"forge", "step"})
 	if err != nil || c.Name() != "step" || c.Flags().Lookup("target") == nil || c.Flags().Lookup("once") == nil {
 		t.Fatalf("step: %v", err)
 	}

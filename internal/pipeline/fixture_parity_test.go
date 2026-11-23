@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/worker"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/worker"
 )
 
 // 014 T004: the fixture run must stay byte-identical while item runs are added (FR-015,

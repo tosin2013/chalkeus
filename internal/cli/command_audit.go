@@ -1,7 +1,7 @@
 package cli
 
 // CommandClass says whether the harness must ask the human before a command runs (027,
-// specs/027-chalkeus-rename/contracts/command-audit.md). Every top-level command is listed; a
+// specs/027-chalkeus-rename/contracts/command-audit.md). Every command under `forge` is listed; a
 // command's subcommands share its class. TestCommandAudit fails on a command missing here, and on
 // an ask command without a matching rule in the repository's .claude/settings.json.
 const (
@@ -9,7 +9,7 @@ const (
 	ClassFree = "free" // reads, or acts only after a human's decision recorded elsewhere
 )
 
-// CommandAudit is the class of each top-level command.
+// CommandAudit is the class of each command under `forge`.
 var CommandAudit = map[string]string{
 	"approve":         ClassAsk, // records the human's decision (every step, including 026's acceptance)
 	"reset-fixture":   ClassAsk, // force-pushes the fixture repository
@@ -35,5 +35,5 @@ var CommandAudit = map[string]string{
 }
 
 // AskRulePrefixes are the command forms the repository's harness rules must cover for each ask
-// command (stage 1 of 027: today's in-repository command).
-var AskRulePrefixes = []string{"pilot/pilot", "./pilot/pilot"}
+// command (027 stage 3): the in-repository shim and the installed binary (013).
+var AskRulePrefixes = []string{"./chalkeus forge", "chalkeus forge"}

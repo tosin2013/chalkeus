@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 // Hidden tests from the companion repository (014 R9). The pilot reads an item's folder on the

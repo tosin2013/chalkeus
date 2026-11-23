@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/secret"
+	"github.com/tosin2013/chalkeus/internal/secret"
 )
 
 // Port of the former Python pilot's tests/test_check_token.py against a fake GitHub API.

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/config"
+	"github.com/tosin2013/chalkeus/internal/config"
 )
 
 // A fake spec-status: the JSON a prepared target would produce, adjustable per test.

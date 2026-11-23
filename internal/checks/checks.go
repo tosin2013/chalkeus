@@ -19,12 +19,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/gate"
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	envnames "github.com/tosin2013/specfoundry/internal/names"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/gate"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	envnames "github.com/tosin2013/chalkeus/internal/names"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
 )
 
 const (

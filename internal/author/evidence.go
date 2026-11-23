@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 // File is one drafted file: its path in the item folder and its SHA-256, never its contents.
@@ -147,7 +147,7 @@ func LoadDraft(root, id, target, item string) (*Draft, error) {
 				return d, nil
 			}
 		}
-		return nil, fmt.Errorf("no draft for target %s item %s: run `pilot/pilot author start` first", target, item)
+		return nil, fmt.Errorf("no draft for target %s item %s: run `./chalkeus forge author start` first", target, item)
 	}
 	raw, err := os.ReadFile(filepath.Join(root, id, "draft.json"))
 	if err != nil {

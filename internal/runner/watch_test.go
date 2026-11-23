@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/verbose"
 )
 
 type fakeCluster struct {

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/tosin2013/specfoundry/internal/names"
+	"github.com/tosin2013/chalkeus/internal/names"
 	"net/url"
 	"strings"
 )

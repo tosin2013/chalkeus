@@ -12,18 +12,18 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/author"
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/doctor"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/gate"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/grader"
-	"github.com/tosin2013/specfoundry/internal/images"
-	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/author"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/doctor"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/gate"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/grader"
+	"github.com/tosin2013/chalkeus/internal/images"
+	"github.com/tosin2013/chalkeus/internal/readiness"
 )
 
-// doctorCmd is `pilot doctor --target <name> [--item NNN] [--baseline]` (014): a read-only
+// doctorCmd is `./chalkeus forge doctor --target <name> [--item NNN] [--baseline]` (014): a read-only
 // preflight that lists every problem in one pass. It never prints hidden-test contents.
 func doctorCmd() *cobra.Command {
 	c := &cobra.Command{
@@ -77,7 +77,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		r.OK("profile", "test author token (recommended level)", err, "present, mode 0600")
 	}
 	if t.AuthorAuto == "on" { // 024: who drafts hidden tests, as information only
-		r.Add("profile", "auto-draft", doctor.Info, fmt.Sprintf("on: `pilot/pilot author watch --target %s` drafts ready items (every %d s, up to %d author Job(s) each)", t.Name, t.AuthorIntervalS, t.AuthorAttempts))
+		r.Add("profile", "auto-draft", doctor.Info, fmt.Sprintf("on: `./chalkeus forge author watch --target %s` drafts ready items (every %d s, up to %d author Job(s) each)", t.Name, t.AuthorIntervalS, t.AuthorAttempts))
 	} else {
 		r.Add("profile", "auto-draft", doctor.Info, "off: hidden tests are drafted by hand (set PILOT_AUTHOR_AUTO=on to let `author watch` draft them)")
 	}
@@ -97,7 +97,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		case probe.Status >= 200 && probe.Status < 300:
 			r.Add("cluster", "model key", doctor.Pass, "the provider accepts the worker's key (provider "+probe.Provider+")")
 		case probe.Status == 401 || probe.Status == 403:
-			r.Add("cluster", "model key", doctor.Fail, fmt.Sprintf("the provider rejected the worker's key (%d): %s. Fix or replace the key, then run `pilot/pilot import-opencode` again",
+			r.Add("cluster", "model key", doctor.Fail, fmt.Sprintf("the provider rejected the worker's key (%d): %s. Fix or replace the key, then run `./chalkeus forge import-opencode` again",
 				probe.Status, probe.Message))
 		default:
 			r.Add("cluster", "model key", doctor.Warn, fmt.Sprintf("couldn't confirm the key: the provider answered %d to a one-token test request", probe.Status))
@@ -105,7 +105,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	}
 	upOK := false
 	if _, err := os.Stat(l.UpOK); err != nil {
-		r.Add("cluster", "pilot up", doctor.Fail, "`pilot/pilot up` has not completed")
+		r.Add("cluster", "pilot up", doctor.Fail, "`./chalkeus forge up` has not completed")
 	} else {
 		upOK = true
 		r.Add("cluster", "pilot up", doctor.Pass, "")
@@ -177,7 +177,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 
 	// The project on the cluster, offline: toolchain, install, the project's tests on today's code.
 	if !upOK {
-		r.Add("baseline", "project tests offline", doctor.Skip, "needs `pilot/pilot up`")
+		r.Add("baseline", "project tests offline", doctor.Skip, "needs `./chalkeus forge up`")
 		return doctorExit(&r)
 	}
 	if res.Commit == "" || res.SpecDir == "" {

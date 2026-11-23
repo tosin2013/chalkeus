@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	envnames "github.com/tosin2013/specfoundry/internal/names"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	envnames "github.com/tosin2013/chalkeus/internal/names"
 )
 
 // AuthorRow is one isolation check of an automatic draft's author namespace (024 R6).

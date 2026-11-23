@@ -7,15 +7,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/grader"
-	"github.com/tosin2013/specfoundry/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/grader"
+	"github.com/tosin2013/chalkeus/internal/readiness"
 )
 
 // Baseline runs the item's baseline with overlay as the hidden tests (pipeline.AuthorBaseline).
 type Baseline func(dir, id, item string, res readiness.Result, overlay []byte) (map[string]any, []byte, error)
 
-// Check is `pilot author check` (018 T010): validate the draft and its map, then prove on the
+// Check is `./chalkeus forge author check` (018 T010): validate the draft and its map, then prove on the
 // cluster that the project's tests pass and the drafted tests fail on the unchanged base. The
 // drafted tests' output is printed for the author and never stored.
 func Check(ctx context.Context, e Env, item string, baseline Baseline) (*Draft, error) {
@@ -83,7 +83,7 @@ func Check(ctx context.Context, e Env, item string, baseline Baseline) (*Draft, 
 			CodeDraftGraderError:  "the grader could not finish; see the check's grade.json and try again",
 		}[code]}
 	}
-	fmt.Fprintf(e.Out, "DRAFT_OK: the project's tests pass and your tests fail on the base. Covered %v of %v criteria; uncovered: %v\nnext: pilot/pilot author submit --target %s --item %s\n",
+	fmt.Fprintf(e.Out, "DRAFT_OK: the project's tests pass and your tests fail on the base. Covered %v of %v criteria; uncovered: %v\nnext: ./chalkeus forge author submit --target %s --item %s\n",
 		mapping["covered"], mapping["criteria"], mapping["uncovered"], d.Target, item)
 	return d, nil
 }

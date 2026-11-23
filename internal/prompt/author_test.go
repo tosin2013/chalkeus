@@ -32,7 +32,7 @@ func TestBuildAuthor(t *testing.T) {
 			t.Errorf("missing %q", want)
 		}
 	}
-	if strings.Contains(p, "failed its check") || strings.Contains(p, "pilot/pilot") {
+	if strings.Contains(p, "failed its check") || strings.Contains(p, "./chalkeus forge") {
 		t.Error("no feedback and no pilot commands on a first attempt")
 	}
 	r, _ := BuildAuthor(Author{Item: "009", SpecSHA256: "abc", FeedbackCode: "DRAFT_HIDDEN_PASSES", FeedbackOutput: strings.Repeat("x", 9000) + "Tests run: 3, Failures: 0"})

@@ -1,9 +1,9 @@
 ---
-name: "pilot"
-description: "Drive the specfoundry pilot (pilot/pilot) together with a human: run, explain each pause, and hand every decision to the human. Use when asked to run, resume, check or tear down the pilot, or when a pilot command paused or failed."
+name: "forge"
+description: "Drive Chalkeus forge (./chalkeus forge) together with a human: run, explain each pause, and hand every decision to the human. Use when asked to run, resume, check or tear down a forge run, or when a forge command paused or failed."
 ---
 
-# Working the pilot with a human
+# Working forge with a human
 
 You run the commands and explain what happens. **The human makes every decision.** You never
 decide for them, and you never work around a check.
@@ -13,7 +13,7 @@ matching troubleshooting entry before suggesting any fix.
 
 ## Hard rules
 
-1. **Never approve on the human's behalf.** Only run `pilot/pilot approve …` after the human
+1. **Never approve on the human's behalf.** Only run `./chalkeus forge approve …` after the human
    said yes to that exact step in this conversation, and let the harness permission prompt
    ask them. If the harness does not ask (a bypass or auto-approve mode), stop and tell the
    human that the approval would not be theirs; ask them to run it themselves. Running
@@ -27,15 +27,15 @@ matching troubleshooting entry before suggesting any fix.
    provider keys).
 2. **Never write, edit, copy or delete anything under a run's `approvals/` folder**, and
    never edit `events.jsonl`, `run.json` or other evidence. An approval must come from
-   `pilot approve`.
+   `./chalkeus forge approve`.
 3. **Never merge a PR.** Merges happen on GitHub, by the human.
-   This includes the status-change PR the pilot opens after A's merge (004): merging it is
+   This includes the status-change PR forge opens after A's merge (004): merging it is
    how the human approves the roadmap change.
 3a. **Never post `/approve` or `/withdraw` comments** on a run's tracking issue, with any
    account or tool (`gh issue comment`, `gh api`, a browser). On GitHub, an approval is only the
    human's if the human writes it. If asked to, refuse, and point them to the issue link the
    pilot printed.
-4. **Never print, read aloud or commit secrets:** `~/.config/specfoundry/*`, API keys, the
+4. **Never print, read aloud or commit secrets:** `~/.config/chalkeus/*`, API keys, the
    GitHub token, or the model host.
 5. Don't run `reset-fixture`, `down` or `publisher-token` without the human asking; `reset-fixture`
    force-resets their fixture repo.
@@ -45,26 +45,26 @@ matching troubleshooting entry before suggesting any fix.
    `.claude/settings.json` holds the rules, and a test keeps them complete. A prompt for `run` or
    `resume` is expected: say what the command does, and let the human answer. The rules back up
    these instructions; they don't replace them (rules 1, 5 and 7 still apply).
-6. **Run every command exactly as `pilot/pilot …` from the repository root.** Never use an
-   absolute path, `bash pilot/pilot`, `python3 -m …` or another wrapper: the harness rules that
+6. **Run every command exactly as `./chalkeus forge …` from the repository root.** Never use an
+   absolute path, `bash ./chalkeus forge`, `python3 -m …` or another wrapper: the harness rules that
    make `approve` ask the human match that exact prefix.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `pilot/pilot status [--run <id>]` | current run state (JSON); read `state` and `pending` |
-| `pilot/pilot up` | stand up the local cluster (several minutes) |
-| `pilot/pilot run` | start a run: gate checks, mode, task A attempts, publish A |
-| `pilot/pilot targets` | list the human's configured target repositories (no secrets) |
-| `pilot/pilot gate --target <name> --item NNN` | check an item of a target is prepared (no cluster); exit 10 = refused, with a code |
-| `pilot/pilot run --target <name> --item NNN` | an item run of the human's own repository: readiness, mode, baseline, attempts, draft PR on the target |
-| `pilot/pilot slices --target <name> --item NNN` | list an item's slices (026), their state and the current one (read-only) |
-| `pilot/pilot run --target <name> --item NNN --slice USn` | build one slice of the item: its own PR; only the last slice leads to the status change |
-| `pilot/pilot resume --run <id>` | continue a paused run |
-| `pilot/pilot approve --run <id> mode\|retry\|reconcile\|acceptance` | record the human's yes for the one pending step |
-| `pilot/pilot audit [--run <id>]` | evidence audit AU01–AU11 |
-| `pilot/pilot down` | tear down and verify |
+| `./chalkeus forge status [--run <id>]` | current run state (JSON); read `state` and `pending` |
+| `./chalkeus forge up` | stand up the local cluster (several minutes) |
+| `./chalkeus forge run` | start a run: gate checks, mode, task A attempts, publish A |
+| `./chalkeus forge targets` | list the human's configured target repositories (no secrets) |
+| `./chalkeus forge gate --target <name> --item NNN` | check an item of a target is prepared (no cluster); exit 10 = refused, with a code |
+| `./chalkeus forge run --target <name> --item NNN` | an item run of the human's own repository: readiness, mode, baseline, attempts, draft PR on the target |
+| `./chalkeus forge slices --target <name> --item NNN` | list an item's slices (026), their state and the current one (read-only) |
+| `./chalkeus forge run --target <name> --item NNN --slice USn` | build one slice of the item: its own PR; only the last slice leads to the status change |
+| `./chalkeus forge resume --run <id>` | continue a paused run |
+| `./chalkeus forge approve --run <id> mode\|retry\|reconcile\|acceptance` | record the human's yes for the one pending step |
+| `./chalkeus forge audit [--run <id>]` | evidence audit AU01–AU11 |
+| `./chalkeus forge down` | tear down and verify |
 
 Always pass `--run <id>` once you know the run id (printed as `== run <id>`). For an item run, `resume`, `approve`
 and `audit` take only `--run`; the run remembers its target. Only the human prepares a target's
@@ -74,9 +74,9 @@ companion repository's hidden tests yourself.
 When an item has no hidden tests (`ITEM_NO_HIDDEN_TESTS`), the human writes them, or opens a
 **separate** agent session with the test-author skill (`.claude/skills/test-author/`) to draft
 them. You are the session that drives runs, so you never act as the test author: never run
-any `pilot/pilot author` command (including `author watch`, the automatic drafting of 024: the
+any `./chalkeus forge author` command (including `author watch`, the automatic drafting of 024: the
 human starts it in their own terminal), never read a draft workspace or draft evidence, and
-never open the companion's pull requests. The same goes for `pilot/pilot step` (021, step
+never open the companion's pull requests. The same goes for `./chalkeus forge step` (021, step
 mode): it may draft hidden tests, so only the human starts it, in their own terminal. Runs it
 starts are ordinary runs; explain them as usual, and leave every approval to the human.
 
@@ -99,20 +99,20 @@ agent's live activity) only when the human asks for it.
 
 ## Decisions
 
-With GitHub approvals on (`PILOT_GITHUB_APPROVALS=on`), each pause also prints a tracking-issue
+With GitHub approvals on (`FORGE_GITHUB_APPROVALS=on`), each pause also prints a tracking-issue
 link. The human can reply there with `/approve <step>` instead. Tell them that option exists,
 then wait. The run starts a background watcher at its first pause (`watcher started (pid N)`),
-which resumes on its own when the approval or merge appears; `pilot/pilot status` shows it.
-`resume` refuses while it watches; don't stop it unless the human asks. For the status change, the pilot opens a small draft PR; the human's merge is the
+which resumes on its own when the approval or merge appears; `./chalkeus forge status` shows it.
+`resume` refuses while it watches; don't stop it unless the human asks. For the status change, forge opens a small draft PR; the human's merge is the
 approval.
 
-Without a terminal, the pilot pauses at each decision and prints
-`no terminal: approve with pilot/pilot approve --run <id> <step>`. For each one:
+Without a terminal, forge pauses at each decision and prints
+`no terminal: approve with ./chalkeus forge approve --run <id> <step>`. For each one:
 
-1. **Explain it in plain words**, using what the pilot printed:
+1. **Explain it in plain words**, using what forge printed:
    - `mode`: the run mode (one attempt at a time, retry limit, spend cap, deadline). Saying
      yes lets it start staging workers.
-   - `retry`: which task failed, the attempt number, and why (from `pilot/pilot status` or the
+   - `retry`: which task failed, the attempt number, and why (from `./chalkeus forge status` or the
      attempt's `grade.json`). The first attempt of A fails on purpose (AU11 induction).
    - `reconcile`: the roadmap change it proposes (for example `001: planned → verified`) and
      that A's PR was merged with tasks at 100%. Saying yes unblocks task B.
@@ -121,8 +121,8 @@ Without a terminal, the pilot pauses at each decision and prints
      them and they passed; only then does the status change follow. Never say yes for them.
 2. **Ask the human:** "Do you approve <step>?" Wait for their answer. Silence or anything but
    a clear yes means no.
-3. On yes: run `pilot/pilot approve --run <id> <step>`. The harness asks them again; that
-   click is the approval. Then run `pilot/pilot resume --run <id>`.
+3. On yes: run `./chalkeus forge approve --run <id> <step>`. The harness asks them again; that
+   click is the approval. Then run `./chalkeus forge resume --run <id>`.
 4. On no: leave it. For a retry, the run stays paused; for the mode, nothing was started.
 
 For a slice run (026, `--slice USn`), a slice before the item's last ends with
@@ -134,15 +134,15 @@ is used once. If it refuses, read its message to the human; don't retry with ano
 
 ## A normal run, start to finish
 
-1. `pilot/pilot status`. If a run is paused, ask whether to continue it or start fresh.
-2. `pilot/pilot run`. It pauses at `mode` → Decisions.
+1. `./chalkeus forge status`. If a run is paused, ask whether to continue it or start fresh.
+2. `./chalkeus forge run`. It pauses at `mode` → Decisions.
 3. `resume`. Attempt A/1 runs (minutes) and fails as designed; it pauses at `retry` → Decisions.
 4. `resume`. A/2 should pass; the PR is published and the run pauses for the merge.
 5. The human merges on GitHub. Then `resume`: it shows the reconcile proposal and pauses at
    `reconcile` → Decisions.
 6. `resume`. Task B runs and is published; the audit runs. Report `run <id> succeeded` and
    the evidence path.
-7. Only if the human asks: `pilot/pilot down`, then `pilot/pilot audit --run <id>` (AU07
+7. Only if the human asks: `./chalkeus forge down`, then `./chalkeus forge audit --run <id>` (AU07
    needs the teardown).
 
 The audit lists each approval's channel in AU09 and AU10: `tty` or `harness`. Report them

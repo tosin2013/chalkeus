@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/secret"
+	"github.com/tosin2013/chalkeus/internal/secret"
 )
 
 func labelServer(t *testing.T, labels []string, events []map[string]any) {

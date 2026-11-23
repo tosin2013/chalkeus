@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
 )
 
 // TestStepMode is the step-mode scenario (T012) on the tally target, one `step --once` pass at a
@@ -99,7 +99,7 @@ func TestStepMode(t *testing.T) {
 	if tracking == 0 {
 		t.Fatalf("run %s has no tracking issue", id)
 	}
-	// The operator leaves `pilot step` running while the run goes on: it relays the run's watcher
+	// The operator leaves `./chalkeus forge step` running while the run goes on: it relays the run's watcher
 	// log, including the lines written after the run ends (the 021 bug fixed by #124 lost them).
 	output, stop := w.background("step", "--target", "tally")
 	seen, reason := w.drive(t, repo, id, tracking)

@@ -1,12 +1,12 @@
-# specfoundry operator guide: repeat the pilot from zero
+# Chalkeus operator guide: repeat the pilot from zero
 
-This guide takes you from a fresh Linux machine to a completed, audited run of the specfoundry
+This guide takes you from a fresh Linux machine to a completed, audited run of the Chalkeus
 pilot. Follow it top to bottom. If anything fails, the matching entry in
 [troubleshooting](troubleshooting.md) explains why and how to fix it.
 
 **Contents:**
 1. [What you'll do](#1-what-youll-do)
-2. [How specfoundry keeps you safe](#2-how-specfoundry-keeps-you-safe)
+2. [How Chalkeus keeps you safe](#2-how-chalkeus-keeps-you-safe)
 3. [Before you start](#3-before-you-start)
 4. [Install the tools](#4-install-the-tools)
 5. [Configure your model provider](#5-configure-your-model-provider)
@@ -48,9 +48,9 @@ approve a status change.
 
 ---
 
-## 2. How specfoundry keeps you safe
+## 2. How Chalkeus keeps you safe
 
-Read this first if you're evaluating specfoundry. Every guarantee below is checked on every
+Read this first if you're evaluating Chalkeus. Every guarantee below is checked on every
 run, and the check IDs appear in your evidence (section 10).
 
 | Guarantee | How | Proof in your run |
@@ -139,7 +139,7 @@ cd ~
 
 If `~/.local/bin` isn't on your `PATH` yet, log out and back in (Ubuntu adds it when it exists).
 
-**Go 1.27** (the pilot is written in Go; `pilot/pilot` builds it on first use).
+**Go 1.27** (the pilot is written in Go; `./chalkeus forge` builds it on first use).
 Verify the checksum published on [go.dev/dl](https://go.dev/dl/) before installing:
 
 ```sh
@@ -149,17 +149,17 @@ rm -rf ~/.local/go && tar -C ~/.local -xzf go1.27.4.linux-amd64.tar.gz
 cd ~
 ```
 
-`pilot/pilot` finds Go in `~/.local/go/bin`. Add it to your `PATH` only if you want to run `go`
+`./chalkeus forge` finds Go in `~/.local/go/bin`. Add it to your `PATH` only if you want to run `go`
 yourself.
 
 **The project:**
 
 ```sh
-git clone https://github.com/tosin2013/specfoundry.git
-cd specfoundry
+git clone https://github.com/tosin2013/chalkeus.git
+cd chalkeus
 ```
 
-You don't need to install kind or kubectl. `pilot/pilot up` installs the pinned
+You don't need to install kind or kubectl. `./chalkeus forge up` installs the pinned
 kind v0.27.0 and kubectl v1.32.2 into `~/.local/bin`, verifying their checksums.
 
 **Check everything** before moving on:
@@ -177,9 +177,9 @@ You should see Docker's hello message, `Logged in to github.com`, `spec 0.4.0`, 
 
 The worker runs [OpenCode](https://github.com/anomalyco/opencode), the default and only
 harness in this release, against your model provider. Any OpenAI-compatible endpoint with a
-tool-calling model works. This step creates two things under `~/.config/specfoundry/`:
+tool-calling model works. This step creates two things under `~/.config/chalkeus/`:
 - **`opencode/`:** OpenCode's config plus your API key, kept in a separate file;
-- **`pilot.env`:** the pilot's settings. Every `pilot/pilot` command reads this file, so it
+- **`forge.env`:** the pilot's settings. Every `./chalkeus forge` command reads this file, so it
   comes first.
 
 **First, choose your fixture repo's name.** It must end in `-pilot-fixture`, for example
@@ -188,17 +188,17 @@ tool-calling model works. This step creates two things under `~/.config/specfoun
 ### If you already use OpenCode
 
 ```sh
-pilot/pilot import-opencode --fixture-repo <you>/<you>-pilot-fixture
+./chalkeus forge import-opencode --fixture-repo <you>/<you>-pilot-fixture
 ```
 
 ```text
-imported OpenCode config: ~/.config/opencode -> ~/.config/specfoundry/opencode
+imported OpenCode config: ~/.config/opencode -> ~/.config/chalkeus/opencode
   model: <provider>/<model>
   key files: <provider>_api_key
-wrote ~/.config/specfoundry/pilot.env (model, its egress host, default caps)
+wrote ~/.config/chalkeus/forge.env (model, its egress host, default caps)
 ```
 
-This copies only your default model's provider and its key file, and writes `pilot.env`. It
+This copies only your default model's provider and its key file, and writes `forge.env`. It
 never prints your key or your provider's host. It refuses a config with a literal key or an
 `{env:...}` reference, and the error tells you how to fix it. Details and options:
 [providers.md](providers.md#option-a-you-already-use-opencode).
@@ -211,11 +211,11 @@ If you connected your provider in OpenCode with an **API key** (`/connect` in th
 `opencode auth login`), import that login instead:
 
 ```sh
-pilot/pilot import-opencode --from-login --model <provider>/<model> --fixture-repo <you>/<you>-pilot-fixture
+./chalkeus forge import-opencode --from-login --model <provider>/<model> --fixture-repo <you>/<you>-pilot-fixture
 ```
 
 With OpenCode 2.2 or later, logins are in OpenCode's database instead of `auth.json`; pipe them
-in with `opencode auth export | pilot/pilot import-opencode --from-login --auth-file - --model
+in with `opencode auth export | ./chalkeus forge import-opencode --from-login --auth-file - --model
 <provider>/<model> …` ([providers: OpenCode Go](providers.md#quick-start-opencode-go)).
 
 The pilot copies only that provider's key into its own folder (mode 0600, never printed) and
@@ -226,7 +226,7 @@ pilot runs unattended, so it uses API keys only.
 ### Check the key
 
 ```sh
-pilot/pilot doctor --target <name>
+./chalkeus forge doctor --target <name>
 ```
 
 Its `model key` row sends one tiny request (a few tokens) with the worker's key and model. A
@@ -235,13 +235,13 @@ blocked, expired or wrong key shows here as a failure, before any run.
 ### Otherwise, write it by hand
 
 ```sh
-install -d -m 700 ~/.config/specfoundry/opencode
-install -m 600 /dev/null ~/.config/specfoundry/opencode/myprovider_api_key
-install -m 600 /dev/null ~/.config/specfoundry/opencode/opencode.json
+install -d -m 700 ~/.config/chalkeus/opencode
+install -m 600 /dev/null ~/.config/chalkeus/opencode/myprovider_api_key
+install -m 600 /dev/null ~/.config/chalkeus/opencode/opencode.json
 # now put your API key into myprovider_api_key with an editor (one line, no quotes)
 ```
 
-Edit `~/.config/specfoundry/opencode/opencode.json`, using your provider's URL and model. The
+Edit `~/.config/chalkeus/opencode/opencode.json`, using your provider's URL and model. The
 `apiKey` **must** be a file reference, never the key itself; the pilot refuses literal keys.
 
 ```json
@@ -268,27 +268,27 @@ Edit `~/.config/specfoundry/opencode/opencode.json`, using your provider's URL a
 }
 ```
 
-The path says `~/.config/opencode/...`, not `specfoundry`, on purpose: inside the worker,
+The path says `~/.config/opencode/...`, not `chalkeus`, on purpose: inside the worker,
 this directory is mounted as OpenCode's own config directory.
 
-Then create `~/.config/specfoundry/pilot.env`:
+Then create `~/.config/chalkeus/forge.env`:
 
 ```sh
-install -m 600 /dev/null ~/.config/specfoundry/pilot.env
-cat > ~/.config/specfoundry/pilot.env <<'EOF'
-PILOT_FIXTURE_REPO=<you>/<you>-pilot-fixture
-PILOT_FIXTURE_BRANCH=main
-PILOT_MODEL=myprovider/my-model
-PILOT_MODEL_EGRESS_HOSTS=api.example.com
-PILOT_SPEND_CAP_USD=1.00
-PILOT_TOKEN_CAP=2000000
-PILOT_PROVIDER_CAP_DECLARED=false
+install -m 600 /dev/null ~/.config/chalkeus/forge.env
+cat > ~/.config/chalkeus/forge.env <<'EOF'
+FORGE_FIXTURE_REPO=<you>/<you>-pilot-fixture
+FORGE_FIXTURE_BRANCH=main
+FORGE_MODEL=myprovider/my-model
+FORGE_MODEL_EGRESS_HOSTS=api.example.com
+FORGE_SPEND_CAP_USD=1.00
+FORGE_TOKEN_CAP=2000000
+FORGE_PROVIDER_CAP_DECLARED=false
 EOF
 ```
 
 ### Either way
 
-- **`PILOT_MODEL_EGRESS_HOSTS`** is the host from your `baseURL`. It's the only place workers
+- **`FORGE_MODEL_EGRESS_HOSTS`** is the host from your `baseURL`. It's the only place workers
   may connect to. The evidence records only a hash of it.
 - **Spend:** if your provider reports no cost (many gateways don't), the cap runs on tokens.
   To get a cap in dollars, declare your model's prices; see
@@ -304,7 +304,7 @@ The pilot works on a **throwaway repository** that it force-resets at the start 
 Never point it at a repository you care about.
 
 1. **Create the fixture repo.** On GitHub, create a new, **empty** repository (no README,
-   licence or .gitignore), with the name you put in `PILOT_FIXTURE_REPO` in section 5.
+   licence or .gitignore), with the name you put in `FORGE_FIXTURE_REPO` in section 5.
    Public or private both work.
 2. **Create a fine-grained token for that repo only.** On GitHub go to
    *Settings → Developer settings → Fine-grained tokens → Generate new token*:
@@ -319,7 +319,7 @@ Never point it at a repository you care about.
    It never appears on screen, in shell history or in logs.
 
 ```sh
-pilot/pilot publisher-token
+./chalkeus forge publisher-token
 ```
 
 ```text
@@ -352,7 +352,7 @@ wrong. Until roadmap item 004, PRs will show your account as their author.
 ## 7. Stand up
 
 ```sh
-pilot/pilot up
+./chalkeus forge up
 ```
 
 This:
@@ -377,7 +377,7 @@ Next, load the fixture into your throwaway repo. This **force-resets that repo o
 command refuses any repo whose name doesn't end in `-pilot-fixture`.
 
 ```sh
-pilot/pilot reset-fixture        # type y to confirm
+./chalkeus forge reset-fixture        # type y to confirm
 ```
 
 ```text
@@ -387,8 +387,8 @@ fixture reset: <you>/<you>-pilot-fixture@main = <commit>
 Optionally, see the gate decide before anything runs:
 
 ```sh
-pilot/pilot gate A               # "decision": "allow", exit 0
-pilot/pilot gate B               # "decision": "refuse", "DEP_UNSATISFIED:001", exit 10
+./chalkeus forge gate A               # "decision": "allow", exit 0
+./chalkeus forge gate B               # "decision": "refuse", "DEP_UNSATISFIED:001", exit 10
 ```
 
 If stand-up fails, see [troubleshooting](troubleshooting.md#stand-up).
@@ -400,11 +400,11 @@ If stand-up fails, see [troubleshooting](troubleshooting.md#stand-up).
 Run this **in a real terminal**. Prompts read from your terminal. Without one (an agent's
 shell, some IDE runners, CI), the run **pauses** at each decision and nothing proceeds; see
 [Prompts answer "no"](troubleshooting.md#prompts-answer-no). To work through a coding agent
-instead, see the `pilot` skill (`.claude/skills/pilot/SKILL.md`): the agent runs the commands
+instead, see the `forge` skill (`.claude/skills/forge/SKILL.md`): the agent runs the commands
 and you approve each decision.
 
 ```sh
-pilot/pilot run
+./chalkeus forge run
 ```
 
 The output below is from the real run `20261113T180203Z`; its full transcript is
@@ -459,7 +459,7 @@ from run 20261113T180203Z
 Retry A (attempt 2 of 3)? [y/N]
 ```
 
-Type `y`. If you answer `N`, the run pauses (exit 6), and `pilot/pilot resume` asks again
+Type `y`. If you answer `N`, the run pauses (exit 6), and `./chalkeus forge resume` asks again
 later.
 
 **Attempt A/2 passes, and the publisher opens a draft PR.** Two more checks confirm only the
@@ -469,7 +469,7 @@ refuses, because A isn't verified until you merge and approve. The run pauses:
 ```text
 from run 20261113T180203Z
 Task A draft PR: https://github.com/tosin2013/craz3-pilot-fixture/pull/3
-Review and merge it on GitHub yourself, then run: pilot/pilot resume
+Review and merge it on GitHub yourself, then run: ./chalkeus forge resume
 ```
 
 If the run stops early, see [troubleshooting](troubleshooting.md#run-time).
@@ -497,7 +497,7 @@ Click **Ready for review**, then **Merge**. Any merge method works.
 Then:
 
 ```sh
-pilot/pilot resume
+./chalkeus forge resume
 ```
 
 **Prompt 3: approve the status change.** Reconcile checks that the PR really merged, that A's
@@ -560,7 +560,7 @@ it in that spec's `evidence/` folder instead.)
   | AU04 | No worker or grader held a repository credential |
   | AU05 | The gate's fail-closed self-checks passed |
   | AU06 | Every attempt stayed within its spend cap |
-  | AU07 | Teardown was verified (after `pilot/pilot down`) |
+  | AU07 | Teardown was verified (after `./chalkeus forge down`) |
   | AU08 | No secrets anywhere in the evidence |
   | AU09 | Every retry was confirmed by you |
   | AU10 | The mode was confirmed before any worker started |
@@ -582,8 +582,8 @@ it in that spec's `evidence/` folder instead.)
 ## 11. Tear down and confirm
 
 ```sh
-pilot/pilot down
-pilot/pilot audit
+./chalkeus forge down
+./chalkeus forge audit
 ```
 
 ```text
@@ -593,12 +593,12 @@ from run 20261113T180203Z
   PASS T03 local registry container removed (containers=0)
 ```
 
-`pilot/pilot audit` now passes all 11 checks, including AU07.
+`./chalkeus forge audit` now passes all 11 checks, including AU07.
 
 Optional cleanup:
 - close or delete the PRs and the `pilot/<run-id>/<task>` branches on your fixture repo (or delete the repo);
 - delete the fine-grained token on GitHub;
-- remove `~/.config/specfoundry/` when you no longer need it.
+- remove `~/.config/chalkeus/` when you no longer need it.
 
 ---
 
@@ -608,7 +608,7 @@ Look up the message you see in [troubleshooting](troubleshooting.md). Each entry
 cause, the fix and how to confirm it.
 
 To see what the pods are doing, add `-v`, `-vv` or `-vvv` after any command, for example
-`pilot/pilot run -vv`:
+`./chalkeus forge run -vv`:
 - `-v` shows each step, each Job and how long it took, and the first failing grader check;
 - `-vv` adds pod phases, container states, Kubernetes events (scheduling, image pulls,
   out-of-memory kills) and model-proxy refusals as they happen;
@@ -620,18 +620,18 @@ effect and the code the agent writes, so don't paste it anywhere public without 
 first.
 
 If you're still stuck, open an issue at
-[github.com/tosin2013/specfoundry/issues](https://github.com/tosin2013/specfoundry/issues)
+[github.com/tosin2013/chalkeus/issues](https://github.com/tosin2013/chalkeus/issues)
 with:
 - the command you ran and its output;
-- the output of `pilot/pilot status`;
+- the output of `./chalkeus forge status`;
 - from the run's evidence folder: `run.json`, `events.jsonl`, and any failing attempt's
   `job.json` and `report.json`.
 
-**Never share** anything from `~/.config/specfoundry/` or `~/.config/opencode/`, API keys,
+**Never share** anything from `~/.config/chalkeus/` or `~/.config/opencode/`, API keys,
 tokens or your provider's hostname. The evidence files above contain none of these.
 
 Report security problems privately, through GitHub's
-[vulnerability reporting](https://github.com/tosin2013/specfoundry/security/advisories/new).
+[vulnerability reporting](https://github.com/tosin2013/chalkeus/security/advisories/new).
 
 ---
 
@@ -643,8 +643,8 @@ This guide describes the pilot today. Planned
 | Item | Effect on this guide |
 |---|---|
 | **004:** GitHub loop | Available as an option: issues per roadmap item, approvals on GitHub, and a GitHub App as the publisher. See [the GitHub loop](github-loop.md) and [GitHub App](github-app.md). This walkthrough is unchanged with it off |
-| **014:** Your own repositories | Run one prepared item of your own repository: `pilot/pilot run --target <name> --item NNN`, with readiness checks, hidden tests from a private companion repository, and the same approvals and audit. Today: Python projects (Python 3.13 with packages from PyPI, or the built-in Python without packages); other toolchains and your own toolchain image are next. Each target is a file you create, `~/.config/specfoundry/targets/<name>.env`; see [targets](targets.md). The fixture walkthrough is unchanged |
-| **026:** Slice runs | Build a large item one user story at a time: `pilot/pilot slices --target <name> --item NNN` lists its slices, and `pilot/pilot run --target <name> --item NNN --slice US1` builds one, with its own draft PR; the status change comes after the last slice. See [targets](targets.md#one-slice-at-a-time). The fixture walkthrough is unchanged |
+| **014:** Your own repositories | Run one prepared item of your own repository: `./chalkeus forge run --target <name> --item NNN`, with readiness checks, hidden tests from a private companion repository, and the same approvals and audit. Today: Python projects (Python 3.13 with packages from PyPI, or the built-in Python without packages); other toolchains and your own toolchain image are next. Each target is a file you create, `~/.config/chalkeus/targets/<name>.env`; see [targets](targets.md). The fixture walkthrough is unchanged |
+| **026:** Slice runs | Build a large item one user story at a time: `./chalkeus forge slices --target <name> --item NNN` lists its slices, and `./chalkeus forge run --target <name> --item NNN --slice US1` builds one, with its own draft PR; the status change comes after the last slice. See [targets](targets.md#one-slice-at-a-time). The fixture walkthrough is unchanged |
 | **005:** OpenShift | An enterprise install path (restricted SCC, possibly images on Quay), and per-run model keys |
 | **007:** Operator observability | Metrics, traces and events from each run to a collector you run |
 | **008:** More harnesses | Claude Code and Codex workers alongside OpenCode |

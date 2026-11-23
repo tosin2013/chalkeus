@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/decisions"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/decisions"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
 func newP(t *testing.T) (*P, *evidence.Run, *bytes.Buffer) {
@@ -30,7 +30,7 @@ func TestNoTerminalPausesInsteadOfFailing(t *testing.T) {
 	if code := p.modeNotConfirmed(r, "none"); code != ExitDeclined || r.State["state"] != "paused(awaiting-mode)" {
 		t.Fatalf("%d %v", code, r.State["state"])
 	}
-	if !strings.Contains(out.String(), "paused: mode not confirmed. no terminal: approve with `pilot/pilot approve --run") {
+	if !strings.Contains(out.String(), "paused: mode not confirmed. no terminal: approve with `./chalkeus forge approve --run") {
 		t.Fatalf("%q", out.String())
 	}
 }

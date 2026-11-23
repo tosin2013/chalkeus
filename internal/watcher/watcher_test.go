@@ -71,7 +71,7 @@ func TestSpawnArgumentsUseANewSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(got.Args[1:], " ") != "github watch --run R1" || got.Dir != "/repo" {
+	if strings.Join(got.Args[1:], " ") != "forge github watch --run R1" || got.Dir != "/repo" {
 		t.Fatalf("%v %s", got.Args, got.Dir)
 	}
 	exe, _ := os.Executable()

@@ -9,7 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/paths"
 	"io"
 	"os"
 	"os/exec"
@@ -348,7 +348,7 @@ func (r *Run) WriteSummary() (string, error) {
 	out := []string{title + r.ID, "", head, ""}
 	if len(ev) > 0 {
 		t0, e0 := time.Parse(TimeFormat, pyStr(ev[0]["at"]))
-		// An audit only reads the record, so a later `pilot audit` (its audit_done event) must
+		// An audit only reads the record, so a later `./chalkeus forge audit` (its audit_done event) must
 		// not stretch the elapsed time; teardown still counts, as in the committed records.
 		end := ev[len(ev)-1]
 		for i := len(ev) - 1; i > 0; i-- {

@@ -9,19 +9,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
 )
 
 // TestSliceRuns is 026's two-slice scenario (quickstart §3) on the slices target, whose item 001
 // has two user stories, each with its own allowed paths and hidden tests (items/001/US1, US2):
-//  1. `pilot slices` lists US1 and US2 untouched, current US1;
+//  1. `./chalkeus forge slices` lists US1 and US2 untouched, current US1;
 //  2. `run --slice US2` is refused before anything starts (SLICE_EARLIER_OPEN);
 //  3. `run --slice US1` builds only US1: its PR is titled "(US1)"; after the owner merges it the run
 //     records slice_merged and opens no status PR;
 //  4. `run --slice US2` grades with US1's hidden tests too (G8, a summary only); after its merge,
 //     exactly one status PR is opened and merged;
-//  5. `pilot audit --item 001` lists both slice runs.
+//  5. `./chalkeus forge audit --item 001` lists both slice runs.
 //
 // Every run ends failed only because AU12 marks it a test run, as in the other scenarios.
 func TestSliceRuns(t *testing.T) {

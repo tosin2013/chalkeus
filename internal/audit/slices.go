@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 // 026 slice runs (specs/026-slice-runs/contracts/audit.md). Whole-item runs never reach this
@@ -192,7 +192,7 @@ func localSliceRuns(root, self, target, item string) map[string]string {
 	return out
 }
 
-// ItemView is `pilot audit --target <t> --item NNN` (026, contracts/audit.md): one line per local
+// ItemView is `./chalkeus forge audit --target <t> --item NNN` (026, contracts/audit.md): one line per local
 // run of the item (whole-item and slice runs) with its slice, state and audit result, then the
 // newest run's rows. It writes nothing. It reports whether the newest run's audit passes.
 func ItemView(root, target, item string, cfg *config.Config, out io.Writer) (bool, error) {

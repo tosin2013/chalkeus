@@ -10,14 +10,14 @@ The pilot doesn't prefer a provider. It needs only:
 - a model that supports **tool calling**, since the agent edits files and runs tests through
   tools;
 - a host name the worker can reach over HTTPS. Workers can connect **only** to the hosts in
-  `PILOT_MODEL_EGRESS_HOSTS`, through the allowlisting egress proxy;
+  `FORGE_MODEL_EGRESS_HOSTS`, through the allowlisting egress proxy;
 - an API key kept in a **file**, never in `opencode.json` itself.
 
 ## Where the configuration lives
 
 ```text
-~/.config/specfoundry/
-├── pilot.env                  # PILOT_MODEL, PILOT_MODEL_EGRESS_HOSTS, caps, fixture repo
+~/.config/chalkeus/
+├── forge.env                  # FORGE_MODEL, FORGE_MODEL_EGRESS_HOSTS, caps, fixture repo
 └── opencode/                  # mode 700; mounted as the worker's ~/.config/opencode
     ├── opencode.json          # mode 600; providers, models, default model
     └── <provider>_api_key     # mode 600; the key, one line
@@ -32,14 +32,14 @@ Only files named `opencode.json` and `*_api_key` are copied.
 If OpenCode already works on your machine, reuse its setup:
 
 ```sh
-pilot/pilot import-opencode --fixture-repo <you>/<you>-pilot-fixture
+./chalkeus forge import-opencode --fixture-repo <you>/<you>-pilot-fixture
 ```
 
 ```text
-imported OpenCode config: ~/.config/opencode -> ~/.config/specfoundry/opencode
+imported OpenCode config: ~/.config/opencode -> ~/.config/chalkeus/opencode
   model: <provider>/<model>
   key files: <provider>_api_key
-wrote ~/.config/specfoundry/pilot.env (model, its egress host, default caps)
+wrote ~/.config/chalkeus/forge.env (model, its egress host, default caps)
 ```
 
 What it does:
@@ -47,7 +47,7 @@ What it does:
   another with `--model <provider>/<model>`), and that provider's key file. Other
   providers, MCP servers, plugins and other settings are left out, and the output lists
   them. The worker couldn't reach them anyway.
-- **Writes `pilot.env`** with the model and its egress host, if you don't have one yet. If you
+- **Writes `forge.env`** with the model and its egress host, if you don't have one yet. If you
   do, it leaves the file unchanged and tells you what doesn't match. It never prints the
   host or the key.
 - **Refuses unsafe or unworkable configs:**
@@ -68,15 +68,15 @@ import that login. OpenCode 2.2 keeps logins in its database, so pipe them in:
 
 ```sh
 opencode auth login        # choose OpenCode Go, paste its API key
-opencode auth export | pilot/pilot import-opencode --from-login --auth-file - \
+opencode auth export | ./chalkeus forge import-opencode --from-login --auth-file - \
   --model opencode-go/<model> --base-url https://opencode.ai/inference/go/openai/v1
 ```
 
 - `opencode models` lists the `opencode-go/…` models. Pick one that supports tool calling.
-- In `pilot.env`, set `PILOT_MODEL=opencode-go/<model>` and `PILOT_MODEL_EGRESS_HOSTS=opencode.ai`
-  (the import tells you if they differ). Then run `pilot/pilot up` again: it recreates the
+- In `forge.env`, set `FORGE_MODEL=opencode-go/<model>` and `FORGE_MODEL_EGRESS_HOSTS=opencode.ai`
+  (the import tells you if they differ). Then run `./chalkeus forge up` again: it recreates the
   model proxy when its host list changed.
-- `pilot/pilot doctor` checks the key with one tiny request. OpenCode Go requires a session
+- `./chalkeus forge doctor` checks the key with one tiny request. OpenCode Go requires a session
   header (`x-opencode-session`); OpenCode sends it, and so does the doctor's check.
 - Usage is billed against your Go allowance (a 5-hour, a weekly and a monthly limit), not
   per request; see the link above. The pilot's per-attempt cap still applies (below).
@@ -86,12 +86,12 @@ opencode auth export | pilot/pilot import-opencode --from-login --auth-file - \
 1. Create the directory and the key file:
 
    ```sh
-   install -d -m 700 ~/.config/specfoundry/opencode
-   install -m 600 /dev/null ~/.config/specfoundry/opencode/myprovider_api_key
+   install -d -m 700 ~/.config/chalkeus/opencode
+   install -m 600 /dev/null ~/.config/chalkeus/opencode/myprovider_api_key
    # then write the key into that file with your editor or secret manager
    ```
 
-2. Write `~/.config/specfoundry/opencode/opencode.json` (mode 600). This works for any
+2. Write `~/.config/chalkeus/opencode/opencode.json` (mode 600). This works for any
    OpenAI-compatible endpoint:
 
    ```json
@@ -118,15 +118,15 @@ opencode auth export | pilot/pilot import-opencode --from-login --auth-file - \
    }
    ```
 
-   The path says `~/.config/opencode/...`, not `specfoundry`, on purpose. In the worker,
+   The path says `~/.config/opencode/...`, not `chalkeus`, on purpose. In the worker,
    `$HOME` is `/home/worker` and the directory is mounted at `/home/worker/.config/opencode`,
    so the same reference works on your machine and in the worker.
 
-3. In `~/.config/specfoundry/pilot.env` (mode 600) set:
+3. In `~/.config/chalkeus/forge.env` (mode 600) set:
 
    ```sh
-   PILOT_MODEL=myprovider/my-model
-   PILOT_MODEL_EGRESS_HOSTS=api.example.com   # the host of baseURL; comma-separate several
+   FORGE_MODEL=myprovider/my-model
+   FORGE_MODEL_EGRESS_HOSTS=api.example.com   # the host of baseURL; comma-separate several
    ```
 
 4. Optional: check it on your machine first. With the same two files in `~/.config/opencode/`:
@@ -141,7 +141,7 @@ opencode auth export | pilot/pilot import-opencode --from-login --auth-file - \
 |---|---|---|
 | **OpenAI-compatible gateway or hosted API** (`openai-compatible` package) | **Verified** in the 002 and 003 runs | Use option A or B. Many gateways report a cost of 0, so the cap falls back to tokens (see below). |
 | Enterprise gateway behind a corporate proxy | Partly verified (003: proxy-only egress) | Same as above. See [enterprise environments](harnesses.md#enterprise-environments). |
-| OpenCode's built-in provider packages for specific vendors | Not yet verified here | Should work if the key is a `{file:...}` reference and the API host is in `PILOT_MODEL_EGRESS_HOSTS`. Check package names in OpenCode's own docs. |
+| OpenCode's built-in provider packages for specific vendors | Not yet verified here | Should work if the key is a `{file:...}` reference and the API host is in `FORGE_MODEL_EGRESS_HOSTS`. Check package names in OpenCode's own docs. |
 | Self-hosted endpoint (an OpenAI-compatible server you run) | Not yet verified here | Needs a host name that pods in the kind cluster can resolve and reach; `localhost` on your machine doesn't work from inside the cluster. |
 
 Things that did **not** work with OpenCode 2.2.7 in testing:
@@ -152,13 +152,13 @@ Things that did **not** work with OpenCode 2.2.7 in testing:
 
 ## Spend caps
 
-Every attempt has a cap (`PILOT_SPEND_CAP_USD`, default `1.00`), enforced in layers:
+Every attempt has a cap (`FORGE_SPEND_CAP_USD`, default `1.00`), enforced in layers:
 
 1. **Pilot watchdog (always):** adds up `cost` and tokens from OpenCode's `step_finish`
    events, and stops the harness at the cap.
    - If the provider reports a cost, the cap is in USD (`cap_mode: cost`).
    - If it reports a cost of 0, as many OpenAI-compatible gateways do, the watchdog applies
-     the token budget `PILOT_TOKEN_CAP` (default 2,000,000) instead, and records
+     the token budget `FORGE_TOKEN_CAP` (default 2,000,000) instead, and records
      `cap_mode: token-fallback`. Reference attempts used about 225,000–480,000 tokens.
    - To get USD accounting through such a gateway, declare the model's prices (USD per
      million tokens) in `opencode.json`, so OpenCode computes `cost` itself:
@@ -168,7 +168,7 @@ Every attempt has a cap (`PILOT_SPEND_CAP_USD`, default `1.00`), enforced in lay
      ```
 
 2. **Provider-side cap (optional):** if your provider can limit a key's spend, set that
-   limit, and put `PILOT_PROVIDER_CAP_DECLARED=true` in `pilot.env` so the evidence records it.
+   limit, and put `FORGE_PROVIDER_CAP_DECLARED=true` in `forge.env` so the evidence records it.
 3. **Deadline (always):** each worker Job is stopped after 1200 seconds.
 
 The evidence shows the cap, its mode and the observed spend for every attempt

@@ -9,7 +9,7 @@ import (
 
 func run(args ...string) (int, string, string) {
 	var out, errb bytes.Buffer
-	code := Execute(args, "test", &out, &errb)
+	code := Execute(append([]string{"forge"}, args...), "test", &out, &errb)
 	return code, out.String(), errb.String()
 }
 
@@ -22,9 +22,9 @@ func TestExitMapping(t *testing.T) {
 	}{
 		{nil, 0, ""},
 		{Code(4), 4, ""},
-		{Exit(3, "repo guard: %s", "x"), 3, "pilot: repo guard: x\n"},
+		{Exit(3, "repo guard: %s", "x"), 3, "chalkeus: repo guard: x\n"},
 		{Exit(0, "ignored"), 0, ""},
-		{errors.New("boom"), 2, "pilot: boom\n"},
+		{errors.New("boom"), 2, "chalkeus: boom\n"},
 	}
 	for _, c := range cases {
 		b.Reset()
@@ -55,7 +55,7 @@ func TestUsageErrorsExit2(t *testing.T) {
 
 func TestVersionAndHelp(t *testing.T) {
 	code, out, _ := run("version")
-	if code != 0 || !strings.Contains(out, "pilot test") {
+	if code != 0 || !strings.Contains(out, "chalkeus test") {
 		t.Fatalf("version: %d %q", code, out)
 	}
 	_, out, _ = run("--help")

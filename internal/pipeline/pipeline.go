@@ -1,4 +1,4 @@
-// Package pipeline is `pilot run` / `pilot resume`: one governed cycle for fixture tasks A then
+// Package pipeline is `./chalkeus forge run` / `./chalkeus forge resume`: one governed cycle for fixture tasks A then
 // B (reference: the former Python pilot's pipeline.py). Every human decision fails closed:
 // anything but "y" means no; without a terminal the run pauses at the decision instead.
 //
@@ -19,26 +19,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/audit"
-	"github.com/tosin2013/specfoundry/internal/checks"
-	"github.com/tosin2013/specfoundry/internal/cluster"
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/decisions"
-	"github.com/tosin2013/specfoundry/internal/evidence"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/gate"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/grader"
-	"github.com/tosin2013/specfoundry/internal/images"
-	"github.com/tosin2013/specfoundry/internal/k8s"
-	"github.com/tosin2013/specfoundry/internal/paths"
-	"github.com/tosin2013/specfoundry/internal/publisher"
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
-	"github.com/tosin2013/specfoundry/internal/reconcile"
-	"github.com/tosin2013/specfoundry/internal/runner"
-	"github.com/tosin2013/specfoundry/internal/verbose"
-	"github.com/tosin2013/specfoundry/internal/watcher"
-	"github.com/tosin2013/specfoundry/internal/worker"
+	"github.com/tosin2013/chalkeus/internal/audit"
+	"github.com/tosin2013/chalkeus/internal/checks"
+	"github.com/tosin2013/chalkeus/internal/cluster"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/decisions"
+	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/gate"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/grader"
+	"github.com/tosin2013/chalkeus/internal/images"
+	"github.com/tosin2013/chalkeus/internal/k8s"
+	"github.com/tosin2013/chalkeus/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/publisher"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/reconcile"
+	"github.com/tosin2013/chalkeus/internal/runner"
+	"github.com/tosin2013/chalkeus/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/watcher"
+	"github.com/tosin2013/chalkeus/internal/worker"
 )
 
 // Exit codes (identical to the reference).
@@ -296,7 +296,7 @@ func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 		ok, ch := p.confirmRetry(run, task, n+1, total)
 		if !ok {
 			p.pause(run, "awaiting-retry", map[string]any{"task": task, "n": n + 1})
-			msg := "`pilot resume` asks again."
+			msg := "`./chalkeus forge resume` asks again."
 			if ch == "none" {
 				msg = decisions.Hint(run, "retry")
 			}
@@ -373,7 +373,7 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 		}
 		_ = run.Event("publish", task, n, "publish_failed", fmt.Sprintf("%s: %s", errName(err), msg))
 		p.pause(run, "awaiting-publish", map[string]any{"task": task, "n": n})
-		p.say("publisher failed for %s: %v\n`pilot resume` re-runs it (idempotent).", task, err)
+		p.say("publisher failed for %s: %v\n`./chalkeus forge resume` re-runs it (idempotent).", task, err)
 		return ExitFail
 	}
 	t["state"] = "published"
@@ -386,7 +386,7 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 		}
 		t["state"] = "awaiting-merge"
 		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
-		p.say("\nTask A draft PR: %v\nReview and merge it on GitHub yourself, then run: pilot/pilot resume", pr["url"])
+		p.say("\nTask A draft PR: %v\nReview and merge it on GitHub yourself, then run: ./chalkeus forge resume", pr["url"])
 		p.ensureWatcher(run)
 		return ExitOK
 	}
@@ -394,7 +394,7 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 		p.dropGrading(run) // grading is over once the item's PR is open
 		t["state"] = "awaiting-merge"
 		p.pause(run, "awaiting-merge", map[string]any{"task": task})
-		p.say("\nItem %s draft PR: %v\nReview and merge it on GitHub yourself, then run: pilot/pilot resume --run %s", task, pr["url"], run.ID)
+		p.say("\nItem %s draft PR: %v\nReview and merge it on GitHub yourself, then run: ./chalkeus forge resume --run %s", task, pr["url"], run.ID)
 		p.ensureWatcher(run)
 		return ExitOK
 	}
@@ -426,18 +426,18 @@ func (p *P) finish(run *evidence.Run) int {
 func (p *P) Run() int {
 	imgs, err := images.Load(p.L)
 	if err != nil {
-		p.say("pilot: %v", err)
+		p.say("chalkeus: %v", err)
 		return ExitError
 	}
 	p.Imgs = imgs
 	gh, err := ghloop.OperatorClient()
 	if err != nil {
-		p.say("pilot: %v", err)
+		p.say("chalkeus: %v", err)
 		return ExitError
 	}
 	open, err := ghloop.OpenPilotPRs(context.Background(), gh, p.Cfg.Repo())
 	if err != nil {
-		p.say("pilot: %v", err)
+		p.say("chalkeus: %v", err)
 		return ExitError
 	}
 	if len(open) > 0 {
@@ -445,17 +445,17 @@ func (p *P) Run() int {
 		for _, o := range open {
 			urls = append(urls, o.URL)
 		}
-		p.say("open pilot PRs exist on %s: %s\nrun `pilot reset-fixture` first", p.Cfg.Repo(), pyrepr.Strings(urls))
+		p.say("open pilot PRs exist on %s: %s\nrun `./chalkeus forge reset-fixture` first", p.Cfg.Repo(), pyrepr.Strings(urls))
 		return ExitError
 	}
 	base, err := os.ReadFile(p.L.FixtureBase)
 	if err != nil {
-		p.say("no fixture base recorded; run `pilot reset-fixture` first")
+		p.say("no fixture base recorded; run `./chalkeus forge reset-fixture` first")
 		return ExitError
 	}
 	run, err := evidence.NewRun(p.L.EvidenceRoot())
 	if err != nil {
-		p.say("pilot: %v", err)
+		p.say("chalkeus: %v", err)
 		return ExitError
 	}
 	p.say("== run %s", run.ID)
@@ -515,7 +515,7 @@ func (p *P) Resume(runID string) int {
 	}
 	if p.approvalsOn() { // one resumer at a time: the run's watcher, or the operator after --stop
 		if w := watcher.Status(run.Dir, run.ID); w.Running && w.Pid != os.Getpid() {
-			p.say("a watcher is resuming run %s on its own (pid %d). To resume it yourself, first run: pilot/pilot github watch --run %s --stop",
+			p.say("a watcher is resuming run %s on its own (pid %d). To resume it yourself, first run: ./chalkeus forge github watch --run %s --stop",
 				run.ID, w.Pid, run.ID)
 			return ExitError
 		}
@@ -526,7 +526,7 @@ func (p *P) Resume(runID string) int {
 	}
 	imgs, err := images.Load(p.L)
 	if err != nil {
-		p.say("pilot: %v", err)
+		p.say("chalkeus: %v", err)
 		return ExitError
 	}
 	p.Imgs = imgs
@@ -640,9 +640,9 @@ func (p *P) reconcileA(run *evidence.Run) int {
 	case ExitAwaitMerge:
 		p.pause(run, "awaiting-merge", map[string]any{"task": task})
 		if task == "A" {
-			p.say("A's PR is not merged yet. Merge it on GitHub, then run `pilot resume` again.") // the guide quotes this
+			p.say("A's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` again.") // the guide quotes this
 		} else {
-			p.say("%s's PR is not merged yet. Merge it on GitHub, then run `pilot resume` again.", task)
+			p.say("%s's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` again.", task)
 		}
 		return ExitAwaitMerge
 	case ExitDeclined:

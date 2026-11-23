@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/decisions"
-	"github.com/tosin2013/specfoundry/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/decisions"
+	"github.com/tosin2013/chalkeus/internal/evidence"
 )
 
 // 004 GitHub approvals (reference: ghapprove.py; 004 research R3, R4). The pilot posts each

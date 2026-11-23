@@ -12,23 +12,23 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tosin2013/specfoundry/internal/author"
-	"github.com/tosin2013/specfoundry/internal/checks"
-	"github.com/tosin2013/specfoundry/internal/cluster"
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/fixture"
-	"github.com/tosin2013/specfoundry/internal/gate"
-	"github.com/tosin2013/specfoundry/internal/ghloop"
-	"github.com/tosin2013/specfoundry/internal/images"
-	"github.com/tosin2013/specfoundry/internal/names"
-	"github.com/tosin2013/specfoundry/internal/pipeline"
-	"github.com/tosin2013/specfoundry/internal/readiness"
-	"github.com/tosin2013/specfoundry/internal/slice"
-	"github.com/tosin2013/specfoundry/internal/verbose"
-	"github.com/tosin2013/specfoundry/internal/worker"
+	"github.com/tosin2013/chalkeus/internal/author"
+	"github.com/tosin2013/chalkeus/internal/checks"
+	"github.com/tosin2013/chalkeus/internal/cluster"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/fixture"
+	"github.com/tosin2013/chalkeus/internal/gate"
+	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/images"
+	"github.com/tosin2013/chalkeus/internal/names"
+	"github.com/tosin2013/chalkeus/internal/pipeline"
+	"github.com/tosin2013/chalkeus/internal/readiness"
+	"github.com/tosin2013/chalkeus/internal/slice"
+	"github.com/tosin2013/chalkeus/internal/verbose"
+	"github.com/tosin2013/chalkeus/internal/worker"
 )
 
-// authorCmd is `pilot author` (018): the test author's helper commands. Only a separate
+// authorCmd is `./chalkeus forge author` (018): the test author's helper commands. Only a separate
 // test-author session runs these (the test-author skill); the session that drives runs never
 // does (the pilot skill).
 func authorCmd() *cobra.Command {
@@ -86,7 +86,7 @@ func authorCmd() *cobra.Command {
 	return g
 }
 
-// authorWatchCmd is `pilot author watch` (024, contracts/author-watch.md): drafts the hidden tests
+// authorWatchCmd is `./chalkeus forge author watch` (024, contracts/author-watch.md): drafts the hidden tests
 // of a target's ready items in an isolated author Job, checks them, and opens the companion pull
 // request. Only for targets with PILOT_AUTHOR_AUTO=on. The operator starts it in their own
 // terminal; the session that drives runs never does.
@@ -205,13 +205,13 @@ func watchVerbosity(flagCount int, envSet bool) int {
 // authorWatchEnv is the drafting loop's environment (024): the pulled images, the author proxy,
 // the author Job and its checks, and the target's roadmap. Step mode (021) uses it too.
 func authorWatchEnv(e author.Env, p *pipeline.P) (author.WatchEnv, error) {
-	imgs, err := images.Load(p.L) // the digests `pilot up` pulled (as every run loads them)
+	imgs, err := images.Load(p.L) // the digests `./chalkeus forge up` pulled (as every run loads them)
 	if err != nil {
 		return author.WatchEnv{}, Exit(ExitError, "%v", err)
 	}
 	p.Imgs = imgs
 	if !p.C.NSExists(cluster.AuthorProxyNS) {
-		return author.WatchEnv{}, Exit(ExitError, "the author proxy %s is missing: run `pilot/pilot up` first", cluster.AuthorProxyNS)
+		return author.WatchEnv{}, Exit(ExitError, "the author proxy %s is missing: run `./chalkeus forge up` first", cluster.AuthorProxyNS)
 	}
 	ck := checks.Deps{L: p.L, C: p.C, Out: io.Discard}
 	je := author.JobEnv{Manifests: p.L.Manifests, Cluster: p.C, Runner: p.Runner, Images: p.Imgs,

@@ -12,10 +12,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tosin2013/specfoundry/internal/pyrepr"
+	"github.com/tosin2013/chalkeus/internal/pyrepr"
 )
 
-// `pilot import-opencode`: reuse an existing host OpenCode setup as the worker's config
+// `./chalkeus forge import-opencode`: reuse an existing host OpenCode setup as the worker's config
 // (reference: the former Python pilot's import_opencode.py). Only the chosen model's provider and
 // the key files it references are copied; key files are copied with `install -m 600` and never
 // read by the pilot. The model host is never printed.

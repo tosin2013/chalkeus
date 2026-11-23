@@ -8,8 +8,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/tosin2013/specfoundry/internal/config"
-	"github.com/tosin2013/specfoundry/internal/prompt"
+	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/prompt"
 )
 
 // Candidate is a roadmap item the watcher may draft for: active, startable, every dependency
@@ -49,7 +49,7 @@ func Candidates(statusJSON string) ([]Candidate, error) {
 	return out, nil
 }
 
-// WatchEnv is what `pilot author watch` needs (024 FR-002).
+// WatchEnv is what `./chalkeus forge author watch` needs (024 FR-002).
 type WatchEnv struct {
 	Env
 	Status   func() (string, error) // spec status --json of the target's branch (a fresh clone)

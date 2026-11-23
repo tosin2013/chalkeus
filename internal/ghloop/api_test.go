@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tosin2013/specfoundry/internal/secret"
+	"github.com/tosin2013/chalkeus/internal/secret"
 )
 
 // Cases ported from the former Python pilot's tests/test_ghops.py: the writes against a fake GitHub API; the token

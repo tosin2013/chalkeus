@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tosin2013/specfoundry/internal/paths"
+	"github.com/tosin2013/chalkeus/internal/paths"
 )
 
 // Ported from TestWatch in the former Python pilot's tests/test_ghapprove.py: `github watch` stops when the run is
