@@ -29,10 +29,10 @@ func TestAuthorRules(t *testing.T) {
 	ingress := func(sel map[string]any) map[string]any {
 		return map[string]any{"spec": map[string]any{"ingress": []any{map[string]any{"from": []any{map[string]any{"namespaceSelector": map[string]any{"matchLabels": sel}}}}}}}
 	}
-	if ok, _ := AuthorProxyIngressRule(ingress(map[string]any{"specfoundry.io/role": "author"})); !ok {
+	if ok, _ := AuthorProxyIngressRule(ingress(map[string]any{"chalkeus.io/role": "author"})); !ok {
 		t.Fatal("A05 pass")
 	}
-	if ok, _ := AuthorProxyIngressRule(ingress(map[string]any{"specfoundry.io/role": "worker"})); ok {
+	if ok, _ := AuthorProxyIngressRule(ingress(map[string]any{"chalkeus.io/role": "worker"})); ok {
 		t.Fatal("A05: a worker role fails")
 	}
 	if ok, _ := AuthorProxyIngressRule(ingress(map[string]any{"kubernetes.io/metadata.name": "x"})); ok {

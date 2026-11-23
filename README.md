@@ -4,8 +4,10 @@
   <img src="logos/chalkeus-logo.png" alt="Chalkeus: a bronze robot smith forging code on an anvil" width="320">
 </p>
 
-**Governed, least-privilege delivery for AI coding agents, on a laptop or in an enterprise
-cluster.**
+**AI forges. Evidence verifies. Humans decide.**
+
+Governed, least-privilege delivery for AI coding agents, on a laptop or in an enterprise
+cluster.
 
 Chalkeus takes a [Spec Kit](https://github.com/github/spec-kit) roadmap from an approved item
 to a merged pull request.

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/tosin2013/chalkeus/internal/author"
+	"github.com/tosin2013/chalkeus/internal/cluster"
 	"github.com/tosin2013/chalkeus/internal/config"
 	"github.com/tosin2013/chalkeus/internal/doctor"
 	"github.com/tosin2013/chalkeus/internal/fixture"
@@ -20,6 +22,7 @@ import (
 	"github.com/tosin2013/chalkeus/internal/ghloop"
 	"github.com/tosin2013/chalkeus/internal/grader"
 	"github.com/tosin2013/chalkeus/internal/images"
+	"github.com/tosin2013/chalkeus/internal/paths"
 	"github.com/tosin2013/chalkeus/internal/readiness"
 )
 
@@ -33,7 +36,7 @@ func doctorCmd() *cobra.Command {
 		RunE:  runDoctor,
 	}
 	addTargetFlag(c)
-	_ = c.MarkFlagRequired("target")
+	requireTarget(c)
 	c.Flags().String("item", "", "also check roadmap item NNN: every readiness rule, without stopping at the first problem")
 	c.Flags().Bool("baseline", false, "with --item: on the cluster, check that the install and test commands pass on today's code, offline")
 	c.Flags().String("slice", "", "with --item: check this slice of the item (026), and with --baseline run the slice baseline")
@@ -103,9 +106,15 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 			r.Add("cluster", "model key", doctor.Warn, fmt.Sprintf("couldn't confirm the key: the provider answered %d to a one-token test request", probe.Status))
 		}
 	}
+	if msg := cluster.OldMessage(cluster.OldPresent()); msg != "" {
+		r.Add("cluster", "old cluster", doctor.Warn, msg+" (027)")
+	}
 	upOK := false
+	_, kindErr := exec.LookPath("kind")
 	if _, err := os.Stat(l.UpOK); err != nil {
 		r.Add("cluster", "pilot up", doctor.Fail, "`./chalkeus forge up` has not completed")
+	} else if kindErr == nil && !cluster.Exists() {
+		r.Add("cluster", "pilot up", doctor.Fail, "no kind cluster "+paths.Cluster+" (renamed in 027, or deleted); run `./chalkeus forge up`")
 	} else {
 		upOK = true
 		r.Add("cluster", "pilot up", doctor.Pass, "")

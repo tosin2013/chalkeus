@@ -25,7 +25,7 @@ func slicesCmd() *cobra.Command {
 		RunE:  runSlices,
 	}
 	addTargetFlag(c)
-	_ = c.MarkFlagRequired("target")
+	requireTarget(c)
 	c.Flags().String("item", "", "the roadmap item NNN")
 	_ = c.MarkFlagRequired("item")
 	c.Flags().Bool("json", false, "print the slices as JSON")

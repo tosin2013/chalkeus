@@ -2,7 +2,7 @@
 # one Job at a time. No secrets, no egress at all, as the fixture's per-attempt grader namespaces.
 apiVersion: v1
 kind: Namespace
-metadata: {name: ${NS}, labels: {specfoundry.io/role: grader, specfoundry.io/run: "${RUN_ID}"}}
+metadata: {name: ${NS}, labels: {chalkeus.io/role: grader, chalkeus.io/run: "${RUN_ID}"}}
 ---
 apiVersion: v1
 kind: ServiceAccount

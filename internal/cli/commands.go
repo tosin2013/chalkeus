@@ -99,7 +99,13 @@ func targetsCmd() *cobra.Command {
 
 // addTargetFlag adds --target to a command that acts on one target repository (014 FR-004a).
 func addTargetFlag(c *cobra.Command) {
-	c.Flags().String("target", "", "target profile name in ~/.config/specfoundry/targets/ (default: the fixture in pilot.env)")
+	c.Flags().String("target", "", "target profile name in ~/.config/chalkeus/targets/ (default: the fixture in forge.env)")
+}
+
+// requireTarget makes --target mandatory, and says so in the help instead of a default.
+func requireTarget(c *cobra.Command) {
+	_ = c.MarkFlagRequired("target")
+	c.Flags().Lookup("target").Usage = "target profile name in ~/.config/chalkeus/targets/ (required)"
 }
 
 func auditCmd() *cobra.Command {

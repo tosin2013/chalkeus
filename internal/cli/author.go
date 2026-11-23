@@ -47,7 +47,7 @@ func authorCmd() *cobra.Command {
 			}}
 		addTargetFlag(c)
 		c.Flags().String("item", "", "roadmap item NNN of the target")
-		_ = c.MarkFlagRequired("target")
+		requireTarget(c)
 		_ = c.MarkFlagRequired("item")
 		return c
 	}
@@ -147,7 +147,7 @@ func authorWatchCmd() *cobra.Command {
 			}
 		}}
 	addTargetFlag(c)
-	_ = c.MarkFlagRequired("target")
+	requireTarget(c)
 	c.Flags().Bool("once", false, "one pass, then exit (0: nothing to do or a PR opened; 1: a draft failed)")
 	return c
 }

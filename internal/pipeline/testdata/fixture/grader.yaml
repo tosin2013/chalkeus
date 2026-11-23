@@ -1,7 +1,7 @@
 # One grader namespace per attempt (FR-010, R7): no secrets, no egress at all.
 apiVersion: v1
 kind: Namespace
-metadata: {name: pilot-g-a-1, labels: {specfoundry.io/role: grader, specfoundry.io/run: "R"}}
+metadata: {name: pilot-g-a-1, labels: {chalkeus.io/role: grader, chalkeus.io/run: "R"}}
 ---
 apiVersion: v1
 kind: ServiceAccount

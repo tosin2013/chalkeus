@@ -63,14 +63,42 @@ func Sh(timeout time.Duration, check bool, stdin string, env []string, args ...s
 }
 
 // Exists reports whether the kind cluster exists.
-func Exists() bool {
+func Exists() bool { return clusterExists(paths.Cluster) }
+
+func clusterExists(name string) bool {
 	out, _ := Sh(60*time.Second, false, "", nil, "kind", "get", "clusters")
 	for _, f := range strings.Fields(out) {
-		if f == paths.Cluster {
+		if f == name {
 			return true
 		}
 	}
 	return false
+}
+
+// OldPresent reports whether the cluster or the registry container with the names from before
+// 027 stage 4 is still on this machine (027 FR-010).
+func OldPresent() (cluster, registry bool) {
+	r, _ := Sh(60*time.Second, false, "", nil, "docker", "ps", "-a", "--filter", "name=^"+paths.OldRegistryName+"$", "-q")
+	return clusterExists(paths.OldCluster), strings.TrimSpace(r) != ""
+}
+
+// OldMessage says what is left from before the rename and the commands that remove it; "" when
+// nothing is.
+func OldMessage(cluster, registry bool) string {
+	var what, cmds []string
+	if cluster {
+		what = append(what, "the kind cluster "+paths.OldCluster)
+		cmds = append(cmds, "kind delete cluster --name "+paths.OldCluster)
+	}
+	if registry {
+		what = append(what, "the registry container "+paths.OldRegistryName)
+		cmds = append(cmds, "docker rm -f "+paths.OldRegistryName)
+	}
+	if len(what) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s from before the rename to Chalkeus is still here; remove it with: %s",
+		strings.Join(what, " and "), strings.Join(cmds, " && "))
 }
 
 func registryRunning() bool {
@@ -119,6 +147,10 @@ func UpCluster(e Env, localBuild bool) error {
 	}
 	if err := os.MkdirAll(e.L.Build, 0o755); err != nil {
 		return err
+	}
+	// One pilot cluster per machine: the old one would hold the registry port (027 R7).
+	if msg := OldMessage(OldPresent()); msg != "" {
+		return fmt.Errorf("%s. Then run `./chalkeus forge up` again", msg)
 	}
 	e.say("pinned tools")
 	if _, err := Sh(600*time.Second, true, "", []string{"KIND_VERSION=" + pins["KIND_VERSION"], "KUBECTL_VERSION=" + pins["KUBECTL_VERSION"]},
@@ -236,6 +268,9 @@ func Down(e Env) (int, error) {
 	_, _ = Sh(300*time.Second, false, "", nil, "kind", "delete", "cluster", "--name", paths.Cluster)
 	_, _ = Sh(60*time.Second, false, "", nil, "docker", "rm", "-f", paths.RegistryName)
 	_ = os.Remove(e.L.UpOK)
+	if msg := OldMessage(OldPresent()); msg != "" {
+		fmt.Fprintf(e.Out, "  note: %s\n", msg) // never removed for you: it may hold another run's state
+	}
 	rows := TeardownRows()
 	run, err := evidence.LoadRun(e.L.EvidenceRoot(), "")
 	if err != nil {

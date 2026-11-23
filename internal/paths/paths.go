@@ -12,13 +12,17 @@ import (
 )
 
 const (
-	Cluster       = "specfoundry-m1"
-	Context       = "kind-" + Cluster
-	RegistryName  = "specfoundry-registry"
-	RegistryHost  = "localhost:5001"
-	defaultFeat   = "specs/002-m1-gated-pilot"
-	featureJSON   = ".specify/feature.json"
-	evidenceEnvVr = "EVIDENCE_FEATURE" // FORGE_EVIDENCE_FEATURE (old: PILOT_EVIDENCE_FEATURE)
+	Cluster      = "chalkeus-m1"
+	Context      = "kind-" + Cluster
+	RegistryName = "chalkeus-registry"
+	// OldCluster and OldRegistryName are the names before 027 stage 4: doctor, up and down
+	// recognize them and say how to remove them (027 FR-010, research R7).
+	OldCluster      = "specfoundry-m1"
+	OldRegistryName = "specfoundry-registry"
+	RegistryHost    = "localhost:5001"
+	defaultFeat     = "specs/002-m1-gated-pilot"
+	featureJSON     = ".specify/feature.json"
+	evidenceEnvVr   = "EVIDENCE_FEATURE" // FORGE_EVIDENCE_FEATURE (old: PILOT_EVIDENCE_FEATURE)
 )
 
 // Tasks maps the pilot's task labels to the fixture roadmap items behind them.
