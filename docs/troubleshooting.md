@@ -30,6 +30,7 @@ instead.
 | An attempt fails with reason `deadline` or `spend_cap` | [Deadline or spend cap](#deadline-or-spend-cap) |
 | `GitHub Actions is not permitted to create or approve pull requests` | [Actions can't open PRs](#actions-cannot-open-prs) |
 | `T01`, `T02` or `T03` fails after `./chalkeus forge down` | [Leftovers after teardown](#leftovers) |
+| `the kind cluster specfoundry-m1 … from before the rename` | [Old cluster from before the rename](#old-cluster) |
 | `no issue write access to … (needs Issues: read and write)` | [No issue access](#github-issues-access) |
 | `github drift: N difference(s)` | [GitHub drift](#github-drift) |
 | A `/approve` reply on GitHub didn't resume the run | [GitHub approval rejected](#github-approval-rejected) |
@@ -592,6 +593,24 @@ These entries apply only with `FORGE_GITHUB_ISSUES=on` or `FORGE_GITHUB_APPROVAL
 
 ## Teardown
 
+<a id="old-cluster"></a>
+### Old cluster from before the rename
+
+- **Symptom:** `./chalkeus forge up` refuses with `the kind cluster specfoundry-m1 … from before
+  the rename to Chalkeus is still here`; `./chalkeus forge doctor` warns `old cluster`; or
+  `./chalkeus forge down` prints the same as a note.
+- **Cause:** 027 renamed the cluster to `chalkeus-m1` and the registry to `chalkeus-registry`.
+  The old ones still run, and they hold the registry port, so only one can be up.
+- **Fix:** run the removal command it prints:
+
+  ```sh
+  kind delete cluster --name specfoundry-m1 && docker rm -f specfoundry-registry
+  ```
+
+  Then `./chalkeus forge up`. Chalkeus never removes the old cluster for you.
+- **Confirm:** `kind get clusters` lists only `chalkeus-m1` after `up`.
+- **Source:** 027 research R7.
+
 <a id="leftovers"></a>
 ### Leftovers after teardown: T01, T02 or T03 fails
 
@@ -602,9 +621,9 @@ These entries apply only with `FORGE_GITHUB_ISSUES=on` or `FORGE_GITHUB_APPROVAL
 - **Fix:** run `./chalkeus forge down` again. If it still fails, remove the leftovers by hand:
 
   ```sh
-  kind delete cluster --name specfoundry-m1
-  docker ps -a --filter name=specfoundry-m1 --format '{{.Names}}'     # remove each with: docker rm -f <name>
-  docker rm -f specfoundry-registry
+  kind delete cluster --name chalkeus-m1
+  docker ps -a --filter name=chalkeus-m1 --format '{{.Names}}'     # remove each with: docker rm -f <name>
+  docker rm -f chalkeus-registry
   ```
 
   Then run `./chalkeus forge down` once more, so the teardown checks are recorded.

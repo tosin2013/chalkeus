@@ -1,5 +1,39 @@
 # Release notes
 
+## Chalkeus: the cluster, labels and images (027, stage 4)
+
+| Before | Now |
+|---|---|
+| kind cluster `specfoundry-m1` (context `kind-specfoundry-m1`) | `chalkeus-m1` (`kind-chalkeus-m1`) |
+| local registry container `specfoundry-registry` | `chalkeus-registry` (still on port 5001) |
+| Kubernetes labels `specfoundry.io/role`, `specfoundry.io/run`, `specfoundry.io/draft` | `chalkeus.io/…` |
+| images `ghcr.io/tosin2013/specfoundry-pilot-*` | `ghcr.io/tosin2013/chalkeus-*` |
+
+Runs and evidence from before are unchanged: the audit never read the labels, and old images
+stay published.
+
+### Each operator's steps
+
+1. **Finish or stop any run in progress first.** A paused run lives in the old cluster.
+2. **Take the old cluster down** with the command from before the update, or by hand:
+
+   ```sh
+   kind delete cluster --name specfoundry-m1 && docker rm -f specfoundry-registry
+   ```
+
+   If you skip this, `./chalkeus forge up` refuses and prints that command, and
+   `./chalkeus forge doctor` warns about it. Chalkeus never removes it for you.
+3. **`git pull`, then `./chalkeus forge up`.** It creates `chalkeus-m1`.
+
+### The images
+
+The image workflow publishes `chalkeus-*` when this change reaches `main`, then opens its usual
+digest PR for `pilot/images.lock`. Until that PR is merged, `up` pulls the old
+`specfoundry-pilot-*` digests from the lock, which stay published. The owner checks once that
+the new packages are public (GitHub → Packages → each `chalkeus-*` → Package settings), since
+`up` pulls them without credentials.
+
+
 ## Chalkeus: the rename (027, stage 3)
 
 specfoundry is now **Chalkeus**, and its pilot is **forge**. The in-repository command is
@@ -18,9 +52,8 @@ command, flag and exit code is the same; only the name in front changes.
 | the `pilot` agent skill | the `forge` skill (`.claude/skills/forge/`) |
 | github.com/tosin2013/specfoundry | github.com/tosin2013/chalkeus (GitHub redirects the old address) |
 
-Not changed yet: the kind cluster (`specfoundry-m1`), the local registry, the image names and the
-Kubernetes labels. They move in the next stage, which needs one `down` and `up`; these notes
-will say when.
+The kind cluster, the local registry, the image names and the Kubernetes labels moved in
+stage 4 ([below](#chalkeus-the-cluster-labels-and-images-027-stage-4)).
 
 Every old name that still works prints a one-time notice with its new name. When you set both
 an old and a new name, the new one wins and the notice says which one is ignored. The full map is

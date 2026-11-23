@@ -41,7 +41,7 @@ func TestAuthorNamespaceTemplate(t *testing.T) {
 		kinds[d["kind"].(string)+"/"+mm(d["metadata"])["name"].(string)] = d
 	}
 	ns := kinds["Namespace/pilot-a-stockroom-009"]
-	if mm(mm(ns["metadata"])["labels"])["specfoundry.io/role"] != "author" {
+	if mm(mm(ns["metadata"])["labels"])["chalkeus.io/role"] != "author" {
 		t.Fatal("namespace role must be author")
 	}
 	if kinds["ServiceAccount/author"]["automountServiceAccountToken"] != false {
