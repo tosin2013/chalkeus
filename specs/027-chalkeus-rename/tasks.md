@@ -7,10 +7,10 @@ form end to end.
 
 ## Phase 1: Command audit (US1a) — stage 1, on `pilot/pilot`
 
-- [ ] T001 [US1a] Add the command-audit table (contracts/command-audit.md) in `internal/cli/audit_table.go`: every command path with its class (ask or free)
-- [ ] T002 [US1a] Add `internal/cli/command_audit_test.go`: walk the cobra tree and fail on a path missing from the table, or on an ask command without a rule in `.claude/settings.json` for both `pilot/pilot <cmd>` and `./pilot/pilot <cmd>`
-- [ ] T003 [US1a] Add the ask rules for `reset-fixture`, `down`, `publisher-token`, `app-key`, `app-token`, `author`, `step`, `run` and `resume` to `.claude/settings.json` (`approve` has one)
-- [ ] T004 [US1a] Match `.claude/skills/pilot/SKILL.md` hard rules and `AGENTS.md` to the table, and list the ask commands in `docs/troubleshooting.md#prompts-answer-no` for users of other harnesses
+- [X] T001 [US1a] Add the command-audit table (contracts/command-audit.md) in `internal/cli/command_audit.go`: every command path with its class (ask or free)
+- [X] T002 [US1a] Add `internal/cli/command_audit_test.go`: list the commands and fail on a path missing from the table, or on an ask command without a rule in `.claude/settings.json` for both `pilot/pilot <cmd>` and `./pilot/pilot <cmd>`
+- [X] T003 [US1a] Add the ask rules for `reset-fixture`, `down`, `publisher-token`, `app-key`, `app-token`, `author`, `step`, `run` and `resume` to `.claude/settings.json` (`approve` has one)
+- [X] T004 [US1a] Match `.claude/skills/pilot/SKILL.md` hard rules and `AGENTS.md` to the table, and list the ask commands in `docs/troubleshooting.md#prompts-answer-no` for users of other harnesses
 
 ## Phase 2: Config folder and settings (US1) — stage 2
 
