@@ -36,7 +36,7 @@ func doctorCmd() *cobra.Command {
 		RunE:  runDoctor,
 	}
 	addTargetFlag(c)
-	_ = c.MarkFlagRequired("target")
+	requireTarget(c)
 	c.Flags().String("item", "", "also check roadmap item NNN: every readiness rule, without stopping at the first problem")
 	c.Flags().Bool("baseline", false, "with --item: on the cluster, check that the install and test commands pass on today's code, offline")
 	c.Flags().String("slice", "", "with --item: check this slice of the item (026), and with --baseline run the slice baseline")

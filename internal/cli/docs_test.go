@@ -24,6 +24,8 @@ import (
 //	    <placeholders>, globs and URLs are never treated as paths (006 analysis H1)
 //	D3  quoted versions of kind, kubectl, Calico, spec and OpenCode match pilot/pins.env
 //	D4  nothing matches the evidence redaction patterns (token-like strings)
+//	D5  no old name (specfoundry, pilot/pilot, PILOT_) outside the allowed list below (027 SC-004,
+//	    research R8); run by TestDocsCheck over the default files only
 //
 // To check other files: DOCS_CHECK_FILES="a.md b.md" go test ./internal/cli -run TestDocsCheck
 
@@ -261,7 +263,48 @@ func (d *docsChecker) defaultFiles(t *testing.T) []string {
 	return files
 }
 
-// TestDocsCheck runs D1–D4 over the operator and contributor docs.
+// D5: the old names (027 research R8). Each allowed entry says why the old name is right there:
+// migration notes, history, and names that did not change. Past items' specs/ and evidence are
+// history and are not checked.
+var (
+	oldNameRe       = regexp.MustCompile(`(?i)specfoundry|pilot/pilot|\bPILOT_`)
+	oldNameAllFiles = map[string]string{
+		"docs/release-notes.md": "the migration notes",
+	}
+	oldNameAllowed = []struct{ file, substr, why string }{
+		{"", "PILOT_SCM_", "the publisher credential keys did not change (name map)"},
+		{"", "specfoundry-acceptance", "the owner's companion repository keeps its name"},
+		{"", ".config/specfoundry", "the old config folder, still read"},
+		{"README.md", "this project was specfoundry, and `pilot/pilot` is now", "the rename note"},
+		{"docs/targets.md", "Specfoundry-Run:", "the commit trailer forge still writes"},
+		{"docs/troubleshooting.md", "specfoundry-m1", "the old-cluster entry"},
+		{"docs/troubleshooting.md", "specfoundry-registry", "the old-cluster entry"},
+		{"docs/operator-guide.md", "canary: tosin2013/specfoundry", "quoted output of a run from before the rename"},
+	}
+)
+
+// checkOldNames reports each line of rel (a repository-relative path) that names an old name
+// outside the allowed list.
+func checkOldNames(rel, text string) []string {
+	if _, ok := oldNameAllFiles[rel]; ok {
+		return nil
+	}
+	var errs []string
+	for n, line := range strings.Split(text, "\n") {
+		rest := line
+		for _, a := range oldNameAllowed {
+			if a.file == "" || a.file == rel {
+				rest = strings.ReplaceAll(rest, a.substr, "")
+			}
+		}
+		if m := oldNameRe.FindString(rest); m != "" {
+			errs = append(errs, fmt.Sprintf("%s:%d: old name %q: say Chalkeus / ./chalkeus forge / FORGE_, or add it to the allowed list with a reason (D5)", rel, n+1, m))
+		}
+	}
+	return errs
+}
+
+// TestDocsCheck runs D1–D5 over the operator and contributor docs.
 func TestDocsCheck(t *testing.T) {
 	d := newDocsChecker(t)
 	files := d.defaultFiles(t)
@@ -272,6 +315,12 @@ func TestDocsCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 		errs = append(errs, e...)
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rel, _ := filepath.Rel(d.root, f)
+		errs = append(errs, checkOldNames(filepath.ToSlash(rel), string(raw))...)
 	}
 	if len(errs) > 0 {
 		t.Fatalf("docs check: %d problem(s) in %d file(s):\n%s", len(errs), len(files), strings.Join(errs, "\n"))
@@ -328,6 +377,27 @@ func TestDocsCheckRules(t *testing.T) {
 		}
 		if !found {
 			t.Errorf("%q: want a problem mentioning %q, got %v", c.text, c.needle, e)
+		}
+	}
+}
+
+func TestOldNameCheck(t *testing.T) {
+	for _, c := range []struct {
+		rel, text string
+		want      int
+	}{
+		{"docs/x.md", "Run `./chalkeus forge up` with FORGE_MODEL set.\n", 0},
+		{"docs/x.md", "Run pilot/pilot up.\n", 1},
+		{"docs/x.md", "the SpecFoundry project\nset PILOT_MODEL\n", 2},
+		{"docs/x.md", "kind-specfoundry-m1\n", 1},
+		{"docs/x.md", "`PILOT_SCM_TOKEN=…` in `~/.config/specfoundry/` for `tosin2013/specfoundry-acceptance`\n", 0},
+		{"docs/x.md", "PILOT_SCM_TOKEN and PILOT_MODEL\n", 1},
+		{"docs/troubleshooting.md", "kind delete cluster --name specfoundry-m1\n", 0},
+		{"docs/x.md", "kind delete cluster --name specfoundry-m1\n", 1},
+		{"docs/release-notes.md", "pilot/pilot and specfoundry-m1\n", 0},
+	} {
+		if got := checkOldNames(c.rel, c.text); len(got) != c.want {
+			t.Errorf("%s %q: want %d problem(s), got %v", c.rel, c.text, c.want, got)
 		}
 	}
 }

@@ -44,8 +44,10 @@ form end to end.
 
 ## Phase 5: Close (US4)
 
-- [ ] T020 Add the old-name check to the docs check (research R8), with its allowed list
-- [ ] T021 [US4] On the renamed repository: the go, integration and image workflows pass (SC-005); record the rename day in `specs/027-chalkeus-rename/evidence/README.md`
+- [X] T020 Add the old-name check to the docs check (research R8), with its allowed list
+  Done as (2026-11-23): D5 in `internal/cli/docs_test.go` (`checkOldNames`, `TestOldNameCheck`): any `specfoundry` (any case), `pilot/pilot` or `PILOT_` in the default docs files fails `TestDocsCheck`, outside an allowed list where each entry gives its reason (the release notes; `PILOT_SCM_*`; the companion repository's name; the old config folder; the README's rename note; the old-cluster entry; quoted output of an old run; the `Specfoundry-Run:` trailer forge still writes). Command output is not covered by this check: its old names (error messages naming `PILOT_*`, the `Specfoundry-Run:` trailer, PR and issue bodies, the `<!-- specfoundry:… -->` markers, user agents) are listed for the owner to decide. Also: `--target` on the eight commands that require it (doctor, step, slices, author start|check|status|submit|watch) no longer claims a default in its help.
+- [X] T021 [US4] On the renamed repository: the go, integration and image workflows pass (SC-005); record the rename day in `specs/027-chalkeus-rename/evidence/README.md`
+  Done as (2026-11-23): [evidence/README.md](evidence/README.md): go, pilot-images and integration succeed on `main` of `tosin2013/chalkeus` (integration on a commit with stage 4); the old address redirects.
 - [ ] T022 The owner's own setup upgraded in place (SC-001): a fixture run and an approval after the steps in the release notes; privacy check; the 027 debrief
 
 ## Dependencies
