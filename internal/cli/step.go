@@ -173,7 +173,7 @@ func stepCmd() *cobra.Command {
 			}
 		}}
 	addTargetFlag(c)
-	_ = c.MarkFlagRequired("target")
+	requireTarget(c)
 	c.Flags().Bool("once", false, "one pass, then exit (0: nothing failed; 1: an item's doctor or run failed)")
 	return c
 }
