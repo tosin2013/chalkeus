@@ -16,7 +16,7 @@ import (
 // TestStepMode is the step-mode scenario (T012) on the tally target, one `step --once` pass at a
 // time, with the owner acting through the fake between passes:
 //  1. the first pass mirrors the roadmap to issues; nothing is proposed yet;
-//  2. the owner labels item 001's issue `pilot/go`; the next pass drafts its hidden tests and
+//  2. the owner labels item 001's issue `chalkeus:proposed`; the next pass drafts its hidden tests and
 //     opens the companion PR;
 //  3. the owner merges it; the next pass runs doctor and starts the run, which pauses for the
 //     mode approval on GitHub (no terminal: FORGE_NO_TTY);
@@ -42,7 +42,7 @@ func TestStepMode(t *testing.T) {
 	if issue == 0 {
 		t.Fatalf("no issue for item 001 after the first pass")
 	}
-	must(t, w.fake.Label(repo, issue, ownerLogin, "pilot/go", false))
+	must(t, w.fake.Label(repo, issue, ownerLogin, "chalkeus:proposed", false))
 
 	out := step("after the label")
 	if !strings.Contains(out, "DRAFT_OK") {
