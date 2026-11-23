@@ -3,7 +3,7 @@
 #   pilot-grader-standin  HTTP target standing in for grader namespaces in P07
 apiVersion: v1
 kind: Namespace
-metadata: {name: pilot-control, labels: {specfoundry.io/role: control}}
+metadata: {name: pilot-control, labels: {chalkeus.io/role: control}}
 ---
 apiVersion: v1
 kind: Pod
@@ -20,7 +20,7 @@ spec:
 ---
 apiVersion: v1
 kind: Namespace
-metadata: {name: pilot-grader-standin, labels: {specfoundry.io/role: grader-standin}}
+metadata: {name: pilot-grader-standin, labels: {chalkeus.io/role: grader-standin}}
 ---
 apiVersion: v1
 kind: Pod

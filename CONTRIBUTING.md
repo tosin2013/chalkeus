@@ -80,7 +80,7 @@ go test -tags integration -timeout 50m ./test/integration/
 go test -tags integration -run TestAutoDraft ./test/integration/   # one scenario
 ```
 
-- **It builds and deletes its own `specfoundry-m1` kind cluster,** and refuses to start if one
+- **It builds and deletes its own `chalkeus-m1` kind cluster,** and refuses to start if one
   exists, so run `./chalkeus forge down` first. It never touches your setup: it runs from a temporary
   copy of `pilot/` with a temporary config folder, and drops `GH_TOKEN`, `GITHUB_TOKEN` and
   `FORGE_*` from its environment.

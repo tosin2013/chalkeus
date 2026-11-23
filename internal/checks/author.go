@@ -54,10 +54,10 @@ func AuthorProxyIngressRule(policy map[string]any) (bool, string) {
 	for _, in := range l(m(policy["spec"])["ingress"]) {
 		for _, from := range l(m(in)["from"]) {
 			sel := m(m(m(from)["namespaceSelector"])["matchLabels"])
-			if len(sel) != 1 || s(sel["specfoundry.io/role"]) == "" || m(from)["ipBlock"] != nil {
-				return false, "ingress has a selector other than specfoundry.io/role"
+			if len(sel) != 1 || s(sel["chalkeus.io/role"]) == "" || m(from)["ipBlock"] != nil {
+				return false, "ingress has a selector other than chalkeus.io/role"
 			}
-			roles = append(roles, s(sel["specfoundry.io/role"]))
+			roles = append(roles, s(sel["chalkeus.io/role"]))
 		}
 	}
 	return strings.Join(roles, ",") == "author", fmt.Sprintf("ingress_roles=%v", roles)

@@ -2,7 +2,7 @@
 #   ${NS}: pilot-egress-model (clients: role=worker) or pilot-egress-scm (clients: role=publisher)
 apiVersion: v1
 kind: Namespace
-metadata: {name: ${NS}, labels: {specfoundry.io/role: egress}}
+metadata: {name: ${NS}, labels: {chalkeus.io/role: egress}}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -57,7 +57,7 @@ spec:
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
-        - namespaceSelector: {matchLabels: {specfoundry.io/role: ${CLIENT_ROLE}}}
+        - namespaceSelector: {matchLabels: {chalkeus.io/role: ${CLIENT_ROLE}}}
       ports: [{protocol: TCP, port: 8888}]
   egress:
     - to:

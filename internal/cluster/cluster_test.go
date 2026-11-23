@@ -63,12 +63,12 @@ func TestTargetProxyRenders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"name: pilot-egress-w-pysample", `^model\.example$`, `^pypi\.org$`, "specfoundry.io/role: worker"} {
+	for _, want := range []string{"name: pilot-egress-w-pysample", `^model\.example$`, `^pypi\.org$`, "chalkeus.io/role: worker"} {
 		if !strings.Contains(w, want) {
 			t.Errorf("worker proxy lacks %q", want)
 		}
 	}
-	if strings.Contains(r, "model.example") || strings.Contains(r, `model\.example`) || !strings.Contains(r, `^files\.pythonhosted\.org$`) || !strings.Contains(r, "specfoundry.io/role: grader") {
+	if strings.Contains(r, "model.example") || strings.Contains(r, `model\.example`) || !strings.Contains(r, `^files\.pythonhosted\.org$`) || !strings.Contains(r, "chalkeus.io/role: grader") {
 		t.Errorf("prefetch proxy:\n%s", r)
 	}
 }
@@ -90,7 +90,7 @@ func TestAuthorProxyRenders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"name: pilot-egress-a", "specfoundry.io/role: author", `^model\.example$`} {
+	for _, want := range []string{"name: pilot-egress-a", "chalkeus.io/role: author", `^model\.example$`} {
 		if !strings.Contains(y, want) {
 			t.Fatalf("missing %q in\n%s", want, y)
 		}
@@ -114,5 +114,33 @@ func TestSCMHosts(t *testing.T) {
 	t.Setenv("PILOT_TEST_GITHUB_API", "http://172.18.0.1:8090")
 	if got := strings.Join(SCMHosts(), ","); got != "github.com,api.github.com,172.18.0.1" {
 		t.Fatal(got)
+	}
+}
+
+// 027 FR-010: what is left from before the rename, and how to remove it.
+func TestOldMessage(t *testing.T) {
+	if OldMessage(false, false) != "" {
+		t.Fatal("nothing old: no message")
+	}
+	got := OldMessage(true, true)
+	for _, want := range []string{"the kind cluster specfoundry-m1 and the registry container specfoundry-registry",
+		"kind delete cluster --name specfoundry-m1 && docker rm -f specfoundry-registry"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("%q lacks %q", got, want)
+		}
+	}
+	if got := OldMessage(false, true); strings.Contains(got, "kind delete") || !strings.Contains(got, "docker rm -f specfoundry-registry") {
+		t.Errorf("registry only: %q", got)
+	}
+}
+
+// The kind config names the same cluster the pilot looks for (027 T016).
+func TestKindConfigNamesTheCluster(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "pilot", "kind-config.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "\nname: "+paths.Cluster+"\n") {
+		t.Fatalf("pilot/kind-config.yaml does not name %s", paths.Cluster)
 	}
 }

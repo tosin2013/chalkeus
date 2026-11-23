@@ -98,7 +98,7 @@ func TestRunJobReplacesTheDraft(t *testing.T) {
 	if b, _ := os.ReadFile(filepath.Join(d.Workspace, "draft", "src", "test", "T.java")); string(b) != "class T {}" {
 		t.Fatal("draft file")
 	}
-	if len(c.applied) != 1 || !strings.Contains(c.applied[0], "specfoundry.io/role: author") {
+	if len(c.applied) != 1 || !strings.Contains(c.applied[0], "chalkeus.io/role: author") {
 		t.Fatal("the author namespace is applied")
 	}
 	if len(c.deleted) < 2 || c.deleted[len(c.deleted)-1] != "pilot-a-stockroom-009" {

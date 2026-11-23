@@ -3,7 +3,7 @@
 # One worker attempt's namespace (FR-005, FR-006). Also used for the probe twin (same policies).
 apiVersion: v1
 kind: Namespace
-metadata: {name: ${NS}, labels: {specfoundry.io/role: worker, specfoundry.io/run: "${RUN_ID}"}}
+metadata: {name: ${NS}, labels: {chalkeus.io/role: worker, chalkeus.io/run: "${RUN_ID}"}}
 ---
 apiVersion: v1
 kind: ServiceAccount
