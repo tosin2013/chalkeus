@@ -1,7 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.33.0 → 1.33.1 (this revision)
+Version change: 1.33.1 → 1.33.2 (this revision)
+Bump rationale: PATCH — a status transition (027 specced → verified) and Q1 marked carried
+out. Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
+  - 027 specced → verified: 23/23 tasks; fixture run 20261123T160836Z on the owner's setup
+    upgraded in place (SC-001); go, image and integration workflows green on the renamed
+    repository (SC-005); debrief ⚠️ proceed with updates, its one 🎯 finding (F1, SC-004
+    command output) closed by #180.
+  - Q1: carried out by 027 (repository renamed to tosin2013/chalkeus; the old address
+    redirects).
+  - Footer version corrected (1.33.1 had left it at 1.33.0).
+Specs affected: 027
+Open questions added/resolved: Q1 resolved
+
+Prior: Version change: 1.33.0 → 1.33.1
 Bump rationale: PATCH — a new dependency for 013. Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
   - 013 depends on 029 (brownfield intake, including failed Dependabot PRs, ships with
@@ -1923,7 +1937,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     - ~~exactly how G6 and G7 apply per slice~~ per slice, against the base the slice starts from
       (spec default, FR-014).
 
-### 027 — Rename to Chalkeus  [status: specced]
+### 027 — Rename to Chalkeus  [status: verified]
 
 - **Description:** Carry out Q7 and Q1: the product, its Go module, binary, commands, docs and
   repository become Chalkeus, without breaking existing setups or their evidence.
@@ -1953,6 +1967,16 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   unplanned change, because about 1,600 mentions in 540 files go beyond the module path, and
   several (the config folder, image names, labels in evidence) need a migration decision.
   013 depends on it: the release ships under the new name.
+  **Verified 2026-11-23 (owner):** all 23 tasks, in five stages (#166–#180). The owner
+  renamed the repository the day stage 3 merged; the old address redirects, and the go,
+  pilot-images and integration workflows pass on tosin2013/chalkeus
+  ([evidence](../../specs/027-chalkeus-rename/evidence/README.md)). Fixture run
+  20261123T160836Z succeeded on the owner's setup upgraded in place, with GitHub approvals
+  and the status change approved by merging fixture PR #64. Debrief
+  (roadmap-reviews/debrief-20261123T171808Z.md): ⚠️ proceed with updates; its 🎯 finding
+  (forge's own output still named `PILOT_*`, `pilot.env` and specfoundry) closed by #180.
+  Left for the owner, not blocking: moving the config folder to `~/.config/chalkeus` and a
+  doctor run there (the old folder is still read), and the AU07 teardown of that run.
 
 ### 028 — Work governance: approved work only, TODOs as proposals, stop at the bar  [status: planned]
 
@@ -2044,6 +2068,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   redirects the old URLs. This revision does not rename the repo or change the code. The
   "new repo vs. inside the spec-status org" options are not the plan; the repo stays under
   tosin2013 and is renamed in place.
+  **Resolved 2026-11-23 (027):** the repository is tosin2013/chalkeus and the Go module
+  `github.com/tosin2013/chalkeus`; GitHub redirects the old address.
 - Q2 — Kelos as wrapped dependency vs. fork (default: wrap, see C-05). **Resolved
   2026-11-13:** never fork; wrap only if the security bar is met by configuration,
   otherwise do not adopt (C-05 amended).
@@ -2216,4 +2242,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.33.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
+**Version**: 1.33.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
