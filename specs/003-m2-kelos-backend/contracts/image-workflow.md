@@ -1,5 +1,12 @@
 # Contract: pilot image workflow (`.github/workflows/pilot-images.yml`)
 
+> **Amended by 031 (2026-11-24):** images are built for `linux/amd64` and `linux/arm64` on
+> native runners, pushed by digest, and joined into one index per image by a `merge` job; the
+> lock holds index digests, and every upstream input is pinned per architecture. See
+> [031's workflow contract](../../031-macos-multiarch/contracts/image-workflow.md) and
+> [pins contract](../../031-macos-multiarch/contracts/pins.md). Triggers, the no-rebuild-loop
+> rules and the lock-only digest PR below are unchanged.
+
 ## Triggers
 
 - `push` to `main` touching `pilot/images/**`, `pilot/images/common/frame.py` (until 016 US5: `pilot/specfoundry_pilot/frame.py`) or the

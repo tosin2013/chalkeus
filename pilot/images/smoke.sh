@@ -29,7 +29,8 @@ git -C "$W/repo" bundle create -q "$W/in/base.bundle" HEAD
 cp "$W/in/base.bundle" "$W/grade/base.bundle"
 cp "$ROOT/pilot/images/tests/reference/slugkit/slug.py" "$W/repo/src/slugkit/slug.py"
 echo 'from .slug import slugify  # noqa: F401' >> "$W/repo/src/slugkit/__init__.py"
-sed -i 's/- \[ \]/- [X]/' "$W/repo/specs/001-slugify/tasks.md"
+# Portable in-place edit (GNU and BSD sed differ on -i; 031 runs this on macOS too).
+sed 's/- \[ \]/- [X]/' "$W/repo/specs/001-slugify/tasks.md" > "$W/tasks.md" && mv "$W/tasks.md" "$W/repo/specs/001-slugify/tasks.md"
 git -C "$W/repo" add -A
 git -C "$W/repo" -c user.name=smoke -c user.email=smoke@invalid commit -qm solution
 git -C "$W/repo" bundle create -q "$W/grade/change.bundle" "$BASE..HEAD"
@@ -97,7 +98,8 @@ print(subprocess.run(t["version_command"], env=env, capture_output=True, text=Tr
     docker run --rm --user 0:0 -v "$deps":/deps "$TOOLS" chmod 0777 /deps >/dev/null 2>&1 || true
     step() { # step <online|offline> <command>
       local net=() mode=rw; [ "$1" = offline ] && { net=(--network none); mode=ro; }
-      "${RUN[@]}" "${net[@]}" -v "$vol":/opt/toolchain:ro -v "$deps":/deps:"$mode" -v "$sample":/src:ro \
+      # ${net[@]+...}: an empty array under set -u fails in bash < 4.4 (macOS's 3.2; 031).
+      "${RUN[@]}" ${net[@]+"${net[@]}"} -v "$vol":/opt/toolchain:ro -v "$deps":/deps:"$mode" -v "$sample":/src:ro \
         --tmpfs /tmp:exec,mode=1777 --tmpfs /work:exec,mode=1777 -e HOME=/tmp -e PILOT_DEPS=/deps -e ROLE="$1" \
         "$TOOLS" bash -c '
 set -e

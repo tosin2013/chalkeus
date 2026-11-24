@@ -92,6 +92,39 @@ func TestBuildArgsMatchPythonScript(t *testing.T) {
 	}
 }
 
+func TestBuildArgsMissingPin(t *testing.T) {
+	pins, err := paths.ReadEnv("../../pilot/pins.env")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, img := range Names {
+		args, err := BuildArgs(img, pins)
+		if err != nil {
+			t.Fatalf("%s: %v", img, err)
+		}
+		for k := range args {
+			if _, ok := pins[k]; !ok {
+				continue // derived: repo, tag, checksum file name
+			}
+			cut := map[string]string{}
+			for pk, pv := range pins {
+				if pk != k {
+					cut[pk] = pv
+				}
+			}
+			if _, err := BuildArgs(img, cut); err == nil || err.Error() != "pins.env: missing "+k {
+				t.Errorf("%s without %s: %v", img, k, err)
+			}
+		}
+	}
+	// 031: the old single-arch keys are gone, so nothing can read a stale amd64-only value.
+	for _, k := range []string{"OPENCODE_ASSET", "OPENCODE_ASSET_SHA256", "OPENCODE_SHA256", "SPEC_ASSET", "SPEC_ASSET_SHA256", "SPEC_SHA256"} {
+		if _, ok := pins[k]; ok {
+			t.Errorf("pins.env still has %s", k)
+		}
+	}
+}
+
 func TestHashDirStable(t *testing.T) {
 	dir := t.TempDir()
 	_ = os.WriteFile(filepath.Join(dir, "a"), []byte("x"), 0o644)

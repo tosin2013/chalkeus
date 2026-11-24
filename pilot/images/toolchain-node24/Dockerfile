@@ -12,7 +12,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends curl=7.88.1-10+deb12u15 ca-certificates=20250419~deb12u2 xz-utils=5.4.1-1+deb12u2 \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /fetch
-RUN set -eu; case "${TARGETARCH:-amd64}" in amd64) a=x64; sum="${NODE24_SHA256_AMD64}";; arm64) a=arm64; sum="${NODE24_SHA256_ARM64}";; *) echo "unsupported $TARGETARCH"; exit 1;; esac; \
+RUN set -eu; case "${TARGETARCH:-}" in amd64) a=x64; sum="${NODE24_SHA256_AMD64}";; arm64) a=arm64; sum="${NODE24_SHA256_ARM64}";; *) echo "unsupported TARGETARCH '${TARGETARCH:-}'"; exit 1;; esac; \
     f="node-${NODE24_VERSION}-linux-${a}.tar.xz"; base="https://nodejs.org/dist/${NODE24_VERSION}"; \
     curl -fsSLO "${base}/${f}"; curl -fsSLO "${base}/SHASUMS256.txt"; \
     grep "  ${f}\$" SHASUMS256.txt | sha256sum -c -; echo "${sum}  ${f}" | sha256sum -c -; \

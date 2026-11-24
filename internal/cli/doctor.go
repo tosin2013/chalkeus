@@ -63,6 +63,10 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
+	// Host (031): the machine, its container runtime, then (after `up`) the node and image
+	// platforms. Reported first, so a stopped Docker Desktop shows even when the profile fails.
+	r.HostRows(doctor.ProbeHost(), doctor.ProbeRuntime())
+
 	// Profile.
 	cfg, err := config.Load(l.Root, false, false)
 	if !r.OK("profile", "forge.env", err, "") {
@@ -126,6 +130,22 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 			src, _ := os.ReadFile(l.ImageSource)
 			st, det := doctor.ImagesRow(strings.TrimSpace(string(src)), running, lock)
 			r.Add("cluster", "images", st, det)
+			// 031: the node's platform, and a build of every pinned image for it.
+			if node, err := doctor.ProbeNodePlatform(paths.Context); err != nil {
+				r.Add("cluster", "node platform", doctor.Warn, "couldn't read the node's platform: "+err.Error())
+			} else {
+				st, det := doctor.NodePlatformRow(node)
+				r.Add("cluster", "node platform", st, det)
+				if st == doctor.Pass {
+					source := strings.TrimSpace(string(src))
+					var infos map[string]doctor.ImageInfo
+					if source != "local-build" {
+						infos = doctor.ProbeImages(doctor.LockImages(lock))
+					}
+					st, det := doctor.ImagePlatformsRow(source, node, infos)
+					r.Add("cluster", "image platforms", st, det)
+				}
+			}
 		}
 	}
 

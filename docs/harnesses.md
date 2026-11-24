@@ -41,9 +41,11 @@ Rules that apply to every harness (constitution IV, PRD S2/S6):
 The worker image is built by GitHub Actions (`.github/workflows/pilot-images.yml`), never
 from an operator's machine:
 - OpenCode comes from the upstream release named in `pilot/pins.env` (`OPENCODE_RELEASE`).
-- The build verifies the archive against the release's `SHA256SUMS` **and** the pinned
-  `OPENCODE_ASSET_SHA256`, then checks the extracted binary against `OPENCODE_SHA256`. A
-  mismatch fails the build, with no fallback.
+- The build picks the archive for the image's platform (`linux/amd64` or `linux/arm64`) and
+  verifies it against the release's `SHA256SUMS` **and** the pinned
+  `OPENCODE_ASSET_SHA256_AMD64` or `_ARM64`, then checks the extracted binary against
+  `OPENCODE_SHA256_AMD64` or `_ARM64`. A mismatch or a missing pin fails the build, with no
+  fallback (031).
 - Images are published as public packages, and `./chalkeus forge up` pulls them by the digests in
   `pilot/images.lock`. `./chalkeus forge up --local-build` builds the same Dockerfiles locally for
   development.

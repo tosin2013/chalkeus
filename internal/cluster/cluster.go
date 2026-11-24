@@ -18,7 +18,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tosin2013/chalkeus/internal/doctor"
 	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/hostinfo"
 	"github.com/tosin2013/chalkeus/internal/k8s"
 	"github.com/tosin2013/chalkeus/internal/paths"
 	"github.com/tosin2013/chalkeus/internal/verbose"
@@ -138,9 +140,36 @@ func download(url, dst string) error {
 	return os.WriteFile(dst, raw, 0o644)
 }
 
+// ProbeHostAndRuntime reads the host and the container runtime (replaced in tests).
+var ProbeHostAndRuntime = func() (hostinfo.Host, hostinfo.Runtime) {
+	return hostinfo.ProbeHost(), hostinfo.ProbeRuntime()
+}
+
+// HostCheck runs doctor's `host` and `container runtime` checks for `up` (031,
+// specs/031-macos-multiarch/contracts/doctor.md): a fail refuses with the same message, a
+// warning is printed and `up` continues.
+func HostCheck(e Env, h hostinfo.Host, rt hostinfo.Runtime) error {
+	var r doctor.Report
+	r.HostRows(h, rt)
+	for _, row := range r.Rows {
+		switch row.Status {
+		case doctor.Fail:
+			return fmt.Errorf("%s", row.Detail)
+		case doctor.Warn:
+			e.say("warning: " + row.Detail)
+		}
+	}
+	return nil
+}
+
 // UpCluster installs the pinned tools, creates the kind cluster (and the local registry with
 // --local-build), installs Calico from its pinned manifest and waits for the nodes.
 func UpCluster(e Env, localBuild bool) error {
+	// 031: refuse an unsupported host or a stopped container runtime before installing anything.
+	h, rt := ProbeHostAndRuntime()
+	if err := HostCheck(e, h, rt); err != nil {
+		return err
+	}
 	pins, err := paths.ReadEnv(e.L.Pins)
 	if err != nil {
 		return err

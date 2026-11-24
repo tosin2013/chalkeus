@@ -5,20 +5,29 @@ ARG DEBIAN_BASE
 FROM ${DEBIAN_BASE} AS fetch
 ARG SPEC_REPO
 ARG SPEC_TAG
-ARG SPEC_ASSET
-ARG SPEC_ASSET_SHA256
-ARG SPEC_SHA256
+# 031: per-architecture pins; BuildKit sets TARGETARCH. An empty or other value fails.
+ARG TARGETARCH
+ARG SPEC_ASSET_AMD64
+ARG SPEC_ASSET_ARM64
+ARG SPEC_ASSET_SHA256_AMD64
+ARG SPEC_ASSET_SHA256_ARM64
+ARG SPEC_SHA256_AMD64
+ARG SPEC_SHA256_ARM64
 ARG SPEC_CHECKSUMS
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl=7.88.1-10+deb12u15 ca-certificates=20250419~deb12u2 \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /fetch
-RUN set -eu; base="https://github.com/${SPEC_REPO}/releases/download/${SPEC_TAG}"; \
-    curl -fsSLO "${base}/${SPEC_ASSET}"; curl -fsSLO "${base}/${SPEC_CHECKSUMS}"; \
-    grep " ${SPEC_ASSET}\$" "${SPEC_CHECKSUMS}" | sha256sum -c -; \
-    echo "${SPEC_ASSET_SHA256}  ${SPEC_ASSET}" | sha256sum -c -; \
-    tar -xzf "${SPEC_ASSET}"; cp */spec ./spec; \
-    echo "${SPEC_SHA256}  spec" | sha256sum -c -
+RUN set -eu; case "${TARGETARCH:-}" in \
+      amd64) asset="${SPEC_ASSET_AMD64}"; sum="${SPEC_ASSET_SHA256_AMD64}"; bin="${SPEC_SHA256_AMD64}";; \
+      arm64) asset="${SPEC_ASSET_ARM64}"; sum="${SPEC_ASSET_SHA256_ARM64}"; bin="${SPEC_SHA256_ARM64}";; \
+      *) echo "unsupported TARGETARCH '${TARGETARCH:-}'"; exit 1;; esac; \
+    base="https://github.com/${SPEC_REPO}/releases/download/${SPEC_TAG}"; \
+    curl -fsSLO "${base}/${asset}"; curl -fsSLO "${base}/${SPEC_CHECKSUMS}"; \
+    grep " ${asset}\$" "${SPEC_CHECKSUMS}" | sha256sum -c -; \
+    echo "${sum}  ${asset}" | sha256sum -c -; \
+    tar -xzf "${asset}"; cp */spec ./spec; \
+    echo "${bin}  spec" | sha256sum -c -
 
 FROM ${DEBIAN_BASE}
 RUN apt-get update \

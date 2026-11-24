@@ -12,8 +12,8 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends curl=7.88.1-10+deb12u15 ca-certificates=20250419~deb12u2 xz-utils=5.4.1-1+deb12u2 \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /fetch
-RUN set -eu; case "${TARGETARCH:-amd64}" in amd64) sum="${GO_SHA256_AMD64}";; arm64) sum="${GO_SHA256_ARM64}";; *) echo "unsupported $TARGETARCH"; exit 1;; esac; \
-    f="${GO_VERSION}.linux-${TARGETARCH:-amd64}.tar.gz"; \
+RUN set -eu; case "${TARGETARCH:-}" in amd64) sum="${GO_SHA256_AMD64}";; arm64) sum="${GO_SHA256_ARM64}";; *) echo "unsupported TARGETARCH '${TARGETARCH:-}'"; exit 1;; esac; \
+    f="${GO_VERSION}.linux-${TARGETARCH:-}.tar.gz"; \
     curl -fsSLO "https://go.dev/dl/${f}"; echo "${sum}  ${f}" | sha256sum -c -; \
     mkdir -p /opt/toolchain && tar -xzf "${f}" -C /opt/toolchain; \
     rm -rf /opt/toolchain/go/test /opt/toolchain/go/api /opt/toolchain/go/doc
