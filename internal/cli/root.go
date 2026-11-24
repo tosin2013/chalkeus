@@ -45,7 +45,7 @@ func NewForge(version string) *cobra.Command {
 		versionCmd(version),
 		upCmd(), downCmd(), publisherTokenCmd(), importOpencodeCmd(), resetFixtureCmd(),
 		runCmd(), resumeCmd(), approveCmd(), gateCmd(), auditCmd(), statusCmd(),
-		githubCmd(), appKeyCmd(), appTokenCmd(), targetsCmd(), authorCmd(), doctorCmd(), stepCmd(), slicesCmd(),
+		githubCmd(), appKeyCmd(), appTokenCmd(), targetsCmd(), authorCmd(), doctorCmd(), stepCmd(), slicesCmd(), debtCmd(),
 	)
 	return forge
 }
