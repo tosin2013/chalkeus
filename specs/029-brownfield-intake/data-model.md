@@ -13,7 +13,9 @@
 | `credential` | string | `app-read` or `operator-read` (R1); never a secret |
 | `permissions` | object | each optional permission → `granted` or `missing` (R1) |
 | `default_checks_failing` | string[] | check names failing on the default branch's head |
+| `shared_checks` | object | check name → why it's shared (research R4 amendment) |
 | `groups` | Group[] | ordered by size, largest first |
+| `not_triaged` | PREntry[] | class `not triaged`, kept out of the groups |
 | `baseline_flags` | BaselineFlag[] | |
 | `unreadable` | string[] | what the report couldn't read, for example `advisories: missing vulnerability_alerts` |
 | `counts` | object | class → number of PRs |
@@ -23,7 +25,7 @@
 | Field | Type | Notes |
 |---|---|---|
 | `failing_checks` | string[] | the group's key, sorted; empty for `no failing checks` |
-| `inherited` | string[] | the subset that also fails on the default branch's head |
+| `shared` | string[] | the subset that is shared (fails on the default branch, or on most PRs) |
 | `prs` | PREntry[] | ordered by PR number |
 
 ## PREntry

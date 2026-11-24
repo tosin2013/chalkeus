@@ -62,6 +62,15 @@ Each PR gets exactly one class, the first that matches:
 5. **`safe`** — every remaining failing check also fails on the default branch's head (inherited,
    not caused by the PR), and every bump is patch or minor.
 
+- **Amended 2026-11-24 (T007, on documcp's real checks): shared checks.** A failing check is
+  **shared**, and doesn't count against any one PR, when it also fails on the default branch's
+  head, or when it doesn't run there and fails on more than half of the PRs whose checks were
+  read (at least 3). documcp's auto-merge jobs only run on PRs and fail on all 22 because the
+  required `Security Audit` is red; counting them as each PR's own failure marked every patch
+  bump `needs code changes`. A PR-only check that fails on a few PRs (`Test Suite (20.x)` on two)
+  stays the PR's own. Rules 4 and 5 read "own" and "shared" in place of "the default branch
+  doesn't fail" and "also fails on the default branch". A check name that appears more than once
+  (several workflows with one job name) is failing when any run of it fails.
 - **Why rule 4/5 compare with the default branch:** documcp's case. All 22 PRs failed the
   production `npm audit`, which was red on `main` itself, so the failure said nothing about each
   bump. Treating an inherited failure as the PR's would mark every PR `needs code changes` and
@@ -120,7 +129,10 @@ Read statically, from the API, without running anything:
   - `go`: `go.mod`, `go.sum`, `**/go.mod`, `**/go.sum`;
   - `jdk21-maven`: `pom.xml`, `**/pom.xml`.
 - `internal/images` reads it; the report (R5) and the dependency-item gate (R9) use it.
-- **Note:** `toolchains.json` is under `pilot/images/`, which triggers the image workflow, so
+- **Amended 2026-11-24 (T001):** the table lives in Go (`internal/images/manifests.go`), matched
+  against a path's base name, not in `toolchains.json`: that file triggers the image workflow, and
+  this metadata changes no image.
+- **Note (superseded by the amendment above):** `toolchains.json` is under `pilot/images/`, which triggers the image workflow, so
   this change rebuilds the images anyway; R11's `grade.py` change needs that rebuild too (one
   digest PR).
 

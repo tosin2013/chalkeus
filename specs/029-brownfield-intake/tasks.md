@@ -8,13 +8,17 @@ integration harness on kind.
 
 ## Phase 1: Setup
 
-- [ ] T001 Add `"manifests"` globs per toolchain to `pilot/images/toolchains.json` (research R8) and read them in `internal/images/toolchains.go` (`Toolchain.Manifests`, `IsManifest(path)`), with tests in `internal/images/toolchains_test.go`
+- [X] T001 Add `"manifests"` globs per toolchain to `pilot/images/toolchains.json` (research R8) and read them in `internal/images/toolchains.go` (`Toolchain.Manifests`, `IsManifest(path)`), with tests in `internal/images/toolchains_test.go`
+  Done as (2026-11-24): the table is in `internal/images/manifests.go` (`Manifests`, `IsManifest`, base-name patterns), not `toolchains.json`, which would rebuild the images (research R8 amendment); tests in `internal/images/manifests_test.go`.
 
 ## Phase 2: Foundational (blocks US1 and US2)
 
-- [ ] T002 [P] In `internal/ghapp/ghapp.go`, add a read-only installation token request: one repository, a given subset of read permissions, the token returned in memory and never written (`ReadToken`); tests for the request body, a 422 for a permission the App lacks, and that no file is written
-- [ ] T003 [P] Add `internal/debt/manifest.go`: resolved-version readers for `package-lock.json` (v2/v3), `requirements*.txt` exact pins (PEP 503 names), `go.mod` requires and `pom.xml` literal or same-file property versions; anything else `unknown` (R5); a diff reader giving each package's from → to between two versions of a file (R14); tests in `internal/debt/manifest_test.go`
-- [ ] T004 Add `internal/ghloop/report.go`: `ReportClient(target)` (App mode: T002's read token for `contents` and `pull_requests`, then `checks`, `statuses` and `vulnerability_alerts` one at a time, recording which were granted; otherwise `OperatorClient`), and a `debt.Reader` implementation with GETs only (open PRs, a commit's check runs and combined status, file contents, Dependabot alerts); tests against `internal/fakegh` that fail on any non-GET request (SC-002) and that the publisher credential is never read
+- [X] T002 [P] In `internal/ghapp/ghapp.go`, add a read-only installation token request: one repository, a given subset of read permissions, the token returned in memory and never written (`ReadToken`); tests for the request body, a 422 for a permission the App lacks, and that no file is written
+  Done as (2026-11-24): `ghapp.ReadToken` in `internal/ghapp/readtoken.go` reads the installation's granted permissions first and asks only for those (all `read`), so no 422; it refuses a token that comes back with any write. Tests in `readtoken_test.go`.
+- [X] T003 [P] Add `internal/debt/manifest.go`: resolved-version readers for `package-lock.json` (v2/v3), `requirements*.txt` exact pins (PEP 503 names), `go.mod` requires and `pom.xml` literal or same-file property versions; anything else `unknown` (R5); a diff reader giving each package's from → to between two versions of a file (R14); tests in `internal/debt/manifest_test.go`
+  Done as (2026-11-24): `internal/debt/manifest.go` (`Resolved`, `Changes`) and `versions.go` (`Level`, version comparison).
+- [X] T004 Add `internal/ghloop/report.go`: `ReportClient(target)` (App mode: T002's read token for `contents` and `pull_requests`, then `checks`, `statuses` and `vulnerability_alerts` one at a time, recording which were granted; otherwise `OperatorClient`), and a `debt.Reader` implementation with GETs only (open PRs, a commit's check runs and combined status, file contents, Dependabot alerts); tests against `internal/fakegh` that fail on any non-GET request (SC-002) and that the publisher credential is never read
+  Done as (2026-11-24): the reader is `debt.GitHub` in `internal/debt/github.go` (ghapp imports ghloop, so the client choice is `reportClient` in `internal/cli/debt.go`). GET-only is tested on the recorded documcp responses (`TestDocumcpSnapshot`) rather than `internal/fakegh`, which has no checks, statuses, contents or alerts routes.
 
 ## Phase 3: User Story 1 - See the bot-PR pile grouped by root cause (Priority: P1) 🎯 MVP
 
@@ -22,12 +26,18 @@ integration harness on kind.
 
 **Independent Test**: on the recorded documcp snapshot, every PR failing only the inherited `npm audit` check is in one group, superseded PRs are marked, and no write call is made.
 
-- [ ] T005 [P] [US1] Record the documcp test data in `internal/debt/testdata/documcp-20261123/`: the 22 Dependabot PRs open on 2026-11-23 (titles, bodies, head branches and SHAs), their head check runs and statuses, `main`'s head checks and its `package.json` and `package-lock.json` at that commit. No token or private data in the files
-- [ ] T006 [P] [US1] Add `internal/debt/dependabot.go`: recognise Dependabot PRs and parse single titles (`Bump <pkg> from <a> to <b>[ in /<dir>]`), grouped PRs' body tables and the head branch's ecosystem; other bots and ecosystems without a catalog toolchain are `not triaged` (R3); tests in `internal/debt/dependabot_test.go`
-- [ ] T007 [US1] Add `internal/debt/classify.go`: semver levels (`0.x` minor bumps are major; non-semver `unknown`), the five classes in R4's order with inherited failures compared against the default branch's head, groups keyed by sorted failing checks, `dependency_item` for `needs code changes`; tests in `internal/debt/classify_test.go`, including SC-001 on T005's data
-- [ ] T008 [US1] Add advisories (R6): match open Dependabot alerts to PRs by package and first patched version; `unknown` without the permission; tests in `internal/debt/classify_test.go`
-- [ ] T009 [US1] Add `internal/debt/report.go`: gather through `debt.Reader` (at most 100 bot PRs; the rest counted as `not triaged: over the limit`), build the `TriageReport` (data-model.md), and render the text and JSON forms of contracts/cli.md; tests in `internal/debt/report_test.go`
-- [ ] T010 [US1] Add `internal/cli/debt.go` (`forge debt --target <t> [--json]`, `requireTarget`, exit 0/2 per contracts/cli.md) and classify `debt` as `free` in `internal/cli/command_audit.go`; tests in `internal/cli/debt_test.go` with a fake reader, plus `TestCommandAudit`
+- [X] T005 [P] [US1] Record the documcp test data in `internal/debt/testdata/documcp-20261123/`: the 22 Dependabot PRs open on 2026-11-23 (titles, bodies, head branches and SHAs), their head check runs and statuses, `main`'s head checks and its `package.json` and `package-lock.json` at that commit. No token or private data in the files
+  Done as (2026-11-24): `internal/debt/testdata/documcp-20261124/responses.json`, recorded with `testdata/record.py` (read-only `gh api` GETs; bodies and lockfiles trimmed). The same 22 Dependabot PRs as on 2026-11-23; advisories were 403 for the operator's token, so the test covers `unknown`.
+- [X] T006 [P] [US1] Add `internal/debt/dependabot.go`: recognise Dependabot PRs and parse single titles (`Bump <pkg> from <a> to <b>[ in /<dir>]`), grouped PRs' body tables and the head branch's ecosystem; other bots and ecosystems without a catalog toolchain are `not triaged` (R3); tests in `internal/debt/dependabot_test.go`
+  Done as (2026-11-24): also reads `chore(deps): bump …` titles and `Updates \`pkg\` from A to B` body lines, the forms documcp's PRs use.
+- [X] T007 [US1] Add `internal/debt/classify.go`: semver levels (`0.x` minor bumps are major; non-semver `unknown`), the five classes in R4's order with inherited failures compared against the default branch's head, groups keyed by sorted failing checks, `dependency_item` for `needs code changes`; tests in `internal/debt/classify_test.go`, including SC-001 on T005's data
+  Done as (2026-11-24): with research R4's shared-check amendment. On documcp: 19 PRs in one group whose failing checks are all shared (`Security Audit`, `deploy` red on main; the auto-merge jobs), 10 superseded, 9 safe, 3 need code changes (esbuild's major; two docs PRs failing `Test Suite (20.x)`).
+- [X] T008 [US1] Add advisories (R6): match open Dependabot alerts to PRs by package and first patched version; `unknown` without the permission; tests in `internal/debt/classify_test.go`
+  Done as (2026-11-24): in `classify.go` (`fixes`); `TestClassifyRules`.
+- [X] T009 [US1] Add `internal/debt/report.go`: gather through `debt.Reader` (at most 100 bot PRs; the rest counted as `not triaged: over the limit`), build the `TriageReport` (data-model.md), and render the text and JSON forms of contracts/cli.md; tests in `internal/debt/report_test.go`
+  Done as (2026-11-24): `Build` in `classify.go`, types and rendering in `report.go`; not-triaged PRs listed apart (`not_triaged`), shared checks listed (`shared_checks`).
+- [X] T010 [US1] Add `internal/cli/debt.go` (`forge debt --target <t> [--json]`, `requireTarget`, exit 0/2 per contracts/cli.md) and classify `debt` as `free` in `internal/cli/command_audit.go`; tests in `internal/cli/debt_test.go` with a fake reader, plus `TestCommandAudit`
+  Done as (2026-11-24): `internal/cli/debt.go`, `debt` free in the command audit; tests in `internal/cli/debt_test.go` (App mode asks only for read and writes nothing to the config folder; token mode never reads the publisher's file). Live on stockroom: `read with app-read`, main's `test` check red.
 
 **Checkpoint**: the report works on its own; no image change.
 
@@ -56,7 +66,8 @@ integration harness on kind.
 
 **Independent Test**: on a fixture with a red default-branch check, `--forceExit` in a test script and a package with an install script, the report lists all three with where they were found.
 
-- [ ] T021 [US3] Add `internal/debt/flags.go`: `red default branch` (failing head checks), `force exit` (`--forceExit`, Mocha `--exit`, `forceExit: true` in `jest.config.*` or `package.json`), `install scripts` (`hasInstallScript` entries in `package-lock.json`, naming them and linking docs/targets.md's native builds section) with `path:line` (R7); render them in T009's report; tests in `internal/debt/flags_test.go`
+- [X] T021 [US3] Add `internal/debt/flags.go`: `red default branch` (failing head checks), `force exit` (`--forceExit`, Mocha `--exit`, `forceExit: true` in `jest.config.*` or `package.json`), `install scripts` (`hasInstallScript` entries in `package-lock.json`, naming them and linking docs/targets.md's native builds section) with `path:line` (R7); render them in T009's report; tests in `internal/debt/flags_test.go`
+  Done as (2026-11-24): `internal/debt/flags.go`, with the report (T009); `flags_test.go` and the documcp snapshot (3 red checks, `--forceExit` in `test:ci`, 11 packages with install scripts).
 
 ## Phase 6: User Story 4 - Brownfield onboarding docs (Priority: P3)
 

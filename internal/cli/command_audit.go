@@ -29,6 +29,7 @@ var CommandAudit = map[string]string{
 	"gate":            ClassFree,
 	"targets":         ClassFree,
 	"slices":          ClassFree,
+	"debt":            ClassFree, // 029: reads only; in App mode a read-only token, in memory
 	"version":         ClassFree,
 	"github":          ClassFree, // sync and drift mirror; watch resumes only after a human's approval or merge
 	"import-opencode": ClassFree, // copies the operator's own model config into the config folder
