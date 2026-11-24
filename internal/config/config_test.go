@@ -95,6 +95,37 @@ func TestMissingFilesSayWhatToDo(t *testing.T) {
 	}
 }
 
+// 031: an App-only publisher needs no publisher.env (a fresh Mac had none), but it does need
+// the App key, mode 0600; a token setup still needs publisher.env.
+func TestLoadPublisherCredential(t *testing.T) {
+	app := pilotEnv + "PILOT_PUBLISHER_CREDENTIAL=app\nPILOT_APP_ID=1\nPILOT_APP_INSTALLATION_ID=2\n"
+	e := setup(t)
+	_ = os.Remove(filepath.Join(e.d, "publisher.env"))
+	e.write("pilot.env", app, 0o600)
+	if _, err := Load(".", true, false); err == nil || !strings.Contains(err.Error(), "./chalkeus forge app-key") {
+		t.Fatalf("app without its key: %v", err)
+	}
+	e.write("github-app.pem", "not checked here", 0o600)
+	if _, err := Load(".", true, false); err != nil {
+		t.Fatalf("app-only setup: %v", err)
+	}
+	e.write("github-app.pem", "not checked here", 0o644)
+	if _, err := Load(".", true, false); err == nil || !strings.Contains(err.Error(), "must be mode 0600") {
+		t.Fatalf("app key mode: %v", err)
+	}
+	// No credential named, only an App key: the App is chosen, publisher.env not needed.
+	e.write("github-app.pem", "not checked here", 0o600)
+	e.write("pilot.env", pilotEnv, 0o600)
+	if _, err := Load(".", true, false); err != nil {
+		t.Fatalf("app key only: %v", err)
+	}
+	// A token setup still needs publisher.env.
+	e.write("pilot.env", pilotEnv+"PILOT_PUBLISHER_CREDENTIAL=token\n", 0o600)
+	if _, err := Load(".", true, false); err == nil || !strings.Contains(err.Error(), "./chalkeus forge publisher-token") {
+		t.Fatalf("token without publisher.env: %v", err)
+	}
+}
+
 func TestRejections(t *testing.T) {
 	cases := map[string]func(e env){
 		"key mode 0644": func(e env) { e.write("opencode/p_api_key", "abc", 0o644) },

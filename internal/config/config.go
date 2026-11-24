@@ -61,10 +61,11 @@ var (
 const guide = "docs/operator-guide.md"
 
 var missingHints = map[string]string{
-	"pilot.env":     "create it first: " + guide + ", section 5 (Configure your model provider)",
-	"forge.env":     "create it first: " + guide + ", section 5 (Configure your model provider)",
-	"publisher.env": "store the token first: ./chalkeus forge publisher-token",
-	"opencode":      "create it first: " + guide + ", section 5 (Configure your model provider)",
+	"pilot.env":      "create it first: " + guide + ", section 5 (Configure your model provider)",
+	"forge.env":      "create it first: " + guide + ", section 5 (Configure your model provider)",
+	"publisher.env":  "store the token first: ./chalkeus forge publisher-token",
+	"github-app.pem": "store the App key first: ./chalkeus forge app-key < <app>.private-key.pem (docs/github-app.md)",
+	"opencode":       "create it first: " + guide + ", section 5 (Configure your model provider)",
 }
 
 func missingHint(path string) string {
@@ -386,7 +387,9 @@ func ValidateValues(values map[string]string) (map[string]string, error) {
 }
 
 // Load reads and validates the configuration. requireSecrets also checks the worker's model
-// config and publisher.env; guard applies the repo guard against root's origin.
+// config and the publisher's credential: publisher.env for a token, github-app.pem for the
+// GitHub App (an App-only setup has no publisher.env; found on a fresh Mac in 031); guard
+// applies the repo guard against root's origin.
 func Load(root string, requireSecrets, guard bool) (*Config, error) {
 	d := Dir()
 	pilotEnv := SettingsFile(d)
@@ -407,7 +410,15 @@ func Load(root string, requireSecrets, guard bool) (*Config, error) {
 		if err := CheckModelDir(c.ModelDir); err != nil {
 			return nil, err
 		}
-		if err := CheckMode(c.PublisherEnv); err != nil {
+		cred, err := c.Credential()
+		if err != nil {
+			return nil, err
+		}
+		credFile := c.PublisherEnv
+		if cred == "app" {
+			credFile = c.AppKey()
+		}
+		if err := CheckMode(credFile); err != nil {
 			return nil, err
 		}
 	}
