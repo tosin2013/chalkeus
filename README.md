@@ -121,6 +121,44 @@ In short:
 Pilot reference: [pilot/README.md](pilot/README.md) · configuration contract:
 [contracts/config.md](specs/002-m1-gated-pilot/contracts/config.md).
 
+## Choose how hands-on you want to be
+
+There are four ways to work with forge. They differ only in how you give your decisions, not in
+which decisions are yours. From most hands-on to least:
+
+| Way | How you work | Guide |
+|---|---|---|
+| **At the terminal** | Run `./chalkeus forge run` and type each confirmation (mode, retry, status change) when it asks. Merge PRs on GitHub, then `./chalkeus forge resume` | [operator guide](docs/operator-guide.md) |
+| **With a coding agent** | Your agent runs the commands with the forge skill and explains each pause. You say yes in the chat, and your harness asks you again before the approval is recorded | [forge skill](.claude/skills/forge/SKILL.md) |
+| **Approve on GitHub** | Start the run once. Then reply `/approve <step>` on the run's tracking issue, from anywhere. A background watcher resumes the run when your approval or merge appears | [GitHub loop](docs/github-loop.md) |
+| **Step mode** | Start `./chalkeus forge step --target <name>` once, in your own terminal, and leave it running. Propose items by labelling their issues. Step mode drafts hidden tests (with auto-draft on), checks the baseline, starts each run and moves to the next item, while you answer only on GitHub | [step mode](docs/targets.md#step-mode-leave-it-running) |
+
+**What stays yours in every way:** the steps below are the least a human does, by design. Forge
+never approves, merges or labels anything itself.
+
+1. Propose the item. In step mode, that means labelling its issue.
+2. Review and merge its hidden tests.
+3. Approve the run mode, and each retry after a failed attempt.
+4. Merge the item's PR.
+5. Approve the status change. On GitHub, you do this by merging forge's status-change PR. If the
+   item's spec lists acceptance checks, also approve `acceptance` after doing those checks.
+
+**What the least hands-on setup needs:**
+- **A publisher that isn't you.** Use a GitHub App or a second account: forge refuses approvals
+  made with the publisher's own identity ([who an approval proves](docs/github-loop.md#5-who-an-approval-proves)).
+- **Approvals on GitHub, and auto-draft on:** set `FORGE_GITHUB_APPROVALS=on`,
+  `FORGE_APPROVERS` and `FORGE_AUTHOR_AUTO=on`.
+- **Your machine and its cluster kept running.** Cluster mode (011, planned) is meant to remove this.
+
+**Other tools that help along the way:**
+
+| Command | What it does |
+|---|---|
+| `./chalkeus forge doctor --target <name>` | Checks a target's profile, cluster, GitHub access and one item's readiness, and reports every problem at once. Read-only |
+| `./chalkeus forge debt --target <name>` | For an existing repository: groups its open Dependabot PRs by root cause and flags baseline problems, before you start. Read-only |
+| `./chalkeus forge slices --target <name> --item NNN` | Lists the slices of a large item and which one is next. Read-only |
+| `./chalkeus forge author start --target <name> --item NNN` | Starts drafting an item's hidden tests; `author submit` then opens a pull request on the companion repository. Run it in a separate session, never the one that drives runs ([test author](docs/targets.md#drafting-hidden-tests-with-the-test-author)) |
+
 ## How it's built
 
 Chalkeus is developed with its own method: every change starts as a Spec Kit spec, is
