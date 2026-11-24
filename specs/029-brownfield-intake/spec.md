@@ -54,6 +54,11 @@ Terms:
   A: The target's existing GitHub credential that forge already holds for the GitHub loop
   (token or App), used only for reads. No new secret; the report can read only what forge can
   already read (FR-008).
+  **Corrected 2026-11-24 (owner):** the publisher's token is a write credential, so the report
+  never uses it. The owner normally adds the repository to the GitHub App: in App mode the
+  report mints its own installation token restricted to read permissions, held in memory only;
+  without the App it uses forge's existing read client (`GH_TOKEN`, `GITHUB_TOKEN`, then
+  `gh auth token`), as the GitHub loop's reads already do.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -212,9 +217,10 @@ the report and a prepared dependency item using only the docs.
   install scripts held back for approval; each with where it was found.
 - **FR-007**: The report MUST NOT write to GitHub or to the target in any way, MUST NOT run the
   target's code or tests, and MUST work without a cluster or a model.
-- **FR-008**: The report MUST read with the target's existing GitHub credential (the token or
-  App forge already holds for the GitHub loop), make read calls only, and MUST NOT print it. No
-  new credential is added.
+- **FR-008**: The report MUST read with a read-only credential and make read calls only: in
+  App mode, an installation token for the target repository restricted to read permissions,
+  held in memory only; otherwise forge's existing read client. It MUST NOT load the publisher's
+  write credential, MUST NOT print any credential, and adds no new secret.
 
 **Dependency items (US2)**
 
