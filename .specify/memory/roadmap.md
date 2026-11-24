@@ -1,7 +1,14 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.35.0 → 1.35.1 (this revision)
+Version change: 1.35.1 → 1.35.2 (this revision)
+Bump rationale: PATCH — a status transition (031 planned → specced) and its Spec dir.
+Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
+  - 031 planned → specced: spec in specs/031-macos-multiarch/. Spec dir added.
+Specs affected: 031
+Open questions added/resolved: none
+
+Prior: Version change: 1.35.0 → 1.35.1
 Bump rationale: PATCH — a status transition (030 planned → specced) and its Spec dir.
 Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
   - 030 planned → specced: spec in specs/030-resource-budgets/. Spec dir added.
@@ -2136,7 +2143,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   (2 CPU, 2Gi, 1,200 s per attempt) runs the suite several times per attempt. The friction log
   is in specs/026-slice-runs/evidence/documcp-onboarding.md.
 
-### 031 — macOS: multi-arch images and kind on Docker Desktop  [status: planned]
+### 031 — macOS: multi-arch images and kind on Docker Desktop  [status: specced]
 
 - **Description:** Make forge run on macOS (Apple Silicon and Intel) with Docker Desktop,
   with every guarantee and the full audit. Today the cluster side runs only on Ubuntu 24.04
@@ -2168,6 +2175,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   proven on Docker Desktop makes forge refuse to run, never skip the check.
 - **Depends on:** 003, 014
 - **Governed by:** C-03, C-06, C-07, C-09, C-11
+- **Spec dir:** specs/031-macos-multiarch/
 - **Addresses:** docs/prd.md N1
 - **Notes:** Owner decision 2026-11-23 (Tosin Akinosho): issue #143
   (https://github.com/tosin2013/chalkeus/issues/143) becomes this item; 013 and 005 depend on
@@ -2369,4 +2377,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.35.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
+**Version**: 1.35.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
