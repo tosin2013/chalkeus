@@ -1,7 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.33.3 → 1.34.0 (this revision)
+Version change: 1.34.0 → 1.35.0 (this revision)
+Bump rationale: MINOR — a new planned item (031) and two new dependencies on it. Nothing
+verified is invalidated.
+Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
+  - 031 (new, planned): macOS, multi-arch images and kind on Docker Desktop, from issue
+    #143. Every pilot and toolchain image built for linux/amd64 and linux/arm64 with
+    per-architecture pinned checksums; `up` on Docker Desktop; the same isolation, fixture
+    and audit proof as on Linux.
+  - 013 depends on 031 (013's outcome promises macOS binaries; the cluster side must run
+    there too).
+  - 005 depends on 031 (its macOS-host acceptance needs the multi-arch images).
+Specs affected: 031 (new), 013, 005
+Open questions added/resolved: none
+
+Prior: Version change: 1.33.3 → 1.34.0
 Bump rationale: MINOR — a new planned item (030). Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
   - 030 (new, planned): resource budgets per target (raise-only CPU, memory and time for the
@@ -1085,7 +1099,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   community-validated, untested).
 - **Scope (out):** ~~hosted SaaS or UI.~~ Hosted SaaS or UI; maintainer validation of
   distributions other than OpenShift (left to the community).
-- **Depends on:** 003
+- **Depends on:** 003, 031 (2026-11-23: the macOS-host acceptance needs 031's multi-arch
+  images)
 - **Addresses:** docs/prd.md §9 M4, F2, N1
 - **Notes:** In-cluster planning is optional per the PRD; OpenShift is the
   required part. Decide whether OpenShift needs its own image variants (for example UBI
@@ -1294,7 +1309,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   README and install docs (the spec is the raw metal, the worker build is the forging, the
   grader is the testing and tempering, and the draft PR is the proven piece a human inspects).
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
-- **Depends on:** 016, 024, 021, 026, 027, 029 (2026-11-23: brownfield intake including failed Dependabot PRs ships with the laptop release. 2026-11-22: it ships under the new name. 2026-11-19: the laptop release includes auto-draft and the
+- **Depends on:** 016, 024, 021, 026, 027, 029, 031 (2026-11-23: macOS support with multi-arch images and kind on Docker Desktop ships with the laptop release. 2026-11-23: brownfield intake including failed Dependabot PRs ships with the laptop release. 2026-11-22: it ships under the new name. 2026-11-19: the laptop release includes auto-draft and the
   manager loop. 2026-11-21: it also ships slice runs)
 - **Notes:** **Owner decision 2026-11-23:** brownfield intake (029), including failed
   Dependabot PRs, ships with the laptop release. **Owner decision 2026-11-21 (issue #142):** the laptop release ships with slice
@@ -2113,6 +2128,53 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   (2 CPU, 2Gi, 1,200 s per attempt) runs the suite several times per attempt. The friction log
   is in specs/026-slice-runs/evidence/documcp-onboarding.md.
 
+### 031 — macOS: multi-arch images and kind on Docker Desktop  [status: planned]
+
+- **Description:** Make forge run on macOS (Apple Silicon and Intel) with Docker Desktop,
+  with every guarantee and the full audit. Today the cluster side runs only on Ubuntu 24.04
+  amd64, so 013's macOS binaries would have nothing to drive.
+- **Outcome:** on an Apple Silicon Mac with Docker Desktop, `chalkeus forge up` succeeds, the
+  M0 isolation suite (001) passes every check, the fixture run (002) completes with the audit
+  at 11/11, and a target run (014) passes with at least one toolchain. Every pilot and
+  toolchain image pulls by manifest-list digest on linux/amd64 and linux/arm64, and the Linux
+  amd64 evidence is unchanged.
+- **Scope (in):**
+  - **multi-arch images:** worker, tools, egress and every toolchain image built for
+    `linux/amd64` and `linux/arm64` (Buildx; native arm64 runners preferred over QEMU);
+  - **per-architecture pins (C-09):** a pinned sha256 per architecture for every upstream
+    input (OpenCode, spec-status, Python 3.13; node24, go and jdk21-maven already have both);
+    a mismatch fails the build, with no fallback;
+  - **`pilot/images.lock`** records the manifest-list digest; the per-platform digests go in
+    the evidence;
+  - **kind on Docker Desktop:** `up` uses the pinned kind and kubectl for darwin, and applies
+    Calico only after its hash matches, as today; Calico's NetworkPolicy enforcement and the
+    egress proxies are proven on Docker Desktop's VM, not assumed;
+  - **`doctor`** reports the host OS and architecture, and refuses with a clear code when
+    Docker Desktop has less memory than needed (8 GB, as on Linux);
+  - **evidence** records the host OS, the architecture and the image platform for every run;
+  - **docs:** a macOS path in the operator guide (Docker Desktop memory and CPUs, Homebrew or
+    direct installs of `gh` and `spec`); the operator guide's section 13 row moves from "not
+    yet scheduled" to the release.
+- **Scope (out):** Windows (013 lists it as "where the pilot supports it"); Podman and other
+  Docker Desktop alternatives; any relaxation of isolation on macOS: a check that can't be
+  proven on Docker Desktop makes forge refuse to run, never skip the check.
+- **Depends on:** 003, 014
+- **Governed by:** C-03, C-06, C-07, C-09, C-11
+- **Addresses:** docs/prd.md N1
+- **Notes:** Owner decision 2026-11-23 (Tosin Akinosho): issue #143
+  (https://github.com/tosin2013/chalkeus/issues/143) becomes this item; 013 and 005 depend on
+  it. Related to 030 (resource budgets and capacity checks): 030's doctor capacity check for a
+  laptop's container runtime is where the Docker Desktop memory check belongs; this item makes
+  sure it works on macOS rather than adding a second check. Found 2026-11-23: amd64-only inputs today are `OPENCODE_ASSET` (linux-x64),
+  `SPEC_ASSET` (linux_amd64) and `PYTHON313_ASSET` (x86_64) in `pilot/pins.env`, the egress
+  image, and the single-platform build on `ubuntu-24.04` in `pilot-images.yml`. The
+  maintainer's machine is Apple Silicon with Docker Desktop (linux/arm64), so the macOS proof
+  can run there. **Acceptance:** on an Apple Silicon Mac with Docker Desktop, `up` succeeds,
+  the isolation suite passes, and the fixture run completes with the audit at 11/11; images
+  pull by manifest-list digest on both architectures; every upstream binary in every image is
+  verified against a pinned per-architecture sha256 at build time; the operator guide's macOS
+  path works from a fresh Mac.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2299,4 +2361,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.34.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
+**Version**: 1.35.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
