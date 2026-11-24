@@ -22,6 +22,7 @@ var (
 	targetNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,30}$`)
 	hostRE       = regexp.MustCompile(`^[A-Za-z0-9.-]+$`)
 	quantityRE   = regexp.MustCompile(`^[0-9]+(Mi|Gi)$`)
+	cpuRE        = regexp.MustCompile(`^([0-9]+|[0-9]+m|[0-9]+\.[0-9]+)$`) // Kubernetes CPU: 2, 3500m, 1.5
 	digestRefRE  = regexp.MustCompile(`^[a-z0-9./:_-]+@sha256:[0-9a-f]{64}$`)
 )
 
@@ -43,6 +44,11 @@ type Target struct {
 	GithubApprovals string // on|off
 	GraderMemory    string // optional override, e.g. 3Gi
 	GraderDeadlineS int    // optional override, 0 = catalog default
+	// 030: the worker's budget, raise-only (images.CheckTarget checks the floors); "" or 0 = the
+	// toolchain's default.
+	WorkerCPU       string
+	WorkerMemory    string
+	WorkerDeadlineS int
 	CacheSize       string // optional override
 	MaxInputMB      int
 	PublisherEnv    string // token mode: targets/<name>.publisher.env
@@ -228,6 +234,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		InstallCommand: strings.TrimSpace(v["PILOT_INSTALL_COMMAND"]), ChangeType: v["PILOT_CHANGE_TYPE"],
 		GithubIssues: v["PILOT_GITHUB_ISSUES"], GithubApprovals: v["PILOT_GITHUB_APPROVALS"],
 		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50,
+		WorkerCPU: strings.TrimSpace(v["PILOT_WORKER_CPU"]), WorkerMemory: strings.TrimSpace(v["PILOT_WORKER_MEMORY"]),
 		AuthorAuto: strings.TrimSpace(v["PILOT_AUTHOR_AUTO"]), AuthorIntervalS: 120, AuthorAttempts: 2,
 		SliceRuns:    strings.TrimSpace(v["PILOT_SLICE_RUNS"]),
 		ProposeLabel: strings.TrimSpace(v["PILOT_PROPOSE_LABEL"]), StepIntervalS: 120}
@@ -306,12 +313,16 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 			return Target{}, invalid(k, "must be on or off")
 		}
 	}
-	for k, x := range map[string]string{"PILOT_GRADER_MEMORY": t.GraderMemory, "PILOT_CACHE_SIZE": t.CacheSize} {
+	if t.WorkerCPU != "" && !cpuRE.MatchString(t.WorkerCPU) {
+		return Target{}, invalid("PILOT_WORKER_CPU", "must be a CPU quantity like 2, 1.5 or 3500m")
+	}
+	for k, x := range map[string]string{"PILOT_GRADER_MEMORY": t.GraderMemory, "PILOT_CACHE_SIZE": t.CacheSize, "PILOT_WORKER_MEMORY": t.WorkerMemory} {
 		if x != "" && !quantityRE.MatchString(x) {
 			return Target{}, invalid(k, "must be a quantity like 2Gi or 512Mi")
 		}
 	}
 	for k, dst := range map[string]*int{"PILOT_GRADER_DEADLINE_S": &t.GraderDeadlineS, "PILOT_MAX_INPUT_MB": &t.MaxInputMB,
+		"PILOT_WORKER_DEADLINE_S": &t.WorkerDeadlineS,
 		"PILOT_AUTHOR_INTERVAL_S": &t.AuthorIntervalS, "PILOT_AUTHOR_AUTO_ATTEMPTS": &t.AuthorAttempts,
 		"PILOT_STEP_INTERVAL_S": &t.StepIntervalS} {
 		if x := v[k]; x != "" {

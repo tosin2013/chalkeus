@@ -376,3 +376,14 @@ func TestOldMarkerDecisionNotPostedAgain(t *testing.T) {
 		}
 	}
 }
+
+// 030: a pending decision carries the pipeline's note for its step only.
+func TestDecisionNote(t *testing.T) {
+	run := &evidence.Run{State: map[string]any{"decision_note": map[string]any{"step": "retry", "text": "  attempt 1 stopped at the 2400 s deadline"}}}
+	if got := decisionNote(run, "retry"); got != "  attempt 1 stopped at the 2400 s deadline" {
+		t.Fatal(got)
+	}
+	if got := decisionNote(run, "mode"); got != "" {
+		t.Fatal(got)
+	}
+}

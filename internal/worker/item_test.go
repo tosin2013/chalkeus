@@ -86,7 +86,7 @@ func TestItemWorkerJobRenders(t *testing.T) {
 	root, _ := filepath.Abs("../..")
 	render := func(b toolchain.Blocks, inits string) string {
 		y, err := k8s.Render(filepath.Join(root, "pilot/manifests/worker-job-item.yaml.tmpl"), map[string]string{
-			"NS": "pilot-w-002-1", "DEADLINE": "1200", "WORKER_IMAGE": "w@sha256:0", "TOOLS_IMAGE": "t@sha256:0", "PILOT_MODEL": "p/m",
+			"NS": "pilot-w-002-1", "DEADLINE": "1200", "CPU": "2", "MEMORY": "2Gi", "WORKER_IMAGE": "w@sha256:0", "TOOLS_IMAGE": "t@sha256:0", "PILOT_MODEL": "p/m",
 			"SPEND_CAP": "1.00", "TOKEN_CAP": "2000000", "INPUT_LIMIT": "64Mi", "PROXY_URL": "http://proxy.pilot-egress-w-g.svc.cluster.local:8888",
 			"HOME_LIMIT": "1Gi", "TOOLCHAIN_INITS": inits, "TOOLCHAIN_ENV": b.Env, "TOOLCHAIN_MOUNTS": b.Mounts, "TOOLCHAIN_VOLUMES": b.Volumes})
 		if err != nil {
@@ -134,5 +134,45 @@ func TestRefusals(t *testing.T) {
 	}
 	if itemProxyNS(nil) != "" || itemProxyNS(&Item{ProxyNS: "pilot-egress-w-x"}) != "pilot-egress-w-x" {
 		t.Fatal("itemProxyNS")
+	}
+}
+
+// 030: a soft deadline reaches the worker's meta.json only when the budget sets one.
+func TestSoftDeadlineInMeta(t *testing.T) {
+	for _, sd := range []int{0, 2280} {
+		clone := t.TempDir()
+		_ = os.MkdirAll(filepath.Join(clone, "specs/002-shout"), 0o755)
+		_ = os.WriteFile(filepath.Join(clone, "specs/002-shout/spec.md"), []byte("# Shout\n"), 0o644)
+		_ = os.WriteFile(filepath.Join(clone, "specs/002-shout/tasks.md"), []byte("- [ ] T001 shout\n"), 0o644)
+		rd := filepath.Join(t.TempDir(), "20990101T000000Z")
+		_ = os.MkdirAll(filepath.Join(rd, "attempts"), 0o755)
+		run := &evidence.Run{Dir: rd, ID: filepath.Base(rd), State: map[string]any{"kind": "item", "item": "002"}}
+		it := &Item{SnapshotCommit: "s", SpecDir: "specs/002-shout", AllowedPaths: []string{"app.py"}, Toolchain: "python", TestCommand: "pytest", CommandTimeout: 180}
+		d := Deps{L: paths.At(t.TempDir()), Item: it, Limits: Limits{DeadlineS: 2400, SoftDeadlineS: sd}}
+		if _, err := MakeItemInputs(d, run, "002", 1, clone); err != nil {
+			t.Fatal(err)
+		}
+		adir, _ := run.AttemptDir("002", 1)
+		var meta map[string]any
+		raw, _ := os.ReadFile(filepath.Join(adir, "meta.json"))
+		_ = json.Unmarshal(raw, &meta)
+		got, has := meta["soft_deadline_s"]
+		if (sd == 0 && has) || (sd > 0 && fmt.Sprint(got) != fmt.Sprint(sd)) {
+			t.Errorf("sd=%d: meta soft_deadline_s=%v (present %t)", sd, got, has)
+		}
+	}
+}
+
+// 030: the worker Job carries the budget's limits.
+func TestWorkerJobCarriesBudget(t *testing.T) {
+	root, _ := filepath.Abs("../..")
+	y, err := k8s.Render(filepath.Join(root, "pilot/manifests/worker-job.yaml.tmpl"), map[string]string{
+		"NS": "pilot-w-a-1", "DEADLINE": "2400", "CPU": "3500m", "MEMORY": "4Gi", "WORKER_IMAGE": "w@sha256:0", "PILOT_MODEL": "p/m",
+		"SPEND_CAP": "1.00", "TOKEN_CAP": "2000000"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(y, `limits: {cpu: "3500m", memory: 4Gi}`) || !strings.Contains(y, "activeDeadlineSeconds: 2400") {
+		t.Fatal(y)
 	}
 }

@@ -101,7 +101,7 @@ func TestFixtureManifestsUnchanged(t *testing.T) {
 		return s
 	}
 	golden(t, "worker-ns.yaml", render("worker-ns.yaml.tmpl", map[string]string{"NS": "pilot-w-a-1", "RUN_ID": "R"}))
-	golden(t, "worker-job.yaml", render("worker-job.yaml.tmpl", map[string]string{"NS": "pilot-w-a-1", "DEADLINE": "1200",
+	golden(t, "worker-job.yaml", render("worker-job.yaml.tmpl", map[string]string{"NS": "pilot-w-a-1", "DEADLINE": "1200", "CPU": "2", "MEMORY": "2Gi",
 		"WORKER_IMAGE": "w@sha256:0", "PILOT_MODEL": "p/m", "SPEND_CAP": "1.00", "TOKEN_CAP": "2000000"}))
 	golden(t, "grader.yaml", render("grader.yaml.tmpl", map[string]string{"NS": "pilot-g-a-1", "RUN_ID": "R"}))
 	golden(t, "grader-job.yaml", render("grader-job.yaml.tmpl", map[string]string{"NS": "pilot-g-a-1", "TOOLS_IMAGE": "t@sha256:0"}))

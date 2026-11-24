@@ -5,6 +5,11 @@
 Tees every event line to /tmp/harness.jsonl, sums step_finish cost and tokens (keyed by
 part id), and SIGTERMs the harness when the cap is reached. Writes /tmp/spend.json at EOF.
 Cap modes: "cost" while any non-zero cost has been reported; otherwise "token-fallback".
+
+030 (soft deadline): with PILOT_SOFT_DEADLINE_S set (seconds from the watchdog's start), the
+harness is SIGTERMed when it passes, and SIGKILLed 15 s later if it is still alive, so the
+entrypoint can still bundle the change and report usage before the Job's own deadline.
+spend.json then has "stopped_by_deadline": true. Unset or empty: no soft deadline (as before).
 """
 from __future__ import annotations
 
@@ -12,6 +17,7 @@ import json
 import os
 import signal
 import sys
+import threading
 
 
 def tokens_of(t) -> int:
@@ -25,6 +31,7 @@ class Meter:
         self.cap_usd, self.token_cap = cap_usd, token_cap
         self.seen: dict[str, tuple[float, int]] = {}
         self.stopped_by_cap = False
+        self.stopped_by_deadline = False
 
     def feed(self, line: str) -> bool:
         """Account one event line; return True if the cap is now exceeded."""
@@ -56,24 +63,62 @@ class Meter:
 
     def report(self) -> dict:
         return {"cap_usd": self.cap_usd, "token_cap": self.token_cap, "cap_mode": self.mode,
-                "cost_usd": self.cost, "tokens": self.tokens, "stopped_by_cap": self.stopped_by_cap}
+                "cost_usd": self.cost, "tokens": self.tokens, "stopped_by_cap": self.stopped_by_cap,
+                "stopped_by_deadline": self.stopped_by_deadline}
+
+
+def _signal(pid: int, sig) -> bool:
+    """Send sig to pid; False if it no longer exists."""
+    try:
+        os.kill(pid, sig)
+        return True
+    except ProcessLookupError:
+        return False
+
+
+def soft_deadline(env) -> float:
+    """PILOT_SOFT_DEADLINE_S as seconds (0 = none)."""
+    try:
+        return max(0.0, float(env.get("PILOT_SOFT_DEADLINE_S") or 0))
+    except ValueError:
+        return 0.0
+
+
+def arm_deadline(m: Meter, pid: int, seconds: float, kill_after: float = 15.0):
+    """Start the soft-deadline timer; returns it (or None) so callers and tests can cancel it."""
+    if not pid or seconds <= 0:
+        return None
+
+    def fire():
+        if m.stopped_by_cap:
+            return
+        m.stopped_by_deadline = True
+        if _signal(pid, signal.SIGTERM):
+            k = threading.Timer(kill_after, lambda: _signal(pid, signal.SIGKILL))
+            k.daemon = True
+            k.start()
+
+    t = threading.Timer(seconds, fire)
+    t.daemon = True
+    t.start()
+    return t
 
 
 def main(argv) -> int:
     pid = int(argv[1]) if len(argv) > 1 else 0
     m = Meter(float(os.environ.get("PILOT_SPEND_CAP_USD", "1.00")), int(os.environ.get("PILOT_TOKEN_CAP", "2000000")))
+    timer = arm_deadline(m, pid, soft_deadline(os.environ))
     tmp = os.environ.get("PILOT_TMP", "/tmp")  # overridable for tests (024 author role)
     with open(os.path.join(tmp, "harness.jsonl"), "a") as log:
         for line in sys.stdin:
             log.write(line)
             log.flush()
-            if m.feed(line) and not m.stopped_by_cap:
+            if m.feed(line) and not m.stopped_by_cap and not m.stopped_by_deadline:
                 m.stopped_by_cap = True
                 if pid:
-                    try:
-                        os.kill(pid, signal.SIGTERM)
-                    except ProcessLookupError:
-                        pass
+                    _signal(pid, signal.SIGTERM)
+    if timer is not None:
+        timer.cancel()
     with open(os.path.join(tmp, "spend.json"), "w") as f:
         json.dump(m.report(), f)
     return 0

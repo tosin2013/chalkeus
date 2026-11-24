@@ -21,8 +21,32 @@ import (
 	"github.com/tosin2013/chalkeus/internal/toolchain"
 )
 
-// Deadline is the worker Job's active deadline in seconds.
+// Deadline is the worker Job's default active deadline in seconds (030: a target may raise it;
+// see Limits).
 const Deadline = 1200
+
+// Limits is an attempt's worker budget (030). The zero value is today's defaults: 2 CPU, 2Gi and
+// Deadline, with no soft deadline.
+type Limits struct {
+	CPU           string
+	Memory        string
+	DeadlineS     int
+	SoftDeadlineS int // seconds after the harness starts at which the watchdog stops it (0 = none)
+}
+
+// Or returns l with defaults filled in.
+func (l Limits) Or() Limits {
+	if l.CPU == "" {
+		l.CPU = "2"
+	}
+	if l.Memory == "" {
+		l.Memory = "2Gi"
+	}
+	if l.DeadlineS <= 0 {
+		l.DeadlineS = Deadline
+	}
+	return l
+}
 
 // Deps are the worker's collaborators.
 type Deps struct {
@@ -33,6 +57,8 @@ type Deps struct {
 	Checks func(task string, n int, ns string)
 	// Item is set for an item run (014): its inputs come from the target, not the fixture.
 	Item *Item
+	// Limits is the worker's budget (030); the zero value keeps today's defaults.
+	Limits Limits
 }
 
 // Item is what an item run's worker needs (014 R4, R10).
@@ -154,6 +180,9 @@ func MakeInputs(d Deps, run *evidence.Run, task string, n int, clone, baseRev st
 	}
 	meta := map[string]any{"run_id": run.ID, "task": task, "attempt": n, "item_id": paths.Tasks[task], "base_revision": baseRev,
 		"allowed_paths": allowed, "induction": nilIfEmpty(indMeta)}
+	if sd := d.Limits.SoftDeadlineS; sd > 0 { // 030: the watchdog's soft deadline (absent: none)
+		meta["soft_deadline_s"] = sd
+	}
 	for _, dir := range []string{idir, adir} {
 		if err := os.WriteFile(filepath.Join(dir, "prompt.md"), []byte(text), 0o644); err != nil {
 			return "", nil, err
@@ -216,6 +245,7 @@ func itemProxyNS(it *Item) string {
 // RunAttempt runs one attempt and returns its record (stored in run.json tasks.<T>.attempts).
 func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]string, task string, n int, clone, baseRev string) map[string]any {
 	ns := NS(task, n)
+	lim := d.Limits.Or()
 	adir, _ := run.AttemptDir(task, n)
 	att := map[string]any{"n": n, "namespace": ns, "induction": nil, "image": imgs["worker"], "base_revision": baseRev,
 		"state": "created", "reason": nil}
@@ -263,7 +293,8 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 			return
 		}
 		tmpl, vars := "worker-job.yaml.tmpl", map[string]string{
-			"NS": ns, "DEADLINE": fmt.Sprint(Deadline), "WORKER_IMAGE": imgs["worker"], "PILOT_MODEL": cfg.Get("PILOT_MODEL"),
+			"NS": ns, "DEADLINE": fmt.Sprint(lim.DeadlineS), "CPU": lim.CPU, "MEMORY": lim.Memory,
+			"WORKER_IMAGE": imgs["worker"], "PILOT_MODEL": cfg.Get("PILOT_MODEL"),
 			"SPEND_CAP": cfg.Get("PILOT_SPEND_CAP_USD"), "TOKEN_CAP": cfg.Get("PILOT_TOKEN_CAP")}
 		if d.Item != nil {
 			it := d.Item
@@ -321,13 +352,14 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 		if d.Checks != nil {
 			d.Checks(task, n, ns)
 		}
-		outcome := d.Runner.Wait(h, (Deadline+90)*time.Second)
+		outcome := d.Runner.Wait(h, time.Duration(lim.DeadlineS+90)*time.Second)
 		st := d.Runner.Status(h)
 		st["outcome"] = outcome
 		_ = evidence.WriteJSON(filepath.Join(adir, "job.json"), st)
 		log := d.Runner.Collect(h)
 		_ = os.WriteFile(filepath.Join(adir, "proxy-denials.log"), []byte(ProxyDenials(d.C, started, itemProxyNS(d.Item))), 0o644)
 		files, ferr := frame.Decode(log)
+		var reportErr string
 		if files != nil {
 			_ = os.WriteFile(filepath.Join(adir, "report.json"), files["report.json"], 0o644)
 			if b, ok := files["change.bundle"]; ok {
@@ -335,6 +367,7 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 			}
 			var report map[string]any
 			_ = evidence.Decode(files["report.json"], &report)
+			reportErr, _ = report["error"].(string)
 			att["spend"] = report["spend"]
 			harness, _ := report["harness"].(map[string]any)
 			att["harness_exit"] = harness["exit"]
@@ -346,13 +379,11 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 		}
 		att["state"] = "collected"
 		spend, _ := att["spend"].(map[string]any)
-		switch {
-		case outcome == "DeadlineExceeded" || outcome == "Timeout":
-			update("failed", "deadline")
-		case ferr != "":
-			update("failed", ferr)
-		case spend != nil && spend["stopped_by_cap"] == true:
-			update("failed", "spend_cap")
+		if reason, note := Failure(outcome, ferr, reportErr, files != nil, spend); reason != "" {
+			update("failed", reason)
+			if note != "" {
+				att["note"] = note
+			}
 		}
 	}()
 	if handle != nil {
@@ -410,6 +441,9 @@ func MakeItemInputs(d Deps, run *evidence.Run, task string, n int, clone string)
 	}
 	if sm := it.SliceMeta(); sm != nil { // 026: slice G3 and G8 (absent: grading as before)
 		meta["slice"] = sm
+	}
+	if sd := d.Limits.SoftDeadlineS; sd > 0 { // 030: the watchdog's soft deadline (absent: none)
+		meta["soft_deadline_s"] = sd
 	}
 	for _, dir := range []string{idir, adir} {
 		if err := os.WriteFile(filepath.Join(dir, "prompt.md"), []byte(text), 0o644); err != nil {
@@ -472,4 +506,25 @@ func anyStrings(xs []string) []any {
 		out = append(out, x)
 	}
 	return out
+}
+
+// Failure classifies a finished worker Job (030 adds the soft deadline): the failure reason, or ""
+// when the attempt is collected for grading, and an evidence note. A soft-deadline stop
+// (report error "deadline") keeps its change, log and usage as evidence but is never graded
+// (FR-016/017); a hard deadline without a result frame is noted "no_frame".
+func Failure(outcome, frameErr, reportErr string, hasFrame bool, spend map[string]any) (reason, note string) {
+	switch {
+	case outcome == "DeadlineExceeded" || outcome == "Timeout":
+		if !hasFrame {
+			return "deadline", "no_frame"
+		}
+		return "deadline", ""
+	case reportErr == "deadline":
+		return "deadline", ""
+	case frameErr != "":
+		return frameErr, ""
+	case spend != nil && spend["stopped_by_cap"] == true:
+		return "spend_cap", ""
+	}
+	return "", ""
 }

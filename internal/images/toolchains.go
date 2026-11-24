@@ -35,6 +35,10 @@ type Toolchain struct {
 		Home string            `json:"home"`
 		Tmp  string            `json:"tmp"`
 		Env  map[string]string `json:"env"`
+		// 030: the worker pod's limits and attempt deadline; omitted = DefaultWorker.
+		CPU       string `json:"cpu,omitempty"`
+		Memory    string `json:"memory,omitempty"`
+		DeadlineS int    `json:"deadline_s,omitempty"`
 	} `json:"worker"`
 	Grader *struct {
 		CPU             string `json:"cpu"`
@@ -156,6 +160,16 @@ func CheckTarget(c Catalog, lock map[string]string, t config.Target) error {
 		if t.GraderDeadlineS != 0 && t.GraderDeadlineS < tc.Grader.DeadlineS {
 			return low("PILOT_GRADER_DEADLINE_S", "may only raise the toolchain default "+strconv.Itoa(tc.Grader.DeadlineS))
 		}
+	}
+	wd := WorkerDefaults(tc)
+	if t.WorkerCPU != "" && cpuMilli(t.WorkerCPU) < cpuMilli(wd.CPU) {
+		return low("PILOT_WORKER_CPU", "may only raise the toolchain default "+wd.CPU)
+	}
+	if t.WorkerMemory != "" && quantityMi(t.WorkerMemory) < quantityMi(wd.Memory) {
+		return low("PILOT_WORKER_MEMORY", "may only raise the toolchain default "+wd.Memory)
+	}
+	if t.WorkerDeadlineS != 0 && t.WorkerDeadlineS < wd.DeadlineS {
+		return low("PILOT_WORKER_DEADLINE_S", "may only raise the toolchain default "+strconv.Itoa(wd.DeadlineS))
 	}
 	if tc.Cache != nil && t.CacheSize != "" && quantityMi(t.CacheSize) < quantityMi(tc.Cache.Size) {
 		return low("PILOT_CACHE_SIZE", "may only raise the toolchain default "+tc.Cache.Size)
