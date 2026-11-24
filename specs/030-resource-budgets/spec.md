@@ -181,6 +181,33 @@ the capacity message for both kinds of cluster, and the stuck-vs-slow check.
 
 ---
 
+### User Story 6 - An attempt that runs out of time still leaves its work (Priority: P1)
+
+When a worker attempt reaches its deadline, forge still records what the agent changed, its
+activity log and its token usage and cost, and the owner sees them when deciding on a retry.
+
+**Why this priority**: documcp's US1 run (`20261124T152325Z`) lost two 20-minute attempts with no
+diff, no log and no usage (friction F15): the owner couldn't tell how far the agent got or what
+it spent, and the spend cap couldn't count it.
+
+**Independent Test**: run an attempt whose deadline is shorter than the work it is given: the
+attempt fails as a deadline, and its evidence has the partial change, the agent's log and its
+tokens and cost; the run's spend includes them.
+
+**Acceptance Scenarios**:
+
+1. **Given** an attempt that reaches its deadline, **When** forge records it, **Then** the
+   evidence has the agent's change so far (possibly empty), its activity log and its usage,
+   marked as stopped by the deadline.
+2. **Given** a deadline-stopped attempt, **When** the run's spend is computed, **Then** that
+   attempt's tokens and cost count against the caps.
+3. **Given** a deadline-stopped attempt, **When** forge asks the owner about a retry, **Then**
+   the request states the deadline stop, the time used and the attempt's usage.
+4. **Given** a deadline-stopped attempt, **When** grading is considered, **Then** its partial
+   change is not graded and is never published.
+
+---
+
 ### Edge Cases
 
 - An operator-supplied toolchain image: its defaults are the floor, as for catalog toolchains.
@@ -235,6 +262,12 @@ the capacity message for both kinds of cluster, and the stuck-vs-slow check.
 - **FR-015**: The targets docs MUST have a sizing section: the catalog budgets, every key and
   its floor, the capacity messages, and how to tell a slow test command from one that never
   exits.
+- **FR-016**: An attempt stopped by its deadline MUST still yield its change so far, the agent's
+  activity log and its token usage and cost in the attempt's evidence, marked as a deadline
+  stop; the worker MUST stop the agent early enough before the pod's deadline to collect them.
+- **FR-017**: A deadline-stopped attempt's usage MUST count against the run's spend and token
+  caps, and the retry request MUST state the stop, the time used and the usage; its partial
+  change MUST NOT be graded or published.
 
 ### Key Entities
 
@@ -258,6 +291,8 @@ the capacity message for both kinds of cluster, and the stuck-vs-slow check.
   to get a budget it can pass, or the docs lead the owner to the stuck-suite fix.
 - **SC-005**: Every run's evidence states the budget used, and the audit can compare it with the
   mode approval.
+- **SC-006**: 100% of deadline-stopped attempts have their change, log and usage in the
+  evidence, and the run's spend total includes them.
 
 ## Assumptions
 
