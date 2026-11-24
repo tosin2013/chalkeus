@@ -1,7 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.35.1 → 1.35.2 (this revision)
+Version change: 1.35.2 → 1.36.0 (this revision)
+Bump rationale: MINOR — a new item (032), specced. Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
+  - 032 (new, specced): task runs within a slice. A slice is built one task (or a small group)
+    per attempt on one slice branch, automatically after one mode approval, with only the
+    failing task retried; the slice is graded in full with its hidden tests once at the end and
+    published as one PR. From documcp's US1 run 20261124T152325Z (two attempts timed out with
+    nothing kept).
+Specs affected: 032
+Open questions added/resolved: none (Q12, parallel tasks, stays open)
+
+Prior: Version change: 1.35.1 → 1.35.2
 Bump rationale: PATCH — a status transition (031 planned → specced) and its Spec dir.
 Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
   - 031 planned → specced: spec in specs/031-macos-multiarch/. Spec dir added.
@@ -2191,6 +2202,30 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   verified against a pinned per-architecture sha256 at build time; the operator guide's macOS
   path works from a fresh Mac.
 
+### 032 — Task runs within a slice  [status: specced]
+
+- **Description:** Build a slice one task (or a small group of tasks) per attempt, on one slice
+  branch, automatically after one mode approval, so a slice too big for one attempt can be built
+  and a failure costs only its own task.
+- **Outcome:** with task runs on for a target, `forge run --slice` (and step mode) runs the
+  slice's tasks in `tasks.md` order as task steps; each passed step adds a commit; a failed step
+  pauses for a retry of that task only; after the last task the slice gets 026's full grade with
+  its hidden tests, and one draft PR opens. Time, tokens and cost are recorded per task step.
+- **Scope (in):** opt-in per target; task steps (one task by default, a group of up to K in the
+  approved mode); step checks without hidden tests (project tests, allowed paths, exactly the
+  step's tasks ticked, a change or a handoff note); kept slice branch and continue-from-last-pass;
+  slice check and one owner-approved fix-up step; handoff notes in evidence; per-step reporting
+  and caps for the slice as a whole; audit over task steps; step mode; docs.
+- **Scope (out):** parallel task steps (Q12, 015); forge splitting or reordering tasks (C-01,
+  C-12); collecting a timed-out worker's work (030).
+- **Depends on:** 026, 021
+- **Governed by:** C-01, C-04, C-12, C-14, C-16
+- **Spec dir:** specs/032-task-runs/
+- **Notes:** Added 2026-11-24 (owner). documcp's US1 slice (run 20261124T152325Z) timed out
+  twice at the worker's 1,200 s deadline with no diff, log or usage kept (friction F15). The
+  owner: split by task, automated like `forge step`, and cheaper in tokens because each attempt
+  carries one task, not the slice. Relates to Q4 (granularity, decided per slice by 026) and Q12.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2377,4 +2412,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.35.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
+**Version**: 1.36.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
