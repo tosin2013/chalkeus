@@ -1,7 +1,16 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.33.1 → 1.33.2 (this revision)
+Version change: 1.33.2 → 1.33.3 (this revision)
+Bump rationale: PATCH — a status transition (029 planned → specced) and its Spec dir.
+Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
+  - 029 planned → specced: spec in specs/029-brownfield-intake/ (triage report, dependency
+    items, baseline flags, docs). The report reads with the target's existing GitHub
+    credential, read calls only (clarification 2026-11-24). Spec dir added.
+Specs affected: 029
+Open questions added/resolved: none
+
+Prior: Version change: 1.33.1 → 1.33.2
 Bump rationale: PATCH — a status transition (027 specced → verified) and Q1 marked carried
 out. Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
@@ -2023,7 +2032,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   draft PR; a proposal becomes a run only after the owner approves it, and the gate and
   mode confirmation still decide.
 
-### 029 — Brownfield intake: tech-debt triage and dependency items  [status: planned]
+### 029 — Brownfield intake: tech-debt triage and dependency items  [status: specced]
 
 - **Description:** Help an owner bring an existing repository with tech debt (red CI, piles of
   bot dependency PRs, a fragile test baseline) into the forge loop: a read-only triage report,
@@ -2047,6 +2056,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   automatic upgrade policies; package managers without a toolchain image.
 - **Depends on:** 014
 - **Governed by:** C-01, C-04, C-12, C-14
+- **Spec dir:** specs/029-brownfield-intake/
 - **Notes:** Added 2026-11-23 (owner), from onboarding tosin2013/documcp for 026's live slice
   run: all 22 open Dependabot PRs failed one shared check (the production `npm audit`, red since
   new advisories landed on `main`), so the repository's auto-merge stalled and the pile grew;
@@ -2242,4 +2252,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.33.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
+**Version**: 1.33.3 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
