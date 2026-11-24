@@ -1,18 +1,37 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.33.2 → 1.34.0 (this revision)
-Bump rationale: MINOR — a new planned item (030) and two new dependencies on it. Nothing
+Version change: 1.34.0 → 1.35.0 (this revision)
+Bump rationale: MINOR — a new planned item (031) and two new dependencies on it. Nothing
 verified is invalidated.
 Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
-  - 030 (new, planned): macOS, multi-arch images and kind on Docker Desktop, from issue
+  - 031 (new, planned): macOS, multi-arch images and kind on Docker Desktop, from issue
     #143. Every pilot and toolchain image built for linux/amd64 and linux/arm64 with
     per-architecture pinned checksums; `up` on Docker Desktop; the same isolation, fixture
     and audit proof as on Linux.
-  - 013 depends on 030 (013's outcome promises macOS binaries; the cluster side must run
+  - 013 depends on 031 (013's outcome promises macOS binaries; the cluster side must run
     there too).
-  - 005 depends on 030 (its macOS-host acceptance needs the multi-arch images).
-Specs affected: 030 (new), 013, 005
+  - 005 depends on 031 (its macOS-host acceptance needs the multi-arch images).
+Specs affected: 031 (new), 013, 005
+Open questions added/resolved: none
+
+Prior: Version change: 1.33.3 → 1.34.0
+Bump rationale: MINOR — a new planned item (030). Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
+  - 030 (new, planned): resource budgets per target (raise-only CPU, memory and time for the
+    prefetch, worker, grader and author pods) and capacity checks that say, before a run,
+    whether the cluster (a laptop's or a remote one) can schedule them. From documcp's
+    `author check` timeout during 026's live slice run.
+Specs affected: 030
+Open questions added/resolved: none
+
+Prior: Version change: 1.33.2 → 1.33.3
+Bump rationale: PATCH — a status transition (029 planned → specced) and its Spec dir.
+Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
+  - 029 planned → specced: spec in specs/029-brownfield-intake/ (triage report, dependency
+    items, baseline flags, docs). The report reads with the target's existing GitHub
+    credential, read calls only (clarification 2026-11-24). Spec dir added.
+Specs affected: 029
 Open questions added/resolved: none
 
 Prior: Version change: 1.33.1 → 1.33.2
@@ -1080,7 +1099,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   community-validated, untested).
 - **Scope (out):** ~~hosted SaaS or UI.~~ Hosted SaaS or UI; maintainer validation of
   distributions other than OpenShift (left to the community).
-- **Depends on:** 003, 030 (2026-11-23: the macOS-host acceptance needs 030's multi-arch
+- **Depends on:** 003, 031 (2026-11-23: the macOS-host acceptance needs 031's multi-arch
   images)
 - **Addresses:** docs/prd.md §9 M4, F2, N1
 - **Notes:** In-cluster planning is optional per the PRD; OpenShift is the
@@ -1290,7 +1309,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   README and install docs (the spec is the raw metal, the worker build is the forging, the
   grader is the testing and tempering, and the draft PR is the proven piece a human inspects).
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
-- **Depends on:** 016, 024, 021, 026, 027, 029, 030 (2026-11-23: macOS support with multi-arch images and kind on Docker Desktop ships with the laptop release. 2026-11-23: brownfield intake including failed Dependabot PRs ships with the laptop release. 2026-11-22: it ships under the new name. 2026-11-19: the laptop release includes auto-draft and the
+- **Depends on:** 016, 024, 021, 026, 027, 029, 031 (2026-11-23: macOS support with multi-arch images and kind on Docker Desktop ships with the laptop release. 2026-11-23: brownfield intake including failed Dependabot PRs ships with the laptop release. 2026-11-22: it ships under the new name. 2026-11-19: the laptop release includes auto-draft and the
   manager loop. 2026-11-21: it also ships slice runs)
 - **Notes:** **Owner decision 2026-11-23:** brownfield intake (029), including failed
   Dependabot PRs, ships with the laptop release. **Owner decision 2026-11-21 (issue #142):** the laptop release ships with slice
@@ -2038,7 +2057,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   draft PR; a proposal becomes a run only after the owner approves it, and the gate and
   mode confirmation still decide.
 
-### 029 — Brownfield intake: tech-debt triage and dependency items  [status: planned]
+### 029 — Brownfield intake: tech-debt triage and dependency items  [status: specced]
 
 - **Description:** Help an owner bring an existing repository with tech debt (red CI, piles of
   bot dependency PRs, a fragile test baseline) into the forge loop: a read-only triage report,
@@ -2062,6 +2081,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   automatic upgrade policies; package managers without a toolchain image.
 - **Depends on:** 014
 - **Governed by:** C-01, C-04, C-12, C-14
+- **Spec dir:** specs/029-brownfield-intake/
 - **Notes:** Added 2026-11-23 (owner), from onboarding tosin2013/documcp for 026's live slice
   run: all 22 open Dependabot PRs failed one shared check (the production `npm audit`, red since
   new advisories landed on `main`), so the repository's auto-merge stalled and the pile grew;
@@ -2071,7 +2091,44 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   published input schema) has no path through the forge today. The friction log is in
   specs/026-slice-runs/evidence/documcp-onboarding.md.
 
-### 030 — macOS: multi-arch images and kind on Docker Desktop  [status: planned]
+### 030 — Resource budgets and capacity checks  [status: planned]
+
+- **Description:** Let a target's profile raise the CPU, memory and time its pods get, and check
+  before a run that the cluster can schedule them, so a large or slow project fails in doctor
+  with an actionable message instead of timing out or sitting `Pending` mid-run.
+- **Outcome:** an owner can give one target a bigger budget (and take it back by deleting the
+  lines); the budget applies to every pod the target uses (dependency prefetch, worker, grader,
+  test author's check and draft jobs); doctor says whether the cluster can run it and, if not,
+  what to change: on a laptop, the container runtime's resources or a smaller budget; on a
+  remote cluster, the node size or the namespace quota.
+- **Scope (in):**
+  - **profile keys**, raise-only (the toolchain catalog's values are the floor), joining today's
+    `FORGE_GRADER_MEMORY` and `FORGE_GRADER_DEADLINE_S`: worker CPU, memory and attempt deadline;
+    grader CPU; the per-command timeout; the same budget for the author's pods. The worker's
+    prompt keeps stating the grader's command timeout;
+  - **capacity check in doctor:** the largest pod, plus Chalkeus's own pods, against the nodes'
+    allocatable CPU and memory and any `ResourceQuota`/`LimitRange` in the run namespaces; a
+    clear fail with what to change, or a warning when the cluster can't be read;
+  - **at run time:** a pod still `Pending` for lack of CPU or memory after a short wait stops
+    the run with the same message, rather than waiting out its deadline;
+  - the budget is shown in the mode approval and recorded in the run's (and the draft's)
+    evidence; the run keeps the budget it started with;
+  - docs: sizing a target, and reading the capacity message.
+- **Scope (out):** lowering budgets below the catalog's; autoscaling or provisioning nodes;
+  per-run override flags (the profile plus the mode approval already make a budget explicit);
+  the operator's cluster mode scheduling (011).
+- **Depends on:** 014
+- **Governed by:** C-02, C-03, C-11, C-16
+- **Notes:** Added 2026-11-24 (owner), from onboarding tosin2013/documcp for 026's live slice
+  run. `forge author check` failed `DRAFT_SUITE_FAILS`: the project's own tests hit the grader's
+  600-second per-command limit on the unchanged code. Reproduced on 2 cores (the grader's CPU):
+  the 1,706 tests finish in about 65 s, then Jest, running in band, never exits because of
+  leaked handles (the defect 001's US1 removes). documcp is unblocked with `--forceExit` in its
+  test command, but nothing today lets a target raise CPU or the command timeout, and the worker
+  (2 CPU, 2Gi, 1,200 s per attempt) runs the suite several times per attempt. The friction log
+  is in specs/026-slice-runs/evidence/documcp-onboarding.md.
+
+### 031 — macOS: multi-arch images and kind on Docker Desktop  [status: planned]
 
 - **Description:** Make forge run on macOS (Apple Silicon and Intel) with Docker Desktop,
   with every guarantee and the full audit. Today the cluster side runs only on Ubuntu 24.04
@@ -2106,7 +2163,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Addresses:** docs/prd.md N1
 - **Notes:** Owner decision 2026-11-23 (Tosin Akinosho): issue #143
   (https://github.com/tosin2013/chalkeus/issues/143) becomes this item; 013 and 005 depend on
-  it. Found 2026-11-23: amd64-only inputs today are `OPENCODE_ASSET` (linux-x64),
+  it. Related to 030 (resource budgets and capacity checks): 030's doctor capacity check for a
+  laptop's container runtime is where the Docker Desktop memory check belongs; this item makes
+  sure it works on macOS rather than adding a second check. Found 2026-11-23: amd64-only inputs today are `OPENCODE_ASSET` (linux-x64),
   `SPEC_ASSET` (linux_amd64) and `PYTHON313_ASSET` (x86_64) in `pilot/pins.env`, the egress
   image, and the single-platform build on `ubuntu-24.04` in `pilot-images.yml`. The
   maintainer's machine is Apple Silicon with Docker Desktop (linux/arm64), so the macOS proof
@@ -2302,4 +2361,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.34.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
+**Version**: 1.35.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
