@@ -155,6 +155,9 @@ func (l *Loop) PostDecision(run *evidence.Run, p *decisions.Pending) (map[string
 	body := fmt.Sprintf("%s\n**Decision pending: %s.**\n\nTo approve, reply with exactly:\n\n    /approve %s\n\n"+
 		"Allowed approvers: %s. To cancel your approval before the run resumes: `/withdraw %s`.\n",
 		key, decisions.Describe(p), p.Step, strings.Join(at, ", "), p.Step)
+	if note := decisionNote(run, p.Step); note != "" { // 030: e.g. why the last attempt stopped
+		body += "\n" + note + "\n"
+	}
 	w, err := l.W()
 	if err != nil {
 		return nil, err
@@ -424,4 +427,15 @@ func RefusalReply(e LogEntry, first, step string) string {
 		tail = ""
 	}
 	return fmt.Sprintf("❌ `%s` from @%s not accepted (`%s`): %s.%s", first, e.Author, e.Reason, why, tail)
+}
+
+// decisionNote is extra context the pipeline left for a pending decision (030: a retry after a
+// deadline stop states the time used, usage and changed files).
+func decisionNote(run *evidence.Run, step string) string {
+	n, _ := run.State["decision_note"].(map[string]any)
+	if s, _ := n["step"].(string); s != step {
+		return ""
+	}
+	text, _ := n["text"].(string)
+	return text
 }

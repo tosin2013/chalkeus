@@ -219,8 +219,13 @@ FORGE_GITHUB_ISSUES=off
   General → Require contributors to sign off on web-based commits** in the target repository:
   when you squash-merge a pilot PR in the web interface, GitHub adds **your** `Signed-off-by`.
 - **Optional keys** may only raise the toolchain's defaults: `FORGE_GRADER_MEMORY`,
-  `FORGE_GRADER_DEADLINE_S` and `FORGE_CACHE_SIZE`. `FORGE_MAX_INPUT_MB` (default 50) limits
-  the repository snapshot.
+  `FORGE_GRADER_DEADLINE_S` and `FORGE_CACHE_SIZE`; for the agent's pod, `FORGE_WORKER_CPU`
+  (default `2`), `FORGE_WORKER_MEMORY` (default `2Gi`) and `FORGE_WORKER_DEADLINE_S` (seconds
+  per attempt, default 1200). `FORGE_MAX_INPUT_MB` (default 50) limits the repository snapshot.
+  A run keeps the budget it started with; delete a line to go back to the default for the next
+  run. The worker stops the agent 2 minutes before its deadline, so an attempt that runs out of
+  time still keeps its change, log, tokens and cost as evidence (it isn't graded), and the
+  retry question says how far it got.
 - **The target repository can't be this one or any target's companion.** The pilot refuses
   with `TARGET_IS_CANARY`.
 

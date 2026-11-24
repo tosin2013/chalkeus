@@ -63,6 +63,8 @@ type P struct {
 	EnsureWatcher func(run *evidence.Run) (pid int, started bool, err error)
 	// Target is the repository this invocation acts on (014): the fixture unless an item run.
 	Target config.Target
+	// budget is the run's resolved resource budget (030), set by runBudget.
+	budget *images.Budget
 }
 
 // item reports whether this invocation is an item run of a real target (014).
@@ -107,8 +109,48 @@ func New(l paths.Layout, cfg *config.Config, out io.Writer, creds Creds) (*P, er
 func (p *P) ModeOf() map[string]any {
 	cap, _ := strconv.ParseFloat(p.Cfg.Get("PILOT_SPEND_CAP_USD"), 64)
 	tok, _ := strconv.Atoi(p.Cfg.Get("PILOT_TOKEN_CAP"))
+	deadline := worker.Deadline
+	if p.budget != nil && p.budget.Worker.DeadlineS > 0 {
+		deadline = p.budget.Worker.DeadlineS
+	}
 	return map[string]any{"name": "step-by-step", "retry_limit": p.Cfg.RetryLimit(), "spend_cap_usd": evidence.PyFloat(cap),
-		"token_cap": tok, "worker_deadline_s": worker.Deadline}
+		"token_cap": tok, "worker_deadline_s": deadline}
+}
+
+// runBudget is the run's resource budget (030): resolved from the toolchain catalog and the
+// target profile the first time, stored in run.json, and read back from there afterwards, so a
+// resumed run keeps the budget it started with even if the profile changed (FR-006).
+func (p *P) runBudget(run *evidence.Run) images.Budget {
+	if p.budget != nil {
+		return *p.budget
+	}
+	var b images.Budget
+	if raw, ok := run.State["budget"]; ok && raw != nil {
+		if j, err := json.Marshal(raw); err == nil && json.Unmarshal(j, &b) == nil && b.Worker.DeadlineS > 0 {
+			p.budget = &b
+			return b
+		}
+	}
+	if p.item() {
+		b = images.Resolve(p.catalogEntry(), p.Target.Toolchain, p.Target)
+	} else {
+		b = images.Fixture()
+	}
+	var stored map[string]any
+	if j, err := json.Marshal(b); err == nil {
+		_ = json.Unmarshal(j, &stored)
+	}
+	run.State["budget"] = stored
+	_ = run.Save()
+	_ = run.Event("prepare", nil, nil, "budget_resolved", mustJSON(b))
+	p.budget = &b
+	return b
+}
+
+// workerLimits is the worker's part of the run's budget.
+func (p *P) workerLimits(run *evidence.Run) worker.Limits {
+	w := p.runBudget(run).Worker
+	return worker.Limits{CPU: w.CPU, Memory: w.Memory, DeadlineS: w.DeadlineS, SoftDeadlineS: w.SoftDeadlineS()}
 }
 
 func modeJSON(m map[string]any) string { return decisions.PyJSON(mustJSON(m)) }
@@ -116,6 +158,7 @@ func modeJSON(m map[string]any) string { return decisions.PyJSON(mustJSON(m)) }
 func mustJSON(v any) string { raw, _ := json.Marshal(v); return string(raw) }
 
 func (p *P) confirmMode(run *evidence.Run) (bool, string) {
+	p.runBudget(run)
 	mode := p.ModeOf()
 	run.State["proposed_mode"] = mode
 	_ = run.Save()
@@ -139,6 +182,13 @@ func (p *P) confirmMode(run *evidence.Run) (bool, string) {
 }
 
 func (p *P) confirmRetry(run *evidence.Run, task string, n, total int) (bool, string) {
+	if note := deadlineNote(run, task, n-1); note != "" { // 030 FR-017
+		p.say("%s", note)
+		run.State["decision_note"] = map[string]any{"step": "retry", "text": note}
+	} else {
+		delete(run.State, "decision_note")
+	}
+	_ = run.Save()
 	ok, ch := decisions.Decide(run, "retry", fmt.Sprintf("Retry %s (attempt %d of %d)? [y/N] ", task, n, total), task, n, func(s string) { p.say("%s", s) })
 	decisions.Note(run, "retry", task, n, ok, ch, "", "")
 	p.githubTerminal(run, "retry", ok, ch)
@@ -238,7 +288,7 @@ func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 			att = map[string]any{"n": n, "state": "failed", "reason": "harness_error"}
 			_ = run.Event("attempt", task, n, "attempt_error", err.Error())
 		} else {
-			wd := worker.Deps{L: p.L, C: p.C, Runner: p.Runner,
+			wd := worker.Deps{L: p.L, C: p.C, Runner: p.Runner, Limits: p.workerLimits(run),
 				Checks: func(task string, n int, ns string) { p.workerChecks(run).RunWorkerChecks(run, p.Imgs, task, n, ns) }}
 			if run.Kind() == evidence.KindItem {
 				wd.Item = p.workerItem(run)
@@ -687,4 +737,27 @@ func logGrade(task string, n int, g map[string]any, took time.Duration) {
 			return
 		}
 	}
+}
+
+// deadlineNote describes attempt n of task when it stopped at its deadline (030 FR-017): how long
+// it ran, its usage and what it changed; "" for any other attempt.
+func deadlineNote(run *evidence.Run, task string, n int) string {
+	tasks, _ := run.State["tasks"].(map[string]any)
+	t, _ := tasks[task].(map[string]any)
+	for _, x := range anyList(t["attempts"]) {
+		a, _ := x.(map[string]any)
+		if !numEq(a["n"], n) || a["reason"] != "deadline" {
+			continue
+		}
+		mode, _ := run.State["mode"].(map[string]any)
+		secs := fmt.Sprint(mode["worker_deadline_s"])
+		sp, _ := a["spend"].(map[string]any)
+		if sp == nil {
+			return fmt.Sprintf("  attempt %d stopped at the %s s deadline; its usage and changes weren't collected.", n, secs)
+		}
+		changed := len(anyList(a["changed_paths"]))
+		return fmt.Sprintf("  attempt %d stopped at the %s s deadline: %v tokens, $%v; changed %d file(s) (kept in the attempt's evidence, not graded).",
+			n, secs, sp["tokens"], sp["cost_usd"], changed)
+	}
+	return ""
 }

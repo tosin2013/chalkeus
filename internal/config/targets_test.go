@@ -105,6 +105,9 @@ func TestLoadTargetRefusals(t *testing.T) {
 		"PILOT_AUTHOR_AUTO_ATTEMPTS": goodTarget + "PILOT_AUTHOR_AUTO_ATTEMPTS=4\n",
 		"PILOT_STEP_INTERVAL_S":      goodTarget + "PILOT_STEP_INTERVAL_S=10\n",
 		"PILOT_PROPOSE_LABEL":        goodTarget + "PILOT_PROPOSE_LABEL=a,b\n",
+		"PILOT_WORKER_CPU":           goodTarget + "PILOT_WORKER_CPU=two\n",
+		"PILOT_WORKER_MEMORY":        goodTarget + "PILOT_WORKER_MEMORY=4GB\n",
+		"PILOT_WORKER_DEADLINE_S":    goodTarget + "PILOT_WORKER_DEADLINE_S=0\n",
 	} {
 		writeTarget(t, c, "t", body)
 		_, err := c.LoadTarget("t", "")
@@ -283,5 +286,22 @@ func TestCompanionSliceDirAndLayout(t *testing.T) {
 		if ps != c.perSlice || strings.Join(stray, ",") != strings.Join(c.stray, ",") {
 			t.Errorf("case %d: perSlice=%v stray=%v, want %v %v", i, ps, stray, c.perSlice, c.stray)
 		}
+	}
+}
+
+// 030: the worker budget keys parse (floors are checked by images.CheckTarget).
+func TestLoadTargetWorkerBudget(t *testing.T) {
+	c := targetCfg(t)
+	writeTarget(t, c, "t", goodTarget+"FORGE_WORKER_CPU=3500m\nFORGE_WORKER_MEMORY=4Gi\nFORGE_WORKER_DEADLINE_S=2400\n")
+	tg, err := c.LoadTarget("t", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tg.WorkerCPU != "3500m" || tg.WorkerMemory != "4Gi" || tg.WorkerDeadlineS != 2400 {
+		t.Fatalf("%+v", tg)
+	}
+	writeTarget(t, c, "t", goodTarget)
+	if tg, _ = c.LoadTarget("t", ""); tg.WorkerCPU != "" || tg.WorkerMemory != "" || tg.WorkerDeadlineS != 0 {
+		t.Fatalf("unset keys must stay empty (the toolchain default applies): %+v", tg)
 	}
 }

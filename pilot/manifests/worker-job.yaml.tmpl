@@ -29,7 +29,7 @@ spec:
             - {name: https_proxy, value: "http://proxy.pilot-egress-model.svc.cluster.local:8888"}
             - {name: NO_PROXY, value: ""}
           securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
-          resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "2", memory: 2Gi}}
+          resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "${CPU}", memory: ${MEMORY}}}
           volumeMounts:
             - {name: inputs, mountPath: /in, readOnly: true}
             - {name: work, mountPath: /work}

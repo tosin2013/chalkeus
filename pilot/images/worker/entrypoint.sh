@@ -40,6 +40,7 @@ print(json.dumps({
     "base_revision": meta["base_revision"], "head": head,
     "harness": {"name": "opencode", "version": "2.2.7", "exit": int(hexit) if hexit not in ("", None) else None},
     "spend": spend, "changed_paths": changed, "error": err, "log_tail": tail[-4096:],
+    "stopped_by": "deadline" if (spend or {}).get("stopped_by_deadline") else ("spend_cap" if (spend or {}).get("stopped_by_cap") else None),
 }))
 PY
   args=("report.json=$OUT/report.json")
@@ -79,10 +80,15 @@ mkfifo /tmp/events
 opencode run --standalone --format json --auto --model "$PILOT_MODEL" "$(cat /in/prompt.md)" \
   > /tmp/events 2> /tmp/harness.stderr &
 HPID=$!
-python3 "$LIB/watchdog.py" "$HPID" < /tmp/events
+# 030: the soft deadline (meta soft_deadline_s, absent from older forge) stops the harness early
+# enough that the change and usage below are still collected before the Job's deadline.
+PILOT_SOFT_DEADLINE_S="$(python3 -c 'import json; print(json.load(open("/in/meta.json")).get("soft_deadline_s") or "")' 2>/dev/null)" \
+  python3 "$LIB/watchdog.py" "$HPID" < /tmp/events
 wait "$HPID"; HEXIT=$?
 if python3 -c 'import json,sys; sys.exit(0 if json.load(open("/tmp/spend.json"))["stopped_by_cap"] else 1)'; then
   ERROR="spend_cap"
+elif python3 -c 'import json,sys; sys.exit(0 if json.load(open("/tmp/spend.json")).get("stopped_by_deadline") else 1)'; then
+  ERROR="deadline"
 elif [ "$HEXIT" -ne 0 ]; then
   ERROR="harness_error"
 fi
