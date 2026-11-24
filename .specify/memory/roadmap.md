@@ -1,7 +1,17 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.33.2 → 1.33.3 (this revision)
+Version change: 1.33.3 → 1.34.0 (this revision)
+Bump rationale: MINOR — a new planned item (030). Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
+  - 030 (new, planned): resource budgets per target (raise-only CPU, memory and time for the
+    prefetch, worker, grader and author pods) and capacity checks that say, before a run,
+    whether the cluster (a laptop's or a remote one) can schedule them. From documcp's
+    `author check` timeout during 026's live slice run.
+Specs affected: 030
+Open questions added/resolved: none
+
+Prior: Version change: 1.33.2 → 1.33.3
 Bump rationale: PATCH — a status transition (029 planned → specced) and its Spec dir.
 Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
   - 029 planned → specced: spec in specs/029-brownfield-intake/ (triage report, dependency
@@ -2066,6 +2076,43 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   published input schema) has no path through the forge today. The friction log is in
   specs/026-slice-runs/evidence/documcp-onboarding.md.
 
+### 030 — Resource budgets and capacity checks  [status: planned]
+
+- **Description:** Let a target's profile raise the CPU, memory and time its pods get, and check
+  before a run that the cluster can schedule them, so a large or slow project fails in doctor
+  with an actionable message instead of timing out or sitting `Pending` mid-run.
+- **Outcome:** an owner can give one target a bigger budget (and take it back by deleting the
+  lines); the budget applies to every pod the target uses (dependency prefetch, worker, grader,
+  test author's check and draft jobs); doctor says whether the cluster can run it and, if not,
+  what to change: on a laptop, the container runtime's resources or a smaller budget; on a
+  remote cluster, the node size or the namespace quota.
+- **Scope (in):**
+  - **profile keys**, raise-only (the toolchain catalog's values are the floor), joining today's
+    `FORGE_GRADER_MEMORY` and `FORGE_GRADER_DEADLINE_S`: worker CPU, memory and attempt deadline;
+    grader CPU; the per-command timeout; the same budget for the author's pods. The worker's
+    prompt keeps stating the grader's command timeout;
+  - **capacity check in doctor:** the largest pod, plus Chalkeus's own pods, against the nodes'
+    allocatable CPU and memory and any `ResourceQuota`/`LimitRange` in the run namespaces; a
+    clear fail with what to change, or a warning when the cluster can't be read;
+  - **at run time:** a pod still `Pending` for lack of CPU or memory after a short wait stops
+    the run with the same message, rather than waiting out its deadline;
+  - the budget is shown in the mode approval and recorded in the run's (and the draft's)
+    evidence; the run keeps the budget it started with;
+  - docs: sizing a target, and reading the capacity message.
+- **Scope (out):** lowering budgets below the catalog's; autoscaling or provisioning nodes;
+  per-run override flags (the profile plus the mode approval already make a budget explicit);
+  the operator's cluster mode scheduling (011).
+- **Depends on:** 014
+- **Governed by:** C-02, C-03, C-11, C-16
+- **Notes:** Added 2026-11-24 (owner), from onboarding tosin2013/documcp for 026's live slice
+  run. `forge author check` failed `DRAFT_SUITE_FAILS`: the project's own tests hit the grader's
+  600-second per-command limit on the unchanged code. Reproduced on 2 cores (the grader's CPU):
+  the 1,706 tests finish in about 65 s, then Jest, running in band, never exits because of
+  leaked handles (the defect 001's US1 removes). documcp is unblocked with `--forceExit` in its
+  test command, but nothing today lets a target raise CPU or the command timeout, and the worker
+  (2 CPU, 2Gi, 1,200 s per attempt) runs the suite several times per attempt. The friction log
+  is in specs/026-slice-runs/evidence/documcp-onboarding.md.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2252,4 +2299,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.33.3 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-23
+**Version**: 1.34.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
