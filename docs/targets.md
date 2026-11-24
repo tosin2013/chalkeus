@@ -388,7 +388,7 @@ you can leave it running and answer from GitHub. You start it in **your own term
 It needs GitHub approvals on for the target (`FORGE_GITHUB_APPROVALS=on`, in its profile or in
 `forge.env`; item issues follow, as for runs) and `FORGE_APPROVERS` in `forge.env`.
 
-1. **Propose an item:** add the label "pilot/go" to the item's GitHub issue. Set
+1. **Propose an item:** add the label "chalkeus:proposed" to the item's GitHub issue. Set
    `FORGE_PROPOSE_LABEL` to use another name. The label counts only when an approver added it
    last, so anyone else labelling the issue starts nothing.
 2. **Each pass** (every `FORGE_STEP_INTERVAL_S`, default 120 s), for the first proposed item in
@@ -410,7 +410,7 @@ line: what you do next, with the link, or that it's working and you don't need t
 anything, plus when it checks again. For example:
 
 ```text
-next: 010: add the label "pilot/go" to https://github.com/you/greeting/issues/47 (next check in 2m0s)
+next: 010: add the label "chalkeus:proposed" to https://github.com/you/greeting/issues/47 (next check in 2m0s)
 ```
 
 One item is in flight per target. Step mode never approves, merges, labels or edits anything.
