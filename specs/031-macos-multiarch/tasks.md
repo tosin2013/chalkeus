@@ -88,7 +88,8 @@ Built before US2 and US3 because `up`'s early refusals and the evidence lines ar
 
 **Independent Test**: quickstart §6 and §7.
 
-- [ ] T024 [US3] On the Mac, run `bash test/isolation/run.sh` against a fresh `up` with no edits to the suite's checks or expectations (FR-008). Record the evidence under `specs/031-macos-multiarch/evidence/<run>/`. If a check fails, find the cause; if enforcement can't be proven on Docker Desktop, implement FR-009 (forge refuses on that host, naming the check) and stop here for an owner decision
+- [X] T024 [US3] On the Mac, run `bash test/isolation/run.sh` against a fresh `up` with no edits to the suite's checks or expectations (FR-008). Record the evidence under `specs/031-macos-multiarch/evidence/<run>/`. If a check fails, find the cause; if enforcement can't be proven on Docker Desktop, implement FR-009 (forge refuses on that host, naming the check) and stop here for an owner decision
+  Done as (2026-11-24): run `20261124T183824Z-isolation`, 37 of 37 checks passed on Docker Desktop 4.94.0 (node `linux/arm64`, LinuxKit kernel), including Calico's default deny, the allowlisted egress, and teardown. Evidence: `evidence/20261124T183824Z-isolation/`.
 - [ ] T025 [US3] On the Mac, run the fixture walkthrough (operator guide section 6); the owner approves the modes and merges the PRs; then `down` and `./chalkeus forge audit` give 11/11 (SC-001). `versions.txt` shows `host_os: darwin …`, `host_arch: arm64`, `node_platform: linux/arm64`. Evidence under `specs/031-macos-multiarch/evidence/<run>/`
 - [ ] T026 [US3] Owner: choose one prepared item of a target with a catalog toolchain. On the Mac, run `./chalkeus forge run --target <t> --item <NNN>`; the owner approves and merges; the audit after `down` passes (SC-002). Evidence under `specs/031-macos-multiarch/evidence/<run>/`
 
