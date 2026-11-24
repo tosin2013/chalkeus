@@ -193,7 +193,7 @@ check C35 S6 "worker image is pinned by digest" bash -c \
   echo "kubectl: $(kubectl version --client | head -1)"
   echo "server: $($K version -o json | python3 -c 'import json,sys;print(json.load(sys.stdin)["serverVersion"]["gitVersion"])')"
   echo "node_image: $(docker inspect --format '{{.Config.Image}}' $CLUSTER-control-plane)"
-  echo "calico: $CALICO_VERSION sha256=$(sha256sum "$EVID/calico.yaml" | cut -d' ' -f1)"
+  echo "calico: $CALICO_VERSION sha256=$( (command -v sha256sum >/dev/null && sha256sum "$EVID/calico.yaml" || shasum -a 256 "$EVID/calico.yaml") | cut -d' ' -f1)"
   echo "worker_image: $IMAGE"
   echo "host: $(uname -srm)"
 } > "$EVID/versions.txt"

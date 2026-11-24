@@ -39,24 +39,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 031: each platform builds and smoke-tests natively (contracts/image-workflow.md in
+  # specs/031-macos-multiarch). On main each leg pushes by digest only (no tag); `merge` then
+  # joins the two into one index per image. If either leg fails, merge doesn't run: nothing is
+  # tagged and no lock change is proposed.
   build:
     if: >-
       !startsWith(github.head_ref || github.ref_name, 'pilot-images/') &&
       !contains(github.event.head_commit.message || '', '[pilot-images]')
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 30
     permissions:
       contents: read
       packages: write
     strategy:
+      fail-fast: true
       matrix:
         # Registry is a parameter (FR-006). 005 may add e.g. {registry: quay.io, namespace: <org>, variant: openshift}.
         target:
           - { registry: ghcr.io, namespace: tosin2013, variant: default }
+        # Native runners, no QEMU (031 R6): each platform's images are smoke-tested on that platform.
+        platform:
+          - { arch: amd64, runner: ubuntu-24.04 }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
     env:
       PUSH: ${{ github.event_name != 'pull_request' }}
       REGISTRY: ${{ matrix.target.registry }}
       NAMESPACE: ${{ matrix.target.namespace }}
+      ARCH: ${{ matrix.platform.arch }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -80,12 +90,14 @@ jobs:
             cp pilot/images/common/frame.py "$ctx/"
           done
 
-      - name: Build locally (upstream checksums verified inside the Dockerfiles)
+      - name: Build locally for this platform (upstream checksums verified inside the Dockerfiles, per architecture)
         run: |
           set -euo pipefail
           for i in $IMAGES; do
             args=(); while IFS= read -r kv; do args+=(--build-arg "$kv"); done < <(python3 pilot/images/build_args.py "$i")
-            docker buildx build --load -t "pilot-$i:ci" "${args[@]}" "$RUNNER_TEMP/ctx-$i"
+            docker buildx build --platform "linux/$ARCH" --load -t "pilot-$i:ci" "${args[@]}" "$RUNNER_TEMP/ctx-$i"
+            got="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "pilot-$i:ci")"
+            [ "$got" = "linux/$ARCH" ] || { echo "::error::pilot-$i:ci is $got, want linux/$ARCH"; exit 1; }
           done
 
       - name: Smoke test as an arbitrary UID (US2)
@@ -101,53 +113,128 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push with provenance and SBOM (D1)
+      - name: Push by digest with provenance and SBOM (D1; no tag until merge)
         if: env.PUSH == 'true'
         run: |
           set -euo pipefail
-          short="${GITHUB_SHA::12}"
+          echo '{}' > "$RUNNER_TEMP/digests-$ARCH.json"
           for i in $IMAGES; do
             args=(); while IFS= read -r kv; do args+=(--build-arg "$kv"); done < <(python3 pilot/images/build_args.py "$i")
             ref="$REGISTRY/$NAMESPACE/chalkeus-$i"
-            docker buildx build --push --provenance=mode=max --sbom=true \
+            docker buildx build --platform "linux/$ARCH" --provenance=mode=max --sbom=true \
               --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
               --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
               --metadata-file "$RUNNER_TEMP/meta-$i.json" \
-              -t "$ref:sha-$short" "${args[@]}" "$RUNNER_TEMP/ctx-$i"
+              --output "type=image,name=$ref,push-by-digest=true,name-canonical=true,push=true" \
+              "${args[@]}" "$RUNNER_TEMP/ctx-$i"
+            python3 - "$RUNNER_TEMP/digests-$ARCH.json" "$i" "$RUNNER_TEMP/meta-$i.json" <<'PY'
+          import json, re, sys
+          out, image, meta = sys.argv[1], sys.argv[2], json.load(open(sys.argv[3]))
+          digest = meta["containerimage.digest"]
+          assert re.fullmatch(r"sha256:[0-9a-f]{64}", digest), digest
+          d = json.load(open(out)); d[image] = digest; json.dump(d, open(out, "w"), indent=2)
+          PY
+          done
+          cat "$RUNNER_TEMP/digests-$ARCH.json"
+
+      - name: Upload this platform's digests
+        if: env.PUSH == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digests-${{ matrix.target.variant }}-${{ matrix.platform.arch }}
+          path: ${{ runner.temp }}/digests-${{ matrix.platform.arch }}.json
+
+  merge:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        target:
+          - { registry: ghcr.io, namespace: tosin2013, variant: default }
+    env:
+      REGISTRY: ${{ matrix.target.registry }}
+      NAMESPACE: ${{ matrix.target.namespace }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Download both platforms' digests
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digests-${{ matrix.target.variant }}-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+
+      - name: Log in to registry
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ${{ matrix.target.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create one index per image (linux/amd64 + linux/arm64)
+        run: |
+          set -euo pipefail
+          short="${GITHUB_SHA::12}"; dir="$RUNNER_TEMP/digests"
+          amd="$(cat "$dir/digests-amd64.json")"; arm="$(cat "$dir/digests-arm64.json")"
+          for i in $(python3 -c 'import json,sys; a,b=json.loads(sys.argv[1]),json.loads(sys.argv[2]); assert set(a)==set(b), (sorted(a),sorted(b)); print(" ".join(sorted(a)))' "$amd" "$arm"); do
+            ref="$REGISTRY/$NAMESPACE/chalkeus-$i"
+            a="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[sys.argv[2]])' "$amd" "$i")"
+            b="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[sys.argv[2]])' "$arm" "$i")"
+            docker buildx imagetools create -t "$ref:sha-$short" "$ref@$a" "$ref@$b"
+            docker buildx imagetools inspect --raw "$ref:sha-$short" > "$RUNNER_TEMP/index-$i.json"
+            docker buildx imagetools inspect --format '{{json .Manifest}}' "$ref:sha-$short" > "$RUNNER_TEMP/desc-$i.json"
           done
 
-      - name: Write image-digests.json
-        if: env.PUSH == 'true'
+      - name: Check platforms and write image-digests.json
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, os, datetime
+          import datetime, json, os, sys
           tmp, reg, ns = os.environ["RUNNER_TEMP"], os.environ["REGISTRY"], os.environ["NAMESPACE"]
-          import sys; sys.path.insert(0, "pilot/images"); import build_args as ba
+          sys.path.insert(0, "pilot/images"); import build_args as ba
           pins = ba.read_pins()
-          out = {"commit": os.environ["GITHUB_SHA"], "built_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                 "registry": f"{reg}/{ns}", "images": {}, "attestations": {},
-                 "inputs": {"opencode": {"release": pins["OPENCODE_RELEASE"], "asset": pins["OPENCODE_ASSET"],
-                                         "sha256": pins["OPENCODE_ASSET_SHA256"]},
-                            "spec": {"release": pins["SPEC_RELEASE"], "sha256": pins["SPEC_ASSET_SHA256"]},
-                            "bases": {"debian": pins["DEBIAN_BASE"], "alpine": pins["ALPINE_BASE"]}}}
-          for i in os.environ["IMAGES"].split():
-              meta = json.load(open(f"{tmp}/meta-{i}.json"))
-              out["images"][i] = f"{reg}/{ns}/chalkeus-{i}@{meta['containerimage.digest']}"
+          amd = json.load(open(f"{tmp}/digests/digests-amd64.json"))
+          arm = json.load(open(f"{tmp}/digests/digests-arm64.json"))
+          # Upstream inputs per architecture (data-model.md "Image build record").
+          inputs = {n: {"release": pins[f"{k}_RELEASE"],
+                        **{a.lower(): {"asset": pins[f"{k}_ASSET_{a}"], "sha256": pins[f"{k}_ASSET_SHA256_{a}"]}
+                           for a in ("AMD64", "ARM64")}}
+                    for n, k in (("opencode", "OPENCODE"), ("spec", "SPEC"), ("python313", "PYTHON313"))}
+          inputs["bases"] = {"debian": pins["DEBIAN_BASE"], "alpine": pins["ALPINE_BASE"]}
+          out = {"commit": os.environ["GITHUB_SHA"], "built_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                 "registry": f"{reg}/{ns}", "images": {}, "platforms": {}, "attestations": {}, "inputs": inputs}
+          for i in sorted(amd):
+              index = json.load(open(f"{tmp}/index-{i}.json"))
+              # Attestation manifests are listed as unknown/unknown; only image manifests count.
+              plats = sorted(f"{m['platform']['os']}/{m['platform']['architecture']}" for m in index["manifests"]
+                             if m.get("platform", {}).get("os") != "unknown")
+              if plats != ["linux/amd64", "linux/arm64"]:
+                  sys.exit(f"chalkeus-{i}: index lists {plats}, want exactly linux/amd64 and linux/arm64")
+              digest = json.load(open(f"{tmp}/desc-{i}.json"))["digest"]
+              out["images"][i] = f"{reg}/{ns}/chalkeus-{i}@{digest}"
+              out["platforms"][i] = {"linux/amd64": amd[i], "linux/arm64": arm[i]}
               out["attestations"][i] = {"provenance": "mode=max", "sbom": "spdx"}
           json.dump(out, open("image-digests.json", "w"), indent=2)
-          print(json.dumps(out["images"], indent=2))
+          print(json.dumps({"images": out["images"], "platforms": out["platforms"]}, indent=2))
           PY
 
       - name: Upload image-digests.json
-        if: env.PUSH == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: image-digests-${{ matrix.target.variant }}
           path: image-digests.json
 
   digest-pr:
-    needs: build
+    needs: merge
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 10

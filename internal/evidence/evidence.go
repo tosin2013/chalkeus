@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/hostinfo"
 	"github.com/tosin2013/chalkeus/internal/paths"
 	"io"
 	"os"
@@ -621,6 +622,26 @@ func firstLine(args ...string) string {
 	return strings.Split(s, "\n")[0]
 }
 
+// HostLines are versions.txt's 031 lines (data-model.md "Version lines"): the host, its
+// container runtime, the node's platform and each image's. A pod runs the build of its image
+// that matches the node (the runtime resolves the index), so every image's platform is the
+// node's; a local build is made for the host, which is the node.
+func HostLines(h hostinfo.Host, rt hostinfo.Runtime, node string, images []string) []string {
+	osLine := h.OS
+	if h.OSVersion != "" {
+		osLine += " " + h.OSVersion
+	}
+	runtimeLine := rt.Describe()
+	if rt.Err != "" {
+		runtimeLine = "unreachable (" + rt.Err + ")"
+	}
+	lines := []string{"host_os: " + osLine, "host_arch: " + h.Arch, "runtime: " + runtimeLine, "node_platform: " + node}
+	for _, k := range images {
+		lines = append(lines, fmt.Sprintf("image_%s_platform: %s", k, node))
+	}
+	return lines
+}
+
 // WriteVersions records tool and image versions (versions.txt).
 func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster string, imgs map[string]string) error {
 	server := ""
@@ -642,6 +663,15 @@ func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster s
 	if b, err := os.ReadFile(filepath.Join(build, "image-source.txt")); err == nil {
 		src = strings.TrimSpace(string(b))
 	}
+	// 031: the node's platform picks the pinned checksum each binary was checked against.
+	node, nodeErr := hostinfo.ProbeNodePlatform(kubeContext)
+	if nodeErr != nil || node == "" {
+		node = "unknown"
+	}
+	arch := "AMD64"
+	if strings.HasSuffix(node, "/arm64") {
+		arch = "ARM64"
+	}
 	lines := []string{
 		"run_id: " + r.ID,
 		"kind: " + firstLine("kind", "version"),
@@ -649,8 +679,8 @@ func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster s
 		"server: " + server,
 		"node_image: " + firstLine("docker", "inspect", "--format", "{{.Config.Image}}", cluster+"-control-plane"),
 		fmt.Sprintf("calico: %s sha256=%s", pins["CALICO_VERSION"], calico),
-		fmt.Sprintf("spec: %s sha256=%s", firstLine("spec", "--version"), pins["SPEC_SHA256"]),
-		fmt.Sprintf("opencode: %s sha256=%s", pins["OPENCODE_VERSION"], pins["OPENCODE_SHA256"]),
+		fmt.Sprintf("spec: %s sha256=%s", firstLine("spec", "--version"), pins["SPEC_SHA256_"+arch]),
+		fmt.Sprintf("opencode: %s sha256=%s", pins["OPENCODE_VERSION"], pins["OPENCODE_SHA256_"+arch]),
 		"registry_image: " + pins["REGISTRY_IMAGE"],
 		"image_source: " + src,
 	}
@@ -663,5 +693,6 @@ func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster s
 		lines = append(lines, fmt.Sprintf("image_%s: %s", k, imgs[k]))
 	}
 	lines = append(lines, "host: "+firstLine("uname", "-srm"))
+	lines = append(lines, HostLines(hostinfo.ProbeHost(), hostinfo.ProbeRuntime(), node, keys)...)
 	return os.WriteFile(filepath.Join(r.Dir, "versions.txt"), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }

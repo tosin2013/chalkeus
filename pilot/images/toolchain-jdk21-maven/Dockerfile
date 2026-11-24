@@ -16,7 +16,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends curl=7.88.1-10+deb12u15 ca-certificates=20250419~deb12u2 xz-utils=5.4.1-1+deb12u2 \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /fetch
-RUN set -eu; case "${TARGETARCH:-amd64}" in amd64) a=x64; sum="${TEMURIN21_SHA256_AMD64}";; arm64) a=aarch64; sum="${TEMURIN21_SHA256_ARM64}";; *) echo "unsupported $TARGETARCH"; exit 1;; esac; \
+RUN set -eu; case "${TARGETARCH:-}" in amd64) a=x64; sum="${TEMURIN21_SHA256_AMD64}";; arm64) a=aarch64; sum="${TEMURIN21_SHA256_ARM64}";; *) echo "unsupported TARGETARCH '${TARGETARCH:-}'"; exit 1;; esac; \
     f="OpenJDK21U-jdk_${a}_linux_hotspot_${TEMURIN21_FILE_VERSION}.tar.gz"; \
     rel=$(printf %s "${TEMURIN21_RELEASE}" | sed 's/+/%2B/'); base="https://github.com/adoptium/temurin21-binaries/releases/download/${rel}"; \
     curl -fsSLO "${base}/${f}"; curl -fsSLO "${base}/${f}.sha256.txt"; \

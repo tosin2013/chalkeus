@@ -88,22 +88,58 @@ func Save(l paths.Layout, imgs map[string]string) error {
 	return os.WriteFile(l.ImagesJSON, append(raw, '\n'), 0o644)
 }
 
+// arches are the per-architecture suffixes of pins.env (031: the Dockerfiles pick by TARGETARCH).
+var arches = []string{"AMD64", "ARM64"}
+
+// perArch is each key with an _AMD64 and an _ARM64 suffix.
+func perArch(keys ...string) []string {
+	out := make([]string, 0, 2*len(keys))
+	for _, k := range keys {
+		for _, a := range arches {
+			out = append(out, k+"_"+a)
+		}
+	}
+	return out
+}
+
+// pick copies the named pins into args; a missing one fails, naming it (C-09: no fallback).
+func pick(pins, args map[string]string, keys ...string) error {
+	for _, k := range keys {
+		if pins[k] == "" {
+			return fmt.Errorf("pins.env: missing %s", k)
+		}
+		args[k] = pins[k]
+	}
+	return nil
+}
+
 // BuildArgs mirrors pilot/images/build_args.py (the image workflow keeps using that script).
 func BuildArgs(image string, pins map[string]string) (map[string]string, error) {
 	split := func(ref string) (string, string) { r, t, _ := strings.Cut(ref, "@"); return r, t }
+	args := map[string]string{}
 	switch image {
 	case "worker":
-		repo, tag := split(pins["OPENCODE_RELEASE"])
-		return map[string]string{"DEBIAN_BASE": pins["DEBIAN_BASE"], "OPENCODE_REPO": repo, "OPENCODE_TAG": tag,
-			"OPENCODE_ASSET": pins["OPENCODE_ASSET"], "OPENCODE_ASSET_SHA256": pins["OPENCODE_ASSET_SHA256"],
-			"OPENCODE_SHA256": pins["OPENCODE_SHA256"]}, nil
+		if err := pick(pins, args, append([]string{"OPENCODE_RELEASE", "DEBIAN_BASE"},
+			perArch("OPENCODE_ASSET", "OPENCODE_ASSET_SHA256", "OPENCODE_SHA256")...)...); err != nil {
+			return nil, err
+		}
+		args["OPENCODE_REPO"], args["OPENCODE_TAG"] = split(args["OPENCODE_RELEASE"])
+		delete(args, "OPENCODE_RELEASE")
+		return args, nil
 	case "tools":
-		repo, tag := split(pins["SPEC_RELEASE"])
-		return map[string]string{"DEBIAN_BASE": pins["DEBIAN_BASE"], "SPEC_REPO": repo, "SPEC_TAG": tag,
-			"SPEC_ASSET": pins["SPEC_ASSET"], "SPEC_ASSET_SHA256": pins["SPEC_ASSET_SHA256"],
-			"SPEC_SHA256": pins["SPEC_SHA256"], "SPEC_CHECKSUMS": "spec_" + strings.TrimPrefix(tag, "v") + "_checksums.txt"}, nil
+		if err := pick(pins, args, append([]string{"SPEC_RELEASE", "DEBIAN_BASE"},
+			perArch("SPEC_ASSET", "SPEC_ASSET_SHA256", "SPEC_SHA256")...)...); err != nil {
+			return nil, err
+		}
+		args["SPEC_REPO"], args["SPEC_TAG"] = split(args["SPEC_RELEASE"])
+		delete(args, "SPEC_RELEASE")
+		args["SPEC_CHECKSUMS"] = "spec_" + strings.TrimPrefix(args["SPEC_TAG"], "v") + "_checksums.txt"
+		return args, nil
 	case "egress":
-		return map[string]string{"ALPINE_BASE": pins["ALPINE_BASE"]}, nil
+		if err := pick(pins, args, "ALPINE_BASE"); err != nil {
+			return nil, err
+		}
+		return args, nil
 	}
 	return nil, fmt.Errorf("unknown image %s", pyrepr.Str(image))
 }

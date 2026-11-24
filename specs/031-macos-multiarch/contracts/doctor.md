@@ -1,7 +1,10 @@
 # Contract: doctor's host area, and `up`'s early refusals
 
-doctor prints a new **host** area before the cluster area. Statuses are doctor's existing
-`pass`, `warn` and `fail`; a fail makes doctor exit non-zero, as today.
+doctor prints a new **host** area (the `host` and `container runtime` rows) first, before the
+profile. The `node platform` and `image platforms` rows need `up`, so they appear in the
+**cluster** area after the `images` row (amended during implementation: one header per area).
+Statuses are doctor's existing `pass`, `warn` and `fail`; a fail makes doctor exit non-zero, as
+today.
 
 | Row | Pass | Warn | Fail |
 |---|---|---|---|

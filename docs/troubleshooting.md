@@ -411,7 +411,7 @@ These entries apply only with `FORGE_GITHUB_ISSUES=on` or `FORGE_GITHUB_APPROVAL
   `--slice`) refuses with exit 10 and one of these codes. Nothing starts.
 - **Cause and fix, by code:**
   - `SLICE_UNEVALUABLE`: spec-status reports no per-phase counts for the item. Install
-    spec-status 0.4.0 or later (the version in `pilot/pins.env`), and check that the item's
+    spec-status 0.4.1 or later (the version in `pilot/pins.env`), and check that the item's
     `tasks.md` is readable.
   - `SLICE_UNKNOWN`: the slice id isn't one of the item's (`./chalkeus forge slices` lists them), or
     two phases name the same user story. Fix `tasks.md`, or run the whole item without `--slice`.

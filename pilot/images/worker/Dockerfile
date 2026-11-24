@@ -6,19 +6,29 @@ ARG DEBIAN_BASE
 FROM ${DEBIAN_BASE} AS fetch
 ARG OPENCODE_REPO
 ARG OPENCODE_TAG
-ARG OPENCODE_ASSET
-ARG OPENCODE_ASSET_SHA256
-ARG OPENCODE_SHA256
+# 031: per-architecture pins; BuildKit sets TARGETARCH. An empty or other value fails (no
+# default to amd64), so an image can't silently carry the wrong platform's binary.
+ARG TARGETARCH
+ARG OPENCODE_ASSET_AMD64
+ARG OPENCODE_ASSET_ARM64
+ARG OPENCODE_ASSET_SHA256_AMD64
+ARG OPENCODE_ASSET_SHA256_ARM64
+ARG OPENCODE_SHA256_AMD64
+ARG OPENCODE_SHA256_ARM64
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl=7.88.1-10+deb12u15 ca-certificates=20250419~deb12u2 \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /fetch
-RUN set -eu; base="https://github.com/${OPENCODE_REPO}/releases/download/${OPENCODE_TAG}"; \
-    curl -fsSLO "${base}/${OPENCODE_ASSET}"; curl -fsSLO "${base}/SHA256SUMS"; \
-    grep " ${OPENCODE_ASSET}\$" SHA256SUMS | sha256sum -c -; \
-    echo "${OPENCODE_ASSET_SHA256}  ${OPENCODE_ASSET}" | sha256sum -c -; \
-    tar -xzf "${OPENCODE_ASSET}"; \
-    echo "${OPENCODE_SHA256}  opencode" | sha256sum -c -
+RUN set -eu; case "${TARGETARCH:-}" in \
+      amd64) asset="${OPENCODE_ASSET_AMD64}"; sum="${OPENCODE_ASSET_SHA256_AMD64}"; bin="${OPENCODE_SHA256_AMD64}";; \
+      arm64) asset="${OPENCODE_ASSET_ARM64}"; sum="${OPENCODE_ASSET_SHA256_ARM64}"; bin="${OPENCODE_SHA256_ARM64}";; \
+      *) echo "unsupported TARGETARCH '${TARGETARCH:-}'"; exit 1;; esac; \
+    base="https://github.com/${OPENCODE_REPO}/releases/download/${OPENCODE_TAG}"; \
+    curl -fsSLO "${base}/${asset}"; curl -fsSLO "${base}/SHA256SUMS"; \
+    grep " ${asset}\$" SHA256SUMS | sha256sum -c -; \
+    echo "${sum}  ${asset}" | sha256sum -c -; \
+    tar -xzf "${asset}"; \
+    echo "${bin}  opencode" | sha256sum -c -
 
 FROM ${DEBIAN_BASE}
 # Exact versions resolved 2026-11-13 with `apt-cache policy` on the pinned base.

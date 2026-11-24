@@ -28,36 +28,47 @@ def split_release(ref: str) -> tuple[str, str]:
     return repo, tag
 
 
+ARCHES = ("AMD64", "ARM64")
+
+
+def per_arch(*keys: str) -> list[str]:
+    """Each key with an _AMD64 and an _ARM64 suffix (031: the Dockerfiles pick by TARGETARCH)."""
+    return [f"{k}_{a}" for k in keys for a in ARCHES]
+
+
+def pick(p: dict, keys: list[str]) -> dict:
+    """The named pins; a missing one fails, naming it (C-09: no fallback to another value)."""
+    missing = [k for k in keys if not p.get(k)]
+    if missing:
+        raise SystemExit(f"pins.env: missing {missing[0]}")
+    return {k: p[k] for k in keys}
+
+
 def build_args(image: str, pins: dict | None = None) -> dict:
     p = pins or read_pins()
     if image == "worker":
-        repo, tag = split_release(p["OPENCODE_RELEASE"])
-        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "OPENCODE_REPO": repo, "OPENCODE_TAG": tag,
-                "OPENCODE_ASSET": p["OPENCODE_ASSET"], "OPENCODE_ASSET_SHA256": p["OPENCODE_ASSET_SHA256"],
-                "OPENCODE_SHA256": p["OPENCODE_SHA256"]}
+        repo, tag = split_release(pick(p, ["OPENCODE_RELEASE"])["OPENCODE_RELEASE"])
+        return {**pick(p, ["DEBIAN_BASE"]), "OPENCODE_REPO": repo, "OPENCODE_TAG": tag,
+                **pick(p, per_arch("OPENCODE_ASSET", "OPENCODE_ASSET_SHA256", "OPENCODE_SHA256"))}
     if image == "tools":
-        repo, tag = split_release(p["SPEC_RELEASE"])
+        repo, tag = split_release(pick(p, ["SPEC_RELEASE"])["SPEC_RELEASE"])
         version = tag.lstrip("v")
-        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "SPEC_REPO": repo, "SPEC_TAG": tag,
-                "SPEC_ASSET": p["SPEC_ASSET"], "SPEC_ASSET_SHA256": p["SPEC_ASSET_SHA256"],
-                "SPEC_SHA256": p["SPEC_SHA256"], "SPEC_CHECKSUMS": f"spec_{version}_checksums.txt"}
+        return {**pick(p, ["DEBIAN_BASE"]), "SPEC_REPO": repo, "SPEC_TAG": tag,
+                **pick(p, per_arch("SPEC_ASSET", "SPEC_ASSET_SHA256", "SPEC_SHA256")),
+                "SPEC_CHECKSUMS": f"spec_{version}_checksums.txt"}
     if image == "egress":
-        return {"ALPINE_BASE": p["ALPINE_BASE"]}
+        return pick(p, ["ALPINE_BASE"])
     if image == "toolchain-python3.13":
-        repo, tag = split_release(p["PYTHON313_RELEASE"])
-        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "PYTHON313_REPO": repo, "PYTHON313_TAG": tag,
-                "PYTHON313_ASSET": p["PYTHON313_ASSET"], "PYTHON313_ASSET_SHA256": p["PYTHON313_ASSET_SHA256"]}
+        repo, tag = split_release(pick(p, ["PYTHON313_RELEASE"])["PYTHON313_RELEASE"])
+        return {**pick(p, ["DEBIAN_BASE"]), "PYTHON313_REPO": repo, "PYTHON313_TAG": tag,
+                **pick(p, per_arch("PYTHON313_ASSET", "PYTHON313_ASSET_SHA256"))}
     if image == "toolchain-node24":
-        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "NODE24_VERSION": p["NODE24_VERSION"],
-                "NODE24_SHA256_AMD64": p["NODE24_SHA256_AMD64"], "NODE24_SHA256_ARM64": p["NODE24_SHA256_ARM64"]}
+        return pick(p, ["DEBIAN_BASE", "NODE24_VERSION", *per_arch("NODE24_SHA256")])
     if image == "toolchain-go":
-        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "GO_VERSION": p["GO_VERSION"],
-                "GO_SHA256_AMD64": p["GO_SHA256_AMD64"], "GO_SHA256_ARM64": p["GO_SHA256_ARM64"]}
+        return pick(p, ["DEBIAN_BASE", "GO_VERSION", *per_arch("GO_SHA256")])
     if image == "toolchain-jdk21-maven":
-        return {"DEBIAN_BASE": p["DEBIAN_BASE"], "TEMURIN21_RELEASE": p["TEMURIN21_RELEASE"],
-                "TEMURIN21_FILE_VERSION": p["TEMURIN21_FILE_VERSION"],
-                "TEMURIN21_SHA256_AMD64": p["TEMURIN21_SHA256_AMD64"], "TEMURIN21_SHA256_ARM64": p["TEMURIN21_SHA256_ARM64"],
-                "MAVEN_VERSION": p["MAVEN_VERSION"], "MAVEN_SHA512": p["MAVEN_SHA512"]}
+        return pick(p, ["DEBIAN_BASE", "TEMURIN21_RELEASE", "TEMURIN21_FILE_VERSION",
+                        *per_arch("TEMURIN21_SHA256"), "MAVEN_VERSION", "MAVEN_SHA512"])
     raise SystemExit(f"unknown image {image!r}")
 
 
