@@ -60,6 +60,7 @@ matching troubleshooting entry before suggesting any fix.
 | `./chalkeus forge gate --target <name> --item NNN` | check an item of a target is prepared (no cluster); exit 10 = refused, with a code |
 | `./chalkeus forge run --target <name> --item NNN` | an item run of the human's own repository: readiness, mode, baseline, attempts, draft PR on the target |
 | `./chalkeus forge slices --target <name> --item NNN` | list an item's slices (026), their state and the current one (read-only) |
+| `./chalkeus forge debt --target <name> [--json]` | triage report of the target's open Dependabot PRs and baseline problems (029, read-only; it never acts on PRs) |
 | `./chalkeus forge run --target <name> --item NNN --slice USn` | build one slice of the item: its own PR; only the last slice leads to the status change |
 | `./chalkeus forge resume --run <id>` | continue a paused run |
 | `./chalkeus forge approve --run <id> mode\|retry\|reconcile\|acceptance` | record the human's yes for the one pending step |

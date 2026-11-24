@@ -1,5 +1,20 @@
 # Release notes
 
+## Brownfield intake: the debt report (029, part 1)
+
+New: `./chalkeus forge debt --target <name> [--json]`, a read-only report for an existing
+repository ([targets.md](targets.md#an-existing-repository-the-debt-report)):
+- its open Dependabot PRs, grouped by the checks they fail, with the checks shared by many PRs (or
+  failing on the default branch) set apart, and each PR marked `superseded`, `safe`,
+  `needs code changes`, `pending` or `not triaged`;
+- baseline flags: a red default branch, test scripts that force an exit, packages with install
+  scripts.
+
+It writes nothing anywhere and runs nothing of the target's. With a GitHub App it mints a token
+restricted to read permissions, in memory; otherwise it uses your read token. To read private
+repositories' checks and the advisories each PR fixes, grant the App **Checks**, **Commit
+statuses** and **Dependabot alerts** (all read). Nothing else to do.
+
 ## Chalkeus: forge's own output (027, stage 5)
 
 Forge's messages, help and GitHub text now use the new names too:

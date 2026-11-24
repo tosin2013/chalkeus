@@ -8,7 +8,45 @@ is ready, and running it (roadmap item 014). The toolchains are `python3.13`, `n
 no packages; any other language needs [your own toolchain image](#your-own-toolchain-image).
 
 Starting from an empty repository? Plan it first, then build it item by item:
-[greenfield.md](greenfield.md).
+[greenfield.md](greenfield.md). An existing repository with a pile of bot PRs or red CI? Start
+with [the debt report](#an-existing-repository-the-debt-report).
+
+## An existing repository: the debt report
+
+Before you prepare the first item of an existing repository, look at what it carries:
+
+```sh
+./chalkeus forge debt --target <name>          # add --json for the data
+```
+
+The report is read-only: it never comments, labels, merges, closes or re-runs anything, and it runs
+nothing of the target's. It needs no cluster and no model.
+
+- **Open Dependabot PRs, grouped by the checks they fail.** A check is **shared** when it also
+  fails on the default branch, or when it doesn't run there but fails on most of the PRs (an
+  auto-merge job blocked by a red required check, for example). A shared check says nothing about
+  one PR: fix it once, and the group unblocks.
+- **Each PR's class:**
+  - `superseded`: the default branch's lockfile already has that version or newer, or a newer bot
+    PR bumps the same package. Close it;
+  - `safe`: a patch or minor bump that fails no check of its own;
+  - `needs code changes`: a major bump, or a check of its own fails. A later forge release builds
+    such a change as a dependency item (roadmap item 029);
+  - `pending`: its checks haven't finished;
+  - `not triaged`: another bot, an ecosystem without a toolchain, or checks the credential can't
+    read.
+- **Baseline flags:** a red default branch (a forge baseline on it fails too), test scripts that
+  force an exit (`--forceExit`, Mocha `--exit`), and packages with install scripts
+  ([native builds](#installs-that-build-native-code-or-download-files)).
+
+You decide what to merge, batch or close. What the report couldn't read shows as `unknown`, never
+as `safe`.
+
+**Credentials.** With a GitHub App (`FORGE_PUBLISHER_CREDENTIAL=app`), the report mints its own
+token for that one repository with read permissions only, kept in memory. Otherwise it uses your
+read token (`GH_TOKEN`, `GITHUB_TOKEN`, then `gh auth token`). It never uses the publisher's
+token. For private repositories, and for advisories, grant the App **Checks**, **Commit statuses**
+and **Dependabot alerts**, all read; the report names whichever is missing.
 
 ## 1. Prepare the repository
 
