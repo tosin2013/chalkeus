@@ -1,7 +1,14 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.34.0 → 1.35.0 (this revision)
+Version change: 1.35.0 → 1.35.1 (this revision)
+Bump rationale: PATCH — a status transition (030 planned → specced) and its Spec dir.
+Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
+  - 030 planned → specced: spec in specs/030-resource-budgets/. Spec dir added.
+Specs affected: 030
+Open questions added/resolved: none
+
+Prior: Version change: 1.34.0 → 1.35.0
 Bump rationale: MINOR — a new planned item (031) and two new dependencies on it. Nothing
 verified is invalidated.
 Changes this revision (owner decision 2026-11-23, Tosin Akinosho):
@@ -2091,7 +2098,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   published input schema) has no path through the forge today. The friction log is in
   specs/026-slice-runs/evidence/documcp-onboarding.md.
 
-### 030 — Resource budgets and capacity checks  [status: planned]
+### 030 — Resource budgets and capacity checks  [status: specced]
 
 - **Description:** Let a target's profile raise the CPU, memory and time its pods get, and check
   before a run that the cluster can schedule them, so a large or slow project fails in doctor
@@ -2119,6 +2126,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   the operator's cluster mode scheduling (011).
 - **Depends on:** 014
 - **Governed by:** C-02, C-03, C-11, C-16
+- **Spec dir:** specs/030-resource-budgets/
 - **Notes:** Added 2026-11-24 (owner), from onboarding tosin2013/documcp for 026's live slice
   run. `forge author check` failed `DRAFT_SUITE_FAILS`: the project's own tests hit the grader's
   600-second per-command limit on the unchanged code. Reproduced on 2 cores (the grader's CPU):
@@ -2361,4 +2369,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.35.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
+**Version**: 1.35.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
