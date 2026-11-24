@@ -3,9 +3,9 @@
 The fixture shows the pilot's guarantees on two built-in items. A **target** is one of your own
 repositories. You prepare its items with Spec Kit; the pilot then runs only items that are
 prepared, under the same guarantees. This page covers configuring targets, checking whether an item
-is ready, and running it (roadmap item 014). Today you can use `FORGE_TOOLCHAIN=python3.13`, with
-packages installed from PyPI, or the built-in `python` (Python 3.11 with pytest) for a project
-whose tests need no packages. The other toolchains follow.
+is ready, and running it (roadmap item 014). The toolchains are `python3.13`, `node24`, `go` and
+`jdk21-maven`, plus the built-in `python` (Python 3.11 with pytest) for a project whose tests need
+no packages; any other language needs [your own toolchain image](#your-own-toolchain-image).
 
 Starting from an empty repository? Plan it first, then build it item by item:
 [greenfield.md](greenfield.md).
@@ -111,7 +111,10 @@ FORGE_GITHUB_ISSUES=off
   `FORGE_INSTALL_COMMAND`. The install runs twice: once for the agent (with the registries
   reachable), and once, before any attempt, into a cache built from your unchanged code plus the
   hidden tests. The grader then runs offline from that cache, so **an attempt can't add
-  dependencies**; add new ones to the project yourself when you prepare the item. The registries
+  dependencies**; add new ones to the project yourself when you prepare the item. The same goes
+  for a runtime upgrade: an item that moves the project to a new Node, Python or Java version can
+  only declare the version and fix code, so the matching type packages (`@types/node`), lock file
+  and CI version go in your own planning PR first. The registries
   are shown when you approve the mode, and check P06r confirms each attempt's network: a declared
   registry is reachable, any other host (`example.invalid`) is refused, and the install's proxy
   allows only the registries. What the agent tried and was refused is in the attempt's
@@ -182,6 +185,31 @@ FORGE_GITHUB_ISSUES=off
   the repository snapshot.
 - **The target repository can't be this one or any target's companion.** The pilot refuses
   with `TARGET_IS_CANARY`.
+
+### Installs that build native code or download files
+
+The sandbox reaches only the registries in `FORGE_REGISTRY_HOSTS`, and the grader reaches
+nothing. An install step that downloads from anywhere else, or compiles native code with tools
+the toolchain doesn't have, fails before any attempt, in the dependency prefetch:
+
+```text
+PREFETCH_FAILED … (the log tail shows the blocked download or the missing compiler)
+```
+
+The full log tail is in the run's (or the draft's) `prefetch.json`. Check first whether the
+project needs the native part at all; often a prebuilt or WebAssembly version is already used.
+
+| Toolchain | Usual cause | What to do |
+|---|---|---|
+| `node24` | A package's install script runs `node-gyp rebuild` (`sqlite3`, `bcrypt`, `tree-sitter-*` grammars), which downloads Node's headers from nodejs.org and needs a C++ compiler | If the tests pass without it, add `--ignore-scripts` to both commands: `npm ci --ignore-scripts` and `npm ci --offline --ignore-scripts && npm test`. Run the full suite that way on your machine first |
+| `python3.13` | A package has no wheel for the image's Python and platform, so pip builds the source distribution | Pin a version that publishes a wheel (`pip download --only-binary=:all: <pkg>` tells you), or drop the dependency |
+| `go` | cgo packages need a C compiler; `go generate` steps that fetch tools | Build with `CGO_ENABLED=0` in `FORGE_TEST_COMMAND` if the project allows it; commit generated files |
+| `jdk21-maven` | A plugin downloads a binary during the build (for example a Node or protoc download) | Skip it in tests with a Maven profile or property, or bind it to a phase the tests don't run |
+
+If the project really needs the native build, or a language or version Chalkeus doesn't ship,
+use [your own toolchain image](#your-own-toolchain-image) with the compiler and headers in it, or
+ask for one with the
+[toolchain image request form](https://github.com/tosin2013/chalkeus/issues/new?template=toolchain-image.yml).
 
 ### Your own toolchain image
 
