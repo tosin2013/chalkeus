@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/tosin2013/chalkeus/internal/cluster"
+	"github.com/tosin2013/chalkeus/internal/diagnose"
 	"github.com/tosin2013/chalkeus/internal/evidence"
 	"github.com/tosin2013/chalkeus/internal/fixture"
 	"github.com/tosin2013/chalkeus/internal/ghloop"
@@ -203,6 +204,9 @@ func (p *P) startItem(run *evidence.Run) int {
 				reason = code
 			}
 		}
+		if reason != "PREPARE" { // 033 R6: the environment must change before any attempt can help
+			p.say("back to planning: the project's environment needs a change (toolchain, dependencies or registries); make it in your planning PR or the target profile, then start a new run")
+		}
 		return p.fail(run, reason)
 	}
 	mp, err := p.writeBaselineMeta(run)
@@ -218,6 +222,13 @@ func (p *P) startItem(run *evidence.Run) int {
 		return p.fail(run, grader.BaselineReason(g))
 	}
 	p.say("  baseline %s: pass (the project's tests pass and the hidden tests fail on the base)", item)
+	if secs := asInt(g["test_seconds"]); secs > 0 { // 033 R7: the diagnosis's test-run allowance
+		run.State["baseline_test_seconds"] = secs
+		_ = run.Save()
+		if dl := runWorkerDeadline(run); dl > diagnose.SoftMarginS {
+			p.say("  baseline %s: one run of the test command took %d s; about %d fit in one attempt", item, secs, (dl-diagnose.SoftMarginS)/secs)
+		}
+	}
 	return p.runTask(run, item, 1)
 }
 
@@ -247,6 +258,7 @@ func (p *P) prepareItem(run *evidence.Run) error {
 		}
 		st, _ := os.Stat(bundle)
 		run.State["snapshot"] = map[string]any{"base_revision": base, "snapshot_commit": snap, "bytes": st.Size()}
+		recordExtensions(run, clone, base) // 033 US5
 		_ = run.Save()
 	}
 	overlay := filepath.Join(d, "overlay.tar")

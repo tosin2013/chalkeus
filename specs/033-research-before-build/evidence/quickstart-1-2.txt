@@ -1,0 +1,53 @@
+# quickstart §1–§2, 2026-11-25T18:19Z, commit 82b46e9 + working tree
+
+$ go test ./internal/diagnose/ -run Replay -v
+=== RUN   TestReplayDocumcpDeadline
+--- PASS: TestReplayDocumcpDeadline (0.00s)
+=== RUN   TestReplayFixtureInduced
+--- PASS: TestReplayFixtureInduced (0.00s)
+PASS
+ok  	github.com/tosin2013/chalkeus/internal/diagnose	0.006s
+
+$ go vet ./... && go test ./...
+ok  	github.com/tosin2013/chalkeus/internal/audit	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/author	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/checks	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/cli	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/cluster	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/config	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/debt	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/decisions	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/diagnose	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/doctor	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/evidence	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/fakegh	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/fixture	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/frame	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/gate	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/ghapp	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/ghloop	0.170s
+ok  	github.com/tosin2013/chalkeus/internal/grader	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/hostinfo	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/images	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/k8s	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/names	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/pipeline	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/prompt	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/publisher	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/pyrepr	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/readiness	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/reconcile	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/runner	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/secret	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/slice	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/stage	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/step	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/toolchain	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/verbose	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/watcher	(cached)
+ok  	github.com/tosin2013/chalkeus/internal/worker	(cached)
+
+$ python3 -m unittest discover -s pilot/images/tests -t pilot/images/tests
+Ran 137 tests in 31.255s
+
+OK

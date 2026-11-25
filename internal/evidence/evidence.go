@@ -95,7 +95,31 @@ func WriteJSON(path string, v any) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, raw, 0o644)
+	// Atomic: write a temp file in the same folder, then rename it over the target, so a reader
+	// (`forge status`, the watcher, a resume) never sees a truncated or empty file.
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*")
+	if err != nil {
+		return err
+	}
+	if _, err := tmp.Write(raw); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmp.Name())
+		return err
+	}
+	if err := tmp.Chmod(0o644); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmp.Name())
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmp.Name())
+		return err
+	}
+	if err := os.Rename(tmp.Name(), path); err != nil {
+		_ = os.Remove(tmp.Name())
+		return err
+	}
+	return nil
 }
 
 // AppendJSONL appends one JSON line.
@@ -394,6 +418,7 @@ func (r *Run) WriteSummary() (string, error) {
 			out = append(out, fmt.Sprintf("| %s | %s | %s | %s | %s | %s |", label, pyStr(a["n"]), orDash(a, "induction"), res, orDash(sp, "cost_usd"), orDash(sp, "tokens")))
 		}
 	}
+	out = append(out, r.diagnosisSection(tasks)...)
 	var prs []map[string]any
 	if raw, err := os.ReadFile(filepath.Join(r.Dir, "prs.json")); err == nil {
 		_ = decode(raw, &prs)
@@ -715,4 +740,33 @@ func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster s
 	lines = append(lines, HostLines(hostinfo.ProbeHost(), hostinfo.ProbeRuntime(), node, keys)...)
 	lines = append(lines, HostSpecLine())
 	return os.WriteFile(filepath.Join(r.Dir, "versions.txt"), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+}
+
+// diagnosisSection is the summary's "## Diagnosis" section (033 FR-005): each diagnosed attempt's
+// text, from attempts/<task>-<n>/diagnosis.json. Nothing when no attempt has one, so summaries of
+// runs before 033 regenerate unchanged.
+func (r *Run) diagnosisSection(tasks map[string]any) []string {
+	var out []string
+	for _, label := range r.TaskLabels() {
+		t, _ := tasks[label].(map[string]any)
+		atts, _ := t["attempts"].([]any)
+		for _, x := range atts {
+			a, _ := x.(map[string]any)
+			raw, err := os.ReadFile(filepath.Join(r.Dir, "attempts", label+"-"+pyStr(a["n"]), "diagnosis.json"))
+			if err != nil {
+				continue
+			}
+			var d struct {
+				Text string `json:"text"`
+			}
+			if json.Unmarshal(raw, &d) != nil || d.Text == "" {
+				continue
+			}
+			if out == nil {
+				out = append(out, "", "## Diagnosis")
+			}
+			out = append(out, "", "```text", strings.TrimRight(d.Text, "\n"), "```")
+		}
+	}
+	return out
 }

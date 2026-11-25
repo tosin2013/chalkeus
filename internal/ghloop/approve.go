@@ -155,6 +155,9 @@ func (l *Loop) PostDecision(run *evidence.Run, p *decisions.Pending) (map[string
 	body := fmt.Sprintf("%s\n**Decision pending: %s.**\n\nTo approve, reply with exactly:\n\n    /approve %s\n\n"+
 		"Allowed approvers: %s. To cancel your approval before the run resumes: `/withdraw %s`.\n",
 		key, decisions.Describe(p), p.Step, strings.Join(at, ", "), p.Step)
+	if p.Step == "retry" { // 033: the other answer to a retry
+		body += "\nTo end the run instead and go back to planning, reply with exactly:\n\n    /approve replan\n"
+	}
 	if note := decisionNote(run, p.Step); note != "" { // 030: e.g. why the last attempt stopped
 		body += "\n" + note + "\n"
 	}
@@ -239,18 +242,22 @@ func firstLine(body string) string {
 // specs/004-github-loop/contracts/vectors/approvals.json.
 func Evaluate(comments []Comment, decisionCommentID int64, step string, approvers []string, publisher string,
 	permission func(login string) string) (*Comment, []LogEntry) {
-	want := "/approve " + step
+	want := map[string]bool{}
+	for _, s := range decisions.Answers(step) { // 033: a retry may also be answered `replan`
+		want["/approve "+s] = true
+	}
 	allowed := map[string]bool{}
 	for _, a := range approvers {
 		allowed[strings.ToLower(a)] = true
 	}
 	cs := append([]Comment(nil), comments...)
 	sort.SliceStable(cs, func(i, j int) bool { return cs[i].ID < cs[j].ID })
-	withdrawn := map[string][]int64{}
+	withdrawn := map[string][]int64{} // author + " " + answered step → withdraw comment ids
 	for _, c := range cs {
-		if firstLine(c.Body) == "/withdraw "+step && c.ID > decisionCommentID {
-			a := strings.ToLower(c.Author)
-			withdrawn[a] = append(withdrawn[a], c.ID)
+		first := firstLine(c.Body)
+		if strings.HasPrefix(first, "/withdraw ") && want["/approve "+strings.TrimPrefix(first, "/withdraw ")] && c.ID > decisionCommentID {
+			k := strings.ToLower(c.Author) + " " + strings.TrimPrefix(first, "/withdraw ")
+			withdrawn[k] = append(withdrawn[k], c.ID)
 		}
 	}
 	var log []LogEntry
@@ -262,7 +269,7 @@ func Evaluate(comments []Comment, decisionCommentID int64, step string, approver
 		}
 		author := strings.ToLower(c.Author)
 		laterWithdraw := false
-		for _, w := range withdrawn[author] {
+		for _, w := range withdrawn[author+" "+strings.TrimPrefix(first, "/approve ")] {
 			if w > c.ID {
 				laterWithdraw = true
 			}
@@ -271,7 +278,7 @@ func Evaluate(comments []Comment, decisionCommentID int64, step string, approver
 		switch {
 		case c.ID <= decisionCommentID:
 			reason = "before_decision"
-		case first != want:
+		case !want[first]:
 			reason = "wrong_step"
 		case c.App:
 			reason = "app_authored"
@@ -303,6 +310,7 @@ func Evaluate(comments []Comment, decisionCommentID int64, step string, approver
 type Found struct {
 	Approver  string
 	CommentID int64
+	Step      string // the answer: the pending step, or an alternative such as replan (033)
 }
 
 func nullable(s string) any {
@@ -362,7 +370,7 @@ func (l *Loop) FindApproval(run *evidence.Run, p *decisions.Pending) (*Found, er
 	if accepted == nil {
 		return nil, nil
 	}
-	return &Found{Approver: accepted.Author, CommentID: accepted.ID}, nil
+	return &Found{Approver: accepted.Author, CommentID: accepted.ID, Step: strings.TrimPrefix(firstLine(accepted.Body), "/approve ")}, nil
 }
 
 // Collect is used on resume without a terminal: if a valid GitHub approval exists for the
@@ -373,8 +381,10 @@ func (l *Loop) Collect(run *evidence.Run) string {
 	if p == nil || (p.Step != "mode" && p.Step != "retry" && p.Step != "acceptance") {
 		return ""
 	}
-	if decisions.Recorded(run, p.Step, p.Task, p.N) { // already collected (the watcher, then resume)
-		return ""
+	for _, s := range decisions.Answers(p.Step) {
+		if decisions.Recorded(run, s, p.Task, p.N) { // already collected (the watcher, then resume)
+			return ""
+		}
 	}
 	found, err := l.FindApproval(run, p)
 	if err != nil {
@@ -383,11 +393,15 @@ func (l *Loop) Collect(run *evidence.Run) string {
 	if found == nil {
 		return ""
 	}
-	code, msg := decisions.Record(run, p.Step, "github", found.Approver, found.CommentID)
+	step := found.Step
+	if step == "" {
+		step = p.Step
+	}
+	code, msg := decisions.Record(run, step, "github", found.Approver, found.CommentID)
 	if code != 0 {
 		return ""
 	}
-	l.reply(TrackingIssue(run), AcceptReply(p.Step, found))
+	l.reply(TrackingIssue(run), AcceptReply(step, found))
 	return msg
 }
 

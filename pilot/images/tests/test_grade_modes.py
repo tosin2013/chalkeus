@@ -91,6 +91,8 @@ class Modes(unittest.TestCase):
         self.assertEqual(self.results(r), {"G1_bundle_applies": "pass", "G2_allowed_paths": "skipped",
                                            "G3_tasks_checked": "skipped", "G4_visible_tests": "pass",
                                            "G5_hidden_tests": "pass"})
+        self.assertIsInstance(r["test_seconds"], int)  # 033 R7: one run of the test command
+        self.assertGreaterEqual(r["test_seconds"], 1)
 
     def test_baseline_fails_when_hidden_tests_already_pass(self):
         write(self.grading, "overlay/tests/test_hidden.py",

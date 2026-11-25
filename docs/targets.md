@@ -94,6 +94,42 @@ For each item you want the pilot to build:
   - They must fail on the current code.
   - They may only use dependencies the project's build already declares.
 
+<a id="research-tasks"></a>
+### Research tasks and environment changes belong in planning
+
+An attempt builds known changes. Two kinds of work can't be done inside one, however much time
+it gets, so resolve them while you plan the item, before its tasks:
+
+- **Research:** a task whose answer isn't known when you write it. A task that starts with one of
+  these phrases reads as research: `locate`, `find out`, `find the`, `find which`,
+  `investigate`, `identify the cause`, `identify which`, `figure out`, `determine why`,
+  `determine which`, `diagnose`, `research`, `explore`, `spike`. Do the investigation yourself
+  (or with an agent that assists you), record the answer in the item's `research.md` with
+  `/speckit-plan`, and regenerate the tasks with `/speckit-tasks`, so each one names the change
+  to make. The Spec Kit Research Harness extension (`harness`, community, not vetted by Spec Kit)
+  runs such an investigation within a budget and writes the findings into `research.md`; the core
+  Bug Triage extension (`specify extension add bug`) suits a defect such as a flaky test.
+- **Environment changes:** the runtime or toolchain, dependencies and the lock file, native
+  install scripts, registries and other egress hosts, or the pod budget. An attempt can't change
+  them: make them in your planning PR (dependencies, version files, CI) or in the target profile
+  (`FORGE_REGISTRY_HOSTS`, `FORGE_WORKER_DEADLINE_S`).
+
+`./chalkeus forge doctor --target <t> --item NNN [--slice <id>]` warns about research-worded
+tasks and about a runtime version the toolchain doesn't provide. With `--baseline` it also times
+one run of the project's test command and warns when fewer than 5 full runs fit in one attempt
+under the worker deadline. These are warnings: they never refuse a run.
+
+If an attempt fails anyway, the retry question shows a diagnosis with a recommendation (retry,
+raise the budget, or back to planning); to go back to planning, end the run with
+`./chalkeus forge approve --run <id> replan` and start a new run after the planning change is
+merged (see [troubleshooting: diagnosis](troubleshooting.md#diagnosis)).
+
+Example (an existing repository): documcp's first Node 24 slice had a task "Locate the suites
+that leave handles open". The attempt spent its whole 40-minute deadline searching, and changed
+`package-lock.json`, which wasn't an allowed path. A per-folder scan outside the run found the
+two leaks and the one test that wrote into the repository in about 20 minutes; with that in
+`research.md`, the tasks became three named fixes.
+
 ## 2. Configure the target
 
 Target settings live on your machine, never in the target repository. They go in a `targets`

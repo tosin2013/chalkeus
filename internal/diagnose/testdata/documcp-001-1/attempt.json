@@ -1,0 +1,30 @@
+{
+  "base_revision": "c4814ee35b0ea1d4529e5d70f02db0e2657250c8",
+  "changed_paths": [
+    ".nvmrc",
+    "CONTRIBUTING.md",
+    "README.md",
+    "package-lock.json",
+    "package.json",
+    "tests/memory/kg-storage-validation.test.ts",
+    "tests/tools/deploy-pages.test.ts",
+    "tests/tools/generate-technical-writer-prompts.test.ts"
+  ],
+  "harness_exit": 1,
+  "image": "ghcr.io/tosin2013/chalkeus-worker@sha256:7f88c9652600739f47aa508fd1e0fb690050843a14ab8fbe3c7b606e29d52ba3",
+  "induction": null,
+  "n": 1,
+  "namespace": "pilot-w-001-1",
+  "reason": "deadline",
+  "result": "fail",
+  "spend": {
+    "cap_mode": "token-fallback",
+    "cap_usd": 1.0,
+    "cost_usd": 0.0,
+    "stopped_by_cap": false,
+    "stopped_by_deadline": true,
+    "token_cap": 2000000,
+    "tokens": 277364
+  },
+  "state": "failed"
+}

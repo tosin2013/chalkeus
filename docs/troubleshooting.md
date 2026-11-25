@@ -28,6 +28,8 @@ instead.
 | `open pilot PRs exist on …` | [Open pilot PR left over](#open-pilot-pr) |
 | `A's PR is not merged yet` | [Resume before merge](#resume-not-merged) |
 | An attempt fails with reason `deadline` or `spend_cap` | [Deadline or spend cap](#deadline-or-spend-cap) |
+| The retry question recommends `back to planning`, or you want to end a run paused for a retry | [Diagnosis and back to planning](#diagnosis) |
+| An attempt's grade shows `fail (<reason>)` | [Attempt failure reasons](#attempt-failure-reasons) |
 | On a Mac, new pods don't start (`connection is unauthorized`; `P06` shows `probe not ready`) | [Pods don't start on a Mac](#calico-token-expired) |
 | `GitHub Actions is not permitted to create or approve pull requests` | [Actions can't open PRs](#actions-cannot-open-prs) |
 | `T01`, `T02` or `T03` fails after `./chalkeus forge down` | [Leftovers after teardown](#leftovers) |
@@ -238,22 +240,35 @@ Operators who pull the published images never see it.
 
 - **Symptom:** an attempt fails before grading. In `summary.md` its grade shows
   `fail (deadline)` or `fail (spend_cap)`. You're asked to confirm a retry, or the run fails
-  with `<task>_RETRIES_EXHAUSTED` after the last retry.
-- **Cause:**
-  - **`deadline`:** the worker ran past its 20-minute limit. This usually means a slow or
-    overloaded model endpoint.
+  with `<task>_RETRIES_EXHAUSTED` after the last retry. The retry question starts with the
+  attempt's diagnosis (see [Diagnosis and back to planning](#diagnosis)).
+- **Cause:** one of three, and the diagnosis says which the evidence points to:
+  - **a slow or overloaded model endpoint:** the attempt ran out of time (the worker deadline,
+    `FORGE_WORKER_DEADLINE_S` in the target profile; 1,200 seconds by default) or spend without
+    anything else going wrong;
+  - **work larger than the budget:** the tasks are known, but the project's tests take so long
+    that few full test runs fit in one attempt (the diagnosis and `forge doctor --baseline` show
+    the test-run allowance);
+  - **unknown work or an environment need:** a task is research ("locate the suites that…"),
+    or the work needs the runtime, dependencies, egress or the lock file changed. More time
+    doesn't help: the attempt keeps searching, or changes what it isn't allowed to.
   - **`spend_cap`:** the attempt reached `FORGE_SPEND_CAP_USD`, or `FORGE_TOKEN_CAP` when
     the provider reports no cost, and the watchdog stopped it.
-- **Fix:**
-  - Confirm the retry if the cause looks temporary.
-  - For repeated `deadline` failures, try a faster model.
+- **Fix:** follow the diagnosis's recommendation; the choice is yours.
+  - **retry** when the cause looks temporary; for repeated `deadline` failures with nothing
+    else in the diagnosis, try a faster model;
+  - **raise the budget:** set `FORGE_WORKER_DEADLINE_S` higher in the target profile, then start
+    a new run (a run keeps the budget it started with);
+  - **back to planning:** end the run with `./chalkeus forge approve --run <id> replan` (or
+    `/approve replan` on the tracking issue), resolve the research or the environment change in
+    planning, then start a new run.
   - For repeated `spend_cap` failures, check the attempt's token count in `summary.md`. A
     reference attempt uses roughly 225,000–480,000 tokens. Raise the cap in
     `~/.config/chalkeus/forge.env` only if you accept the cost.
   - After `RETRIES_EXHAUSTED`, start over with `./chalkeus forge reset-fixture` and then
     `./chalkeus forge run`.
 - **Confirm:** a later attempt reaches grading. AU06 passes in the audit.
-- **Source:** `internal/worker/worker.go` (failure reasons).
+- **Source:** `internal/worker/worker.go` (failure reasons), `internal/diagnose` (diagnosis).
 - **If the worker never started:** on a Mac, with a cluster more than a day old, see
   [Pods don't start on a Mac](#calico-token-expired).
 
@@ -299,6 +314,70 @@ Operators who pull the published images never see it.
   pods reach `Running`.
 - **Source:** Calico's `cni-config-monitor` (`token_watch.go` in the `calico-node` log);
   `specs/031-macos-multiarch/evidence/mac-up.md`.
+
+<a id="diagnosis"></a>
+### Diagnosis and back to planning: the retry question recommends "back to planning"
+
+- **Symptom:** after a failed attempt, the retry question (and the tracking issue, and
+  `summary.md` under `## Diagnosis`) shows `diagnosis of attempt N`, its signals, what they
+  point to, and `recommended: back to planning`.
+- **Cause:** the attempt's evidence points to work an attempt can't finish:
+  - **unknown work:** an unchecked task reads as research (it starts with one of the phrases in
+    [targets: research tasks](targets.md#research-tasks)), or the failure reason isn't one of
+    the [attempt failure reasons](#attempt-failure-reasons) below;
+  - **an environment need:** a dependency manifest or lock file changed outside the allowed
+    paths, or an install or download failed while the egress proxy refused hosts;
+  - **a repeated timeout:** this attempt and the one before it both stopped at the deadline with
+    nothing else in the evidence. Open-ended work isn't always worded as research ("make … pass
+    reliably").
+  The diagnosis is built from the attempt's kept files, without a model, and the same evidence
+  always gives the same diagnosis. Forge never acts on it.
+- **Fix:** go back to planning:
+  1. end the run: `./chalkeus forge approve --run <id> replan` (your agent harness asks you
+     first), or reply `/approve replan` on the tracking issue. The run stops as
+     `stopped(back-to-planning)`; its watcher stops and the audit reports AU02 and AU03 as `n/a`;
+  2. for unknown work, do the research outside the run (for example run the investigation
+     yourself, or with an agent that assists you) and record the answer in the item's
+     `research.md` with `/speckit-plan`; then turn it into known tasks with `/speckit-tasks`.
+     The diagnosis names a Spec Kit extension for it (`tool for …` lines): the **Research
+     Harness** (`/speckit.harness.explore`, then `/speckit.harness.report`, which writes
+     `research.md`) for unknown work, and **Bug Triage** (`/speckit.bug.assess` with the
+     diagnosis as the report) for a defect in the project. It shows the commands when the target
+     has the extension enabled, otherwise how to install it. The Research Harness is a community
+     extension that Spec Kit hasn't vetted: review it before you install it. Forge never
+     installs or runs either;
+  3. for an environment need, make the change in your planning PR (the runtime, dependencies,
+     the lock file) or in the target profile (registries);
+  4. merge the planning PR and start a new run of the item or slice.
+- **Confirm:** `./chalkeus forge doctor --target <t> --item NNN --slice <id> --baseline` shows no
+  research-task warning, and the new run's attempt reaches grading.
+- **Source:** `internal/diagnose`, `internal/pipeline/diagnose.go`.
+
+<a id="attempt-failure-reasons"></a>
+### Attempt failure reasons
+
+- **Symptom:** an attempt's grade in `summary.md` shows `fail (<reason>)`.
+- **Cause and fix**, by reason:
+  - `deadline`, `spend_cap`: see [Deadline or spend cap](#deadline-or-spend-cap).
+  - `grade_fail`: the change was graded and a check failed (G1–G8 in the attempt's
+    `grade.json`). The usual case: retry. A first attempt of the fixture's task A fails on
+    purpose (AU11).
+  - `harness_error`: the agent harness or the worker setup failed (clone, workspace, model
+    provider). Look at the attempt's `report.json` `log_tail`; a 401 is a
+    [model key problem](#model-key).
+  - `no_result`, `bad_frame`, `oversize`: the worker or grader result file was missing,
+    unreadable or too large. A crashed pod or a full disk; retry, and look at the pod's events
+    with `-vv`.
+  - `grader_error`, `grader_timeout`: the grader crashed or ran past its job deadline. Raise
+    `FORGE_GRADER_DEADLINE_S` in the target profile if the project's tests are slow.
+  - worker report errors `clone_failed`, `checkout_failed`, `workspace_failed`,
+    `bundle_failed`, `bad_meta`, `induction_failed`: the worker couldn't set up or package its
+    workspace. Retry once; if it repeats, report it with the attempt's `report.json`.
+  - `no_frame` (a note on a `deadline`): the worker was stopped before it could write its
+    result, so its usage and changes weren't collected.
+  - any other reason: the diagnosis reports it as not recognised; go
+    [back to planning](#diagnosis) to find the cause before retrying.
+- **Source:** `internal/diagnose/catalogue.go` (the list the docs test checks).
 
 <a id="cost-zero"></a>
 ### Cost shows 0: `Cost (USD)` is `0.0` for every attempt

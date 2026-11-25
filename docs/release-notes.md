@@ -1,5 +1,29 @@
 # Release notes
 
+## Research before build: diagnosis, back to planning, doctor warnings (033)
+
+New:
+- **A diagnosis after every failed attempt**, shown with the retry question, on the tracking
+  issue and in `summary.md` (`## Diagnosis`); kept as `attempts/<task>-<n>/diagnosis.json`. It
+  lists what the evidence shows (research-worded tasks, files changed outside the allowed paths,
+  egress refusals, an unrecognised failure, the test-run allowance) and recommends retry, raise
+  the budget, or back to planning ([troubleshooting](troubleshooting.md#diagnosis)). It uses no
+  model and never acts.
+- **`replan`**, the other answer to a retry: `./chalkeus forge approve --run <id> replan` or
+  `/approve replan` on the tracking issue ends the run as `stopped(back-to-planning)`. Step mode
+  counts it as ended; the audit reports AU02 and AU03 as `n/a` for it.
+- **Doctor warnings** for research-worded tasks, a runtime version the toolchain doesn't provide,
+  and (with `--baseline`) how many full test runs fit in one attempt
+  ([targets.md](targets.md#research-tasks)). Warnings never refuse a run.
+
+- **Planning tools in the route back** (033 US5): a back-to-planning diagnosis names the Spec
+  Kit Research Harness for unknown work and Bug Triage for a defect, with their commands when the
+  target has them enabled and an install hint otherwise. A second timeout in a row with nothing
+  else in the evidence now recommends back to planning instead of another retry.
+
+The test-run time comes from the next tools image; until then doctor says it isn't recorded.
+Nothing to do.
+
 ## Brownfield intake: the debt report (029, part 1)
 
 New: `./chalkeus forge debt --target <name> [--json]`, a read-only report for an existing

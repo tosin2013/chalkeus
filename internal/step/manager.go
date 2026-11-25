@@ -200,7 +200,7 @@ func (m *Manager) finishRelays(states []ItemState) {
 	}
 }
 
-// runEnded reports whether a run's recorded state is final (succeeded, failed or declined), or
+// runEnded reports whether a run's recorded state is final (succeeded, failed, declined or stopped), or
 // its record can't be read (nothing more will be written that step mode can follow).
 func runEnded(dir string) bool {
 	var st struct {
@@ -210,7 +210,8 @@ func runEnded(dir string) bool {
 	if err != nil || json.Unmarshal(raw, &st) != nil {
 		return true
 	}
-	return st.State == "succeeded" || strings.HasPrefix(st.State, "failed") || strings.HasPrefix(st.State, "declined")
+	return st.State == "succeeded" || strings.HasPrefix(st.State, "failed") || strings.HasPrefix(st.State, "declined") ||
+		strings.HasPrefix(st.State, "stopped") // 033: ended by the owner to go back to planning
 }
 
 var runIDRE = regexp.MustCompile(`== run (\d{8}T\d{6}Z)`)

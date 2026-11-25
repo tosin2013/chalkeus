@@ -31,6 +31,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 CHECKS = ["G1_bundle_applies", "G2_allowed_paths", "G3_tasks_checked", "G4_visible_tests", "G5_hidden_tests"]
 TEST_CHECKS = ["G6_tests_changed", "G7_existing_tests_kept"]
@@ -324,7 +325,9 @@ def baseline(meta, inp, grading, work, repo):
     if add("G1_bundle_applies", "pass" if rc2 == 0 else "fail", " | ".join(x for x in (o1, o2) if x)[:2000] or "base checked out"):
         add("G2_allowed_paths", "skipped", "baseline: no change")
         add("G3_tasks_checked", "skipped", "baseline: no change")
+        started = time.monotonic()
         rc, out = project_tests(meta, repo)
+        test_seconds = max(1, round(time.monotonic() - started))  # 033 R7: one run of the test command
         earlier_ok = True
         if add("G4_visible_tests", "pass" if rc == 0 else "fail", out) and earlier_slices(meta):
             # 026: a merged slice's hidden tests must still pass on this slice's base.
@@ -349,9 +352,12 @@ def baseline(meta, inp, grading, work, repo):
     passed = by["G1_bundle_applies"] == "pass" and by["G4_visible_tests"] == "pass" and by["G5_hidden_tests"] == "pass" \
         and by.get("G8_earlier_slices_kept", "pass") == "pass"
     failure = "EARLIER_SLICE_BROKEN_ON_BASE" if by.get("G8_earlier_slices_kept") == "fail" else None
-    return {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),
-            "mode": "baseline", "result": "pass" if passed else "fail", "failure": failure,
-            "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
+    report = {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),
+              "mode": "baseline", "result": "pass" if passed else "fail", "failure": failure,
+              "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
+    if "test_seconds" in locals():
+        report["test_seconds"] = test_seconds
+    return report
 
 
 def main() -> int:
