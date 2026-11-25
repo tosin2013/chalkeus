@@ -101,9 +101,10 @@ You need:
 > - **Install spec-status for macOS:** `spec_0.4.1_darwin_arm64.tar.gz`, checked with
 >   `shasum -a 256 -c --ignore-missing spec_0.4.1_checksums.txt`. The gate runs this copy, so
 >   an older one gives the wrong results.
-> - **A cluster older than about a day stops starting pods.** Docker Desktop's VM pauses while
->   the Mac sleeps, and Calico misses the renewal of its 24-hour network token. Restart
->   `calico-node`, or run `up` again, before a run on an old cluster; see
+> - **A cluster older than about a day can stop starting pods.** Docker Desktop's VM pauses while
+>   the Mac sleeps, and Calico misses the renewal of its 24-hour network token. Forge checks
+>   the token before each attempt and restarts `calico-node` when it won't last; `doctor`
+>   shows the time left. See
 >   [Pods don't start on a Mac](troubleshooting.md#calico-token-expired). Linux hosts aren't
 >   affected.
 

@@ -782,6 +782,24 @@ func (c *Client) DaemonSetReady(ns, name string, timeout time.Duration) bool {
 	return false
 }
 
+// RestartDaemonSet restarts a DaemonSet's pods (`kubectl rollout restart ds/<name>`): it stamps the
+// pod template with the restart time, then waits for the rollout to finish.
+func (c *Client) RestartDaemonSet(ns, name string, timeout time.Duration) error {
+	patch := fmt.Sprintf(`{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":%q}}}}}`,
+		time.Now().UTC().Format(time.RFC3339))
+	ctx, cancel := ctxT(30 * time.Second)
+	_, err := c.CS.AppsV1().DaemonSets(ns).Patch(ctx, name, types.StrategicMergePatchType, []byte(patch),
+		metav1.PatchOptions{FieldManager: FieldManager})
+	cancel()
+	if err != nil {
+		return err
+	}
+	if !c.DaemonSetReady(ns, name, timeout) {
+		return fmt.Errorf("daemonset %s/%s not ready after %s", ns, name, timeout)
+	}
+	return nil
+}
+
 // NodesReady waits until every node reports Ready (`kubectl wait --for=condition=Ready node --all`).
 func (c *Client) NodesReady(timeout time.Duration) bool {
 	end := time.Now().Add(timeout)

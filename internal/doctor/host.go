@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/tosin2013/chalkeus/internal/cnitoken"
 	"github.com/tosin2013/chalkeus/internal/hostinfo"
 )
 
@@ -75,6 +77,26 @@ func SpecRow(version, pinned string) (string, string) {
 		return Pass, "spec " + got + ", the pinned release"
 	}
 	return Warn, "spec " + got + " on this host, pinned " + pinned + ": the gate runs the host's copy; install the pinned release"
+}
+
+// NetworkTokenWarn is how much time left on Calico's CNI token earns a warning (031 T034): about
+// one attempt with its grading.
+const NetworkTokenWarn = 2 * time.Hour
+
+// NetworkTokenRow is the "network token" row (after `up`): the time left on Calico's CNI token.
+// An expired or short token isn't a failure: each attempt restarts calico-node first when the
+// token won't last it. err is a failure to read the token's expiry.
+func NetworkTokenRow(left time.Duration, err error) (string, string) {
+	const fix = "each attempt restarts calico-node first; to refresh it now: kubectl --context kind-chalkeus-m1 -n kube-system rollout restart ds/calico-node (docs/troubleshooting.md#calico-token-expired)"
+	switch {
+	case err != nil:
+		return Warn, "couldn't read Calico's CNI token: " + err.Error()
+	case left <= 0:
+		return Warn, "Calico's CNI token has expired, so new pods can't start; " + fix
+	case left < NetworkTokenWarn:
+		return Warn, "Calico's CNI token expires in " + cnitoken.Left(left) + "; " + fix
+	}
+	return Pass, "Calico's CNI token expires in " + cnitoken.Left(left)
 }
 
 // NodePlatformRow is the "node platform" row (after `up`).

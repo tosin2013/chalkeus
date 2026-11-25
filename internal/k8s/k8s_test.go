@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	authv1 "k8s.io/api/authorization/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -223,5 +224,25 @@ func TestReceiverReady(t *testing.T) {
 	}
 	if got := c.ReceiverReady("pilot-w-002-1", "worker", "other", 1500*time.Millisecond); got != "" {
 		t.Fatal(got)
+	}
+}
+
+// 031 T034: RestartDaemonSet stamps the pod template, like `kubectl rollout restart`.
+func TestRestartDaemonSet(t *testing.T) {
+	ds := &appsv1.DaemonSet{ObjectMeta: metav1.ObjectMeta{Name: "calico-node", Namespace: "kube-system", Generation: 1},
+		Status: appsv1.DaemonSetStatus{ObservedGeneration: 1, DesiredNumberScheduled: 1, UpdatedNumberScheduled: 1, NumberReady: 1}}
+	c, cs := fakeClient(ds)
+	if err := c.RestartDaemonSet("kube-system", "calico-node", 5*time.Second); err != nil {
+		t.Fatal(err)
+	}
+	got, err := cs.AppsV1().DaemonSets("kube-system").Get(context.Background(), "calico-node", metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] == "" {
+		t.Fatalf("no restartedAt annotation: %v", got.Spec.Template.Annotations)
+	}
+	if err := c.RestartDaemonSet("kube-system", "missing", time.Second); err == nil {
+		t.Error("a missing daemonset: no error")
 	}
 }

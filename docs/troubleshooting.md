@@ -296,7 +296,13 @@ Operators who pull the published images never see it.
   counted about 2.4 hours of uptime in the 24 hours since, and the first failure came 24 hours
   and 1 minute after `up`.
 - **Fix:**
-  - Restart `calico-node`. It writes a new 24-hour token; nothing else changes:
+  - Forge checks the token before each attempt. If it won't last the attempt (the worker
+    deadline plus 45 minutes for grading and publishing), forge restarts `calico-node`, waits
+    for a new token, and records `network_repaired` in the run's events. If that fails, the
+    attempt fails with `harness_error` and an `attempt_error` naming this entry. `./chalkeus
+    forge doctor` shows the time left in its `network token` row.
+  - To refresh it yourself, restart `calico-node`. It writes a new 24-hour token; nothing else
+    changes:
 
     ```sh
     kubectl --context kind-chalkeus-m1 -n kube-system rollout restart ds/calico-node
@@ -307,13 +313,13 @@ Operators who pull the published images never see it.
   - The attempt that failed this way never ran its worker. Confirm the retry, or, for a run
     whose evidence should show no infrastructure failure, reset the fixture and start a new
     run.
-  - To avoid it: on a Mac, restart `calico-node` (or run `up` again) before a run if the
-    cluster is more than about 20 hours old, and keep the Mac awake during a run.
+  - Keep the Mac awake during a run: a token that is fresh when an attempt starts can still
+    run out if the VM's clock stops for long enough.
 - **Confirm:** the node's file `/etc/cni/net.d/calico-kubeconfig` has a fresh time
   (`docker exec chalkeus-m1-control-plane ls -l /etc/cni/net.d/calico-kubeconfig`), and new
   pods reach `Running`.
 - **Source:** Calico's `cni-config-monitor` (`token_watch.go` in the `calico-node` log);
-  `specs/031-macos-multiarch/evidence/mac-up.md`.
+  `internal/cnitoken` (the check); `specs/031-macos-multiarch/evidence/mac-up.md`.
 
 <a id="diagnosis"></a>
 ### Diagnosis and back to planning: the retry question recommends "back to planning"

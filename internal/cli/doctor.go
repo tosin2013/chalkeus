@@ -15,6 +15,7 @@ import (
 
 	"github.com/tosin2013/chalkeus/internal/author"
 	"github.com/tosin2013/chalkeus/internal/cluster"
+	"github.com/tosin2013/chalkeus/internal/cnitoken"
 	"github.com/tosin2013/chalkeus/internal/config"
 	"github.com/tosin2013/chalkeus/internal/doctor"
 	"github.com/tosin2013/chalkeus/internal/fixture"
@@ -134,6 +135,14 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 			src, _ := os.ReadFile(l.ImageSource)
 			st, det := doctor.ImagesRow(strings.TrimSpace(string(src)), running, lock)
 			r.Add("cluster", "images", st, det)
+			// 031 T034: Calico's CNI token (a Mac's sleeping VM can let it expire unrenewed).
+			if exp, err := cnitoken.NodeExpiry(paths.Cluster + "-control-plane"); err != nil {
+				st, det := doctor.NetworkTokenRow(0, err)
+				r.Add("cluster", "network token", st, det)
+			} else {
+				st, det := doctor.NetworkTokenRow(time.Until(exp), nil)
+				r.Add("cluster", "network token", st, det)
+			}
 			// 031: the node's platform, and a build of every pinned image for it.
 			if node, err := doctor.ProbeNodePlatform(paths.Context); err != nil {
 				r.Add("cluster", "node platform", doctor.Warn, "couldn't read the node's platform: "+err.Error())

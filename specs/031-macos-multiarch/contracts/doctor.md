@@ -13,6 +13,7 @@ today.
 | `spec-status` (added after T013) | `spec 0.4.1, the pinned release` | the host's copy differs from `SPEC_VERSION`: `spec <v> on this host, pinned <p>: the gate runs the host's copy; install the pinned release` | not installed: `spec-status isn't installed: install release v<p>` |
 | `node platform` (after `up`) | `linux/arm64` | — | `node platform <p> isn't linux/amd64 or linux/arm64` |
 | `image platforms` (after `up`, pinned images) | `all 7 images have linux/arm64` | registry unreadable: `couldn't check image platforms: <error>`; local build: `local build: images built for this host` | `<image> has no build for linux/arm64 (pilot/images.lock may predate 031); pull main and run ./chalkeus forge up` |
+| `network token` (after `up`, added by T034) | `Calico's CNI token expires in 23h10m` | under 2 hours: `Calico's CNI token expires in <t>; each attempt restarts calico-node first; to refresh it now: kubectl … rollout restart ds/calico-node (docs/troubleshooting.md#calico-token-expired)`; expired: `Calico's CNI token has expired, so new pods can't start; …`; unreadable: `couldn't read Calico's CNI token: <error>` | — (forge repairs it before each attempt) |
 
 Memory is not a host-area fail. 030's capacity check owns it (FR-012, R8). On macOS, the
 capacity message names Docker Desktop's Settings → Resources.
