@@ -1,7 +1,9 @@
 package evidence
 
 import (
+	"crypto/sha256"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -40,7 +42,7 @@ func TestWriteVersionsPicksTheNodesChecksums(t *testing.T) {
 	old := hostinfo.Command
 	defer func() { hostinfo.Command = old }()
 	pins := map[string]string{"OPENCODE_VERSION": "2.2.7", "OPENCODE_SHA256_AMD64": "amd-oc", "OPENCODE_SHA256_ARM64": "arm-oc",
-		"SPEC_SHA256_AMD64": "amd-spec", "SPEC_SHA256_ARM64": "arm-spec", "CALICO_VERSION": "v3.29.3", "REGISTRY_IMAGE": "registry:2@sha256:x"}
+		"SPEC_VERSION": "0.4.1", "SPEC_SHA256_AMD64": "amd-spec", "SPEC_SHA256_ARM64": "arm-spec", "CALICO_VERSION": "v3.29.3", "REGISTRY_IMAGE": "registry:2@sha256:x"}
 	for _, c := range []struct{ node, oc, spec string }{{"linux/arm64", "arm-oc", "arm-spec"}, {"linux/amd64", "amd-oc", "amd-spec"}} {
 		hostinfo.Command = func(_ time.Duration, name string, args ...string) ([]byte, error) {
 			if name == "kubectl" {
@@ -57,7 +59,8 @@ func TestWriteVersionsPicksTheNodesChecksums(t *testing.T) {
 		out := string(raw)
 		for _, want := range []string{
 			"opencode: 2.2.7 sha256=" + c.oc,
-			"sha256=" + c.spec,
+			"spec: spec 0.4.1 sha256=" + c.spec,
+			"host_spec: ",
 			"image_worker: w@sha256:a", // existing lines are unchanged
 			"node_platform: " + c.node,
 			"image_worker_platform: " + c.node,
@@ -70,5 +73,22 @@ func TestWriteVersionsPicksTheNodesChecksums(t *testing.T) {
 		if strings.Index(out, "host: ") > strings.Index(out, "host_os: ") {
 			t.Errorf("%s: the new lines must follow host:\n%s", c.node, out)
 		}
+	}
+}
+
+func TestHostSpecLineHashesTheBinaryItRan(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "spec")
+	body := []byte("#!/bin/sh\necho spec 0.3.0\n")
+	if err := os.WriteFile(bin, body, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("SPEC_BIN", bin)
+	want := fmt.Sprintf("host_spec: spec 0.3.0 sha256=%x", sha256.Sum256(body))
+	if got := HostSpecLine(); got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	t.Setenv("SPEC_BIN", filepath.Join(t.TempDir(), "missing"))
+	if got := HostSpecLine(); !strings.HasPrefix(got, "host_spec: unavailable") {
+		t.Fatalf("missing binary: %q", got)
 	}
 }

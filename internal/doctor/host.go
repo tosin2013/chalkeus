@@ -60,6 +60,23 @@ func RuntimeRow(h Host, rt Runtime) (string, string) {
 	return Pass, rt.Describe()
 }
 
+// SpecRow is the "spec-status" row: the gate runs the host's spec-status, so it should be the
+// pinned release (pilot/pins.env SPEC_VERSION). version is the first line of `spec --version`
+// ("spec 0.4.1"), or "" when spec isn't installed.
+func SpecRow(version, pinned string) (string, string) {
+	if version == "" {
+		return Fail, "spec-status isn't installed: install release v" + pinned + " (docs/operator-guide.md, step 4)"
+	}
+	got := strings.TrimSpace(strings.TrimPrefix(version, "spec "))
+	if f := strings.Fields(got); len(f) > 0 {
+		got = f[0]
+	}
+	if got == strings.TrimPrefix(pinned, "v") {
+		return Pass, "spec " + got + ", the pinned release"
+	}
+	return Warn, "spec " + got + " on this host, pinned " + pinned + ": the gate runs the host's copy; install the pinned release"
+}
+
 // NodePlatformRow is the "node platform" row (after `up`).
 func NodePlatformRow(p string) (string, string) {
 	if p == "linux/amd64" || p == "linux/arm64" {

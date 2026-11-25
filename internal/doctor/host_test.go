@@ -142,3 +142,17 @@ func TestHostRowsAndLockImages(t *testing.T) {
 		t.Fatalf("lock images: %v", got)
 	}
 }
+
+func TestSpecRow(t *testing.T) {
+	for _, c := range []struct{ version, pinned, st, has string }{
+		{"spec 0.4.1", "0.4.1", Pass, "pinned release"},
+		{"spec 0.4.1", "v0.4.1", Pass, "pinned release"},
+		{"spec 0.3.0", "0.4.1", Warn, "spec 0.3.0 on this host, pinned 0.4.1"},
+		{"", "0.4.1", Fail, "isn't installed"},
+	} {
+		st, det := SpecRow(c.version, c.pinned)
+		if st != c.st || !strings.Contains(det, c.has) {
+			t.Errorf("SpecRow(%q, %q) = %s %q", c.version, c.pinned, st, det)
+		}
+	}
+}

@@ -1,0 +1,172 @@
+{
+  "budget": {
+    "raised": [],
+    "source": "default",
+    "worker": {
+      "cpu": "2",
+      "deadline_s": 1200,
+      "memory": "2Gi",
+      "soft_margin_s": 120
+    }
+  },
+  "created": "2026-11-25T17:01:45Z",
+  "event_seq": 61,
+  "fixture_base": "501c7f2146bdf28fdba45bae9e2f3853243a0245",
+  "gate_seq": 5,
+  "impl": "go",
+  "mode": {
+    "name": "step-by-step",
+    "retry_limit": 2,
+    "spend_cap_usd": 1.0,
+    "token_cap": 2000000,
+    "worker_deadline_s": 1200
+  },
+  "paused_at": "2026-11-25T17:21:26Z",
+  "pending": {
+    "status_base": "22a8e23cc65e79235548f774da5ee8a890ea1c07",
+    "status_pr": 74,
+    "task": "A"
+  },
+  "proposed_mode": {
+    "name": "step-by-step",
+    "retry_limit": 2,
+    "spend_cap_usd": 1.0,
+    "token_cap": 2000000,
+    "worker_deadline_s": 1200
+  },
+  "publisher_login": "tosins-specfoundry-pilot[bot]",
+  "reason": null,
+  "run_id": "20261125T170145Z",
+  "state": "succeeded",
+  "tasks": {
+    "A": {
+      "attempts": [
+        {
+          "base_revision": "501c7f2146bdf28fdba45bae9e2f3853243a0245",
+          "changed_paths": [
+            "specs/001-slugify/tasks.md",
+            "src/slugkit/__init__.py",
+            "src/slugkit/slug.py",
+            "tests/test_slug.py"
+          ],
+          "harness_exit": 1,
+          "image": "ghcr.io/tosin2013/chalkeus-worker@sha256:7f88c9652600739f47aa508fd1e0fb690050843a14ab8fbe3c7b606e29d52ba3",
+          "induction": "withheld-acceptance-section",
+          "n": 1,
+          "namespace": "pilot-w-a-1",
+          "reason": "grade_fail",
+          "result": "fail",
+          "spend": {
+            "cap_mode": "token-fallback",
+            "cap_usd": 1.0,
+            "cost_usd": 0.0,
+            "stopped_by_cap": false,
+            "stopped_by_deadline": false,
+            "token_cap": 2000000,
+            "tokens": 83835
+          },
+          "state": "failed"
+        },
+        {
+          "base_revision": "501c7f2146bdf28fdba45bae9e2f3853243a0245",
+          "changed_paths": [
+            "specs/001-slugify/tasks.md",
+            "src/slugkit/__init__.py",
+            "src/slugkit/slug.py",
+            "tests/test_slug.py"
+          ],
+          "harness_exit": 0,
+          "image": "ghcr.io/tosin2013/chalkeus-worker@sha256:7f88c9652600739f47aa508fd1e0fb690050843a14ab8fbe3c7b606e29d52ba3",
+          "induction": null,
+          "n": 2,
+          "namespace": "pilot-w-a-2",
+          "reason": null,
+          "result": "pass",
+          "spend": {
+            "cap_mode": "token-fallback",
+            "cap_usd": 1.0,
+            "cost_usd": 0.0,
+            "stopped_by_cap": false,
+            "stopped_by_deadline": false,
+            "token_cap": 2000000,
+            "tokens": 18618
+          },
+          "state": "passed"
+        }
+      ],
+      "base_revision": "501c7f2146bdf28fdba45bae9e2f3853243a0245",
+      "gate_seqs": [
+        1
+      ],
+      "passing_attempt": 2,
+      "pr": {
+        "attempt": 2,
+        "author": "tosins-specfoundry-pilot[bot]",
+        "closes": 18,
+        "created": true,
+        "draft": true,
+        "head": "pilot/20261125T170145Z/a",
+        "kind": "task",
+        "number": 73,
+        "operator_login": "tosin2013",
+        "publisher_identity": "tosins-specfoundry-pilot[bot]",
+        "task": "A",
+        "url": "https://github.com/tosin2013/craz3-pilot-fixture/pull/73"
+      },
+      "state": "verified"
+    },
+    "B": {
+      "attempts": [
+        {
+          "base_revision": "7f7dc39f6adc00fc7d4574b8a4186097e23b3d86",
+          "changed_paths": [
+            "specs/002-unique-slug/tasks.md",
+            "src/slugkit/__init__.py",
+            "src/slugkit/unique.py",
+            "tests/test_unique.py"
+          ],
+          "harness_exit": 0,
+          "image": "ghcr.io/tosin2013/chalkeus-worker@sha256:7f88c9652600739f47aa508fd1e0fb690050843a14ab8fbe3c7b606e29d52ba3",
+          "induction": null,
+          "n": 1,
+          "namespace": "pilot-w-b-1",
+          "reason": null,
+          "result": "pass",
+          "spend": {
+            "cap_mode": "token-fallback",
+            "cap_usd": 1.0,
+            "cost_usd": 0.0,
+            "stopped_by_cap": false,
+            "stopped_by_deadline": false,
+            "token_cap": 2000000,
+            "tokens": 15970
+          },
+          "state": "passed"
+        }
+      ],
+      "base_revision": "7f7dc39f6adc00fc7d4574b8a4186097e23b3d86",
+      "gate_seqs": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "passing_attempt": 1,
+      "pr": {
+        "attempt": 1,
+        "author": "tosins-specfoundry-pilot[bot]",
+        "closes": 19,
+        "created": true,
+        "draft": true,
+        "head": "pilot/20261125T170145Z/b",
+        "kind": "task",
+        "number": 75,
+        "operator_login": "tosin2013",
+        "publisher_identity": "tosins-specfoundry-pilot[bot]",
+        "task": "B",
+        "url": "https://github.com/tosin2013/craz3-pilot-fixture/pull/75"
+      },
+      "state": "published"
+    }
+  }
+}

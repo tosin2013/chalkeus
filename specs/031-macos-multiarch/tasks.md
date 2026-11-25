@@ -41,13 +41,16 @@ the Mac end to end.
   - a new `merge` job (`needs: build`, skipped on PRs) runs `docker buildx imagetools create -t <ref>:sha-<short>` per image, fails unless each index lists exactly `linux/amd64` and `linux/arm64`, and writes `image-digests.json` with `images` (index digests) and `platforms` (data-model.md);
   - `digest-pr` needs `merge`; the F1 no-rebuild-loop rules and the lock-only diff check are unchanged.
 - [X] T011 [US1] Update `specs/003-m2-kelos-backend/contracts/image-workflow.md` with a short "Amended by 031" note pointing to `specs/031-macos-multiarch/contracts/image-workflow.md`
-- [ ] T012 [US1] Owner: merge T001–T011 so the workflow publishes both platforms, then merge the digest PR that updates `pilot/images.lock` with index digests. Then run quickstart §3's `imagetools inspect` loop and record its output in `specs/031-macos-multiarch/evidence/image-platforms.md`
+- [X] T012 [US1] Owner: merge T001–T011 so the workflow publishes both platforms, then merge the digest PR that updates `pilot/images.lock` with index digests. Then run quickstart §3's `imagetools inspect` loop and record its output in `specs/031-macos-multiarch/evidence/image-platforms.md`
+  Done as (2026-11-25): the owner merged #193 and the digest PRs (#196, #200); the `imagetools inspect` loop lists `linux/amd64` and `linux/arm64` for all seven images in `pilot/images.lock` ([evidence/image-platforms.md](evidence/image-platforms.md)).
 
 **Checkpoint**: published images are multi-platform; nothing on the host has changed yet.
 
 ## Phase 4: Linux regression (FR-005, SC-006)
 
-- [ ] T013 [US1] On the Linux amd64 machine, after T012: `./chalkeus forge up`, the fixture walkthrough, `down`, audit (quickstart §4). Compare with run 20261123T042536Z (026): same check results and audit 11/11; `versions.txt` differs only in the new image digests, the spec 0.4.1 line and (after T020) the new lines. Evidence in `specs/031-macos-multiarch/evidence/<run>/`
+- [X] T013 [US1] On the Linux amd64 machine, after T012: `./chalkeus forge up`, the fixture walkthrough, `down`, audit (quickstart §4). Compare with run 20261123T042536Z (026): same check results and audit 11/11; `versions.txt` differs only in the new image digests, the spec 0.4.1 line and (after T020) the new lines. Evidence in `specs/031-macos-multiarch/evidence/<run>/`
+  Done as (2026-11-25): run [20261125T170145Z](evidence/20261125T170145Z/), approvals on GitHub (`/approve mode`, `/approve retry`, and the owner's merges of #73 and status PR #74). Checks 32/32, audit 11/11 and teardown 3/3, with the same ids and results as 026's run; A/1 failed on G5_hidden_tests (induction), A/2 and B passed. `versions.txt` differs only in the run id, the `chalkeus-*` index digests, `spec 0.4.1` and the new host lines.
+  - A first run, [20261125T162546Z](evidence/20261125T162546Z/), had the same results, but this machine's own spec-status was 0.3.0. The gate runs the host's copy, and `up` doesn't install it, so its `spec:` line paired 0.3.0 with the pinned 0.4.1 checksum. After installing the pinned 0.4.1 (sha256 checked), the run was repeated. Follow-up in the same change: `versions.txt` now records the pinned version on `spec:` and the binary the host actually ran on a new `host_spec:` line, and doctor's host area gains a `spec-status` row that warns when the host's copy isn't the pinned release (contracts/doctor.md, data-model.md).
 
 ## Phase 5: User Story 4 - Know which host and platform a run used (Priority: P2)
 
