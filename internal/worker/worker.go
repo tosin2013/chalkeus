@@ -283,6 +283,7 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 			}
 		}()
 		nsTmpl, nsVars := "worker-ns.yaml.tmpl", map[string]string{"NS": ns, "RUN_ID": run.ID}
+		nsVars["QUOTA_CPU"], nsVars["QUOTA_MEMORY"] = QuotaLimits(lim) // 030: the quota follows the budget
 		if d.Item != nil {
 			nsTmpl, nsVars["PROXY_NS"] = "worker-ns-item.yaml.tmpl", d.Item.ProxyNS
 		}
@@ -527,4 +528,26 @@ func Failure(outcome, frameErr, reportErr string, hasFrame bool, spend map[strin
 		return "spend_cap", ""
 	}
 	return "", ""
+}
+
+// Default worker namespace quota limits: the catalog's worker budget (2 CPU, 2Gi), which also
+// covers the largest init container (setup).
+const (
+	DefaultQuotaCPU    = "2"
+	DefaultQuotaMemory = "2Gi"
+)
+
+// QuotaLimits are the worker namespace's ResourceQuota limits.cpu and limits.memory for a budget
+// (030): the worker container's limits, never below the defaults. Before this the quota stayed at
+// 2 CPU / 2Gi, so a raised budget's pod was refused by the quota and its receiver never started
+// (documcp run 20261125T200730Z, FORGE_WORKER_MEMORY=4Gi).
+func QuotaLimits(lim Limits) (cpu, memory string) {
+	cpu, memory = DefaultQuotaCPU, DefaultQuotaMemory
+	if lim.CPU != "" {
+		cpu = lim.CPU
+	}
+	if lim.Memory != "" {
+		memory = lim.Memory
+	}
+	return cpu, memory
 }
