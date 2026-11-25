@@ -1,0 +1,18 @@
+{
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/011-low-stock/tasks.md"
+  ],
+  "attempt": 0,
+  "base_revision": "db804e627fc0ee89c5eb8074f9c4f0d4357d37bf",
+  "command_timeout_s": 600,
+  "hidden_mode": "overlay",
+  "induction": null,
+  "item_id": "011",
+  "mode": "baseline",
+  "run_id": "20261125T220507Z",
+  "task": "011",
+  "test_command": "mvn -B test",
+  "toolchain": "jdk21-maven"
+}

@@ -1,0 +1,3 @@
+{"at": "2026-11-25T21:44:18Z", "attempt": null, "detail": "jdk21-maven Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5) (catalog)", "event": "toolchain_ok", "seq": 1, "stage": "prepare", "task": "011"}
+{"at": "2026-11-25T21:45:07Z", "attempt": null, "detail": "", "event": "prefetch_pass", "seq": 2, "stage": "prepare", "task": "011"}
+{"at": "2026-11-25T21:45:24Z", "attempt": 0, "detail": "", "event": "baseline_pass", "seq": 3, "stage": "baseline", "task": "011"}

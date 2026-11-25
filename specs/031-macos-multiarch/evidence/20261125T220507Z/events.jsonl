@@ -1,0 +1,36 @@
+{"at": "2026-11-25T22:05:08Z", "attempt": null, "detail": "tosin2013/stockroom", "event": "run_started", "seq": 1, "stage": "run", "task": null}
+{"at": "2026-11-25T22:05:09Z", "attempt": null, "detail": "seq=1 OK", "event": "gate_allow", "seq": 2, "stage": "gate", "task": "011"}
+{"at": "2026-11-25T22:05:09Z", "attempt": null, "detail": "{\"worker\":{\"cpu\":\"2\",\"memory\":\"2Gi\",\"deadline_s\":1200,\"soft_margin_s\":120},\"raised\":[],\"source\":\"catalog:jdk21-maven\"}", "event": "budget_resolved", "seq": 3, "stage": "prepare", "task": null}
+{"at": "2026-11-25T22:05:09Z", "attempt": null, "detail": "step=mode approved=false channel=none", "event": "approval_channel", "seq": 4, "stage": "approval", "task": null}
+{"at": "2026-11-25T22:05:09Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_declined", "seq": 5, "stage": "mode", "task": null}
+{"at": "2026-11-25T22:05:09Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-mode)", "seq": 6, "stage": "run", "task": null}
+{"at": "2026-11-25T22:05:55Z", "attempt": null, "detail": "step=mode channel=harness", "event": "approval_recorded", "seq": 7, "stage": "approval", "task": null}
+{"at": "2026-11-25T22:06:38Z", "attempt": null, "detail": "paused(awaiting-mode)", "event": "run_resumed", "seq": 8, "stage": "run", "task": null}
+{"at": "2026-11-25T22:06:38Z", "attempt": null, "detail": "step=mode approved=true channel=harness", "event": "approval_channel", "seq": 9, "stage": "approval", "task": null}
+{"at": "2026-11-25T22:06:38Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_confirmed", "seq": 10, "stage": "mode", "task": null}
+{"at": "2026-11-25T22:06:45Z", "attempt": null, "detail": "jdk21-maven Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5) (catalog)", "event": "toolchain_ok", "seq": 11, "stage": "prepare", "task": "011"}
+{"at": "2026-11-25T22:07:56Z", "attempt": null, "detail": "", "event": "prefetch_pass", "seq": 12, "stage": "prepare", "task": "011"}
+{"at": "2026-11-25T22:08:12Z", "attempt": 0, "detail": "", "event": "baseline_pass", "seq": 13, "stage": "baseline", "task": "011"}
+{"at": "2026-11-25T22:08:12Z", "attempt": 1, "detail": "ns=pilot-w-011-1 induction=None", "event": "attempt_created", "seq": 14, "stage": "attempt", "task": "011"}
+{"at": "2026-11-25T22:08:13Z", "attempt": 1, "detail": "ghcr.io/tosin2013/chalkeus-worker@sha256:fca83917f97bbb66296947b9d40e86e61be4852b061a03368559e182ccfcecd6", "event": "attempt_running", "seq": 15, "stage": "attempt", "task": "011"}
+{"at": "2026-11-25T22:11:40Z", "attempt": 1, "detail": "", "event": "attempt_collected", "seq": 16, "stage": "attempt", "task": "011"}
+{"at": "2026-11-25T22:11:40Z", "attempt": 1, "detail": "pilot-g-011", "event": "grade_started", "seq": 17, "stage": "grade", "task": "011"}
+{"at": "2026-11-25T22:12:00Z", "attempt": 1, "detail": "", "event": "grade_pass", "seq": 18, "stage": "grade", "task": "011"}
+{"at": "2026-11-25T22:12:01Z", "attempt": 1, "detail": "feb9fbc18f9cba11ef56446adf21729e6f05f4ec", "event": "change_replayed", "seq": 19, "stage": "publish", "task": "011"}
+{"at": "2026-11-25T22:12:01Z", "attempt": 1, "detail": "pilot/20261125T220507Z/011", "event": "publish_started", "seq": 20, "stage": "publish", "task": "011"}
+{"at": "2026-11-25T22:12:10Z", "attempt": 1, "detail": "https://github.com/tosin2013/stockroom/pull/55", "event": "pr_opened", "seq": 21, "stage": "publish", "task": "011"}
+{"at": "2026-11-25T22:12:10Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 22, "stage": "run", "task": null}
+{"at": "2026-11-25T22:13:02Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 23, "stage": "run", "task": null}
+{"at": "2026-11-25T22:13:03Z", "attempt": null, "detail": "step=reconcile approved=false channel=none", "event": "approval_channel", "seq": 24, "stage": "approval", "task": "011"}
+{"at": "2026-11-25T22:13:03Z", "attempt": 1, "detail": "", "event": "reconcile_DECLINED", "seq": 25, "stage": "reconcile", "task": "011"}
+{"at": "2026-11-25T22:13:03Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 26, "stage": "run", "task": null}
+{"at": "2026-11-25T22:14:28Z", "attempt": null, "detail": "step=reconcile channel=harness", "event": "approval_recorded", "seq": 27, "stage": "approval", "task": "011"}
+{"at": "2026-11-25T22:14:33Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 28, "stage": "run", "task": null}
+{"at": "2026-11-25T22:14:34Z", "attempt": null, "detail": "step=reconcile approved=true channel=harness", "event": "approval_channel", "seq": 29, "stage": "approval", "task": "011"}
+{"at": "2026-11-25T22:14:35Z", "attempt": 1, "detail": "ecf37bb70ef29e9c7a8579e9f118fc0832643244", "event": "reconcile_applied", "seq": 30, "stage": "reconcile", "task": "011"}
+{"at": "2026-11-25T22:14:35Z", "attempt": null, "detail": "92", "event": "merge_wait_seconds", "seq": 31, "stage": "reconcile", "task": "011"}
+{"at": "2026-11-25T22:14:35Z", "attempt": null, "detail": "ecf37bb70ef29e9c7a8579e9f118fc0832643244", "event": "task_verified", "seq": 32, "stage": "status", "task": "011"}
+{"at": "2026-11-25T22:14:35Z", "attempt": null, "detail": "10/10", "event": "audit_done", "seq": 33, "stage": "audit", "task": null}
+{"at": "2026-11-25T22:14:35Z", "attempt": null, "detail": "", "event": "run_succeeded", "seq": 34, "stage": "run", "task": null}
+{"at": "2026-11-25T22:16:11Z", "attempt": null, "detail": "teardown.jsonl", "event": "torn_down", "seq": 35, "stage": "teardown", "task": null}
+{"at": "2026-11-25T22:16:11Z", "attempt": null, "detail": "11/11", "event": "audit_done", "seq": 36, "stage": "audit", "task": null}
