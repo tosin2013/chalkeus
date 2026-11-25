@@ -1,0 +1,15 @@
+{
+  "applied_commit": "ef6979a6b4c52d2b0d68805562165338ceb918dd",
+  "approved": true,
+  "at": "2026-11-25T19:43:05Z",
+  "item_id": "001",
+  "merge_commit": "68a4225c9cd1bd6615b83982be01af1a82f09c17",
+  "mismatched_paths": [],
+  "pr": 77,
+  "pr_merged": true,
+  "proposed": "planned\u2192verified",
+  "reason": null,
+  "task": "A",
+  "tasks_percent": 100,
+  "tree_matches_graded": true
+}

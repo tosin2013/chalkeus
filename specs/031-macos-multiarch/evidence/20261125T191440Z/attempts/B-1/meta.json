@@ -1,0 +1,14 @@
+{
+  "allowed_paths": [
+    "src/slugkit/*",
+    "tests/*",
+    "specs/002-unique-slug/tasks.md"
+  ],
+  "attempt": 1,
+  "base_revision": "ef6979a6b4c52d2b0d68805562165338ceb918dd",
+  "induction": null,
+  "item_id": "002",
+  "run_id": "20261125T191440Z",
+  "soft_deadline_s": 1080,
+  "task": "B"
+}

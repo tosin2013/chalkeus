@@ -94,8 +94,18 @@ You need:
 - **A GitHub account.**
 - **A model provider** with an OpenAI-compatible endpoint, and an API key for it.
 
-> **macOS is not supported yet.** The pilot's images are built for amd64 only; Apple Silicon
-> needs multi-architecture images, which are planned (section 13).
+> **macOS is being validated (roadmap item 031).** The images are now built for both amd64 and
+> arm64, and `up` and the isolation suite pass on an Apple Silicon Mac with Docker Desktop.
+> This guide's macOS steps follow once the Mac runs are complete. Two things differ on a Mac
+> today:
+> - **Install spec-status for macOS:** `spec_0.4.1_darwin_arm64.tar.gz`, checked with
+>   `shasum -a 256 -c --ignore-missing spec_0.4.1_checksums.txt`. The gate runs this copy, so
+>   an older one gives the wrong results.
+> - **A cluster older than about a day stops starting pods.** Docker Desktop's VM pauses while
+>   the Mac sleeps, and Calico misses the renewal of its 24-hour network token. Restart
+>   `calico-node`, or run `up` again, before a run on an old cluster; see
+>   [Pods don't start on a Mac](troubleshooting.md#calico-token-expired). Linux hosts aren't
+>   affected.
 
 If something in this guide fails, see [troubleshooting](troubleshooting.md).
 
@@ -648,4 +658,4 @@ This guide describes the pilot today. Planned
 | **005:** OpenShift | An enterprise install path (restricted SCC, possibly images on Quay), and per-run model keys |
 | **007:** Operator observability | Metrics, traces and events from each run to a collector you run |
 | **008:** More harnesses | Claude Code and Codex workers alongside OpenCode |
-| **macOS** | Needs multi-architecture images (amd64 and arm64); not yet scheduled |
+| **031:** macOS | Multi-architecture images (amd64 and arm64) are shipped; the Mac runs are in progress. See the note in section 3 |

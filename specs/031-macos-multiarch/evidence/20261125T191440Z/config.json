@@ -1,0 +1,28 @@
+{
+  "pilot_env": {
+    "PILOT_APP_ID": "5778430",
+    "PILOT_APP_INSTALLATION_ID": "182433248",
+    "PILOT_FIXTURE_BRANCH": "main",
+    "PILOT_FIXTURE_REPO": "tosin2013/craz3-pilot-fixture",
+    "PILOT_GITHUB_APPROVALS": "off",
+    "PILOT_GITHUB_ISSUES": "off",
+    "PILOT_MODEL": "deepseek/deepseek-v4-pro",
+    "PILOT_MODEL_EGRESS_HOSTS": "sha256:1233de6f87663d16",
+    "PILOT_PROVIDER_CAP_DECLARED": "false",
+    "PILOT_PUBLISHER_CREDENTIAL": "app",
+    "PILOT_SPEND_CAP_USD": "1.00",
+    "PILOT_TOKEN_CAP": "2000000",
+    "RETRY_LIMIT": "2"
+  },
+  "secret_files": {
+    "opencode/deepseek_api_key": {
+      "sha256": "7e82a835f69ba2c1f17726483d8555b46182a7a766acf8aba061004781557bf4"
+    },
+    "opencode/opencode.json": {
+      "sha256": "9caa8d566a6959374024c95dd78accecd3a7e88d7ba016ea890ae5770a84d427"
+    },
+    "publisher.env": {
+      "sha256": null
+    }
+  }
+}
