@@ -27,7 +27,7 @@ func TestDocsResearchBeforeBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := regexp.MustCompile("(?s)A task that starts with one of\\s+these phrases reads as research: (.*?)\\. Do the").FindSubmatch(tg)
+	m := regexp.MustCompile(`(?s)A task that starts with one of\s+these phrases reads as research: (.*?)\. Do the`).FindSubmatch(tg)
 	if m == nil {
 		t.Fatal("docs/targets.md#research-tasks: the research phrase list is missing")
 	}

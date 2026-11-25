@@ -202,7 +202,7 @@ func Record(run *evidence.Run, step, channel, approver string, commentID any) (i
 		return 4, "the run is waiting for you to merge A's PR on GitHub; merging is never approved here. " +
 			"Merge it, run `./chalkeus forge resume`, then approve the reconcile proposal it shows."
 	}
-	if p.Step != step && !(step == Replan && p.Step == "retry") {
+	if p.Step != step && (step != Replan || p.Step != "retry") {
 		return 2, fmt.Sprintf("run %s is waiting for '%s', not '%s': %s", run.ID, p.Step, step, Describe(p))
 	}
 	if channel == "" {
