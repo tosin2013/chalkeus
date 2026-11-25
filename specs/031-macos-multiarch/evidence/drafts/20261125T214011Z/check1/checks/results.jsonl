@@ -1,1 +1,0 @@
-{"description": "graders have no egress; only the prefetch pod reaches DNS and its registries-only proxy", "detail": "pilot-g-011 default_deny=true unexpected=[]", "id": "P12", "requirement": "014 R7", "result": "pass"}
