@@ -1,7 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.35.2 → 1.36.0 (this revision)
+Version change: 1.36.0 → 1.37.0 (this revision)
+Bump rationale: MINOR — a new planned item (033). Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-25, Tosin Akinosho):
+  - 033 (new, planned): research before build. Doctor warns about research-style tasks, a
+    deadline that affords too few test runs, and environment changes a slice needs; after an
+    attempt fails for an uncatalogued reason or an environment need, the retry question shows
+    the evidence and offers retry, a bigger budget, or back to planning. Greenfield and
+    brownfield. From documcp's US1 run 20261125T163307Z.
+Specs affected: 033
+Open questions added/resolved: none
+
+Prior: Version change: 1.35.2 → 1.36.0
 Bump rationale: MINOR — a new item (032), specced. Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-24, Tosin Akinosho):
   - 032 (new, specced): task runs within a slice. A slice is built one task (or a small group)
@@ -2226,6 +2237,53 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   owner: split by task, automated like `forge step`, and cheaper in tokens because each attempt
   carries one task, not the slice. Relates to Q4 (granularity, decided per slice by 026) and Q12.
 
+### 033 — Research before build: route unknown work back to planning  [status: planned]
+
+- **Description:** Notice when a slice holds work nobody yet knows how to do, or work that
+  needs the environment changed, and send it back to the humans' planning (C-12) with the
+  evidence, instead of spending attempts on it. For greenfield and brownfield targets alike.
+- **Outcome:** before a run, doctor warns about such a slice and says why; after an attempt
+  fails for a reason Chalkeus hasn't seen before, or because the environment must change, the
+  retry question shows what the evidence says and offers three choices: retry, raise the
+  budget, or back to planning (with the Spec Kit command or the planning-PR change to make).
+  Chalkeus recommends; the owner decides.
+- **Scope (in):**
+  - **trigger, a problem not seen before:** an attempt's or the baseline's failure that
+    matches no catalogued cause (the failure codes in `docs/troubleshooting.md`), or a slice
+    task that is research rather than a known change ("locate", "find", "investigate",
+    "identify the cause");
+  - **trigger, an environment update:** the work needs something an attempt can't change:
+    the runtime or toolchain, dependencies or the lockfile, native install scripts, egress
+    hosts, or the pod budget (030); evidence includes proxy denials, prefetch failures,
+    changes to manifest or lock files outside the allowed paths, and an engine or toolchain
+    version the profile doesn't provide;
+  - **before a run (doctor and readiness, warnings only):** research-style tasks in the slice;
+    the baseline's measured test-command time against the worker deadline (how many full test
+    runs one attempt can afford); environment needs visible in the plan (a runtime or
+    dependency change not yet on the default branch);
+  - **after an attempt:** a short diagnosis from the attempt's evidence (how it ended, test
+    runs and their time, files changed outside the allowed paths, proxy denials, the tasks it
+    stopped in), shown in the retry question and on the tracking issue, with the three choices;
+  - **back to planning:** the recommendation names the route: `/speckit-plan` (Phase 0,
+    `research.md`) then `/speckit-tasks` for unknown work; the owner's planning PR for an
+    environment change (C-12, and targets' constitutions like documcp's VI); a new or amended
+    item when the scope itself changes;
+  - docs: what each trigger means, for a new project and for an existing one, and how to do
+    the research (an agent may assist the owner, C-12).
+- **Scope (out):** forge doing the research or editing specs, tasks or the roadmap itself
+  (C-12); changing the environment from an attempt; blocking a run on a heuristic (warnings
+  only); automatic retries or budget raises; judging model quality (C-16).
+- **Depends on:** 026, 030
+- **Governed by:** C-01, C-04, C-12, C-16
+- **Notes:** Added 2026-11-25 (owner). From documcp's US1 run 20261125T163307Z: attempt 1 used
+  its whole 2,400 s deadline hunting Jest's leaked handles (task T003, "locate the suites that
+  leave handles open") and edited `package-lock.json` outside the slice's allowed paths. A
+  bigger budget (030) or one task per attempt (032) doesn't help when a task is research or the
+  tests themselves are at fault: the unknown has to be resolved in planning first. The owner's
+  per-folder leak scan of documcp is the first manual run of this loop. Friction F15 and F16 in
+  specs/026-slice-runs/evidence/documcp-onboarding.md. Relates to 029 (its triage report flags
+  baseline problems in brownfield repositories) and 032 (task runs).
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2412,4 +2470,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.36.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-24
+**Version**: 1.37.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-25
