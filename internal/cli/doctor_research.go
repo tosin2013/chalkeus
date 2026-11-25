@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path"
 	"strings"
@@ -101,13 +102,17 @@ func clipText(s string, n int) string {
 	return string(r[:n]) + "…"
 }
 
-// toInt reads a JSON number (float64 after decoding) as an int; 0 otherwise.
+// toInt reads a JSON number as an int: float64, int, or json.Number (grade reports are decoded
+// with UseNumber); 0 otherwise.
 func toInt(v any) int {
 	switch x := v.(type) {
 	case float64:
 		return int(x)
 	case int:
 		return x
+	case json.Number:
+		i, _ := x.Int64()
+		return int(i)
 	}
 	return 0
 }

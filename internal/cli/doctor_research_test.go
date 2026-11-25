@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -61,5 +62,12 @@ func TestDoctorAllowance(t *testing.T) {
 	}
 	if r.Failed() {
 		t.Error("warnings never fail doctor")
+	}
+}
+
+// Grade reports are decoded with UseNumber: test_seconds arrives as a json.Number.
+func TestToIntJSONNumber(t *testing.T) {
+	if toInt(json.Number("65")) != 65 || toInt(65.0) != 65 || toInt("x") != 0 {
+		t.Fatal("toInt")
 	}
 }
