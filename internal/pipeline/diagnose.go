@@ -1,8 +1,12 @@
 package pipeline
 
 import (
+	"os"
+
+	"github.com/tosin2013/chalkeus/internal/decisions"
 	"github.com/tosin2013/chalkeus/internal/diagnose"
 	"github.com/tosin2013/chalkeus/internal/evidence"
+	"github.com/tosin2013/chalkeus/internal/watcher"
 )
 
 // diagnoseAttempt builds and records the diagnosis of a failed attempt (033 FR-001): it writes
@@ -73,4 +77,39 @@ func runTestSeconds(run *evidence.Run) int {
 func runWorkerDeadline(run *evidence.Run) int {
 	mode, _ := run.State["mode"].(map[string]any)
 	return asInt(mode["worker_deadline_s"])
+}
+
+// StoppedForPlanning is the final state of a run the owner ended to go back to planning (033).
+const StoppedForPlanning = "stopped(back-to-planning)"
+
+// stopForPlanning ends a run paused for a retry because the owner answered `replan` (033 FR-009):
+// it records who and how, removes the grading namespace, writes the summary, closes the tracking
+// issue and stops the watcher. Nothing else runs; a new run of the item or slice starts normally.
+func (p *P) stopForPlanning(run *evidence.Run, task string, n int) int {
+	a := decisions.TakeRecord(run, decisions.Replan, task, n)
+	if a == nil {
+		return ExitAwaitRetry
+	}
+	ch, _ := a["channel"].(string)
+	if ch == "" {
+		ch = "harness"
+	}
+	run.LastApproval = a
+	decisions.Note(run, decisions.Replan, task, n, true, ch, "", "")
+	by, _ := a["approver"].(string)
+	run.State["stopped"] = map[string]any{"decision": "back-to-planning", "by": by, "channel": ch,
+		"at": evidence.Now(), "task": task, "attempt": n - 1}
+	delete(run.State, "pending")
+	delete(run.State, "decision_note")
+	p.dropGrading(run)
+	_ = run.SetRunState(StoppedForPlanning, "BACK_TO_PLANNING")
+	_, _ = run.WriteSummary()
+	p.githubClose(run, "stopped: back to planning")
+	watcher.Release(run.Dir, os.Getpid())
+	who := ch
+	if by != "" {
+		who = "@" + by + " on " + ch
+	}
+	p.say("run %s stopped: back to planning (by %s); the item or slice can be run again after the planning change is merged.", run.ID, who)
+	return ExitOK
 }

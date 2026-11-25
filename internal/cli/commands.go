@@ -62,9 +62,9 @@ func resumeCmd() *cobra.Command {
 
 func approveCmd() *cobra.Command {
 	c := &cobra.Command{
-		Use:       "approve {mode|retry|reconcile|acceptance}",
+		Use:       "approve {mode|retry|replan|reconcile|acceptance}",
 		Short:     "approve the decision a paused run is waiting for (no-terminal use; your agent harness must ask you before this runs)",
-		ValidArgs: []string{"mode", "retry", "reconcile", "acceptance"},
+		ValidArgs: []string{"mode", "retry", "replan", "reconcile", "acceptance"},
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		RunE:      runApprove,
 	}

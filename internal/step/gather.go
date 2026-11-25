@@ -136,7 +136,8 @@ func runState(r RunInfo) string {
 	switch {
 	case r.State == "succeeded":
 		return RunSucceeded
-	case strings.HasPrefix(r.State, "failed"), strings.HasPrefix(r.State, "declined"):
+	case strings.HasPrefix(r.State, "failed"), strings.HasPrefix(r.State, "declined"),
+		strings.HasPrefix(r.State, "stopped"): // 033: ended for planning; the owner relabels after replanning
 		return RunFailed
 	case strings.HasPrefix(r.State, "paused") && !r.Watching:
 		return RunFailed
@@ -225,7 +226,7 @@ func waitingFor(dir, state, repo string) string {
 	case "paused(awaiting-mode)":
 		return "waiting for you: reply `/approve mode` on " + issue()
 	case "paused(awaiting-retry)":
-		return "waiting for you: an attempt failed; reply `/approve retry` (or not) on " + issue()
+		return "waiting for you: an attempt failed; reply `/approve retry`, or `/approve replan` to go back to planning, on " + issue()
 	case "paused(awaiting-merge)":
 		var prs []struct {
 			Kind string `json:"kind"`

@@ -67,19 +67,19 @@ evidence records who and how, and a new run starts.
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Add `replan` cases to `specs/004-github-loop/contracts/vectors/approvals.json` (allowed approver while awaiting retry → accepted; not allowed → ignored; while awaiting mode → refused; `/withdraw replan`) and make `internal/ghloop/vectors_test.go` pass
-- [ ] T015 [P] [US2] Pipeline test in `internal/pipeline/replan_test.go`: paused(awaiting-retry) + replan record → `stopped(back-to-planning)`, events `approval_channel step=replan` and `run_stopped`, `run.State["stopped"]` has by, channel, at, task and attempt; no attempt n+1; grading namespace drop called; summary written
+- [x] T014 [P] [US2] Add `replan` cases to `specs/004-github-loop/contracts/vectors/approvals.json` (allowed approver while awaiting retry → accepted; not allowed → ignored; while awaiting mode → refused; `/withdraw replan`) and make `internal/ghloop/vectors_test.go` pass
+- [x] T015 [P] [US2] Pipeline test in `internal/pipeline/replan_test.go`: paused(awaiting-retry) + replan record → `stopped(back-to-planning)`, events `approval_channel step=replan` and `run_stopped`, `run.State["stopped"]` has by, channel, at, task and attempt; no attempt n+1; grading namespace drop called; summary written
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] `internal/cli/commands.go` and `internal/cli/approve.go`: add `replan` to `approve`'s `ValidArgs` and help; output per contracts/cli.md
-- [ ] T017 [US2] `internal/decisions/`: accept a `replan` record while `PendingStep` is `retry` (bound to the task and attempt like a retry); `Hint` for a retry names both `approve … retry` and `approve … replan`
-- [ ] T018 [US2] `internal/ghloop/approve.go`: `Evaluate`/`Collect`/`FindApproval` accept `/approve replan` and `/withdraw replan` with the same allow-list and permission checks; `PostDecision` for a retry lists both replies (contracts/cli.md)
-- [ ] T019 [US2] `internal/pipeline/pipeline.go` `Resume`, branch `paused(awaiting-retry)`: before `confirmRetry`, take a `replan` record; then `SetRunState("stopped(back-to-planning)", …)`, set `run.State["stopped"]`, `dropGrading`, `WriteSummary`, close the tracking-issue decision, stop and release the watcher, print the contract's message and return exit 0
-- [ ] T020 [US2] Watcher (`internal/pipeline/github.go` `ReadyToResume`, `Watch`): a `replan` approval makes the run ready to resume (so it ends), and the loop exits on any `stopped(...)` state
-- [ ] T021 [P] [US2] Step mode (`internal/step/manager.go:203-213` `runEnded`, `internal/step/gather.go:136-147` `runState`, `waitingFor`): `stopped(...)` counts as ended; add a test
-- [ ] T022 [P] [US2] Audit (`internal/audit/audit.go` `itemAU02`, `itemAU03`; `internal/audit/slices.go` `ItemView`): on `stopped(back-to-planning)`, AU02 and AU03 report `n/a  run ended by the owner for planning` and don't count as failures; `ItemView` prints the state; add a test
-- [ ] T023 [P] [US2] `forge status` prints the stopped state with who and the channel (`internal/cli/runs.go`)
+- [x] T016 [US2] `internal/cli/commands.go` and `internal/cli/approve.go`: add `replan` to `approve`'s `ValidArgs` and help; output per contracts/cli.md
+- [x] T017 [US2] `internal/decisions/`: accept a `replan` record while `PendingStep` is `retry` (bound to the task and attempt like a retry); `Hint` for a retry names both `approve … retry` and `approve … replan`
+- [x] T018 [US2] `internal/ghloop/approve.go`: `Evaluate`/`Collect`/`FindApproval` accept `/approve replan` and `/withdraw replan` with the same allow-list and permission checks; `PostDecision` for a retry lists both replies (contracts/cli.md)
+- [x] T019 [US2] `internal/pipeline/pipeline.go` `Resume`, branch `paused(awaiting-retry)`: before `confirmRetry`, take a `replan` record; then `SetRunState("stopped(back-to-planning)", …)`, set `run.State["stopped"]`, `dropGrading`, `WriteSummary`, close the tracking-issue decision, stop and release the watcher, print the contract's message and return exit 0
+- [x] T020 [US2] Watcher (`internal/pipeline/github.go` `ReadyToResume`, `Watch`): a `replan` approval makes the run ready to resume (so it ends), and the loop exits on any `stopped(...)` state
+- [x] T021 [P] [US2] Step mode (`internal/step/manager.go:203-213` `runEnded`, `internal/step/gather.go:136-147` `runState`, `waitingFor`): `stopped(...)` counts as ended; add a test
+- [x] T022 [P] [US2] Audit (`internal/audit/audit.go` `itemAU02`, `itemAU03`; `internal/audit/slices.go` `ItemView`): on `stopped(back-to-planning)`, AU02 and AU03 report `n/a  run ended by the owner for planning` and don't count as failures; `ItemView` prints the state; add a test
+- [x] T023 [P] [US2] `forge status` prints the stopped state with who and the channel (`internal/cli/runs.go`)
 
 **Checkpoint**: US2 complete; a paused run can be ended for planning from the terminal or GitHub.
 

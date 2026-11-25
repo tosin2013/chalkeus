@@ -610,6 +610,9 @@ func (p *P) Resume(runID string) int {
 	case "paused(awaiting-retry)":
 		task, _ := pend["task"].(string)
 		n := asInt(pend["n"])
+		if decisions.Recorded(run, decisions.Replan, task, n) { // 033: the owner chose back to planning
+			return p.stopForPlanning(run, task, n)
+		}
 		ok, ch := p.confirmRetry(run, task, n, 1+p.Cfg.RetryLimit())
 		if !ok {
 			p.pause(run, "awaiting-retry", map[string]any{"task": task, "n": n})
