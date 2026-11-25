@@ -1,0 +1,58 @@
+{"at": "2026-11-25T18:20:56Z", "attempt": null, "detail": "tosin2013/craz3-pilot-fixture", "event": "run_started", "seq": 1, "stage": "run", "task": null}
+{"at": "2026-11-25T18:20:57Z", "attempt": null, "detail": "seq=1 OK", "event": "gate_allow", "seq": 2, "stage": "gate", "task": "A"}
+{"at": "2026-11-25T18:20:57Z", "attempt": null, "detail": "seq=2 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 3, "stage": "gate", "task": "B"}
+{"at": "2026-11-25T18:20:57Z", "attempt": null, "detail": "{\"worker\":{\"cpu\":\"2\",\"memory\":\"2Gi\",\"deadline_s\":1200,\"soft_margin_s\":120},\"raised\":[],\"source\":\"default\"}", "event": "budget_resolved", "seq": 4, "stage": "prepare", "task": null}
+{"at": "2026-11-25T18:20:57Z", "attempt": null, "detail": "step=mode approved=false channel=none", "event": "approval_channel", "seq": 5, "stage": "approval", "task": null}
+{"at": "2026-11-25T18:20:57Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_declined", "seq": 6, "stage": "mode", "task": null}
+{"at": "2026-11-25T18:20:57Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-mode)", "seq": 7, "stage": "run", "task": null}
+{"at": "2026-11-25T18:21:56Z", "attempt": null, "detail": "step=mode channel=harness", "event": "approval_recorded", "seq": 8, "stage": "approval", "task": null}
+{"at": "2026-11-25T18:23:32Z", "attempt": null, "detail": "paused(awaiting-mode)", "event": "run_resumed", "seq": 9, "stage": "run", "task": null}
+{"at": "2026-11-25T18:23:32Z", "attempt": null, "detail": "step=mode approved=true channel=harness", "event": "approval_channel", "seq": 10, "stage": "approval", "task": null}
+{"at": "2026-11-25T18:23:32Z", "attempt": null, "detail": "{\"name\": \"step-by-step\", \"retry_limit\": 2, \"spend_cap_usd\": 1.0, \"token_cap\": 2000000, \"worker_deadline_s\": 1200}", "event": "mode_confirmed", "seq": 11, "stage": "mode", "task": null}
+{"at": "2026-11-25T18:23:33Z", "attempt": 1, "detail": "ns=pilot-w-a-1 induction=withheld-acceptance-section", "event": "attempt_created", "seq": 12, "stage": "attempt", "task": "A"}
+{"at": "2026-11-25T18:23:33Z", "attempt": 1, "detail": "ghcr.io/tosin2013/chalkeus-worker@sha256:7f88c9652600739f47aa508fd1e0fb690050843a14ab8fbe3c7b606e29d52ba3", "event": "attempt_running", "seq": 13, "stage": "attempt", "task": "A"}
+{"at": "2026-11-25T18:26:53Z", "attempt": 1, "detail": "", "event": "attempt_collected", "seq": 14, "stage": "attempt", "task": "A"}
+{"at": "2026-11-25T18:26:53Z", "attempt": 1, "detail": "pilot-g-a-1", "event": "grade_started", "seq": 15, "stage": "grade", "task": "A"}
+{"at": "2026-11-25T18:27:05Z", "attempt": 1, "detail": "G5_hidden_tests", "event": "grade_fail", "seq": 16, "stage": "grade", "task": "A"}
+{"at": "2026-11-25T18:27:06Z", "attempt": null, "detail": "seq=3 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 17, "stage": "gate", "task": "B"}
+{"at": "2026-11-25T18:27:06Z", "attempt": 2, "detail": "step=retry approved=false channel=none", "event": "approval_channel", "seq": 18, "stage": "approval", "task": "A"}
+{"at": "2026-11-25T18:27:06Z", "attempt": 2, "detail": "", "event": "retry_declined", "seq": 19, "stage": "retry", "task": "A"}
+{"at": "2026-11-25T18:27:06Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-retry)", "seq": 20, "stage": "run", "task": null}
+{"at": "2026-11-25T18:30:52Z", "attempt": null, "detail": "paused(awaiting-retry)", "event": "run_resumed", "seq": 21, "stage": "run", "task": null}
+{"at": "2026-11-25T18:30:52Z", "attempt": 2, "detail": "step=retry approved=false channel=none", "event": "approval_channel", "seq": 22, "stage": "approval", "task": "A"}
+{"at": "2026-11-25T18:30:52Z", "attempt": 2, "detail": "", "event": "retry_declined", "seq": 23, "stage": "retry", "task": "A"}
+{"at": "2026-11-25T18:30:52Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-retry)", "seq": 24, "stage": "run", "task": null}
+{"at": "2026-11-25T18:35:39Z", "attempt": null, "detail": "paused(awaiting-retry)", "event": "run_resumed", "seq": 25, "stage": "run", "task": null}
+{"at": "2026-11-25T18:35:39Z", "attempt": 2, "detail": "step=retry approved=false channel=none", "event": "approval_channel", "seq": 26, "stage": "approval", "task": "A"}
+{"at": "2026-11-25T18:35:39Z", "attempt": 2, "detail": "", "event": "retry_declined", "seq": 27, "stage": "retry", "task": "A"}
+{"at": "2026-11-25T18:35:39Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-retry)", "seq": 28, "stage": "run", "task": null}
+{"at": "2026-11-25T18:35:57Z", "attempt": 2, "detail": "step=retry channel=harness", "event": "approval_recorded", "seq": 29, "stage": "approval", "task": "A"}
+{"at": "2026-11-25T18:36:01Z", "attempt": null, "detail": "paused(awaiting-retry)", "event": "run_resumed", "seq": 30, "stage": "run", "task": null}
+{"at": "2026-11-25T18:36:01Z", "attempt": 2, "detail": "step=retry approved=true channel=harness", "event": "approval_channel", "seq": 31, "stage": "approval", "task": "A"}
+{"at": "2026-11-25T18:36:01Z", "attempt": 2, "detail": "", "event": "retry_confirmed", "seq": 32, "stage": "retry", "task": "A"}
+{"at": "2026-11-25T18:36:01Z", "attempt": 2, "detail": "ns=pilot-w-a-2 induction=None", "event": "attempt_created", "seq": 33, "stage": "attempt", "task": "A"}
+{"at": "2026-11-25T18:36:02Z", "attempt": 2, "detail": "ghcr.io/tosin2013/chalkeus-worker@sha256:7f88c9652600739f47aa508fd1e0fb690050843a14ab8fbe3c7b606e29d52ba3", "event": "attempt_running", "seq": 34, "stage": "attempt", "task": "A"}
+{"at": "2026-11-25T18:36:57Z", "attempt": 2, "detail": "", "event": "attempt_collected", "seq": 35, "stage": "attempt", "task": "A"}
+{"at": "2026-11-25T18:36:57Z", "attempt": 2, "detail": "pilot-g-a-2", "event": "grade_started", "seq": 36, "stage": "grade", "task": "A"}
+{"at": "2026-11-25T18:37:06Z", "attempt": 2, "detail": "", "event": "grade_pass", "seq": 37, "stage": "grade", "task": "A"}
+{"at": "2026-11-25T18:37:06Z", "attempt": 2, "detail": "pilot/20261125T182055Z/a", "event": "publish_started", "seq": 38, "stage": "publish", "task": "A"}
+{"at": "2026-11-25T18:37:16Z", "attempt": 2, "detail": "https://github.com/tosin2013/craz3-pilot-fixture/pull/76", "event": "pr_opened", "seq": 39, "stage": "publish", "task": "A"}
+{"at": "2026-11-25T18:37:16Z", "attempt": null, "detail": "seq=4 DEP_UNSATISFIED:001", "event": "gate_refuse", "seq": 40, "stage": "gate", "task": "B"}
+{"at": "2026-11-25T18:37:16Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 41, "stage": "run", "task": null}
+{"at": "2026-11-25T18:41:32Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 42, "stage": "run", "task": null}
+{"at": "2026-11-25T18:41:32Z", "attempt": null, "detail": "step=reconcile approved=false channel=none", "event": "approval_channel", "seq": 43, "stage": "approval", "task": "A"}
+{"at": "2026-11-25T18:41:32Z", "attempt": 2, "detail": "", "event": "reconcile_DECLINED", "seq": 44, "stage": "reconcile", "task": "A"}
+{"at": "2026-11-25T18:41:32Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-merge)", "seq": 45, "stage": "run", "task": null}
+{"at": "2026-11-25T18:42:15Z", "attempt": null, "detail": "step=reconcile channel=harness", "event": "approval_recorded", "seq": 46, "stage": "approval", "task": "A"}
+{"at": "2026-11-25T18:42:18Z", "attempt": null, "detail": "paused(awaiting-merge)", "event": "run_resumed", "seq": 47, "stage": "run", "task": null}
+{"at": "2026-11-25T18:42:19Z", "attempt": null, "detail": "step=reconcile approved=true channel=harness", "event": "approval_channel", "seq": 48, "stage": "approval", "task": "A"}
+{"at": "2026-11-25T18:42:20Z", "attempt": 2, "detail": "0d5b38acfd6a2c24bb02a1df23ef54d041bf33cb", "event": "reconcile_applied", "seq": 49, "stage": "reconcile", "task": "A"}
+{"at": "2026-11-25T18:42:20Z", "attempt": null, "detail": "48", "event": "merge_wait_seconds", "seq": 50, "stage": "reconcile", "task": "A"}
+{"at": "2026-11-25T18:42:20Z", "attempt": null, "detail": "0d5b38acfd6a2c24bb02a1df23ef54d041bf33cb", "event": "task_verified", "seq": 51, "stage": "status", "task": "A"}
+{"at": "2026-11-25T18:42:21Z", "attempt": null, "detail": "seq=5 OK", "event": "gate_allow", "seq": 52, "stage": "gate", "task": "B"}
+{"at": "2026-11-25T18:42:21Z", "attempt": 1, "detail": "ns=pilot-w-b-1 induction=None", "event": "attempt_created", "seq": 53, "stage": "attempt", "task": "B"}
+{"at": "2026-11-25T18:42:21Z", "attempt": 1, "detail": "ghcr.io/tosin2013/chalkeus-worker@sha256:7f88c9652600739f47aa508fd1e0fb690050843a14ab8fbe3c7b606e29d52ba3", "event": "attempt_running", "seq": 54, "stage": "attempt", "task": "B"}
+{"at": "2026-11-25T19:02:30Z", "attempt": 1, "detail": "deadline", "event": "attempt_failed", "seq": 55, "stage": "attempt", "task": "B"}
+{"at": "2026-11-25T19:02:30Z", "attempt": 2, "detail": "step=retry approved=false channel=none", "event": "approval_channel", "seq": 56, "stage": "approval", "task": "B"}
+{"at": "2026-11-25T19:02:30Z", "attempt": 2, "detail": "", "event": "retry_declined", "seq": 57, "stage": "retry", "task": "B"}
+{"at": "2026-11-25T19:02:30Z", "attempt": null, "detail": "", "event": "run_paused(awaiting-retry)", "seq": 58, "stage": "run", "task": null}

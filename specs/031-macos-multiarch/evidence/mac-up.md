@@ -65,6 +65,44 @@ publisher token: OK (tosins-specfoundry-pilot[bot], repo_push True, canary_push 
 - Both are the index digests merged in #196.
 - `crictl inspecti` on the node: all 15 images are `"architecture": "arm64"`.
 
+## 2026-11-25: Calico's network token expired after 24 hours
+
+The first Mac fixture run, [20261125T182055Z](20261125T182055Z/), passed A/1 (the induced
+failure), A/2 and the reconcile. Then B/1's worker never started. It hit the 1200 s deadline,
+and P06 and P07 failed with `model=probe not ready` and an empty `twin=`. The cluster dated from
+the `up` above.
+
+**What the node showed:**
+- The kubelet log repeated `plugin type="calico" failed (add): error getting
+  ClusterInformation: connection is unauthorized: Unauthorized`.
+  - 416 lines, from 18:42:21 to 19:02:20 UTC.
+  - Every new pod failed at sandbox creation: B/1's worker and the P06/P07 probe twin.
+  - Pods that were already running were unaffected.
+- `/etc/cni/net.d/calico-kubeconfig` was last written at 2026-11-24 18:41:01 UTC, when `up`
+  ran. The first failure came 24 hours and 1 minute later.
+- The `calico-node` log has a single `token_watch.go … Wrote updated CNI kubeconfig file` line,
+  from its start, and none since.
+- The VM's `/proc/uptime` read 8,789 s (about 2.4 hours) after more than 24 hours of real time.
+  `pmset -g log` shows the Mac sleeping and waking repeatedly.
+
+**Cause:**
+- The CNI token lasts 24 hours. The token written after the restart decodes to
+  `iat 2026-11-25T19:09:18Z`, `exp 2026-11-26T19:09:18Z`.
+- `calico-node` renews it on a timer that runs on the VM's clock, which stops while Docker
+  Desktop's VM is paused. The API server checks expiry against real time.
+- On Linux, Docker runs on the host, so this doesn't happen. That is why T013 never saw it.
+
+**Fix applied:**
+- `kubectl -n kube-system rollout restart ds/calico-node` wrote a new token at 19:09:18 UTC.
+- A throwaway pod then reached `Running` with a Calico address.
+
+**What we do with it:**
+- Run 20261125T182055Z stays as the record of this failure; it doesn't count for T025.
+- T025 is repeated as a new run after `reset-fixture`.
+- Docs: troubleshooting entry `#calico-token-expired`, and the macOS note in operator guide
+  section 3.
+- Code fix: T034.
+
 ## Pending
 
 - `doctor`'s node and image platform rows. doctor needs `--target`, and it refuses the fixture,

@@ -28,6 +28,7 @@ instead.
 | `open pilot PRs exist on …` | [Open pilot PR left over](#open-pilot-pr) |
 | `A's PR is not merged yet` | [Resume before merge](#resume-not-merged) |
 | An attempt fails with reason `deadline` or `spend_cap` | [Deadline or spend cap](#deadline-or-spend-cap) |
+| On a Mac, new pods don't start (`connection is unauthorized`; `P06` shows `probe not ready`) | [Pods don't start on a Mac](#calico-token-expired) |
 | `GitHub Actions is not permitted to create or approve pull requests` | [Actions can't open PRs](#actions-cannot-open-prs) |
 | `T01`, `T02` or `T03` fails after `./chalkeus forge down` | [Leftovers after teardown](#leftovers) |
 | `the kind cluster specfoundry-m1 … from before the rename` | [Old cluster from before the rename](#old-cluster) |
@@ -253,6 +254,51 @@ Operators who pull the published images never see it.
     `./chalkeus forge run`.
 - **Confirm:** a later attempt reaches grading. AU06 passes in the audit.
 - **Source:** `internal/worker/worker.go` (failure reasons).
+- **If the worker never started:** on a Mac, with a cluster more than a day old, see
+  [Pods don't start on a Mac](#calico-token-expired).
+
+<a id="calico-token-expired"></a>
+### Pods don't start on a Mac: `connection is unauthorized`
+
+- **Symptom:** on a Mac, a cluster that has been up for about a day stops starting pods. An
+  attempt fails with reason `deadline` although the model is fine, and `P06` and `P07` fail
+  with `model=probe not ready` and an empty `twin=`. The node's kubelet log repeats:
+
+  ```text
+  plugin type="calico" failed (add): error getting ClusterInformation: connection is unauthorized: Unauthorized
+  ```
+
+  Pods that were already running keep working, so `up`, the proxies and the control pod look
+  healthy.
+- **Cause:** Calico's network plugin calls the Kubernetes API with its own token, which lasts
+  24 hours. `calico-node` writes it to `/etc/cni/net.d/calico-kubeconfig` on the node when it
+  starts, and renews it on a timer. That timer runs on the Docker Desktop VM's clock, which
+  stops while the Mac sleeps, but the API server checks the token's expiry against real time.
+  After enough sleep the token expires before the timer is due, and every new pod fails to
+  get a network.
+  On Linux, Docker runs on the host with no VM to pause, so the timer keeps time and renews
+  the token. 031's Mac run (2026-11-25) found this: the token was written once at `up`, the VM had
+  counted about 2.4 hours of uptime in the 24 hours since, and the first failure came 24 hours
+  and 1 minute after `up`.
+- **Fix:**
+  - Restart `calico-node`. It writes a new 24-hour token; nothing else changes:
+
+    ```sh
+    kubectl --context kind-chalkeus-m1 -n kube-system rollout restart ds/calico-node
+    kubectl --context kind-chalkeus-m1 -n kube-system rollout status ds/calico-node
+    ```
+
+  - `./chalkeus forge down` and `./chalkeus forge up` also fix it, more slowly.
+  - The attempt that failed this way never ran its worker. Confirm the retry, or, for a run
+    whose evidence should show no infrastructure failure, reset the fixture and start a new
+    run.
+  - To avoid it: on a Mac, restart `calico-node` (or run `up` again) before a run if the
+    cluster is more than about 20 hours old, and keep the Mac awake during a run.
+- **Confirm:** the node's file `/etc/cni/net.d/calico-kubeconfig` has a fresh time
+  (`docker exec chalkeus-m1-control-plane ls -l /etc/cni/net.d/calico-kubeconfig`), and new
+  pods reach `Running`.
+- **Source:** Calico's `cni-config-monitor` (`token_watch.go` in the `calico-node` log);
+  `specs/031-macos-multiarch/evidence/mac-up.md`.
 
 <a id="cost-zero"></a>
 ### Cost shows 0: `Cost (USD)` is `0.0` for every attempt

@@ -1,0 +1,32 @@
+{
+  "container_terminated": null,
+  "job_status": {
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-25T19:02:21Z",
+        "lastTransitionTime": "2026-11-25T19:02:21Z",
+        "message": "Job was active longer than specified deadline",
+        "reason": "DeadlineExceeded",
+        "status": "True",
+        "type": "FailureTarget"
+      },
+      {
+        "lastProbeTime": "2026-11-25T19:02:23Z",
+        "lastTransitionTime": "2026-11-25T19:02:23Z",
+        "message": "Job was active longer than specified deadline",
+        "reason": "DeadlineExceeded",
+        "status": "True",
+        "type": "Failed"
+      }
+    ],
+    "failed": 1,
+    "ready": 0,
+    "startTime": "2026-11-25T18:42:21Z",
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "outcome": "DeadlineExceeded",
+  "pod": null,
+  "pod_phase": null,
+  "pod_reason": null
+}

@@ -116,6 +116,7 @@ Built before US2 and US3 because `up`'s early refusals and the evidence lines ar
 
 - [ ] T031 Privacy check: the new evidence files and `versions.txt` contain no token, key or model host (scan, counts only); `go vet ./... && go test ./...` and `pytest pilot/images/tests/` pass
 - [ ] T032 Add `specs/031-macos-multiarch/evidence/README.md` listing every run (host, platform, result, audit) as in 026's evidence README
+- [ ] T034 [US2] Found on the Mac (evidence/mac-up.md, 2026-11-25): Calico's 24-hour CNI token isn't renewed when Docker Desktop's VM sleeps, and new pods then fail with `connection is unauthorized`. Before staging each attempt (and in doctor's cluster area), read the token's `exp` from the node's `/etc/cni/net.d/calico-kubeconfig`. If it expires within the attempt's deadline plus a margin, restart `calico-node` and wait for a fresh token, or refuse with a message naming troubleshooting `#calico-token-expired`. Never print the token itself. Unit-test the expiry decision.
 - [ ] T033 Run `speckit-roadmap-debrief` for 031 and propose the status change to the owner. Forge never records `verified` by itself
 
 ## Dependencies
