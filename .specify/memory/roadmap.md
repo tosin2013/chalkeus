@@ -1,7 +1,14 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.36.0 → 1.37.0 (this revision)
+Version change: 1.37.0 → 1.37.1 (this revision)
+Bump rationale: PATCH — a status transition (033 planned → specced) and its Spec dir.
+Changes this revision (owner decision 2026-11-25, Tosin Akinosho):
+  - 033 planned → specced: spec in specs/033-research-before-build/. Spec dir added.
+Specs affected: 033
+Open questions added/resolved: none
+
+Prior: Version change: 1.36.0 → 1.37.0
 Bump rationale: MINOR — a new planned item (033). Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-25, Tosin Akinosho):
   - 033 (new, planned): research before build. Doctor warns about research-style tasks, a
@@ -2237,7 +2244,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   owner: split by task, automated like `forge step`, and cheaper in tokens because each attempt
   carries one task, not the slice. Relates to Q4 (granularity, decided per slice by 026) and Q12.
 
-### 033 — Research before build: route unknown work back to planning  [status: planned]
+### 033 — Research before build: route unknown work back to planning  [status: specced]
 
 - **Description:** Notice when a slice holds work nobody yet knows how to do, or work that
   needs the environment changed, and send it back to the humans' planning (C-12) with the
@@ -2275,6 +2282,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   only); automatic retries or budget raises; judging model quality (C-16).
 - **Depends on:** 026, 030
 - **Governed by:** C-01, C-04, C-12, C-16
+- **Spec dir:** specs/033-research-before-build/
 - **Notes:** Added 2026-11-25 (owner). From documcp's US1 run 20261125T163307Z: attempt 1 used
   its whole 2,400 s deadline hunting Jest's leaked handles (task T003, "locate the suites that
   leave handles open") and edited `package-lock.json` outside the slice's allowed paths. A
@@ -2470,4 +2478,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.37.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-25
+**Version**: 1.37.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-25
