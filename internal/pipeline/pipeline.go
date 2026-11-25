@@ -22,6 +22,7 @@ import (
 	"github.com/tosin2013/chalkeus/internal/audit"
 	"github.com/tosin2013/chalkeus/internal/checks"
 	"github.com/tosin2013/chalkeus/internal/cluster"
+	"github.com/tosin2013/chalkeus/internal/cnitoken"
 	"github.com/tosin2013/chalkeus/internal/config"
 	"github.com/tosin2013/chalkeus/internal/decisions"
 	"github.com/tosin2013/chalkeus/internal/evidence"
@@ -65,6 +66,19 @@ type P struct {
 	Target config.Target
 	// budget is the run's resolved resource budget (030), set by runBudget.
 	budget *images.Budget
+	// Network checks Calico's CNI token before each attempt and refreshes it when too short
+	// (031 T034; nil: skipped, as in tests).
+	Network func(need time.Duration) (string, error)
+}
+
+// CNINetwork is P.Network for the kind cluster: restart calico-node when the token on the node
+// won't last the attempt (docs/troubleshooting.md#calico-token-expired).
+func CNINetwork(c *k8s.Client) func(time.Duration) (string, error) {
+	return func(need time.Duration) (string, error) {
+		return cnitoken.Ensure(paths.Cluster+"-control-plane", need, 2*time.Minute, func() error {
+			return c.RestartDaemonSet("kube-system", "calico-node", 180*time.Second)
+		})
+	}
 }
 
 // item reports whether this invocation is an item run of a real target (014).
@@ -102,7 +116,7 @@ func New(l paths.Layout, cfg *config.Config, out io.Writer, creds Creds) (*P, er
 	if err != nil {
 		return nil, err
 	}
-	return &P{L: l, Cfg: cfg, C: c, Runner: runner.Jobs{C: c}, Out: out, Status: gate.ExecStatus{}, Creds: creds}, nil
+	return &P{L: l, Cfg: cfg, C: c, Runner: runner.Jobs{C: c}, Out: out, Status: gate.ExecStatus{}, Creds: creds, Network: CNINetwork(c)}, nil
 }
 
 // ModeOf is the run mode shown to the operator for confirmation.
@@ -297,7 +311,8 @@ func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 			_ = run.Event("attempt", task, n, "attempt_error", err.Error())
 		} else {
 			wd := worker.Deps{L: p.L, C: p.C, Runner: p.Runner, Limits: p.workerLimits(run),
-				Checks: func(task string, n int, ns string) { p.workerChecks(run).RunWorkerChecks(run, p.Imgs, task, n, ns) }}
+				Checks:  func(task string, n int, ns string) { p.workerChecks(run).RunWorkerChecks(run, p.Imgs, task, n, ns) },
+				Network: p.Network}
 			if run.Kind() == evidence.KindItem {
 				wd.Item = p.workerItem(run)
 			}

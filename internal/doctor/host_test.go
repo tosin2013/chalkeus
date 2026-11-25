@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 // 031: every row and status of specs/031-macos-multiarch/contracts/doctor.md.
@@ -153,6 +154,28 @@ func TestSpecRow(t *testing.T) {
 		st, det := SpecRow(c.version, c.pinned)
 		if st != c.st || !strings.Contains(det, c.has) {
 			t.Errorf("SpecRow(%q, %q) = %s %q", c.version, c.pinned, st, det)
+		}
+	}
+}
+
+func TestNetworkTokenRow(t *testing.T) {
+	for _, c := range []struct {
+		left time.Duration
+		err  error
+		st   string
+		has  string
+	}{
+		{20 * time.Hour, nil, Pass, "expires in 20h00m"},
+		{90 * time.Minute, nil, Warn, "expires in 1h30m; each attempt restarts calico-node first"},
+		{-time.Minute, nil, Warn, "has expired, so new pods can't start"},
+		{0, errors.New("docker exec failed"), Warn, "couldn't read Calico's CNI token: docker exec failed"},
+	} {
+		st, det := NetworkTokenRow(c.left, c.err)
+		if st != c.st || !strings.Contains(det, c.has) {
+			t.Errorf("%v %v: got %s %q", c.left, c.err, st, det)
+		}
+		if st == Warn && c.err == nil && !strings.Contains(det, "#calico-token-expired") {
+			t.Errorf("%v: no pointer to the troubleshooting entry: %q", c.left, det)
 		}
 	}
 }

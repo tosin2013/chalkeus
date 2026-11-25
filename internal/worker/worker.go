@@ -59,7 +59,14 @@ type Deps struct {
 	Item *Item
 	// Limits is the worker's budget (030); the zero value keeps today's defaults.
 	Limits Limits
+	// Network makes sure new pods can get a network for at least need (031 T034: Calico's CNI
+	// token); it returns a note when it repaired something. nil skips the check.
+	Network func(need time.Duration) (string, error)
 }
+
+// NetworkMargin is how long the network must stay usable beyond the worker's deadline: grading
+// and publishing start pods too (031 T034).
+const NetworkMargin = 45 * time.Minute
 
 // Item is what an item run's worker needs (014 R4, R10).
 type Item struct {
@@ -242,6 +249,25 @@ func itemProxyNS(it *Item) string {
 	return it.ProxyNS
 }
 
+// networkReady runs d.Network (031 T034) before the worker's namespace is created: an expired CNI
+// token would leave the worker unstarted until its deadline. It records a repair as
+// network_repaired, and a failure as attempt_error and attempt_failed (harness_error).
+func networkReady(d Deps, run *evidence.Run, task string, n int, lim Limits) bool {
+	if d.Network == nil {
+		return true
+	}
+	note, err := d.Network(time.Duration(lim.DeadlineS)*time.Second + NetworkMargin)
+	if err != nil {
+		_ = run.Event("attempt", task, n, "attempt_error", trim(err))
+		_ = run.Event("attempt", task, n, "attempt_failed", "harness_error")
+		return false
+	}
+	if note != "" {
+		_ = run.Event("attempt", task, n, "network_repaired", note)
+	}
+	return true
+}
+
 // RunAttempt runs one attempt and returns its record (stored in run.json tasks.<T>.attempts).
 func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]string, task string, n int, clone, baseRev string) map[string]any {
 	ns := NS(task, n)
@@ -272,6 +298,10 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 		att["induction"] = record["name"]
 	}
 	_ = run.Event("attempt", task, n, "attempt_created", fmt.Sprintf("ns=%s induction=%s", ns, pyNone(att["induction"])))
+	if !networkReady(d, run, task, n, lim) {
+		update("failed", "harness_error")
+		return att
+	}
 	d.C.DeleteNS(ns, true)
 	d.C.DeleteNS(ns+"-probe", true)
 	var handle *runner.Handle
