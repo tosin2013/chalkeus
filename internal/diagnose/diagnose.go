@@ -23,6 +23,7 @@ const (
 	KindFailedChecks    = "failed_checks"
 	KindAllowance       = "allowance"
 	KindRepeatDeadline  = "repeated_deadline"
+	KindOOMKilled       = "oom_killed"
 )
 
 // Triggers.
@@ -105,6 +106,9 @@ type Input struct {
 	// no trigger.
 	Extensions         []string
 	PrevDeadlineNoTrig bool
+	// The worker container's end, from job.json: "OOMKilled" when Kubernetes killed it for memory.
+	ContainerReason string
+	ContainerExit   int
 }
 
 // Diagnose builds the diagnosis. Same input, same output.
@@ -179,6 +183,13 @@ func Diagnose(in Input) Diagnosis {
 		}
 	}
 
+	oom := in.ContainerReason == "OOMKilled"
+	if oom {
+		d.Signals = append(d.Signals, Signal{Kind: KindOOMKilled,
+			Detail: fmt.Sprintf("the worker was killed for running out of memory (OOMKilled, exit %d)", in.ContainerExit),
+			Source: "job.json"})
+	}
+
 	if len(in.FailedChecks) > 0 {
 		d.Signals = append(d.Signals, Signal{Kind: KindFailedChecks,
 			Detail: "grading failed: " + strings.Join(in.FailedChecks, ", "), Source: "grade.json"})
@@ -217,6 +228,8 @@ func Diagnose(in Input) Diagnosis {
 		if seen[EnvironmentNeed] {
 			d.Routes = append(d.Routes, RoutePlanningPR)
 		}
+	case oom: // the pod's memory limit, not the work: a bigger budget, in a new run
+		d.Recommend = RaiseBudget
 	case (in.Reason == "deadline" || in.Reason == "spend_cap") && d.Allowance > 0 && d.Allowance < AllowanceThreshold:
 		d.Recommend = RaiseBudget
 	default:
@@ -375,7 +388,13 @@ func render(d Diagnosis, research, manifests []string) string {
 		fmt.Fprintf(&b, "    %s\n", t.Line())
 	}
 	if d.Recommend == RaiseBudget {
-		b.WriteString("    raise the budget: FORGE_WORKER_DEADLINE_S in the target profile, then a new run\n")
+		key := "FORGE_WORKER_DEADLINE_S"
+		for _, s := range d.Signals {
+			if s.Kind == KindOOMKilled {
+				key = "FORGE_WORKER_MEMORY"
+			}
+		}
+		fmt.Fprintf(&b, "    raise the budget: %s in the target profile, then a new run (a run keeps the budget it started with)\n", key)
 	}
 	b.WriteString("  your choice: approve retry, or end the run with `replan` (you decide; forge does neither)\n")
 	return b.String()
@@ -420,6 +439,13 @@ func FromDir(dir string, task string, record map[string]any, allowedPaths []stri
 	}
 	if b, err := os.ReadFile(filepath.Join(dir, "proxy-denials.log")); err == nil {
 		in.Denials = string(b)
+	}
+	var job map[string]any
+	if readJSON(filepath.Join(dir, "job.json"), &job) == nil {
+		if ct, ok := job["container_terminated"].(map[string]any); ok {
+			in.ContainerReason, _ = ct["reason"].(string)
+			in.ContainerExit = toInt(ct["exitCode"])
+		}
 	}
 	var grade map[string]any
 	if readJSON(filepath.Join(dir, "grade.json"), &grade) == nil {
