@@ -1,7 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.37.0 → 1.37.1 (this revision)
+Version change: 1.37.1 → 1.38.0 (this revision)
+Bump rationale: MINOR — a new planned item (034); 031's acceptance amended. Nothing verified is
+invalidated.
+Changes this revision (owner decision 2026-11-25, Tosin Akinosho):
+  - 034 added (planned): community validation of the macOS path — a fresh-Mac walkthrough
+    (031's SC-005) and an Intel Mac run, open to community contributors.
+  - 031: the fresh-Mac walkthrough moves from 031's acceptance to 034. A scripted check of the
+    guide's macOS install steps in a throwaway home passed (evidence/fresh-mac.md).
+Specs affected: 031, 034
+Open questions added/resolved: none
+
+Prior: Version change: 1.37.0 → 1.37.1
 Bump rationale: PATCH — a status transition (033 planned → specced) and its Spec dir.
 Changes this revision (owner decision 2026-11-25, Tosin Akinosho):
   - 033 planned → specced: spec in specs/033-research-before-build/. Spec dir added.
@@ -2218,7 +2229,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   the isolation suite passes, and the fixture run completes with the audit at 11/11; images
   pull by manifest-list digest on both architectures; every upstream binary in every image is
   verified against a pinned per-architecture sha256 at build time; the operator guide's macOS
-  path works from a fresh Mac.
+  path works from a fresh Mac. **Amended 2026-11-25 (owner):** the fresh-Mac walkthrough
+  (SC-005, task T030) moves to 034 for a community contributor; 031 keeps a scripted check of
+  the guide's macOS install steps (specs/031-macos-multiarch/evidence/fresh-mac.md).
 
 ### 032 — Task runs within a slice  [status: specced]
 
@@ -2291,6 +2304,29 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   per-folder leak scan of documcp is the first manual run of this loop. Friction F15 and F16 in
   specs/026-slice-runs/evidence/documcp-onboarding.md. Relates to 029 (its triage report flags
   baseline problems in brownfield repositories) and 032 (task runs).
+
+### 034 — Community validation of the macOS path  [status: planned]
+
+- **Description:** Have someone other than the maintainer follow the operator guide's macOS path
+  on a Mac that has none of forge's tools, and run forge on an Intel Mac, so the guide and the
+  "supported by design" host are proven by a real operator.
+- **Outcome:** a contributor on a fresh Mac account reaches a completed fixture run (audit
+  11/11) following only the operator guide, and records each step and every gap; an Intel Mac
+  run (fixture, audit 11/11) moves the Intel row from "supported by design" to "validated".
+  Every gap found is fixed in the guide.
+- **Scope (in):** the walkthrough and its evidence (`fresh-mac.md`: each step, what was
+  unclear, what failed); an Intel Mac fixture run with its `versions.txt`; guide and
+  troubleshooting fixes for the gaps; the hosts table in operator guide section 3.
+- **Scope (out):** code changes beyond what a gap needs; Windows; Docker Desktop alternatives
+  (031's scope out).
+- **Depends on:** 031
+- **Governed by:** C-06, C-07, C-11
+- **Notes:** Added 2026-11-25 (owner): 031's T030 (SC-005) needs a Mac without forge's
+  prerequisites, which the maintainer doesn't have to hand; it is open to community
+  contributors, like 005's community validation path. 031's scripted check already ran every
+  install command of the guide's macOS section as written (spec-status and Go downloads and
+  checksums, `~/.local/bin` on `PATH`, the clone, the final check); what remains is installing
+  Docker Desktop and signing in to GitHub, and a reader's view of the guide.
 
 ## Open Questions
 
@@ -2478,4 +2514,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.37.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-25
+**Version**: 1.38.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-25

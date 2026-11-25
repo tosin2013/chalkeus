@@ -119,6 +119,7 @@ Built before US2 and US3 because `up`'s early refusals and the evidence lines ar
 - [X] T029 [P] [US5] Add a 031 section to `docs/release-notes.md`: multi-platform images, per-arch pins (old keys removed), spec-status 0.4.1, doctor's host area, macOS support status
   Done as (2026-11-25): "macOS: multi-platform images and Docker Desktop (031)" at the top of `docs/release-notes.md`, with what to do.
 - [ ] T030 [US5] Fresh-Mac walkthrough (SC-005): on a Mac user account without forge's prerequisites, follow only the operator guide's macOS path to a completed fixture run; record each step and any gap in `specs/031-macos-multiarch/evidence/fresh-mac.md`, and fix the guide for every gap found
+  Moved to roadmap 034 (owner decision 2026-11-25), for a community contributor; the roadmap amends 031's acceptance to match. In its place: a scripted run of the guide's macOS install steps in a throwaway home, all passing except the untestable sign-in ([evidence/fresh-mac.md](evidence/fresh-mac.md)).
 
 ## Phase 9: Polish and close
 
