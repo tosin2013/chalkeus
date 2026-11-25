@@ -642,6 +642,25 @@ func HostLines(h hostinfo.Host, rt hostinfo.Runtime, node string, images []strin
 	return lines
 }
 
+// HostSpecLine is versions.txt's host_spec line: the spec-status binary the gate ran on this
+// host ($SPEC_BIN or spec on PATH), with its own version and the checksum of the file itself.
+// The spec: line above is the pinned release; the two differ when the host's copy is stale.
+func HostSpecLine() string {
+	bin := os.Getenv("SPEC_BIN")
+	if bin == "" {
+		bin = "spec"
+	}
+	path, err := exec.LookPath(bin)
+	if err != nil {
+		return "host_spec: unavailable (" + bin + " not found)"
+	}
+	sum := "unknown"
+	if b, err := os.ReadFile(path); err == nil {
+		sum = fmt.Sprintf("%x", sha256.Sum256(b))
+	}
+	return fmt.Sprintf("host_spec: %s sha256=%s", firstLine(path, "--version"), sum)
+}
+
 // WriteVersions records tool and image versions (versions.txt).
 func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster string, imgs map[string]string) error {
 	server := ""
@@ -679,7 +698,7 @@ func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster s
 		"server: " + server,
 		"node_image: " + firstLine("docker", "inspect", "--format", "{{.Config.Image}}", cluster+"-control-plane"),
 		fmt.Sprintf("calico: %s sha256=%s", pins["CALICO_VERSION"], calico),
-		fmt.Sprintf("spec: %s sha256=%s", firstLine("spec", "--version"), pins["SPEC_SHA256_"+arch]),
+		fmt.Sprintf("spec: spec %s sha256=%s", pins["SPEC_VERSION"], pins["SPEC_SHA256_"+arch]),
 		fmt.Sprintf("opencode: %s sha256=%s", pins["OPENCODE_VERSION"], pins["OPENCODE_SHA256_"+arch]),
 		"registry_image: " + pins["REGISTRY_IMAGE"],
 		"image_source: " + src,
@@ -694,5 +713,6 @@ func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster s
 	}
 	lines = append(lines, "host: "+firstLine("uname", "-srm"))
 	lines = append(lines, HostLines(hostinfo.ProbeHost(), hostinfo.ProbeRuntime(), node, keys)...)
+	lines = append(lines, HostSpecLine())
 	return os.WriteFile(filepath.Join(r.Dir, "versions.txt"), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }

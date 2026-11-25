@@ -66,6 +66,10 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	// Host (031): the machine, its container runtime, then (after `up`) the node and image
 	// platforms. Reported first, so a stopped Docker Desktop shows even when the profile fails.
 	r.HostRows(doctor.ProbeHost(), doctor.ProbeRuntime())
+	if pins, err := paths.ReadEnv(l.Pins); err == nil && pins["SPEC_VERSION"] != "" {
+		st, det := doctor.SpecRow(specVersion(), pins["SPEC_VERSION"])
+		r.Add("host", "spec-status", st, det)
+	}
 
 	// Profile.
 	cfg, err := config.Load(l.Root, false, false)
@@ -316,4 +320,17 @@ func doctorRoadmap(r *doctor.Report, t config.Target) {
 		}
 		return filepath.Join(cdir, filepath.FromSlash(t.CompanionItemDir(item)))
 	})
+}
+
+// specVersion is the first line of the host's `spec --version`, or "" when it can't run.
+func specVersion() string {
+	bin := os.Getenv("SPEC_BIN")
+	if bin == "" {
+		bin = "spec"
+	}
+	out, err := exec.Command(bin, "--version").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.SplitN(strings.TrimSpace(string(out)), "\n", 2)[0]
 }

@@ -75,6 +75,9 @@ image_worker_platform: linux/arm64
 image_toolchain-<name>_platform: linux/arm64   # for each toolchain the run used
 ```
 
-The `spec:` and `opencode:` lines print the pinned binary checksum for `node_platform`'s
-architecture. On Linux amd64 these equal today's values except for the spec-status bump to
+The `spec:` and `opencode:` lines print the pinned version and binary checksum for
+`node_platform`'s architecture. A last line, `host_spec: <spec --version> sha256=<checksum>`,
+records the spec-status binary the gate actually ran on the host, hashed from the file itself
+(added after T013's first run, 20261125T162546Z, whose `spec:` line paired the host's 0.3.0
+with the pinned 0.4.1 checksum). On Linux amd64 these equal today's values except for the spec-status bump to
 0.4.1 (R4).

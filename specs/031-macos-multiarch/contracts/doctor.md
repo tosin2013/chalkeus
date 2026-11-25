@@ -10,6 +10,7 @@ today.
 |---|---|---|---|
 | `host` | `darwin/arm64 (macOS 27.0.1), validated`; `linux/amd64, validated`; `darwin/amd64 (macOS …), supported by design, not maintainer-validated` | `linux/arm64: untested; the images run, but no maintainer evidence exists` | `unsupported host <os>/<arch>; supported: darwin/arm64, darwin/amd64, linux/amd64 (linux/arm64 untested)` |
 | `container runtime` | `Docker Desktop 4.x, 8 CPUs, 15.6 GiB` (macOS); `Docker Engine 28.x, …` (Linux) | macOS runtime that isn't Docker Desktop: `<name> <version>: only Docker Desktop is validated on macOS; the isolation suite and audit still decide` | daemon unreachable: `Docker isn't running: start Docker Desktop` (macOS) / `start the Docker daemon` (Linux) |
+| `spec-status` (added after T013) | `spec 0.4.1, the pinned release` | the host's copy differs from `SPEC_VERSION`: `spec <v> on this host, pinned <p>: the gate runs the host's copy; install the pinned release` | not installed: `spec-status isn't installed: install release v<p>` |
 | `node platform` (after `up`) | `linux/arm64` | — | `node platform <p> isn't linux/amd64 or linux/arm64` |
 | `image platforms` (after `up`, pinned images) | `all 7 images have linux/arm64` | registry unreadable: `couldn't check image platforms: <error>`; local build: `local build: images built for this host` | `<image> has no build for linux/arm64 (pilot/images.lock may predate 031); pull main and run ./chalkeus forge up` |
 

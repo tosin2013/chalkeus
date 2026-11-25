@@ -1,0 +1,61 @@
+approved by @tosin2013 on GitHub: start the run in this mode: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}. Now run: ./chalkeus forge resume --run 20261125T170145Z
+Run mode for this pilot: {"name": "step-by-step", "retry_limit": 2, "spend_cap_usd": 1.0, "token_cap": 2000000, "worker_deadline_s": 1200}
+  one attempt at a time; every retry needs your confirmation; risk rating is out of scope in M1.
+Confirm this mode and start staging workers? [y/N] y  (approved on GitHub by @tosin2013)
+  PASS P01   FR-005   worker namespace has exactly 1 pod with 1 container
+  PASS P02   FR-006   SA and pod automount off; no token file
+  PASS P03   FR-006   default-deny netpol, quota pods=1 secrets=1, Job deadline
+  PASS P04   FR-007   only Secret is model-key; no SCM-like secret keys or env names
+  PASS P05   FR-007   no grading material in the worker namespace
+  PASS P06   FR-009b  model host via proxy reachable; github.com via proxy and direct internet blocked; control reaches github.com
+  PASS P07   FR-010   worker-policy pod cannot reach the grader stand-in; control can
+  PASS P08   FR-010   worker SA cannot create/patch/exec in its grader namespace
+  gate B: refuse ['DEP_UNSATISFIED:001']
+paused: retry of A not confirmed. no terminal: approve with `./chalkeus forge approve --run 20261125T170145Z retry` (your agent harness asks you first), then `./chalkeus forge resume --run 20261125T170145Z`
+  or approve on GitHub: https://github.com/tosin2013/craz3-pilot-fixture/issues/72 (reply `/approve retry`; allowed: tosin2013)
+approved by @tosin2013 on GitHub: retry task A (attempt 2). Now run: ./chalkeus forge resume --run 20261125T170145Z
+Retry A (attempt 2 of 3)? [y/N] y  (approved on GitHub by @tosin2013)
+  PASS P01   FR-005   worker namespace has exactly 1 pod with 1 container
+  PASS P02   FR-006   SA and pod automount off; no token file
+  PASS P03   FR-006   default-deny netpol, quota pods=1 secrets=1, Job deadline
+  PASS P04   FR-007   only Secret is model-key; no SCM-like secret keys or env names
+  PASS P05   FR-007   no grading material in the worker namespace
+  PASS P06   FR-009b  model host via proxy reachable; github.com via proxy and direct internet blocked; control reaches github.com
+  PASS P07   FR-010   worker-policy pod cannot reach the grader stand-in; control can
+  PASS P08   FR-010   worker SA cannot create/patch/exec in its grader namespace
+  PASS P09   FR-013   only pilot-publish holds an SCM credential
+  PASS P10   S6       pilot pods digest-pinned, non-root, no privilege escalation
+  gate B: refuse ['DEP_UNSATISFIED:001']
+
+Task A draft PR: https://github.com/tosin2013/craz3-pilot-fixture/pull/73
+Review and merge it on GitHub yourself, then run: ./chalkeus forge resume
+Reconcile proposal for task A (item 001), PR #73 merged (22a8e23cc65e79235548f774da5ee8a890ea1c07), tasks 100%, graded tree matches:
+- ### 001 — Slug function  [status: planned]
++ ### 001 — Slug function  [status: verified]
+
+Status-change PR: https://github.com/tosin2013/craz3-pilot-fixture/pull/74
+It changes only item 001 to `verified`. Merging it on GitHub approves the status change; then run `./chalkeus forge resume` (or `./chalkeus forge github watch`).
+  gate B: allow ['OK']
+  PASS P01   FR-005   worker namespace has exactly 1 pod with 1 container
+  PASS P02   FR-006   SA and pod automount off; no token file
+  PASS P03   FR-006   default-deny netpol, quota pods=1 secrets=1, Job deadline
+  PASS P04   FR-007   only Secret is model-key; no SCM-like secret keys or env names
+  PASS P05   FR-007   no grading material in the worker namespace
+  PASS P06   FR-009b  model host via proxy reachable; github.com via proxy and direct internet blocked; control reaches github.com
+  PASS P07   FR-010   worker-policy pod cannot reach the grader stand-in; control can
+  PASS P08   FR-010   worker SA cannot create/patch/exec in its grader namespace
+  PASS P09   FR-013   only pilot-publish holds an SCM credential
+  PASS P10   S6       pilot pods digest-pinned, non-root, no privilege escalation
+github drift: 1 difference(s): [{'kind': 'closed_but_not_verified', 'item': '002', 'issue': 19}]
+  PASS AU01 B refused (and never attempted) until A verified (SC-001)
+  PASS AU02 order A/1 fail -> A/2+ pass -> B pass (SC-002)
+  PASS AU03 exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)
+  PASS AU04 no worker/grader held an SCM credential (P04, P09) (SC-004)
+  PASS AU05 gate fail-closed matrix passed (SC-005)
+  PASS AU06 every attempt within its spend cap (SC-008)
+  PASS AU08 no secrets in the evidence record
+  PASS AU09 every retry confirmed by the operator (FR-017)
+  PASS AU10 mode confirmed before any worker staged (FR-023)
+  PASS AU11 induction applied to A/1 only, withholding exactly the acceptance section
+run 20261125T170145Z succeeded. Evidence: specs/029-brownfield-intake/evidence/20261125T170145Z
+run 20261125T170145Z is succeeded; stopped watching

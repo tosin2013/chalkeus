@@ -1,0 +1,14 @@
+{
+  "allowed_paths": [
+    "src/slugkit/*",
+    "tests/*",
+    "specs/001-slugify/tasks.md"
+  ],
+  "attempt": 2,
+  "base_revision": "c25b6dae109792465a196f831ab9eedbbd1888bf",
+  "induction": null,
+  "item_id": "001",
+  "run_id": "20261125T162546Z",
+  "soft_deadline_s": 1080,
+  "task": "A"
+}
