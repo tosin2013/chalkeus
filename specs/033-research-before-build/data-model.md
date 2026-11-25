@@ -4,7 +4,7 @@
 
 | Field | Type | Notes |
 |---|---|---|
-| `kind` | enum | `ended` (how the attempt ended), `research_task`, `outside_paths`, `manifest_outside_paths`, `egress_refused`, `install_error`, `unknown_reason`, `allowance` |
+| `kind` | enum | `research_task`, `outside_paths`, `manifest_outside_paths`, `egress_refused`, `install_error`, `unknown_reason`, `failed_checks` (grading checks that didn't pass, information), `allowance` |
 | `detail` | string | one line, for example `T003: "Locate the suites that leave handles open"` |
 | `source` | string | where it came from: `prompt.md:345`, `report.json changed_paths`, `proxy-denials.log` (`target proxy`, 1×), `grade.json G4` |
 | `trigger` | enum or empty | `unknown_work`, `environment_need`, or empty (information only) |
@@ -29,7 +29,9 @@ Rules:
 | `version` | int | `1` |
 | `task`, `attempt` | string, int | the attempt diagnosed |
 | `ended` | string | the attempt's `reason` (`deadline`, `grade_fail`, …) |
-| `usage` | object | `tokens`, `cost_usd`, `seconds` when kept |
+| `deadline_s` | int | the worker deadline, for a `deadline` ending |
+| `usage` | object | `tokens`, `cost_usd` when kept |
+| `allowance` | int | the test-run allowance; absent when unknown |
 | `signals` | list of Signal | in the order of the table above |
 | `triggers` | list | distinct triggers from the signals |
 | `recommend` | enum | `retry`, `raise_budget`, `back_to_planning` |

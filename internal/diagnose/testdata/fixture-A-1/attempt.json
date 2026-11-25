@@ -1,0 +1,25 @@
+{
+  "base_revision": "cfaf40b2319f87f0a19bf9aff302b3d83061f234",
+  "changed_paths": [
+    "specs/001-slugify/tasks.md",
+    "src/slugkit/__init__.py",
+    "src/slugkit/slug.py",
+    "tests/test_slug.py"
+  ],
+  "harness_exit": 0,
+  "image": "ghcr.io/tosin2013/specfoundry-pilot-worker@sha256:7493bf1bc217ec34399f8f0bc058818e162502d192760ce3cfd2e07a09611ad4",
+  "induction": "withheld-acceptance-section",
+  "n": 1,
+  "namespace": "pilot-w-a-1",
+  "reason": "grade_fail",
+  "result": "fail",
+  "spend": {
+    "cap_mode": "token-fallback",
+    "cap_usd": 1.0,
+    "cost_usd": 0.0,
+    "stopped_by_cap": false,
+    "token_cap": 2000000,
+    "tokens": 175477
+  },
+  "state": "failed"
+}

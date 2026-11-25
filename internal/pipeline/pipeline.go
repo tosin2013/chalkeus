@@ -182,7 +182,15 @@ func (p *P) confirmMode(run *evidence.Run) (bool, string) {
 }
 
 func (p *P) confirmRetry(run *evidence.Run, task string, n, total int) (bool, string) {
-	if note := deadlineNote(run, task, n-1); note != "" { // 030 FR-017
+	note := deadlineNote(run, task, n-1) // 030 FR-017
+	if d, ok := attemptDiagnosis(run, task, n-1); ok { // 033 FR-005
+		text := strings.TrimRight(d.Text, "\n")
+		if note != "" {
+			text = note + "\n" + text
+		}
+		note = text
+	}
+	if note != "" {
 		p.say("%s", note)
 		run.State["decision_note"] = map[string]any{"step": "retry", "text": note}
 	} else {
@@ -331,6 +339,9 @@ func (p *P) runTask(run *evidence.Run, task string, startN int) int {
 		}
 		t["attempts"] = append(kept, att)
 		_ = run.Save()
+		if att["state"] != "passed" {
+			p.diagnoseAttempt(run, task, n, att) // 033 FR-001
+		}
 		if att["state"] == "passed" {
 			t["passing_attempt"] = n
 			break

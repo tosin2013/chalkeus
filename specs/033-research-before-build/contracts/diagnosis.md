@@ -10,7 +10,7 @@ rewritten. A run started before 033 has none, and nothing requires it.
 Plain text, at most ~20 lines, same text in all three places:
 
 ```text
-  diagnosis of attempt <n> (<task>): <ended> after <seconds> s, <tokens> tokens, $<cost>
+  diagnosis of attempt <n> (<task>): <ended | stopped at the <s> s deadline>, <tokens> tokens, $<cost>
   signals:
     - <detail> (<source>)
     ...
@@ -26,13 +26,13 @@ Plain text, at most ~20 lines, same text in all three places:
 Example (documcp run `20261125T163307Z`, attempt 1; SC-001):
 
 ```text
-  diagnosis of attempt 1 (001): deadline after 2400 s, 277364 tokens, $0.0
+  diagnosis of attempt 1 (001): stopped at the 2400 s deadline, 277364 tokens, $0
   signals:
-    - task T003 reads as research: "Locate the suites that leave handles open" (prompt.md)
-    - task T004a reads as research: "Find the test that writes …" (prompt.md)
-    - package-lock.json changed, outside the allowed paths (dependency lock file)
+    - task T003 reads as research: "Locate the suites that leave handles open (run `npx jest tests/<folder…" (prompt.md task list, line 27)
+    - task T004a reads as research: "Find the test that writes `.github/workflows/deploy-github-pages.yml` …" (prompt.md task list, line 29)
+    - package-lock.json changed, outside the allowed paths (dependency manifest or lock file) (report.json changed_paths)
     - github.com refused 1× by the target proxy (proxy-denials.log)
-  points to: unknown work, an environment need
+  points to: an environment need, unknown work
   recommended: back to planning
     back to planning: resolve T003, T004a in the plan's research (/speckit-plan), then /speckit-tasks
     back to planning: change package-lock.json in your planning PR, not in an attempt
@@ -42,7 +42,7 @@ Example (documcp run `20261125T163307Z`, attempt 1; SC-001):
 Example (fixture A/1, induced failure; SC-002):
 
 ```text
-  diagnosis of attempt 1 (A): grade_fail after <s> s, <tokens> tokens, $<cost>
+  diagnosis of attempt 1 (A): grade_fail, 175477 tokens, $0
   signals:
     - grading failed: G5_hidden_tests (grade.json)
   points to: nothing outside the attempt

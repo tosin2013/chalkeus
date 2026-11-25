@@ -203,6 +203,9 @@ func (p *P) startItem(run *evidence.Run) int {
 				reason = code
 			}
 		}
+		if reason != "PREPARE" { // 033 R6: the environment must change before any attempt can help
+			p.say("back to planning: the project's environment needs a change (toolchain, dependencies or registries); make it in your planning PR or the target profile, then start a new run")
+		}
 		return p.fail(run, reason)
 	}
 	mp, err := p.writeBaselineMeta(run)

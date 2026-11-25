@@ -394,6 +394,7 @@ func (r *Run) WriteSummary() (string, error) {
 			out = append(out, fmt.Sprintf("| %s | %s | %s | %s | %s | %s |", label, pyStr(a["n"]), orDash(a, "induction"), res, orDash(sp, "cost_usd"), orDash(sp, "tokens")))
 		}
 	}
+	out = append(out, r.diagnosisSection(tasks)...)
 	var prs []map[string]any
 	if raw, err := os.ReadFile(filepath.Join(r.Dir, "prs.json")); err == nil {
 		_ = decode(raw, &prs)
@@ -695,4 +696,33 @@ func WriteVersions(r *Run, pins map[string]string, build, kubeContext, cluster s
 	lines = append(lines, "host: "+firstLine("uname", "-srm"))
 	lines = append(lines, HostLines(hostinfo.ProbeHost(), hostinfo.ProbeRuntime(), node, keys)...)
 	return os.WriteFile(filepath.Join(r.Dir, "versions.txt"), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+}
+
+// diagnosisSection is the summary's "## Diagnosis" section (033 FR-005): each diagnosed attempt's
+// text, from attempts/<task>-<n>/diagnosis.json. Nothing when no attempt has one, so summaries of
+// runs before 033 regenerate unchanged.
+func (r *Run) diagnosisSection(tasks map[string]any) []string {
+	var out []string
+	for _, label := range r.TaskLabels() {
+		t, _ := tasks[label].(map[string]any)
+		atts, _ := t["attempts"].([]any)
+		for _, x := range atts {
+			a, _ := x.(map[string]any)
+			raw, err := os.ReadFile(filepath.Join(r.Dir, "attempts", label+"-"+pyStr(a["n"]), "diagnosis.json"))
+			if err != nil {
+				continue
+			}
+			var d struct {
+				Text string `json:"text"`
+			}
+			if json.Unmarshal(raw, &d) != nil || d.Text == "" {
+				continue
+			}
+			if out == nil {
+				out = append(out, "", "## Diagnosis")
+			}
+			out = append(out, "", "```text", strings.TrimRight(d.Text, "\n"), "```")
+		}
+	}
+	return out
 }
