@@ -47,6 +47,11 @@ an agent needs, and your merge approves it:
   the dated sources behind its choices.
 - **Features that need a live model** (an assistant, generated text) don't fit this loop yet:
   the grader is offline and deterministic ([targets.md](targets.md#ai-driven-apps)).
+- **Resolve unknowns before the tasks.** A task such as "figure out which framework handles
+  uploads" is research: its answer, and so its cost, isn't known yet, and an attempt that tries
+  it can run out of time. Decide it in the item's `research.md` (`/speckit-plan`) and write the
+  task as the change to make ("add the upload endpoint with framework X"). Doctor warns about
+  research-worded tasks ([targets.md](targets.md#research-tasks)).
 
 Merge the planning PR. Then protect `main` (Settings → Branches): require a pull request, and the
 CI check if you like, so every change arrives reviewed.

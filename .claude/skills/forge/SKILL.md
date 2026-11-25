@@ -63,7 +63,7 @@ matching troubleshooting entry before suggesting any fix.
 | `./chalkeus forge debt --target <name> [--json]` | triage report of the target's open Dependabot PRs and baseline problems (029, read-only; it never acts on PRs) |
 | `./chalkeus forge run --target <name> --item NNN --slice USn` | build one slice of the item: its own PR; only the last slice leads to the status change |
 | `./chalkeus forge resume --run <id>` | continue a paused run |
-| `./chalkeus forge approve --run <id> mode\|retry\|reconcile\|acceptance` | record the human's yes for the one pending step |
+| `./chalkeus forge approve --run <id> mode\|retry\|replan\|reconcile\|acceptance` | record the human's yes for the one pending step (`replan` answers a retry: end the run to go back to planning) |
 | `./chalkeus forge audit [--run <id>]` | evidence audit AU01–AU11 |
 | `./chalkeus forge down` | tear down and verify |
 
@@ -115,6 +115,13 @@ Without a terminal, forge pauses at each decision and prints
      yes lets it start staging workers.
    - `retry`: which task failed, the attempt number, and why (from `./chalkeus forge status` or the
      attempt's `grade.json`). The first attempt of A fails on purpose (AU11 induction).
+     The retry question starts with the attempt's **diagnosis** (033): its signals, what they
+     point to, and one recommendation: retry, raise the budget, or back to planning. Read it out
+     as it is; don't add a recommendation of your own.
+   - `replan` (033): the other answer to a retry. Saying yes ends the run as
+     `stopped(back-to-planning)` so the human can resolve the research or environment change in
+     planning and start a new run. Ask "Do you want to end run <id> and go back to planning?";
+     run `./chalkeus forge approve --run <id> replan` only after a clear yes to that.
    - `reconcile`: the roadmap change it proposes (for example `001: planned → verified`) and
      that A's PR was merged with tasks at 100%. Saying yes unblocks task B.
    - `acceptance` (026): the item's spec lists acceptance checks under `## Item acceptance`

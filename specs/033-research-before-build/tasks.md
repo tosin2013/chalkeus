@@ -105,11 +105,11 @@ the baseline section prints the time and, below 5, the allowance warning.
 
 ## Phase 6: User Story 4 - The docs explain the triggers and the route back (Priority: P3)
 
-- [ ] T029 [US4] Rewrite the deadline entry in `docs/troubleshooting.md` (`#deadline-or-spend-cap`): the configurable `FORGE_WORKER_DEADLINE_S`, three causes (slow model; work larger than the budget; unknown work or an environment need) and the choice for each, pointing to the diagnosis; add an entry for "back to planning" (`replan`) and entries for each reason in `diagnose.KnownReasons` the page lacks (`grade_fail`, `no_result`, `bad_frame`, `oversize`, `grader_timeout`, `grader_error`, `no_frame` and the worker report errors)
-- [ ] T030 [P] [US4] `docs/targets.md`: section "Research tasks and environment changes" (anchor `research-tasks`): the research wording list, the allowance threshold, where research and environment changes go, a brownfield example (documcp US1: the leak scan moved into research R3), and how to go back to planning from a diagnosis
-- [ ] T031 [P] [US4] `docs/greenfield.md`: the same rule for a new project, with a greenfield example (an unknown framework choice resolved in the plan's research before the tasks)
-- [ ] T032 [US4] Docs test in `internal/cli/docs_test.go`: every reason in `diagnose.KnownReasons` appears in `docs/troubleshooting.md`; the research phrases listed in `docs/targets.md` equal `diagnose.ResearchPhrases`
-- [ ] T033 [P] [US4] `.claude/skills/forge/SKILL.md`: explain the diagnosis at a retry pause, and the `replan` decision (human only; run `approve … replan` only after the human says yes to it; the harness asks)
+- [x] T029 [US4] Rewrite the deadline entry in `docs/troubleshooting.md` (`#deadline-or-spend-cap`): the configurable `FORGE_WORKER_DEADLINE_S`, three causes (slow model; work larger than the budget; unknown work or an environment need) and the choice for each, pointing to the diagnosis; add an entry for "back to planning" (`replan`) and entries for each reason in `diagnose.KnownReasons` the page lacks (`grade_fail`, `no_result`, `bad_frame`, `oversize`, `grader_timeout`, `grader_error`, `no_frame` and the worker report errors)
+- [x] T030 [P] [US4] `docs/targets.md`: section "Research tasks and environment changes" (anchor `research-tasks`): the research wording list, the allowance threshold, where research and environment changes go, a brownfield example (documcp US1: the leak scan moved into research R3), and how to go back to planning from a diagnosis
+- [x] T031 [P] [US4] `docs/greenfield.md`: the same rule for a new project, with a greenfield example (an unknown framework choice resolved in the plan's research before the tasks)
+- [x] T032 [US4] Docs test in `internal/cli/docs_test.go`: every reason in `diagnose.KnownReasons` appears in `docs/troubleshooting.md`; the research phrases listed in `docs/targets.md` equal `diagnose.ResearchPhrases`
+- [x] T033 [P] [US4] `.claude/skills/forge/SKILL.md`: explain the diagnosis at a retry pause, and the `replan` decision (human only; run `approve … replan` only after the human says yes to it; the harness asks)
 
 **Checkpoint**: all stories complete.
 
@@ -117,9 +117,9 @@ the baseline section prints the time and, below 5, the allowance warning.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T034 Run quickstart §1–§2 and record the output in `specs/033-research-before-build/evidence/`; run §3–§5 after the tools image with T026 is built
-- [ ] T035 [P] Release notes entry in `docs/release-notes.md`
-- [ ] T036 `go vet ./... && go test ./...` and `pilot/images/tests/` pass; `spec status` shows no new error diagnostics
+- [ ] T034 Run quickstart §1–§2 and record the output in `specs/033-research-before-build/evidence/`; run §3–§5 after the tools image with T026 is built (§1–§2 done: `evidence/quickstart-1-2.txt`; §3–§5 wait for the tools image and a cluster run)
+- [x] T035 [P] Release notes entry in `docs/release-notes.md`
+- [x] T036 `go vet ./... && go test ./...` and `pilot/images/tests/` pass; `spec status` shows no new error diagnostics
 
 ---
 
