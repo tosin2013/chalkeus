@@ -83,9 +83,9 @@ type Diagnosis struct {
 type Input struct {
 	Task         string
 	Attempt      int
-	Reason       string   // the attempt record's reason
-	ReportError  string   // report.json "error" (the worker's own)
-	Tokens       any      // report or record spend
+	Reason       string // the attempt record's reason
+	ReportError  string // report.json "error" (the worker's own)
+	Tokens       any    // report or record spend
 	CostUSD      any
 	ChangedPaths []string // report or record changed_paths
 	AllowedPaths []string // globs, fnmatch semantics as G2

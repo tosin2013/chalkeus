@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/tosin2013/chalkeus/internal/cluster"
+	"github.com/tosin2013/chalkeus/internal/diagnose"
 	"github.com/tosin2013/chalkeus/internal/evidence"
 	"github.com/tosin2013/chalkeus/internal/fixture"
 	"github.com/tosin2013/chalkeus/internal/ghloop"
@@ -221,6 +222,13 @@ func (p *P) startItem(run *evidence.Run) int {
 		return p.fail(run, grader.BaselineReason(g))
 	}
 	p.say("  baseline %s: pass (the project's tests pass and the hidden tests fail on the base)", item)
+	if secs := asInt(g["test_seconds"]); secs > 0 { // 033 R7: the diagnosis's test-run allowance
+		run.State["baseline_test_seconds"] = secs
+		_ = run.Save()
+		if dl := runWorkerDeadline(run); dl > diagnose.SoftMarginS {
+			p.say("  baseline %s: one run of the test command took %d s; about %d fit in one attempt", item, secs, (dl-diagnose.SoftMarginS)/secs)
+		}
+	}
 	return p.runTask(run, item, 1)
 }
 

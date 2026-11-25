@@ -182,7 +182,7 @@ func (p *P) confirmMode(run *evidence.Run) (bool, string) {
 }
 
 func (p *P) confirmRetry(run *evidence.Run, task string, n, total int) (bool, string) {
-	note := deadlineNote(run, task, n-1) // 030 FR-017
+	note := deadlineNote(run, task, n-1)               // 030 FR-017
 	if d, ok := attemptDiagnosis(run, task, n-1); ok { // 033 FR-005
 		text := strings.TrimRight(d.Text, "\n")
 		if note != "" {

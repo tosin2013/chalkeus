@@ -200,6 +200,13 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		return Code(ExitFail)
 	}
 	r.Readiness(res)
+	if res.SpecDir != "" && res.Commit != "" { // 033: research tasks and runtime versions (warnings)
+		var phases []string
+		if res.Slice != nil {
+			phases = res.Slice.Phases
+		}
+		doctorTasks(ctx, &r, gh, l, t, res.SpecDir, res.Commit, phases)
+	}
 	if !withBaseline {
 		return doctorExit(&r)
 	}
@@ -236,6 +243,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	}
 	if by["G4_visible_tests"] == "pass" {
 		r.Add("baseline", "project tests offline", doctor.Pass, "the test command passes on today's code with no network")
+		doctorAllowance(&r, toInt(report["test_seconds"]), doctorDeadline(l, t)) // 033 FR-013
 	} else {
 		r.Add("baseline", "project tests offline", doctor.Fail, "the test command fails on today's code with no network (see BASELINE_SUITE_FAILS in docs/troubleshooting.md)")
 	}
