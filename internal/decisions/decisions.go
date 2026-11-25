@@ -205,6 +205,14 @@ func Record(run *evidence.Run, step, channel, approver string, commentID any) (i
 	if p.Step != step && (step != Replan || p.Step != "retry") {
 		return 2, fmt.Sprintf("run %s is waiting for '%s', not '%s': %s", run.ID, p.Step, step, Describe(p))
 	}
+	// 033: a retry pause takes one answer. An unused answer recorded for this pause (retry or
+	// replan) is never overwritten by the other one: resume acts on it.
+	for _, other := range Answers(p.Step) {
+		if other != step && Recorded(run, other, p.Task, p.N) {
+			return 2, fmt.Sprintf("run %s already has '%s' recorded for this pause, not used yet; it can't also be answered '%s'. "+
+				"Run `./chalkeus forge resume --run %s` to act on '%s'", run.ID, other, step, run.ID, other)
+		}
+	}
 	if channel == "" {
 		channel = "harness"
 	}

@@ -412,6 +412,8 @@ Operators who pull the published images never see it.
   1. end the run: `./chalkeus forge approve --run <id> replan` (your agent harness asks you
      first), or reply `/approve replan` on the tracking issue. The run stops as
      `stopped(back-to-planning)`; its watcher stops and the audit reports AU02 and AU03 as `n/a`;
+     a pause takes one answer: once `retry` or `replan` is recorded, the other is refused until
+     the run resumes;
   2. for unknown work, do the research outside the run (for example run the investigation
      yourself, or with an agent that assists you) and record the answer in the item's
      `research.md` with `/speckit-plan`; then turn it into known tasks with `/speckit-tasks`.
