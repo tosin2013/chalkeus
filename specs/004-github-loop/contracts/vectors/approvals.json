@@ -600,6 +600,212 @@
           }
         ]
       }
+    },
+    {
+      "name": "033-replan-answers-retry",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve replan",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": 101,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "033-replan-not-an-approver",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve replan",
+            "author": "bob",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "not_an_approver"
+          }
+        ]
+      }
+    },
+    {
+      "name": "033-replan-wrong-step-for-mode",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "mode"
+        },
+        "step": "mode",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve replan",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "wrong_step"
+          }
+        ]
+      }
+    },
+    {
+      "name": "033-replan-withdrawn",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve replan",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          },
+          {
+            "id": 102,
+            "body": "/withdraw replan",
+            "author": "alice",
+            "created_at": "t102",
+            "updated_at": "t102",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": null,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": "withdrawn"
+          }
+        ]
+      }
+    },
+    {
+      "name": "033-withdraw-retry-keeps-replan",
+      "input": {
+        "decision": {
+          "comment_id": 100,
+          "step": "retry"
+        },
+        "step": "retry",
+        "approvers": [
+          "alice"
+        ],
+        "publisher": "pub-bot",
+        "permissions": {
+          "alice": "write",
+          "bob": "write",
+          "carol": "read"
+        },
+        "comments": [
+          {
+            "id": 101,
+            "body": "/approve replan",
+            "author": "alice",
+            "created_at": "t101",
+            "updated_at": "t101",
+            "app": false
+          },
+          {
+            "id": 102,
+            "body": "/withdraw retry",
+            "author": "alice",
+            "created_at": "t102",
+            "updated_at": "t102",
+            "app": false
+          }
+        ]
+      },
+      "expect": {
+        "accepted": 101,
+        "log": [
+          {
+            "comment_id": 101,
+            "reason": null
+          }
+        ]
+      }
     }
   ]
 }

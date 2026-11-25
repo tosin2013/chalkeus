@@ -78,7 +78,8 @@ func TestTrackingIssueAndPostAreIdempotent(t *testing.T) {
 		}
 	}
 	want := "<!-- chalkeus:decision run=20261116T101500Z step=retry task=A n=2 -->\n**Decision pending: retry task A (attempt 2).**\n\n" +
-		"To approve, reply with exactly:\n\n    /approve retry\n\nAllowed approvers: @alice. To cancel your approval before the run resumes: `/withdraw retry`.\n"
+		"To approve, reply with exactly:\n\n    /approve retry\n\nAllowed approvers: @alice. To cancel your approval before the run resumes: `/withdraw retry`.\n" +
+		"\nTo end the run instead and go back to planning, reply with exactly:\n\n    /approve replan\n" // 033
 	if body != want {
 		t.Fatalf("post body\n%q", body)
 	}

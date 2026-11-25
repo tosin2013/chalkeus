@@ -22,25 +22,29 @@ func Run(r *evidence.Run, final bool, cfg *config.Config, out io.Writer) (bool, 
 	}
 	auditFile := filepath.Join(r.Dir, "audit.jsonl")
 	_ = os.Remove(auditFile)
-	pass := 0
+	pass, na := 0, 0
 	for _, row := range rows {
 		if err := evidence.AppendJSONL(auditFile, row); err != nil {
 			return false, err
 		}
 		mark := "FAIL"
-		if row.Result == "pass" {
+		switch row.Result {
+		case "pass":
 			mark = "PASS"
 			pass++
+		case NA: // 033: doesn't apply to a run the owner ended for planning
+			mark = "N/A "
+			na++
 		}
 		_, _ = fmt.Fprintf(out, "  %s %s %s\n", mark, row.ID, row.Description)
 	}
-	if err := r.Event("audit", nil, nil, "audit_done", fmt.Sprintf("%d/%d", pass, len(rows))); err != nil {
+	if err := r.Event("audit", nil, nil, "audit_done", fmt.Sprintf("%d/%d", pass, len(rows)-na)); err != nil {
 		return false, err
 	}
 	if _, err := r.WriteSummary(); err != nil {
 		return false, err
 	}
-	return pass == len(rows), nil
+	return pass == len(rows)-na, nil
 }
 
 func exists(p string) bool { _, err := os.Stat(p); return err == nil }

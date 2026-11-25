@@ -202,13 +202,13 @@ func Record(run *evidence.Run, step, channel, approver string, commentID any) (i
 		return 4, "the run is waiting for you to merge A's PR on GitHub; merging is never approved here. " +
 			"Merge it, run `./chalkeus forge resume`, then approve the reconcile proposal it shows."
 	}
-	if p.Step != step {
+	if p.Step != step && (step != Replan || p.Step != "retry") {
 		return 2, fmt.Sprintf("run %s is waiting for '%s', not '%s': %s", run.ID, p.Step, step, Describe(p))
 	}
 	if channel == "" {
 		channel = "harness"
 	}
-	a := map[string]any{"step": p.Step, "task": p.Task, "n": p.N, "channel": channel, "at": evidence.Now()}
+	a := map[string]any{"step": step, "task": p.Task, "n": p.N, "channel": channel, "at": evidence.Now()}
 	if p.Step == "reconcile" {
 		a["merge_commit"], a["proposed"], a["item_id"] = p.MergeCommit, p.Proposed, p.ItemID
 	}
@@ -224,6 +224,9 @@ func Record(run *evidence.Run, step, channel, approver string, commentID any) (i
 	by := ""
 	if channel == "github" {
 		by = " by @" + approver + " on GitHub"
+	}
+	if step == Replan {
+		return 0, fmt.Sprintf("recorded%s: end run %s for planning (back to planning) instead of retrying %v. Now run: ./chalkeus forge resume --run %s", by, run.ID, p.Task, run.ID)
 	}
 	return 0, fmt.Sprintf("approved%s: %s. Now run: ./chalkeus forge resume --run %s", by, Describe(p), run.ID)
 }
@@ -314,8 +317,24 @@ func Note(run *evidence.Run, step string, task, n any, approved bool, channel, a
 
 // Hint tells a no-terminal caller how to continue.
 func Hint(run *evidence.Run, step string) string {
-	return fmt.Sprintf("no terminal: approve with `./chalkeus forge approve --run %s %s` (your agent harness asks you first), then `./chalkeus forge resume --run %s`",
+	h := fmt.Sprintf("no terminal: approve with `./chalkeus forge approve --run %s %s` (your agent harness asks you first), then `./chalkeus forge resume --run %s`",
 		run.ID, step, run.ID)
+	if step == "retry" { // 033
+		h += fmt.Sprintf("; or end the run and go back to planning with `./chalkeus forge approve --run %s %s`", run.ID, Replan)
+	}
+	return h
+}
+
+// Replan is the answer to a retry that ends the run so the owner can go back to planning (033).
+const Replan = "replan"
+
+// Answers are the steps that answer a pending step: the step itself, and for a retry also
+// replan (033).
+func Answers(step string) []string {
+	if step == "retry" {
+		return []string{"retry", Replan}
+	}
+	return []string{step}
 }
 
 // NoTTY: PILOT_NO_TTY=1 means a process started on the operator's behalf (step mode, 021) must

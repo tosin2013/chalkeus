@@ -397,6 +397,7 @@ func TestStaleInProgressRun(t *testing.T) {
 		{"crashed", RunInfo{State: "in-progress", EndedAt: base.Add(-61 * time.Minute)}, RunFailed},
 		{"quiet but watched", RunInfo{State: "in-progress", Watching: true, EndedAt: base.Add(-3 * time.Hour)}, RunActive},
 		{"no events yet", RunInfo{State: "in-progress"}, RunActive},
+		{"stopped for planning (033)", RunInfo{State: "stopped(back-to-planning)", Watching: true}, RunFailed},
 	} {
 		if got := runState(c.r); got != c.want {
 			t.Errorf("%s: %s, want %s", c.name, got, c.want)

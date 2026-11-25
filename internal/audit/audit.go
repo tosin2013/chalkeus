@@ -174,6 +174,10 @@ func attempts(d string) []attempt {
 	return out
 }
 
+// NA is the result of a check that doesn't apply to the run (033: AU02 and AU03 on a run the owner
+// ended for planning). It counts neither as a pass nor as a failure.
+const NA = "n/a"
+
 func row(id string, ok bool, desc, detail string) evidence.CheckRow {
 	r := "fail"
 	if ok {
@@ -543,6 +547,11 @@ func itemVariants(d string, rows []evidence.CheckRow) []evidence.CheckRow {
 	sliceID, _ := st["slice"].(string)
 	if sliceID != "" { // 026: a slice run's PR counts, and the slice order (AU13)
 		repl["AU03"] = sliceAU03(d, st, item, sliceID)
+	}
+	if st["state"] == "stopped(back-to-planning)" { // 033 FR-011: no final pass or PR is expected
+		why := "run ended by the owner for planning"
+		repl["AU02"] = evidence.NewCheckRow("AU02", "audit", NA, repl["AU02"].Description, why)
+		repl["AU03"] = evidence.NewCheckRow("AU03", "audit", NA, repl["AU03"].Description, why)
 	}
 	out := make([]evidence.CheckRow, 0, len(rows)+1)
 	for _, r := range rows {
