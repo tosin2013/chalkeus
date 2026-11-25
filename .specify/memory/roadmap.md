@@ -1,7 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.37.1 → 1.38.0 (this revision)
+Version change: 1.38.0 → 1.39.0 (this revision)
+Bump rationale: MINOR — a new planned item (035) and 031's scope wording amended, with a status
+transition (031 specced → verified). Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-25, Tosin Akinosho, from 031's debrief
+specs/031-macos-multiarch/roadmap-reviews/debrief-20261125T230000Z.md):
+  - 031 specced → verified: the outcome is met by evidence (isolation suite 37/37, Mac fixture
+    run 20261125T191440Z and Mac target run 20261125T220507Z each with the audit at 11/11, Linux
+    T013 unchanged, every image an amd64 + arm64 index). Scope (in): the Docker Desktop memory
+    refusal comes with 030's capacity check (031 T019 follows 030). FR-009 is met by the host
+    proof (T024).
+  - 035 added (planned): keep hidden-test output out of committed evidence.
+Specs affected: 031, 035
+Open questions added/resolved: none
+
+Prior: Version change: 1.37.1 → 1.38.0
 Bump rationale: MINOR — a new planned item (034); 031's acceptance amended. Nothing verified is
 invalidated.
 Changes this revision (owner decision 2026-11-25, Tosin Akinosho):
@@ -2183,7 +2197,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   (2 CPU, 2Gi, 1,200 s per attempt) runs the suite several times per attempt. The friction log
   is in specs/026-slice-runs/evidence/documcp-onboarding.md.
 
-### 031 — macOS: multi-arch images and kind on Docker Desktop  [status: specced]
+### 031 — macOS: multi-arch images and kind on Docker Desktop  [status: verified]
 
 - **Description:** Make forge run on macOS (Apple Silicon and Intel) with Docker Desktop,
   with every guarantee and the full audit. Today the cluster side runs only on Ubuntu 24.04
@@ -2205,7 +2219,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     Calico only after its hash matches, as today; Calico's NetworkPolicy enforcement and the
     egress proxies are proven on Docker Desktop's VM, not assumed;
   - **`doctor`** reports the host OS and architecture, and refuses with a clear code when
-    Docker Desktop has less memory than needed (8 GB, as on Linux);
+    Docker Desktop has less memory than needed (8 GB, as on Linux) (amended 2026-11-25: this
+    refusal comes with 030's capacity check; 031 T019 follows 030);
   - **evidence** records the host OS, the architecture and the image platform for every run;
   - **docs:** a macOS path in the operator guide (Docker Desktop memory and CPUs, Homebrew or
     direct installs of `gh` and `spec`); the operator guide's section 13 row moves from "not
@@ -2232,6 +2247,14 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   path works from a fresh Mac. **Amended 2026-11-25 (owner):** the fresh-Mac walkthrough
   (SC-005, task T030) moves to 034 for a community contributor; 031 keeps a scripted check of
   the guide's macOS install steps (specs/031-macos-multiarch/evidence/fresh-mac.md).
+  **Verified 2026-11-25 (owner):** the outcome is met by evidence
+  (specs/031-macos-multiarch/evidence/README.md): the isolation suite 37/37 on the Mac; the
+  Mac fixture run 20261125T191440Z and the Mac target run 20261125T220507Z (stockroom 011,
+  `jdk21-maven` on arm64) each with the audit at 11/11; the Linux run 20261125T170145Z matching
+  026's; every image an amd64 + arm64 index. FR-009 is met by the host proof (T024): a mid-run
+  refusal when P06/P07 fail is not part of 031. Found on the way: Calico's CNI token expires
+  unrenewed while a Mac sleeps (now checked before each attempt), and hidden-test output in
+  committed evidence (035). Debrief: specs/031-macos-multiarch/roadmap-reviews/.
 
 ### 032 — Task runs within a slice  [status: specced]
 
@@ -2327,6 +2350,26 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   install command of the guide's macOS section as written (spec-status and Go downloads and
   checksums, `~/.local/bin` on `PATH`, the clone, the final check); what remains is installing
   Docker Desktop and signing in to GitHub, and a reader's view of the guide.
+
+### 035 — Keep hidden-test output out of committed evidence  [status: planned]
+
+- **Description:** A target run's evidence must not carry the private companion's hidden
+  tests, or their names and failure output, into a public repository.
+- **Outcome:** a target run's committed evidence holds no hidden-test file names, test names or
+  failure lines; the prefetch and grader records keep only what the audit needs (outcome,
+  counts, hashes), and a check fails the evidence if a hidden-test path or name appears.
+- **Scope (in):** `prefetch.json`'s `log_tail` (2,000 characters of the prefetch test run, which
+  includes the hidden tests) and `companion.json`'s file names; redacting hidden-test lines, or
+  keeping these logs local and out of committed evidence; an audit or privacy check over the
+  evidence; docs.
+- **Scope (out):** rewriting git history of evidence already committed (the owner decides
+  separately); the worker's isolation, which already keeps hidden tests away (P11).
+- **Depends on:** 014
+- **Governed by:** C-14
+- **Notes:** Added 2026-11-25 (owner), from 031's privacy check (T031,
+  specs/031-macos-multiarch/evidence/privacy.md): 14 committed `prefetch.json` files across
+  specs carry hidden-test output from the private companion. Workers never see evidence, so
+  runs aren't affected; the companion's confidentiality is.
 
 ## Open Questions
 
@@ -2514,4 +2557,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.38.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-25
+**Version**: 1.39.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-25
