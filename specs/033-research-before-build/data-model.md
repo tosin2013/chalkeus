@@ -4,7 +4,7 @@
 
 | Field | Type | Notes |
 |---|---|---|
-| `kind` | enum | `research_task`, `outside_paths`, `manifest_outside_paths`, `egress_refused`, `install_error`, `unknown_reason`, `failed_checks` (grading checks that didn't pass, information), `allowance` |
+| `kind` | enum | `research_task`, `outside_paths`, `manifest_outside_paths`, `egress_refused`, `install_error`, `unknown_reason`, `failed_checks` (grading checks that didn't pass, information), `allowance`, `repeated_deadline` (US5: this and the previous attempt stopped at the deadline with no trigger → `unknown_work`) |
 | `detail` | string | one line, for example `T003: "Locate the suites that leave handles open"` |
 | `source` | string | where it came from: `prompt.md:345`, `report.json changed_paths`, `proxy-denials.log` (`target proxy`, 1×), `grade.json G4` |
 | `trigger` | enum or empty | `unknown_work`, `environment_need`, or empty (information only) |
@@ -36,6 +36,7 @@ Rules:
 | `triggers` | list | distinct triggers from the signals |
 | `recommend` | enum | `retry`, `raise_budget`, `back_to_planning` |
 | `routes` | list | for `back_to_planning`: `plan_research` (unknown work), `planning_pr` (environment need), `roadmap_item` (scope) |
+| `tools` | list | US5: for `back_to_planning`, the planning tools: `{id, for, installed, commands \| install, vetted}`; `harness` for unknown work, `bug` for an unrecognised failure or failing project tests |
 | `text` | string | the rendered block shown with the retry question (contracts/diagnosis.md) |
 
 Recommendation (FR-003), first match wins:

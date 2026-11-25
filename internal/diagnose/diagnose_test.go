@@ -11,6 +11,11 @@ import (
 
 func replay(t *testing.T, name, task string, deadline int) Diagnosis {
 	t.Helper()
+	return Diagnose(replayInput(t, name, task, deadline))
+}
+
+func replayInput(t *testing.T, name, task string, deadline int) Input {
+	t.Helper()
 	dir := filepath.Join("testdata", name)
 	var rec map[string]any
 	b, err := os.ReadFile(filepath.Join(dir, "attempt.json"))
@@ -24,7 +29,7 @@ func replay(t *testing.T, name, task string, deadline int) Diagnosis {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return Diagnose(in)
+	return in
 }
 
 func kinds(d Diagnosis) map[string][]string {

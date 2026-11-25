@@ -170,6 +170,43 @@ choices and the route for each, with a greenfield and a brownfield example.
 
 ---
 
+### User Story 5 - The route back names a planning tool, and a repeated timeout counts (Priority: P2)
+
+Added 2026-11-25 (owner). When the diagnosis recommends back to planning, it names a Spec Kit
+extension that does that work: the Research Harness for unknown work (budgeted exploration that
+writes into `research.md`), the core Bug Triage extension for a defect in the project (faulty or
+flaky tests, a failure Chalkeus doesn't recognise). If the target has the extension installed and
+enabled, the route names its commands; if not, one install hint, saying when an extension isn't
+vetted by Spec Kit. Separately, an attempt that stops at the deadline again with nothing new in
+the evidence is treated as unknown work, whatever its tasks are called: open-ended work isn't
+always worded as research (documcp's "make … pass reliably").
+
+**Why this priority**: it turns the recommendation into a next step the owner can run, and it
+closes the wording heuristic's biggest gap without guessing at words.
+
+**Independent Test**: a diagnosis of documcp attempt 1 with the target's registry listing
+`harness` names `/speckit.harness.explore` and `/speckit.harness.report`; without it, the install
+hint with "review it first". A second deadline on the same task with no trigger recommends back
+to planning; the first still recommends retry.
+
+**Acceptance Scenarios**:
+
+1. **Given** a back-to-planning diagnosis with an unknown-work trigger and `harness` installed
+   and enabled in the target, **When** it is shown, **Then** the route names
+   `/speckit.harness.explore` and `/speckit.harness.report`.
+2. **Given** the same without `harness` installed, **When** it is shown, **Then** it gives one
+   install hint for it, marked as not vetted by Spec Kit (review it first).
+3. **Given** an unrecognised failure reason, or failing project tests in grading, and `bug`
+   installed, **When** back to planning is recommended, **Then** the route names
+   `/speckit.bug.assess` with the diagnosis as the report; without it, `specify extension add bug`.
+4. **Given** attempt n ≥ 2 of a task stopped at the deadline, and attempt n−1 of the same task
+   also did, with no trigger in either, **When** it is diagnosed, **Then** it recommends back to
+   planning (unknown work: "stopped at the deadline twice") instead of retry.
+5. **Given** any of these, **When** the owner reads them, **Then** forge has installed and run
+   nothing.
+
+---
+
 ### Edge Cases
 
 - **Several triggers at once** (research task and an environment need): the diagnosis lists
@@ -253,6 +290,22 @@ choices and the route for each, with a greenfield and a brownfield example.
 - **FR-018**: The docs for preparing an item MUST say where research and environment changes
   belong, with a greenfield and a brownfield example, and how to go back to planning from a
   diagnosis.
+
+**Planning tools and repeated timeouts (US5)**
+
+- **FR-019**: When the target's extension registry (`.specify/extensions/.registry` at the run's
+  base revision) lists an extension as enabled, the diagnosis MUST treat it as installed; the
+  list MUST be recorded in the run's evidence when the run is prepared, so a diagnosis replays.
+- **FR-020**: For an unknown-work trigger the back-to-planning route MUST name the Research
+  Harness (`harness`): its `/speckit.harness.explore` and `/speckit.harness.report` commands when
+  installed, else one install hint that says it is a community extension not vetted by Spec Kit.
+- **FR-021**: For an unrecognised failure, or failing project tests (G4) together with a
+  back-to-planning recommendation, the route MUST name the core Bug Triage extension (`bug`):
+  `/speckit.bug.assess` when installed, else `specify extension add bug`.
+- **FR-022**: An attempt that stopped at the deadline, where the previous attempt of the same task
+  also did and neither has a trigger, MUST be diagnosed as unknown work and recommend back to
+  planning.
+- **FR-023**: Forge MUST NOT install, enable or run any extension (C-12).
 
 ### Key Entities
 

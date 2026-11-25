@@ -123,6 +123,19 @@ the baseline section prints the time and, below 5, the allowance warning.
 
 ---
 
+## Phase 8: User Story 5 - The route back names a planning tool, and a repeated timeout counts (Priority: P2)
+
+**Goal**: back-to-planning routes name the Research Harness or Bug Triage (installed: commands;
+not: one install hint), and a second deadline in a row with nothing else is unknown work.
+
+**Independent Test**: `go test ./internal/diagnose/ -run 'Tools|Repeated|Enabled'`.
+
+- [x] T037 [US5] `internal/diagnose/tools.go`: `Tool`, the `harness` and `bug` tools, `tools()` for back-to-planning diagnoses (harness for unknown work; bug for an unrecognised failure or failing G4), `EnabledExtensions(registry)`; render a `tool for …` line per tool
+- [x] T038 [US5] `internal/diagnose/diagnose.go`: `Input.Extensions`, `Input.PrevDeadlineNoTrig`; signal `repeated_deadline` (trigger unknown work) when this and the previous attempt stopped at the deadline with no trigger (FR-022)
+- [x] T039 [US5] `internal/pipeline`: record `spec_extensions` (enabled ids from the target's `.specify/extensions/.registry` at the base revision) when the snapshot is made; pass it and the previous attempt's deadline/trigger state to the diagnosis
+- [x] T040 [P] [US5] Tests: `internal/diagnose/tools_test.go` (scenarios 1–4, registry parsing) and `internal/pipeline/diagnose_test.go` (previous-deadline lookup, registry at the base revision)
+- [x] T041 [P] [US5] Docs: troubleshooting `#diagnosis` (the repeated timeout, the tool lines), `targets.md#research-tasks` (the two extensions), contract and data model
+
 ## Dependencies & Execution Order
 
 - Setup (T001–T002) → Foundational (T003–T005) → US1 → US2 → US3 → US4 → Polish.

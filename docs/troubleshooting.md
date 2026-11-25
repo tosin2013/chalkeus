@@ -280,7 +280,10 @@ Operators who pull the published images never see it.
     [targets: research tasks](targets.md#research-tasks)), or the failure reason isn't one of
     the [attempt failure reasons](#attempt-failure-reasons) below;
   - **an environment need:** a dependency manifest or lock file changed outside the allowed
-    paths, or an install or download failed while the egress proxy refused hosts.
+    paths, or an install or download failed while the egress proxy refused hosts;
+  - **a repeated timeout:** this attempt and the one before it both stopped at the deadline with
+    nothing else in the evidence. Open-ended work isn't always worded as research ("make … pass
+    reliably").
   The diagnosis is built from the attempt's kept files, without a model, and the same evidence
   always gives the same diagnosis. Forge never acts on it.
 - **Fix:** go back to planning:
@@ -289,7 +292,14 @@ Operators who pull the published images never see it.
      `stopped(back-to-planning)`; its watcher stops and the audit reports AU02 and AU03 as `n/a`;
   2. for unknown work, do the research outside the run (for example run the investigation
      yourself, or with an agent that assists you) and record the answer in the item's
-     `research.md` with `/speckit-plan`; then turn it into known tasks with `/speckit-tasks`;
+     `research.md` with `/speckit-plan`; then turn it into known tasks with `/speckit-tasks`.
+     The diagnosis names a Spec Kit extension for it (`tool for …` lines): the **Research
+     Harness** (`/speckit.harness.explore`, then `/speckit.harness.report`, which writes
+     `research.md`) for unknown work, and **Bug Triage** (`/speckit.bug.assess` with the
+     diagnosis as the report) for a defect in the project. It shows the commands when the target
+     has the extension enabled, otherwise how to install it. The Research Harness is a community
+     extension that Spec Kit hasn't vetted: review it before you install it. Forge never
+     installs or runs either;
   3. for an environment need, make the change in your planning PR (the runtime, dependencies,
      the lock file) or in the target profile (registries);
   4. merge the planning PR and start a new run of the item or slice.

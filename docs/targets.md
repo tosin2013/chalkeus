@@ -106,7 +106,9 @@ it gets, so resolve them while you plan the item, before its tasks:
   `determine which`, `diagnose`, `research`, `explore`, `spike`. Do the investigation yourself
   (or with an agent that assists you), record the answer in the item's `research.md` with
   `/speckit-plan`, and regenerate the tasks with `/speckit-tasks`, so each one names the change
-  to make.
+  to make. The Spec Kit Research Harness extension (`harness`, community, not vetted by Spec Kit)
+  runs such an investigation within a budget and writes the findings into `research.md`; the core
+  Bug Triage extension (`specify extension add bug`) suits a defect such as a flaky test.
 - **Environment changes:** the runtime or toolchain, dependencies and the lock file, native
   install scripts, registries and other egress hosts, or the pod budget. An attempt can't change
   them: make them in your planning PR (dependencies, version files, CI) or in the target profile
