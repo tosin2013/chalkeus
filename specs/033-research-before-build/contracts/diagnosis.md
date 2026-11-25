@@ -36,8 +36,13 @@ Example (documcp run `20261125T163307Z`, attempt 1; SC-001):
   recommended: back to planning
     back to planning: resolve T003, T004a in the plan's research (/speckit-plan), then /speckit-tasks
     back to planning: change package-lock.json in your planning PR, not in an attempt
+    tool for the research: the harness extension, not installed (specify extension add harness --from https://github.com/formin/spec-kit-harness/archive/refs/tags/v1.0.0.zip; a community extension not vetted by Spec Kit: review it first)
   your choice: approve retry, or end the run with `replan` (you decide; forge does neither)
 ```
+
+With `harness` enabled in the target's `.specify/extensions/.registry` (recorded at prepare as
+`spec_extensions` in `run.json`), the tool line reads
+`tool for the research: /speckit.harness.explore, then /speckit.harness.report (writes research.md) (installed)`.
 
 Example (fixture A/1, induced failure; SC-002):
 

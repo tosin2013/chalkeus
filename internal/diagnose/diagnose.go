@@ -22,6 +22,7 @@ const (
 	KindUnknownReason   = "unknown_reason"
 	KindFailedChecks    = "failed_checks"
 	KindAllowance       = "allowance"
+	KindRepeatDeadline  = "repeated_deadline"
 )
 
 // Triggers.
@@ -76,6 +77,7 @@ type Diagnosis struct {
 	Recommend string   `json:"recommend"`
 	Routes    []string `json:"routes,omitempty"`
 	Allowance int      `json:"allowance,omitempty"` // 0: unknown
+	Tools     []Tool   `json:"tools,omitempty"`     // planning tools for the routes (US5)
 	Text      string   `json:"text"`
 }
 
@@ -98,6 +100,11 @@ type Input struct {
 	G4Detail     string   // grade.json G4 detail (install or download trouble)
 	TestSeconds  int      // one project test run, from the baseline grade; 0 unknown
 	DeadlineS    int      // the worker deadline; 0 unknown
+	// US5: the target's enabled Spec Kit extensions (ids, from its registry at the base
+	// revision), and whether the previous attempt of this task also stopped at the deadline with
+	// no trigger.
+	Extensions         []string
+	PrevDeadlineNoTrig bool
 }
 
 // Diagnose builds the diagnosis. Same input, same output.
@@ -185,6 +192,13 @@ func Diagnose(in Input) Diagnosis {
 			Source: "baseline grade"})
 	}
 
+	// US5 FR-022: a second deadline in a row with nothing pointing anywhere is open-ended work.
+	if in.Reason == "deadline" && in.PrevDeadlineNoTrig && !hasTrigger(d.Signals) {
+		d.Signals = append(d.Signals, Signal{Kind: KindRepeatDeadline, Trigger: UnknownWork,
+			Detail: fmt.Sprintf("attempts %d and %d both stopped at the deadline with nothing else in the evidence", in.Attempt-1, in.Attempt),
+			Source: "attempt records"})
+	}
+
 	seen := map[string]bool{}
 	for _, s := range d.Signals {
 		if s.Trigger != "" && !seen[s.Trigger] {
@@ -208,8 +222,29 @@ func Diagnose(in Input) Diagnosis {
 	default:
 		d.Recommend = Retry
 	}
+	if d.Recommend == BackToPlanning {
+		d.Tools = tools(d, in, len(in.FailedChecks) > 0 && containsPrefix(in.FailedChecks, "G4"))
+	}
 	d.Text = render(d, research, manifests)
 	return d
+}
+
+func hasTrigger(sig []Signal) bool {
+	for _, s := range sig {
+		if s.Trigger != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func containsPrefix(xs []string, p string) bool {
+	for _, x := range xs {
+		if strings.HasPrefix(x, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // networkError matches install or download failures in a test command's output.
@@ -335,6 +370,9 @@ func render(d Diagnosis, research, manifests []string) string {
 				b.WriteString("    back to planning: give the project what it needs (hosts, dependencies, toolchain) in your planning PR or the target profile\n")
 			}
 		}
+	}
+	for _, t := range d.Tools {
+		fmt.Fprintf(&b, "    %s\n", t.Line())
 	}
 	if d.Recommend == RaiseBudget {
 		b.WriteString("    raise the budget: FORGE_WORKER_DEADLINE_S in the target profile, then a new run\n")

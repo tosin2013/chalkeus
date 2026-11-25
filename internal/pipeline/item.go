@@ -258,6 +258,7 @@ func (p *P) prepareItem(run *evidence.Run) error {
 		}
 		st, _ := os.Stat(bundle)
 		run.State["snapshot"] = map[string]any{"base_revision": base, "snapshot_commit": snap, "bytes": st.Size()}
+		recordExtensions(run, clone, base) // 033 US5
 		_ = run.Save()
 	}
 	overlay := filepath.Join(d, "overlay.tar")

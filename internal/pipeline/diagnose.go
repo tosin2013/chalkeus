@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"os"
+	"os/exec"
 
 	"github.com/tosin2013/chalkeus/internal/decisions"
 	"github.com/tosin2013/chalkeus/internal/diagnose"
@@ -23,6 +24,8 @@ func (p *P) diagnoseAttempt(run *evidence.Run, task string, n int, att map[strin
 		_ = run.Event("attempt", task, n, "attempt_diagnosis_error", err.Error())
 		return
 	}
+	in.Extensions = strList(run.State["spec_extensions"]) // US5 FR-019
+	in.PrevDeadlineNoTrig = prevDeadlineNoTrigger(run, task, n)
 	d := diagnose.Diagnose(in)
 	if err := diagnose.Write(dir, d); err != nil {
 		_ = run.Event("attempt", task, n, "attempt_diagnosis_error", err.Error())
@@ -112,4 +115,50 @@ func (p *P) stopForPlanning(run *evidence.Run, task string, n int) int {
 	}
 	p.say("run %s stopped: back to planning (by %s); the item or slice can be run again after the planning change is merged.", run.ID, who)
 	return ExitOK
+}
+
+// prevDeadlineNoTrigger reports whether attempt n-1 of task stopped at the deadline and its
+// diagnosis pointed to nothing (033 FR-022).
+func prevDeadlineNoTrigger(run *evidence.Run, task string, n int) bool {
+	tasks, _ := run.State["tasks"].(map[string]any)
+	t, _ := tasks[task].(map[string]any)
+	for _, x := range anyList(t["attempts"]) {
+		a, _ := x.(map[string]any)
+		if !numEq(a["n"], n-1) {
+			continue
+		}
+		if a["reason"] != "deadline" {
+			return false
+		}
+		dg, _ := a["diagnosis"].(map[string]any)
+		return len(anyList(dg["triggers"])) == 0 && len(strList(dg["triggers"])) == 0
+	}
+	return false
+}
+
+func strList(v any) []string {
+	switch x := v.(type) {
+	case []string:
+		return x
+	case []any:
+		out := []string{}
+		for _, e := range x {
+			if s, ok := e.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	}
+	return nil
+}
+
+// recordExtensions stores the target's enabled Spec Kit extensions at the base revision (033
+// FR-019), read from the prepared clone; missing or unreadable means none.
+func recordExtensions(run *evidence.Run, clone, base string) {
+	out, err := exec.Command("git", "-C", clone, "show", base+":.specify/extensions/.registry").Output()
+	if err != nil {
+		run.State["spec_extensions"] = []string{}
+		return
+	}
+	run.State["spec_extensions"] = diagnose.EnabledExtensions(out)
 }

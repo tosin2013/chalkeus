@@ -16,6 +16,11 @@ New:
   and (with `--baseline`) how many full test runs fit in one attempt
   ([targets.md](targets.md#research-tasks)). Warnings never refuse a run.
 
+- **Planning tools in the route back** (033 US5): a back-to-planning diagnosis names the Spec
+  Kit Research Harness for unknown work and Bug Triage for a defect, with their commands when the
+  target has them enabled and an install hint otherwise. A second timeout in a row with nothing
+  else in the evidence now recommends back to planning instead of another retry.
+
 The test-run time comes from the next tools image; until then doctor says it isn't recorded.
 Nothing to do.
 
