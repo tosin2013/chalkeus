@@ -151,3 +151,28 @@ func TestDecideNoTTY(t *testing.T) {
 		t.Fatalf("approved=%t channel=%s asked=%t", ok, ch, asked)
 	}
 }
+
+// 033: one answer per retry pause; the second answer never replaces the first.
+func TestRecordOneAnswerPerRetryPause(t *testing.T) {
+	for _, c := range []struct{ first, second string }{{"retry", Replan}, {Replan, "retry"}} {
+		r := makeRun(t, "paused(awaiting-retry)", map[string]any{"task": "A", "n": 2})
+		if code, msg := Record(r, c.first, "github", "owner", 1); code != 0 {
+			t.Fatalf("%s: %d %s", c.first, code, msg)
+		}
+		if code, msg := Record(r, c.second, "", "", nil); code != 2 || !strings.Contains(msg, "already has '"+c.first+"'") {
+			t.Errorf("%s after %s: %d %s", c.second, c.first, code, msg)
+		}
+		if !Recorded(r, c.first, "A", 2) || Recorded(r, c.second, "A", 2) {
+			t.Errorf("%s after %s: the first answer must stay recorded", c.second, c.first)
+		}
+		if code, _ := Record(r, c.first, "", "", nil); code != 0 {
+			t.Errorf("recording the same answer again stays allowed (%s)", c.first)
+		}
+	}
+	// An answer left from an earlier attempt doesn't block this pause.
+	r := makeRun(t, "paused(awaiting-retry)", map[string]any{"task": "A", "n": 2})
+	_ = evidence.WriteJSON(file(r), map[string]any{"step": "retry", "task": "A", "n": 1})
+	if code, msg := Record(r, Replan, "", "", nil); code != 0 {
+		t.Errorf("stale answer from attempt 1 blocked replan: %d %s", code, msg)
+	}
+}
