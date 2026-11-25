@@ -135,6 +135,7 @@ not: one install hint), and a second deadline in a row with nothing else is unkn
 - [x] T039 [US5] `internal/pipeline`: record `spec_extensions` (enabled ids from the target's `.specify/extensions/.registry` at the base revision) when the snapshot is made; pass it and the previous attempt's deadline/trigger state to the diagnosis
 - [x] T040 [P] [US5] Tests: `internal/diagnose/tools_test.go` (scenarios 1–4, registry parsing) and `internal/pipeline/diagnose_test.go` (previous-deadline lookup, registry at the base revision)
 - [x] T041 [P] [US5] Docs: troubleshooting `#diagnosis` (the repeated timeout, the tool lines), `targets.md#research-tasks` (the two extensions), contract and data model
+- [x] T042 [US5] The diagnosis reads the worker's end from `job.json`: `OOMKilled` is a signal (`oom_killed`) and recommends raising the budget with `FORGE_WORKER_MEMORY` (found on documcp run `20261125T191444Z`, attempt 1: `no_result` after the worker was killed for memory at 2Gi); replay test `documcp-001-oom`
 
 ## Dependencies & Execution Order
 

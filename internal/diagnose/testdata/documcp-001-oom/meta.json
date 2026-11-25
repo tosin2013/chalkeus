@@ -1,0 +1,31 @@
+{
+  "allowed_paths": [
+    ".nvmrc",
+    "package.json",
+    "src/*",
+    "tests/*",
+    "README.md",
+    "CONTRIBUTING.md",
+    "specs/001-v2-foundation/tasks.md"
+  ],
+  "attempt": 1,
+  "base_revision": "42861d9cd58510db53991011f7344ed02e63e46b",
+  "command_timeout_s": 600,
+  "hidden_mode": "overlay",
+  "induction": null,
+  "item_id": "001",
+  "mode": "attempt",
+  "run_id": "20261125T191444Z",
+  "slice": {
+    "earlier": [],
+    "id": "US1",
+    "phases": [
+      "Phase 1: User Story 1 - Node 24 LTS with a clean test run (Priority: P1) \ud83c\udfaf MVP"
+    ]
+  },
+  "soft_deadline_s": 2280,
+  "spec_sha256": "b984430cccd2e0e38ddf989fd62d4a87f4386607c3fbf427a34c7631caeefb33",
+  "task": "001",
+  "test_command": "npm ci --offline --ignore-scripts && npm test -- --ci --forceExit",
+  "toolchain": "node24"
+}

@@ -67,3 +67,17 @@ func TestEnabledExtensions(t *testing.T) {
 		t.Fatal("unreadable registry")
 	}
 }
+
+// documcp run 20261125T191444Z attempt 1: Kubernetes killed the worker for memory at 2Gi. The
+// diagnosis must say so and recommend a bigger memory budget, not a plain retry.
+func TestReplayOOMKilled(t *testing.T) {
+	d := replay(t, "documcp-001-oom", "001", 2400)
+	if d.Recommend != RaiseBudget {
+		t.Fatalf("recommend %s\n%s", d.Recommend, d.Text)
+	}
+	for _, want := range []string{"killed for running out of memory (OOMKilled, exit 137) (job.json)", "raise the budget: FORGE_WORKER_MEMORY in the target profile"} {
+		if !strings.Contains(d.Text, want) {
+			t.Errorf("text lacks %q:\n%s", want, d.Text)
+		}
+	}
+}

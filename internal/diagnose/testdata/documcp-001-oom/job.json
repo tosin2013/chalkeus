@@ -1,0 +1,38 @@
+{
+  "container_terminated": {
+    "containerID": "containerd://7b1010f8faa50a1c24204800347101f37bbff01d7f95f8152e5901b330dbf342",
+    "exitCode": 137,
+    "finishedAt": "2026-11-25T19:59:17Z",
+    "reason": "OOMKilled",
+    "startedAt": "2026-11-25T19:24:08Z"
+  },
+  "job_status": {
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-25T19:59:19Z",
+        "lastTransitionTime": "2026-11-25T19:59:19Z",
+        "message": "Job has reached the specified backoff limit",
+        "reason": "BackoffLimitExceeded",
+        "status": "True",
+        "type": "FailureTarget"
+      },
+      {
+        "lastProbeTime": "2026-11-25T19:59:19Z",
+        "lastTransitionTime": "2026-11-25T19:59:19Z",
+        "message": "Job has reached the specified backoff limit",
+        "reason": "BackoffLimitExceeded",
+        "status": "True",
+        "type": "Failed"
+      }
+    ],
+    "failed": 1,
+    "ready": 0,
+    "startTime": "2026-11-25T19:23:44Z",
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "outcome": "Failed",
+  "pod": "worker-bz5sg",
+  "pod_phase": "Failed",
+  "pod_reason": null
+}

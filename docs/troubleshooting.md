@@ -373,7 +373,9 @@ Operators who pull the published images never see it.
     [model key problem](#model-key).
   - `no_result`, `bad_frame`, `oversize`: the worker or grader result file was missing,
     unreadable or too large. A crashed pod or a full disk; retry, and look at the pod's events
-    with `-vv`.
+    with `-vv`. When the attempt's `job.json` shows `OOMKilled` (exit 137), Kubernetes killed the
+    worker for memory: the diagnosis recommends raising `FORGE_WORKER_MEMORY` in the target
+    profile and starting a new run (a run keeps the budget it started with), not a retry.
   - `grader_error`, `grader_timeout`: the grader crashed or ran past its job deadline. Raise
     `FORGE_GRADER_DEADLINE_S` in the target profile if the project's tests are slow.
   - worker report errors `clone_failed`, `checkout_failed`, `workspace_failed`,
