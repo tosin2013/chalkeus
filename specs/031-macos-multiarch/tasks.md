@@ -83,7 +83,8 @@ Built before US2 and US3 because `up`'s early refusals and the evidence lines ar
 **Independent Test**: quickstart §5 and §6's `up`: `up` succeeds after doctor passes; `down` removes everything.
 
 - [ ] T022 [US2] On the Mac (Docker Desktop with 8 GB memory and 4+ CPUs), after T012 and T017: run `./chalkeus forge doctor`, `./chalkeus forge up` and `./chalkeus forge doctor` again. Then quit Docker Desktop and confirm doctor and `up` refuse with "start Docker Desktop" and install nothing (quickstart §5). If `up` fails, fix the cause in `internal/cluster/` or `test/isolation/tools.sh`, never by relaxing a check. Evidence in `specs/031-macos-multiarch/evidence/mac-up.md`
-- [ ] T023 [US2] On the Mac, run `./chalkeus forge down` and confirm every container, network and registry that `up` created is gone (`docker ps -a`, `docker network ls`, `kind get clusters`); add the result to `specs/031-macos-multiarch/evidence/mac-up.md`
+- [X] T023 [US2] On the Mac, run `./chalkeus forge down` and confirm every container, network and registry that `up` created is gone (`docker ps -a`, `docker network ls`, `kind get clusters`); add the result to `specs/031-macos-multiarch/evidence/mac-up.md`
+  Done as (2026-11-25): after the fixture run; T01–T03 pass and AU07 passes. Only kind's own empty `kind` network remains, which kind keeps by design ([evidence/mac-up.md](evidence/mac-up.md)). T026 will need a new `up`.
 
 ## Phase 7: User Story 3 - Isolation is proven on Docker Desktop, not assumed (Priority: P1)
 
@@ -93,7 +94,8 @@ Built before US2 and US3 because `up`'s early refusals and the evidence lines ar
 
 - [X] T024 [US3] On the Mac, run `bash test/isolation/run.sh` against a fresh `up` with no edits to the suite's checks or expectations (FR-008). Record the evidence under `specs/031-macos-multiarch/evidence/<run>/`. If a check fails, find the cause; if enforcement can't be proven on Docker Desktop, implement FR-009 (forge refuses on that host, naming the check) and stop here for an owner decision
   Done as (2026-11-24): run `20261124T183824Z-isolation`, 37 of 37 checks passed on Docker Desktop 4.94.0 (node `linux/arm64`, LinuxKit kernel), including Calico's default deny, the allowlisted egress, and teardown. Evidence: `evidence/20261124T183824Z-isolation/`.
-- [ ] T025 [US3] On the Mac, run the fixture walkthrough (operator guide section 6); the owner approves the modes and merges the PRs; then `down` and `./chalkeus forge audit` give 11/11 (SC-001). `versions.txt` shows `host_os: darwin …`, `host_arch: arm64`, `node_platform: linux/arm64`. Evidence under `specs/031-macos-multiarch/evidence/<run>/`
+- [X] T025 [US3] On the Mac, run the fixture walkthrough (operator guide section 6); the owner approves the modes and merges the PRs; then `down` and `./chalkeus forge audit` give 11/11 (SC-001). `versions.txt` shows `host_os: darwin …`, `host_arch: arm64`, `node_platform: linux/arm64`. Evidence under `specs/031-macos-multiarch/evidence/<run>/`
+  Done as (2026-11-25): run [20261125T191440Z](evidence/20261125T191440Z/). Checks 32/32 (identical to T013), audit 11/11 after `down`, and host lines `darwin 27.0.1` / `arm64` / `linux/arm64`. An earlier run, [20261125T182055Z](evidence/20261125T182055Z/), failed at B/1 because Calico's CNI token had expired (T034, troubleshooting `#calico-token-expired`).
 - [ ] T026 [US3] Owner: choose one prepared item of a target with a catalog toolchain. On the Mac, run `./chalkeus forge run --target <t> --item <NNN>`; the owner approves and merges; the audit after `down` passes (SC-002). Evidence under `specs/031-macos-multiarch/evidence/<run>/`
 
 **Checkpoint**: the Mac has the same proof as Linux.

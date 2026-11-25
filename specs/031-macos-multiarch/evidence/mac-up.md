@@ -103,9 +103,42 @@ the `up` above.
   section 3.
 - Code fix: T034.
 
+## 2026-11-25: fixture run and `down` (T025, T023)
+
+The repeated fixture run, [20261125T191440Z](20261125T191440Z/), ran after the Calico restart
+and a `reset-fixture`. Approvals came from the owner with `./chalkeus forge approve` (channel
+`harness`).
+
+- A/1 failed on G5_hidden_tests (the induction). A/2 and B/1 passed. Draft PRs #77 (task A,
+  merged by the owner) and #78 (task B).
+- `checks/results.jsonl`: 32 of 32. The check ids and results are identical to T013's Linux run
+  20261125T170145Z.
+- `versions.txt` host lines:
+  - `host_os: darwin 27.0.1`, `host_arch: arm64`;
+  - `runtime: Docker Desktop 4.100.1 (247138) (Engine 29.9.3), 14 CPUs, 8.2 GiB`;
+  - `node_platform: linux/arm64`, and `linux/arm64` for the egress, tools and worker images;
+  - `host_spec: spec 0.4.1` (the darwin/arm64 binary).
+- Cost: about $0.08 and 40,500 tokens across the three attempts (`deepseek/deepseek-v4-pro`).
+
+`./chalkeus forge down`, exit 0. Then `./chalkeus forge audit --run 20261125T191440Z`: 11 of 11
+pass, including AU07 (teardown).
+
+```text
+== teardown
+  PASS T01 kind cluster deleted (absent)
+  PASS T02 no kind node containers remain (containers=0)
+  PASS T03 local registry container removed (containers=0)
+```
+
+What remains on the host after `down`:
+- `kind get clusters`: `No kind clusters found.`
+- `docker ps -a`: no kind or registry containers.
+- `docker network ls`: only kind's shared `kind` network, created by the first `kind create
+  cluster` on 2026-11-24 18:38 UTC, with no containers attached. kind keeps this network on
+  purpose for later clusters and never deletes it. `down` doesn't remove it on any host, and
+  T01–T03 don't check networks.
+
 ## Pending
 
 - `doctor`'s node and image platform rows. doctor needs `--target`, and it refuses the fixture,
   so these come with T026's target.
-- T023 (`down` and the check that nothing remains) comes after the fixture and target runs, so
-  their audits can include the teardown (AU07).
