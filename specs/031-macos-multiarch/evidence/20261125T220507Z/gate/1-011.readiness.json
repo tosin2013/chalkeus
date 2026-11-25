@@ -1,0 +1,72 @@
+{
+  "decision": "allow",
+  "reasons": [
+    "OK"
+  ],
+  "rules": [
+    {
+      "id": "gate",
+      "result": "pass",
+      "detail": "allow"
+    },
+    {
+      "id": "spec",
+      "result": "pass",
+      "detail": "specs/011-low-stock/spec.md"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "detail": "specs/011-low-stock/tasks.md"
+    },
+    {
+      "id": "open_questions",
+      "result": "pass",
+      "detail": "none"
+    },
+    {
+      "id": "allowed_paths",
+      "result": "pass",
+      "detail": "src/main/java/dev/stockroom/*, src/test/java/dev/stockroom/*, specs/011-low-stock/tasks.md"
+    },
+    {
+      "id": "hidden_tests",
+      "result": "pass",
+      "detail": "1 file(s) at tosin2013/specfoundry-acceptance@c73be7092802"
+    },
+    {
+      "id": "input_size",
+      "result": "pass",
+      "detail": "1607680 bytes"
+    },
+    {
+      "id": "open_pr",
+      "result": "pass",
+      "detail": "none"
+    }
+  ],
+  "commit": "55fd35e379f6524574fb58b9a791b93a057c265a",
+  "spec_dir": "specs/011-low-stock",
+  "title": "Low-stock products",
+  "allowed_paths": [
+    "src/main/java/dev/stockroom/*",
+    "src/test/java/dev/stockroom/*",
+    "specs/011-low-stock/tasks.md"
+  ],
+  "spec_sha256": "519cfe0a330487f3afa076f3d9ebef6aa62d976e183b839a26b5ba7f961bf6e8",
+  "mapping": {
+    "present": true,
+    "stale": false,
+    "uncovered": [
+      "FR-005",
+      "FR-007"
+    ],
+    "valid": true
+  },
+  "companion_commit": "c73be7092802cdb7399e6b2b65262d8cd27347dc",
+  "hidden_files": 1,
+  "input_bytes": 1607680,
+  "overlay": [
+    "stockroom/items/011"
+  ]
+}

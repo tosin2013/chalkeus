@@ -138,7 +138,52 @@ What remains on the host after `down`:
   purpose for later clusters and never deletes it. `down` doesn't remove it on any host, and
   T01–T03 don't check networks.
 
+## 2026-11-25: target run on the Mac (T026) and doctor's platform rows (T022)
+
+**Item:** stockroom 011, Low-stock products (`GET /api/products?maxStock=n`). It is new: all of
+stockroom's items 001–010 were already verified.
+- The owner merged its planning PR (stockroom#51).
+- Its hidden tests came from a separate test-author session: specfoundry-acceptance#14, one file.
+  `author check` ran on this Mac's cluster and gave `DRAFT_OK`.
+- Target profile `~/.config/chalkeus/targets/stockroom.env`: `jdk21-maven`, registry
+  `repo.maven.apache.org`, security level `minimal`. Its values come from stockroom's 021 run.
+
+**Finding: the test author caught a spec/plan conflict before any build.**
+- The spec said an empty `maxStock=` answers `400`.
+- The plan and task T003 prescribed `@RequestParam(required = false) @Min(0) Integer`, which
+  Spring turns into "not given" for an empty value.
+- The test author's draft enforced the spec, and its report named the conflict.
+- The owner merged stockroom#54, which aligned the plan and T003 with the spec, before the run.
+- Without that, the worker would have followed a task that contradicted the spec, and a retry
+  couldn't have helped.
+
+**`./chalkeus forge doctor --target stockroom --item 011`, after `up`:** every row passes except
+two warnings.
+- `network token: Calico's CNI token expires in 23h34m` (T034's row, live).
+- `node platform: linux/arm64` and `image platforms: all 7 images have linux/arm64`. These are
+  the two rows T022 was waiting for.
+- `branch protection`: warns, because stockroom's main isn't protected. This predates 031.
+- `coverage`: warns that FR-005 and FR-007 aren't covered. Neither can be tested through the API.
+
+**Run [20261125T220507Z](20261125T220507Z/):**
+- The baseline passed: the project's tests pass, and the hidden tests fail on the base. One test
+  run takes 5 s.
+- Attempt 1 passed G1–G5 on the toolchain image
+  `chalkeus-toolchain-jdk21-maven@sha256:8fae62f9…` (Maven 3.9.16).
+- Cost: $0.088 and 67,742 tokens (`deepseek/deepseek-v4-pro`).
+- Draft PR stockroom#55, by `tosins-specfoundry-pilot[bot]`, merged by the owner. After the
+  owner's `reconcile` approval, forge recorded 011 as `verified` (`ecf37bb7`).
+- Checks: 17 of 17 pass, including P06r (only the declared registry is reachable), P11 (no hidden
+  test reached the worker) and P12 (graders have no egress).
+- T034's check ran before the attempt and needed no repair: there is no `network_repaired`
+  event.
+- `versions.txt`: `host_os: darwin 27.0.1`, `host_arch: arm64`, `node_platform: linux/arm64`,
+  and `linux/arm64` for the egress, tools and worker images.
+- Approvals: `mode` and `reconcile`, both with `./chalkeus forge approve` (channel `harness`).
+
+`./chalkeus forge down` passed T01–T03. Then `./chalkeus forge audit --run 20261125T220507Z`
+gave **11 of 11**, AU07 included.
+
 ## Pending
 
-- `doctor`'s node and image platform rows. doctor needs `--target`, and it refuses the fixture,
-  so these come with T026's target.
+- Nothing on the Mac: T022–T026 are done.
