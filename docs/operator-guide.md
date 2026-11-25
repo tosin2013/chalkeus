@@ -1,7 +1,7 @@
 # Chalkeus operator guide: repeat the pilot from zero
 
-This guide takes you from a fresh Linux machine to a completed, audited run of the Chalkeus
-pilot. Follow it top to bottom. If anything fails, the matching entry in
+This guide takes you from a fresh Linux machine or Mac to a completed, audited run of the
+Chalkeus pilot. Follow it top to bottom. If anything fails, the matching entry in
 [troubleshooting](troubleshooting.md) explains why and how to fix it.
 
 **Contents:**
@@ -77,7 +77,9 @@ run, and the check IDs appear in your evidence (section 10).
   image yet).
 - **Your provider key is long-lived.** It's copied into a fresh Secret for each attempt and
   deleted with it. Per-run keys are planned for 005.
-- **Single-node kind only, and Linux only** (section 13).
+- **Single-node kind only.** Hosts: Ubuntu on amd64 and Apple Silicon Macs are validated; an
+  Intel Mac is supported by design but not validated by the maintainer; arm64 Linux is untested
+  (section 3).
 
 For a cited comparison with another agent runner, see the
 [Kelos review](../specs/003-m2-kelos-backend/kelos-review.md). For mirroring images into
@@ -89,30 +91,39 @@ your own registry and running behind a corporate proxy, see
 ## 3. Before you start
 
 You need:
-- **A machine:** Ubuntu 24.04 LTS on amd64, 4+ CPU cores, 8 GB of free RAM, 30 GB of free
-  disk. A VM is fine.
+- **A machine** with 4+ CPU cores, 8 GB of free RAM for the cluster and 30 GB of free disk:
+
+  | Host | Container runtime | Status |
+  |---|---|---|
+  | Ubuntu 24.04 LTS, amd64 (a VM is fine) | Docker Engine | validated |
+  | macOS on Apple Silicon (arm64) | Docker Desktop | validated (031: macOS 27, Docker Desktop 4.100) |
+  | macOS on Intel (amd64) | Docker Desktop | supported by design, not validated by the maintainer |
+  | Linux on arm64 | Docker Engine | untested: `doctor` warns, the isolation suite and audit still decide |
+
+  The images are built for both amd64 and arm64, and the cluster's node runs Linux for your
+  machine's architecture. `./chalkeus forge doctor` names your host and its status in its `host`
+  row.
+- **On a Mac: Docker Desktop with at least 8 GB of memory and 4 CPUs** for its VM, under
+  **Settings → Resources**. The default memory is often lower. Forge doesn't check this yet
+  (roadmap 030): with too little memory, pods stay `Pending` or are killed for memory
+  ([troubleshooting](troubleshooting.md#docker-desktop-resources)).
 - **A GitHub account.**
 - **A model provider** with an OpenAI-compatible endpoint, and an API key for it.
 
-> **macOS is being validated (roadmap item 031).** The images are now built for both amd64 and
-> arm64, and `up` and the isolation suite pass on an Apple Silicon Mac with Docker Desktop.
-> This guide's macOS steps follow once the Mac runs are complete. Two things differ on a Mac
-> today:
-> - **Install spec-status for macOS:** `spec_0.4.1_darwin_arm64.tar.gz`, checked with
->   `shasum -a 256 -c --ignore-missing spec_0.4.1_checksums.txt`. The gate runs this copy, so
->   an older one gives the wrong results.
-> - **A cluster older than about a day can stop starting pods.** Docker Desktop's VM pauses while
->   the Mac sleeps, and Calico misses the renewal of its 24-hour network token. Forge checks
->   the token before each attempt and restarts `calico-node` when it won't last; `doctor`
->   shows the time left. See
->   [Pods don't start on a Mac](troubleshooting.md#calico-token-expired). Linux hosts aren't
->   affected.
+> **On a Mac, keep it awake during a run.** Docker Desktop's VM pauses while the Mac sleeps, and
+> Calico can then miss renewing its 24-hour network token. Forge checks the token before each
+> attempt and restarts `calico-node` when it won't last, and `doctor` shows the time left; a long
+> sleep in the middle of an attempt can still stop new pods
+> ([Pods don't start on a Mac](troubleshooting.md#calico-token-expired)).
 
 If something in this guide fails, see [troubleshooting](troubleshooting.md).
 
 ---
 
 ## 4. Install the tools
+
+This section is for Ubuntu. **On a Mac, follow [Install the tools on a Mac](#install-on-a-mac)
+below instead**, then continue with section 5.
 
 **Docker Engine.** Follow Docker's official
 [Ubuntu instructions](https://docs.docker.com/engine/install/ubuntu/), which are summarised
@@ -181,6 +192,72 @@ docker run --rm hello-world && gh auth status && spec --version && ~/.local/go/b
 
 You should see Docker's hello message, `Logged in to github.com`, `spec 0.4.1`, and
 `go version go1.27.4`.
+
+<a id="install-on-a-mac"></a>
+### Install the tools on a Mac
+
+The same tools, in their macOS builds. The commands use `shasum -a 256`, macOS's checksum tool.
+For an Intel Mac, use the `darwin_amd64` / `darwin-amd64` files and the checksum shown for them.
+
+**Docker Desktop.** Install it from [docker.com](https://docs.docker.com/desktop/setup/install/mac-install/),
+start it, then set **Settings → Resources** to at least 8 GB of memory and 4 CPUs, and apply.
+
+**GitHub CLI**, with [Homebrew](https://brew.sh), then sign in:
+
+```sh
+brew install gh
+gh auth login          # GitHub.com → HTTPS → authenticate in the browser
+```
+
+**A `~/.local/bin` on your `PATH`.** macOS doesn't add it for you:
+
+```sh
+mkdir -p ~/.local/bin
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zprofile    # then open a new terminal
+```
+
+**spec 0.4.1**, the gate. Forge runs this copy on your Mac, so it must be the pinned release
+(`doctor`'s `spec-status` row checks it):
+
+```sh
+mkdir -p /tmp/spec && cd /tmp/spec
+gh release download v0.4.1 -R tosin2013/spec-status -p 'spec_0.4.1_darwin_arm64.tar.gz' -p 'spec_0.4.1_checksums.txt'
+shasum -a 256 -c --ignore-missing spec_0.4.1_checksums.txt      # must print: ... OK
+tar -xzf spec_0.4.1_darwin_arm64.tar.gz && install -m 0755 spec_0.4.1_darwin_arm64/spec ~/.local/bin/spec
+cd ~
+```
+
+**Go 1.27**, checksum from [go.dev/dl](https://go.dev/dl/):
+
+```sh
+cd /tmp && curl -fsSLO https://go.dev/dl/go1.27.4.darwin-arm64.tar.gz
+echo "91a44a2b8a716600ad94a4f143e156116620db8828086a6e3602291be9bd0bb4  go1.27.4.darwin-arm64.tar.gz" | shasum -a 256 -c -
+rm -rf ~/.local/go && tar -C ~/.local -xzf go1.27.4.darwin-arm64.tar.gz
+cd ~
+```
+
+For an Intel Mac: `go1.27.4.darwin-amd64.tar.gz`, checksum
+`2b799377704ef12db39bd254995d5c348c9cc8d86562ca817724390e56c38f43`.
+
+**The project**, as on Ubuntu:
+
+```sh
+git clone https://github.com/tosin2013/chalkeus.git
+cd chalkeus
+```
+
+`./chalkeus forge up` installs the darwin builds of kind and kubectl into `~/.local/bin`,
+verifying their checksums. **Check everything** with the same command as on Ubuntu:
+
+```sh
+docker run --rm hello-world && gh auth status && spec --version && ~/.local/go/bin/go version
+```
+
+From section 5 on, the guide is the same on a Mac. Two differences you may notice:
+- `./chalkeus forge doctor` shows `host: darwin/arm64 (…), validated`,
+  `container runtime: Docker Desktop …`, `node platform: linux/arm64` and a `network token` row.
+- After `./chalkeus forge down`, Docker keeps kind's own empty `kind` network for later clusters,
+  as it does on Linux. It isn't one of forge's leftovers.
 
 ---
 
@@ -659,4 +736,6 @@ This guide describes the pilot today. Planned
 | **005:** OpenShift | An enterprise install path (restricted SCC, possibly images on Quay), and per-run model keys |
 | **007:** Operator observability | Metrics, traces and events from each run to a collector you run |
 | **008:** More harnesses | Claude Code and Codex workers alongside OpenCode |
-| **031:** macOS | Multi-architecture images (amd64 and arm64) are shipped; the Mac runs are in progress. See the note in section 3 |
+| **031:** macOS | Shipped: multi-architecture images, Apple Silicon Macs validated (fixture and target runs, audit 11/11). See sections 3 and 4 |
+| **Intel Mac** | Supported by design (the amd64 images, darwin/amd64 builds), not validated by the maintainer. A community report is welcome |
+| **arm64 Linux** | Untested: `doctor` warns; the isolation suite and the audit decide |

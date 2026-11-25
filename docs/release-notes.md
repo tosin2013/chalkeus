@@ -1,5 +1,39 @@
 # Release notes
 
+## macOS: multi-platform images and Docker Desktop (031)
+
+New:
+- **Apple Silicon Macs are supported and validated**, with Docker Desktop: the fixture run and a
+  target run (stockroom item 011, Java) passed with audit 11/11, and the isolation suite passed
+  37/37. An Intel Mac is supported by design but not validated by the maintainer; arm64 Linux is
+  untested. The operator guide has a macOS path ([section 4](operator-guide.md#install-on-a-mac)).
+- **Multi-platform images:** every image in `pilot/images.lock` is now an index with
+  `linux/amd64` and `linux/arm64`, each built natively on GitHub's runners. Docker pulls the
+  build for your machine.
+- **Per-architecture pins:** `pilot/pins.env` pins each upstream download once per architecture
+  (`_AMD64` / `_ARM64` keys). The old single-architecture keys are removed; a build with a missing
+  pin fails naming it.
+- **spec-status 0.4.1**, the first release with builds for every host Chalkeus supports.
+- **Doctor's host area:** `host`, `container runtime` and `spec-status` rows first, and after
+  `up` the `node platform`, `image platforms` and `network token` rows. `up` refuses an
+  unsupported host or a stopped Docker before installing anything.
+- **`versions.txt`** records the host (`host_os`, `host_arch`, `runtime`), the node's and images'
+  platform, and `host_spec`, the spec-status binary the gate actually ran.
+- **Calico's network token:** on a Mac, Docker Desktop's VM pauses while the Mac sleeps and
+  Calico can miss renewing its 24-hour token, after which no new pod starts. Forge now checks the
+  token before each attempt and restarts `calico-node` when it won't last
+  ([troubleshooting](troubleshooting.md#calico-token-expired)).
+- **An App-only publisher** no longer needs a `publisher.env`: `up` requires the token file only
+  for a token publisher, and `github-app.pem` for the App.
+
+To do:
+- **Pull `main`**, then run `./chalkeus forge up`: the lock's new image digests replace the old
+  amd64-only ones.
+- **Install spec-status 0.4.1** if your host has an older copy: the gate runs it, and `doctor`
+  warns when it isn't the pinned release (operator guide section 4).
+- **If you build images yourself or mirror them:** use the per-architecture keys in
+  `pilot/pins.env`, and copy whole indexes, not one platform.
+
 ## Research before build: diagnosis, back to planning, doctor warnings (033)
 
 New:

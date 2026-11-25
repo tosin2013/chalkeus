@@ -23,6 +23,10 @@ instead.
 | `problem: token rejected by GitHub (HTTP 401)` | [Token expired or revoked](#token-expired) |
 | A prompt never appears, and the run exits 5 or pauses | [Prompts answer "no"](#prompts-answer-no) |
 | `./chalkeus forge up` fails while pulling images | [Image pull fails](#image-pull-error) |
+| `Docker isn't running: start Docker Desktop` (or `start the Docker daemon`) | [Docker isn't running](#docker-not-running) |
+| On a Mac, pods stay `Pending` or are `OOMKilled` | [Docker Desktop has too little memory](#docker-desktop-resources) |
+| `FAIL image platforms: … no build for linux/arm64`, or `exec format error` | [An image has no build for the node's platform](#image-wrong-platform) |
+| `P06` or `P07` fails (traffic got through) | [The network plugin doesn't enforce policy](#policy-not-enforced) |
 | `Calico manifest hash mismatch` | [CNI hash mismatch](#cni-hash-mismatch) |
 | `tagged reference not allowed` or `not a digest reference` | [Image pinned by tag](#tag-only-image) |
 | `open pilot PRs exist on …` | [Open pilot PR left over](#open-pilot-pr) |
@@ -160,6 +164,52 @@ Operators who pull the published images never see it.
   sha256=<pinned value>`.
 - **Source:** 003 negative check (a wrong `CALICO_SHA256` exits 2 before applying anything).
 
+<a id="docker-not-running"></a>
+### Docker isn't running: "Docker isn't running: start Docker Desktop"
+
+- **Symptom:** `./chalkeus forge up` stops with `chalkeus: Docker isn't running: start Docker
+  Desktop` (on Linux: `start the Docker daemon`) and exits 2, before installing anything.
+  `./chalkeus forge doctor` shows the same message as `FAIL container runtime`.
+- **Cause:** forge asks Docker for its details first (`docker info`), and nothing answered. On a
+  Mac, Docker Desktop is closed or still starting; or `DOCKER_HOST` points somewhere else.
+- **Fix:** start Docker Desktop and wait until it says it's running (on Linux:
+  `sudo systemctl start docker`). If you set `DOCKER_HOST`, unset it or point it at the running
+  daemon. Then run `./chalkeus forge up` again; an existing cluster is reused.
+- **Confirm:** `docker info` answers, and `doctor` shows `PASS container runtime: Docker Desktop …`.
+- **Source:** 031 (`internal/doctor/host.go`, `RuntimeRow`); `specs/031-macos-multiarch/evidence/mac-up.md`.
+
+<a id="docker-desktop-resources"></a>
+### Docker Desktop has too little memory or too few CPUs
+
+- **Symptom:** on a Mac, `up` is slow or times out waiting for pods; during a run, the worker or
+  grader pod stays `Pending`, or an attempt's `job.json` shows `OOMKilled` (exit 137), which the
+  diagnosis reports as a worker killed for memory.
+- **Cause:** the cluster runs inside Docker Desktop's VM, whose memory and CPUs are set in Docker
+  Desktop, not by forge. The default memory is often below what a worker (2 GiB by default), the
+  grader and the cluster's own pods need together. Forge doesn't check the VM's size yet
+  (roadmap 030).
+- **Fix:** in Docker Desktop, open **Settings → Resources**, set memory to at least **8 GB** and
+  CPUs to at least **4**, and apply (Docker restarts). Then `./chalkeus forge down` and
+  `./chalkeus forge up`. Raise `FORGE_WORKER_MEMORY` in a target's profile only if the VM has the
+  room.
+- **Confirm:** `doctor`'s `container runtime` row shows the new size (for example
+  `14 CPUs, 8.2 GiB`), and pods reach `Running`.
+- **Source:** 031 (validated with 8.2 GiB and 14 CPUs); [attempt failure reasons](#attempt-failure-reasons).
+
+<a id="image-wrong-platform"></a>
+### An image has no build for the node's platform
+
+- **Symptom:** `doctor` shows `FAIL image platforms: <image>: no build for linux/arm64
+  (pilot/images.lock may predate 031); pull main and run ./chalkeus forge up`. Without it, a pod
+  fails with `exec format error`, or stays in `ErrImagePull` with `no matching manifest`.
+- **Cause:** an image in `pilot/images.lock` was built for one architecture only. Locks from
+  before 031 pinned amd64-only images; a mirror may also have copied a single platform.
+- **Fix:** `git pull` on `main`: since 031 every pinned image is a multi-platform index with
+  `linux/amd64` and `linux/arm64`. Then `./chalkeus forge up`. If you mirror images, copy the whole
+  index (for example `docker buildx imagetools create` or `crane copy`), not one platform.
+- **Confirm:** `doctor` shows `PASS image platforms: all 7 images have linux/arm64` (or amd64).
+- **Source:** 031 (`ImagePlatformsRow`); `specs/031-macos-multiarch/evidence/image-platforms.md`.
+
 <a id="tag-only-image"></a>
 ### Image pinned by tag: "tagged reference not allowed" or "not a digest reference"
 
@@ -271,6 +321,26 @@ Operators who pull the published images never see it.
 - **Source:** `internal/worker/worker.go` (failure reasons), `internal/diagnose` (diagnosis).
 - **If the worker never started:** on a Mac, with a cluster more than a day old, see
   [Pods don't start on a Mac](#calico-token-expired).
+
+<a id="policy-not-enforced"></a>
+### The network plugin doesn't enforce policy: `P06` or `P07` fails
+
+- **Symptom:** a live check fails although the run otherwise works: `P06` reports that github.com
+  or the internet (`direct=`) answered from the worker's policy, or `P07` that the worker reached
+  the grader stand-in.
+- **Cause:** the isolation comes from Kubernetes network policies, which only a network plugin
+  that enforces them can apply. Forge's kind cluster turns off kind's own plugin
+  (`disableDefaultCNI: true`) and installs the pinned Calico. A cluster created another way, or a
+  Calico that isn't running, lets traffic through. Forge never weakens the check.
+- **Fix:** don't continue the run: the checks failing is the protection working.
+  `./chalkeus forge down`, then `./chalkeus forge up`, and confirm `calico-node` is ready
+  (`kubectl --context kind-chalkeus-m1 -n kube-system get pods -l k8s-app=calico-node`). To test
+  the host on its own, run the isolation suite, `test/isolation/run.sh`: it uses its own cluster
+  and must pass every check. On a Mac, if `P06` shows `probe not ready` instead, see
+  [Pods don't start on a Mac](#calico-token-expired).
+- **Confirm:** the isolation suite passes every check (37 in 031's Mac run), and the next
+  attempt's `P06` and `P07` pass.
+- **Source:** the M0 isolation suite; 031 T024 (`specs/031-macos-multiarch/evidence/20261124T183824Z-isolation/`).
 
 <a id="calico-token-expired"></a>
 ### Pods don't start on a Mac: `connection is unauthorized`

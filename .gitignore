@@ -27,3 +27,6 @@ test.out
 
 # 025: integration test output (uploaded by CI on failure)
 test/integration/out/
+
+# Test-author draft evidence stays local: it belongs to the separate test-author session (031 T031).
+specs/*/evidence/drafts/
