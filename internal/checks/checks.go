@@ -225,7 +225,7 @@ func (d Deps) RunWorkerChecks(run *evidence.Run, imgs map[string]string, task st
 		defer d.C.DeleteNS(twin, false)
 		d.C.DeleteNS(twin, true)
 		ready := false
-		if y, err := k8s.Render(filepath.Join(d.L.Manifests, "worker-ns.yaml.tmpl"), map[string]string{"NS": twin, "RUN_ID": run.ID}); err == nil && d.C.Apply(y) == nil {
+		if y, err := k8s.Render(filepath.Join(d.L.Manifests, "worker-ns.yaml.tmpl"), map[string]string{"NS": twin, "RUN_ID": run.ID, "QUOTA_CPU": "2", "QUOTA_MEMORY": "2Gi"}); err == nil && d.C.Apply(y) == nil {
 			if y, err := k8s.Render(filepath.Join(d.L.Manifests, "worker-probe.yaml.tmpl"), map[string]string{"NS": twin, "TOOLS_IMAGE": imgs["tools"]}); err == nil && d.C.Apply(y) == nil {
 				ready = d.C.WaitPodReady(twin, "probe", 120*time.Second)
 			}
@@ -283,7 +283,7 @@ func (d Deps) registryCheck(run *evidence.Run, imgs map[string]string, ns, unit 
 	d.C.DeleteNS(twin, true)
 	ready := false
 	if y, err := k8s.Render(filepath.Join(d.L.Manifests, "worker-ns-item.yaml.tmpl"),
-		map[string]string{"NS": twin, "RUN_ID": run.ID, "PROXY_NS": d.Net.WorkerProxyNS}); err == nil && d.C.Apply(y) == nil {
+		map[string]string{"NS": twin, "RUN_ID": run.ID, "PROXY_NS": d.Net.WorkerProxyNS, "QUOTA_CPU": "2", "QUOTA_MEMORY": "2Gi"}); err == nil && d.C.Apply(y) == nil {
 		if y, err := k8s.Render(filepath.Join(d.L.Manifests, "worker-probe.yaml.tmpl"), map[string]string{"NS": twin, "TOOLS_IMAGE": imgs["tools"]}); err == nil && d.C.Apply(y) == nil {
 			ready = d.C.WaitPodReady(twin, "probe", 120*time.Second)
 		}

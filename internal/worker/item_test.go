@@ -176,3 +176,22 @@ func TestWorkerJobCarriesBudget(t *testing.T) {
 		t.Fatal(y)
 	}
 }
+
+// 030: the worker namespace's quota follows the budget, or a raised budget's pod is refused.
+func TestWorkerQuotaFollowsBudget(t *testing.T) {
+	root, _ := filepath.Abs("../..")
+	cpu, mem := QuotaLimits(Limits{CPU: "3500m", Memory: "4Gi"})
+	for _, tmpl := range []string{"worker-ns.yaml.tmpl", "worker-ns-item.yaml.tmpl"} {
+		y, err := k8s.Render(filepath.Join(root, "pilot/manifests", tmpl), map[string]string{
+			"NS": "pilot-w-a-1", "RUN_ID": "R", "PROXY_NS": "pilot-egress-model", "QUOTA_CPU": cpu, "QUOTA_MEMORY": mem})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(y, `limits.cpu: "3500m"`) || !strings.Contains(y, "limits.memory: 4Gi") {
+			t.Fatalf("%s:\n%s", tmpl, y)
+		}
+	}
+	if c, m := QuotaLimits(Limits{}); c != "2" || m != "2Gi" {
+		t.Fatalf("defaults %s %s", c, m)
+	}
+}
