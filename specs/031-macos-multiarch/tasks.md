@@ -69,6 +69,7 @@ Built before US2 and US3 because `up`'s early refusals and the evidence lines ar
 - [X] T018 [P] [US4] In `test/isolation/tools.sh` and `test/isolation/run.sh`, use `sha256sum` when present, otherwise `shasum -a 256`, and refuse with a message if neither exists (R7)
   Done as (2026-11-24): `tools.sh` defines `sha256()`; run on the Mac it installed and verified kind v0.27.0 darwin/arm64 and kubectl v1.32.2.
 - [ ] T019 [US4] Depends on 030's capacity check: confirm its local-cluster message names Docker Desktop's Settings → Resources on macOS (FR-012). If 030 isn't implemented yet, leave this task open, and note in the operator guide (T027) that Docker Desktop needs 8 GB; no second memory check is added (R8)
+  Still open (2026-11-25): 030 has no capacity check yet. As this task says, the operator guide (section 3, and troubleshooting `#docker-desktop-resources`) states that Docker Desktop needs 8 GB and 4 CPUs under Settings → Resources.
 - [X] T020 [US4] In `internal/evidence/evidence.go` `WriteVersions`, append after `host:` the lines `host_os`, `host_arch`, `runtime` (name, version, CPUs, memory), `node_platform` and `image_<k>_platform` for each image (data-model.md "Version lines"; existing lines unchanged); make the `spec:` and `opencode:` lines print the pinned checksum for `node_platform`'s architecture; tests in `internal/evidence/` for the new lines on a darwin/arm64 host with a linux/arm64 node and on linux/amd64
   Done as (2026-11-24): `evidence.HostLines`; `image_<k>_platform` is the node's platform (the runtime pulls the index's build for the node; a local build is made for the host, which is the node). Tests in `internal/evidence/versions_test.go`.
 - [X] T021 [US4] Confirm the audit still passes with the new `versions.txt` lines (`go test ./internal/audit/...`) and that nothing parses `versions.txt` by position
@@ -108,12 +109,15 @@ Built before US2 and US3 because `up`'s early refusals and the evidence lines ar
 
 **Independent Test**: the docs check passes; quickstart §8.
 
-- [ ] T027 [US5] In `docs/operator-guide.md`:
+- [X] T027 [US5] In `docs/operator-guide.md`:
+  Done as (2026-11-25): section 2's limits and section 3's host table with each host's status, the Mac requirements (Docker Desktop 8 GB / 4 CPUs) and the keep-awake note; a new "Install the tools on a Mac" part of section 4 (Docker Desktop, `brew install gh`, `~/.local/bin` on `PATH`, spec 0.4.1 darwin_arm64 and Go 1.27.4 darwin-arm64 with checksums, Intel Mac files); section 13 rows for macOS (shipped), Intel Mac and arm64 Linux.
   - section 2: replace "Linux only" with the supported hosts and their validation status (R9, R12);
   - section 3: replace "macOS is not supported yet" with the Mac requirements (macOS version, Docker Desktop with 8 GB memory and 4+ CPUs under Settings → Resources, `gh` and `spec` 0.4.1 via Homebrew or direct download with checksum);
   - section 13: move the macOS row to "shipped in 031", and add rows for Intel Mac (by design) and arm64 Linux (untested).
-- [ ] T028 [P] [US5] In `docs/troubleshooting.md`, add entries for "Docker isn't running" (macOS), Docker Desktop memory or CPUs too low (pointing to 030's capacity message), an image with no build for the node's platform, and a network plugin that doesn't enforce policy on the host
-- [ ] T029 [P] [US5] Add a 031 section to `docs/release-notes.md`: multi-platform images, per-arch pins (old keys removed), spec-status 0.4.1, doctor's host area, macOS support status
+- [X] T028 [P] [US5] In `docs/troubleshooting.md`, add entries for "Docker isn't running" (macOS), Docker Desktop memory or CPUs too low (pointing to 030's capacity message), an image with no build for the node's platform, and a network plugin that doesn't enforce policy on the host
+  Done as (2026-11-25): `#docker-not-running`, `#docker-desktop-resources` (no 030 capacity message yet: points to Settings → Resources and the OOM diagnosis), `#image-wrong-platform` and `#policy-not-enforced`, with index rows; `#calico-token-expired` came earlier (T034).
+- [X] T029 [P] [US5] Add a 031 section to `docs/release-notes.md`: multi-platform images, per-arch pins (old keys removed), spec-status 0.4.1, doctor's host area, macOS support status
+  Done as (2026-11-25): "macOS: multi-platform images and Docker Desktop (031)" at the top of `docs/release-notes.md`, with what to do.
 - [ ] T030 [US5] Fresh-Mac walkthrough (SC-005): on a Mac user account without forge's prerequisites, follow only the operator guide's macOS path to a completed fixture run; record each step and any gap in `specs/031-macos-multiarch/evidence/fresh-mac.md`, and fix the guide for every gap found
 
 ## Phase 9: Polish and close
