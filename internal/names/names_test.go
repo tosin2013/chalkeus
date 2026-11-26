@@ -67,7 +67,7 @@ func TestNoMarkersUnderGoTest(t *testing.T) {
 }
 
 func TestDisplay(t *testing.T) {
-	for in, want := range map[string]string{"PILOT_MODEL": "FORGE_MODEL", "PILOT_SCM_TOKEN": "PILOT_SCM_TOKEN",
+	for in, want := range map[string]string{"PILOT_MODEL": "FORGE_MODEL", "PILOT_SCM_TOKEN": "PILOT_SCM_TOKEN", "PILOT_SCM_KIND": "PILOT_SCM_KIND", "PILOT_SCM_HOST": "FORGE_SCM_HOST", "PILOT_SCM": "FORGE_SCM",
 		"FORGE_MODEL": "FORGE_MODEL", "CHALKEUS_CONFIG": "CHALKEUS_CONFIG"} {
 		if got := Display(in); got != want {
 			t.Errorf("Display(%s) = %s, want %s", in, got, want)

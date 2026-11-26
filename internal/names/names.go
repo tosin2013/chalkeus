@@ -89,13 +89,17 @@ func LookupEnv(suffix string) (string, bool) {
 }
 
 // Display is the name an operator sees for an internal settings key: PILOT_X shows as FORGE_X.
-// The publisher credential keys (PILOT_SCM_*) keep their names (name map); other text is unchanged.
+// The publisher credential keys (PILOT_SCM_TOKEN, _KIND, _LOGIN) keep their names (name map);
+// 037's host settings (PILOT_SCM, PILOT_SCM_HOST, PILOT_SCM_CA_BUNDLE) show as FORGE_; other
+// text is unchanged.
 func Display(key string) string {
-	if strings.HasPrefix(key, OldPrefix) && !strings.HasPrefix(key, OldPrefix+"SCM_") {
+	if strings.HasPrefix(key, OldPrefix) && !credentialKeys[key] {
 		return NewPrefix + strings.TrimPrefix(key, OldPrefix)
 	}
 	return key
 }
+
+var credentialKeys = map[string]bool{"PILOT_SCM_TOKEN": true, "PILOT_SCM_KIND": true, "PILOT_SCM_LOGIN": true}
 
 // Canonical maps a settings file's keys to the pilot's internal names: FORGE_X becomes PILOT_X;
 // when both are given, FORGE_X wins. file names the source for the notices (a path), and a

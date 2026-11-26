@@ -372,6 +372,9 @@ func ValidateValues(values map[string]string) (map[string]string, error) {
 	if v["PILOT_GITHUB_APPROVALS"] == "on" && len(splitList(v["PILOT_APPROVERS"], false)) == 0 {
 		return nil, errf(2, "FORGE_GITHUB_APPROVALS=on needs FORGE_APPROVERS (comma-separated GitHub logins)")
 	}
+	if _, key, why := scmSyntax(v); key != "" { // 037
+		return nil, errf(2, "%s %s", names.Display(key), why)
+	}
 	cred := v["PILOT_PUBLISHER_CREDENTIAL"]
 	if cred != "" && cred != "token" && cred != "app" {
 		return nil, errf(2, "FORGE_PUBLISHER_CREDENTIAL must be token or app")
@@ -422,8 +425,12 @@ func Load(root string, requireSecrets, guard bool) (*Config, error) {
 			return nil, err
 		}
 	}
+	if _, err := caBundlePath(d, values["PILOT_SCM_CA_BUNDLE"]); err != nil { // 037
+		return nil, err
+	}
 	if guard {
-		if err := RepoGuard(values["PILOT_FIXTURE_REPO"], OriginRepo(root)); err != nil {
+		kind, _, _ := scmSyntax(values)
+		if err := RepoGuardFor(kind, values["PILOT_FIXTURE_REPO"], OriginRepo(root)); err != nil {
 			return nil, err
 		}
 	}
