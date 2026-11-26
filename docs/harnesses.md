@@ -9,7 +9,7 @@ a scratch workspace, emit one result frame on stdout.
 
 | Harness | Status in Chalkeus | What the worker needs | Headless run | Spend signal |
 |---|---|---|---|---|
-| **OpenCode** | Used in M1 (v2.2.7) | the `opencode` binary; its config dir (`opencode.json` + key file) | `opencode run --standalone --format json --auto --model <provider>/<model> "<prompt>"` | `step_finish` events carry `cost` and `tokens` |
+| **OpenCode** | Used in M1 (v2.3.2) | the `opencode` binary; its config dir (`opencode.json` + key file) | `opencode run --standalone --format json --auto --model <provider>/<model> "<prompt>"` | `step_finish` events carry `cost` and `tokens` |
 | Claude Code | Later (not yet verified here) | the `claude` binary; an API key or provider config | `claude -p "<prompt>" --output-format stream-json` | result events carry usage and cost |
 | Codex CLI | Later (not yet verified here) | the `codex` binary; an API key | `codex exec --json "<prompt>"` | usage events |
 | GitHub Copilot CLI | Later (not yet verified here) | the `copilot` binary; a Copilot token | non-interactive prompt mode | provider-side usage only |
