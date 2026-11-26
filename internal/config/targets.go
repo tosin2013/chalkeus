@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tosin2013/chalkeus/internal/names"
+	"github.com/tosin2013/chalkeus/internal/scm"
 )
 
 // Target profiles (014, specs/014-any-project/contracts/target-profile.md): one file per target
@@ -68,6 +68,11 @@ type Target struct {
 	ProposeLabelDefault bool
 	StepIntervalS       int // seconds between step mode's passes (021, default 120)
 	Fixture             bool
+	// 037: the Git host. SCM "" is GitHub (every existing profile); SCMHost names a self-managed
+	// GitLab ("" = gitlab.com); SCMCABundle is the absolute path of its CA bundle, or "".
+	SCM         scm.Kind
+	SCMHost     string
+	SCMCABundle string
 }
 
 // Security levels (roadmap C-14): who may write the target and read the companion.
@@ -156,9 +161,16 @@ func (c *Config) TargetsDir() string { return filepath.Join(c.ConfigDir, "target
 
 // Fixture is the implicit fixture target (today's single-repository pilot.env).
 func (c *Config) Fixture() Target {
-	return Target{Name: FixtureTarget, Repo: c.Repo(), Branch: c.Branch(), Toolchain: "python",
+	t := Target{Name: FixtureTarget, Repo: c.Repo(), Branch: c.Branch(), Toolchain: "python",
 		GithubIssues: c.Values["PILOT_GITHUB_ISSUES"], GithubApprovals: c.Values["PILOT_GITHUB_APPROVALS"],
 		MaxInputMB: 50, PublisherEnv: c.PublisherEnv, Fixture: true}
+	if h := c.FixtureHost(); !h.IsGitHub() { // 037: GitHub keeps SCM "" as before
+		t.SCM, t.SCMCABundle = h.Kind, h.CABundle
+		if h.Kind == scm.GitLab {
+			t.SCMHost = strings.TrimSpace(c.Values["PILOT_SCM_HOST"])
+		}
+	}
+	return t
 }
 
 func targetErr(code, format string, a ...any) *Error {
@@ -227,7 +239,7 @@ func (c *Config) LoadTarget(name, origin string) (Target, error) {
 
 func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	invalid := func(key, why string) error {
-		return targetErr("TARGET_INVALID", "targets/%s.env: %s %s", name, names.Display(key), why)
+		return targetErr("TARGET_INVALID", "targets/%s.env: %s", name, settingMsg(key, why))
 	}
 	t := Target{Name: name, Repo: v["PILOT_TARGET_REPO"], Branch: v["PILOT_TARGET_BRANCH"], Toolchain: v["PILOT_TOOLCHAIN"],
 		ToolchainImage: v["PILOT_TOOLCHAIN_IMAGE"],
@@ -240,8 +252,22 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		AuthorAuto: strings.TrimSpace(v["PILOT_AUTHOR_AUTO"]), AuthorIntervalS: 120, AuthorAttempts: 2,
 		SliceRuns:    strings.TrimSpace(v["PILOT_SLICE_RUNS"]),
 		ProposeLabel: strings.TrimSpace(v["PILOT_PROPOSE_LABEL"]), StepIntervalS: 120}
-	if !repoRE.MatchString(t.Repo) {
-		return Target{}, invalid("PILOT_TARGET_REPO", "must be owner/name")
+	kind, key, why := scmSyntax(v)
+	if key != "" {
+		return Target{}, invalid(key, why)
+	}
+	if kind != scm.GitHub {
+		t.SCM, t.SCMHost = kind, strings.TrimSpace(v["PILOT_SCM_HOST"])
+		if c != nil {
+			ca, err := caBundlePath(c.ConfigDir, v["PILOT_SCM_CA_BUNDLE"])
+			if err != nil {
+				return Target{}, targetErr("TARGET_INVALID", "targets/%s.env: %s", name, err.Error())
+			}
+			t.SCMCABundle = ca
+		}
+	}
+	if err := scm.ValidRepo(kind, t.Repo); err != nil {
+		return Target{}, invalid("PILOT_TARGET_REPO", err.Error())
 	}
 	if t.Branch == "" {
 		t.Branch = "main"
@@ -258,8 +284,8 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	if t.TestCommand == "" {
 		return Target{}, invalid("PILOT_TEST_COMMAND", "is required")
 	}
-	if !repoRE.MatchString(t.CompanionRepo) {
-		return Target{}, invalid("PILOT_COMPANION_REPO", "must be owner/name")
+	if err := scm.ValidRepo(kind, t.CompanionRepo); err != nil { // the companion is on the target's host (037)
+		return Target{}, invalid("PILOT_COMPANION_REPO", err.Error())
 	}
 	if t.CompanionPath != "" && !companionPathOK(t.CompanionPath) {
 		return Target{}, invalid("PILOT_COMPANION_PATH", "must be a relative folder of letters, digits, '.', '_', '-' and '/', without '..'")
@@ -298,7 +324,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	if t.GithubIssues == "" {
 		t.GithubIssues = "off" // a new target opts in (014 R14)
 	}
-	if t.GithubApprovals == "" && c != nil {
+	if t.GithubApprovals == "" && c != nil && kind == scm.GitHub { // 037: the loop is GitHub-only; other hosts don't inherit it
 		t.GithubApprovals = c.Values["PILOT_GITHUB_APPROVALS"]
 	}
 	if t.GithubApprovals == "" {

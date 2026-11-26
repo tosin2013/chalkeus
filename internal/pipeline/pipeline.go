@@ -536,6 +536,8 @@ func (p *P) Run() int {
 	}
 	p.say("== run %s", run.ID)
 	run.State["fixture_base"] = strings.TrimSpace(string(base))
+	h := p.Target.Host()
+	run.SetSCM(string(h.KindOrGitHub()), h.Name)     // 037
 	if hosts := p.Cfg.ModelHosts(); len(hosts) > 0 { // for the P06 probe; never in evidence
 		_ = os.WriteFile(p.L.ModelHost, []byte(hosts[0]+"\n"), 0o644)
 	}

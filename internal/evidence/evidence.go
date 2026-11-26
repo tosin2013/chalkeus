@@ -580,6 +580,39 @@ func (r *Run) SetItemRun(target map[string]any, item string) {
 	r.State["item"] = item
 }
 
+// SetSCM records the run's Git host (037): run.json "scm": {kind, host}.
+func (r *Run) SetSCM(kind, host string) {
+	r.State["scm"] = map[string]any{"kind": kind, "host": host}
+}
+
+// SCM is the run's Git host kind and name; a run from before 037 is GitHub.
+func (r *Run) SCM() (kind, host string) {
+	m, _ := r.State["scm"].(map[string]any)
+	kind, _ = m["kind"].(string)
+	host, _ = m["host"].(string)
+	if kind == "" {
+		return "github", "github.com"
+	}
+	return kind, host
+}
+
+// SetPublisherID records the stable id of the account the publisher acts as (037): the login on
+// GitHub, the bot user id on GitLab, the bot's {uuid} on Bitbucket.
+func (r *Run) SetPublisherID(id string) {
+	if id != "" {
+		r.State["publisher_id"] = id
+	}
+}
+
+// PublisherID is the recorded publisher id; "" when none was recorded (falls back to the login).
+func (r *Run) PublisherID() string {
+	if s, _ := r.State["publisher_id"].(string); s != "" {
+		return s
+	}
+	s, _ := r.State["publisher_login"].(string)
+	return s
+}
+
 // SetSlice records the slice an item run builds (026). An empty slice records nothing, so a
 // whole-item run's run.json has no "slice" key and older evidence keeps its shape (FR-022).
 func (r *Run) SetSlice(slice string) {

@@ -59,6 +59,8 @@ func (p *P) RunItem(item, sliceID string) int {
 	}
 	run.SetItemRun(map[string]any{"name": p.Target.Name, "repo": p.Target.Repo, "branch": p.Target.Branch,
 		"toolchain": p.Target.Toolchain}, item)
+	h := p.Target.Host()
+	run.SetSCM(string(h.KindOrGitHub()), h.Name) // 037
 	run.SetSlice(sliceID)
 	_ = run.Save()
 	if hosts := p.Cfg.ModelHosts(); len(hosts) > 0 { // for the P06 probe; never in evidence
