@@ -1,7 +1,16 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.41.2 → 1.41.3 (this revision)
+Version change: 1.41.3 → 1.42.0 (this revision)
+Bump rationale: MINOR — a new item (039, needs-info) and two new open questions (Q-039a, Q-039b).
+Changes this revision (owner decision 2026-11-26, Tosin Akinosho):
+  - 039 (new, needs-info): subscription (OAuth) logins for the worker's model, e.g. OpenCode's
+    ChatGPT login, without a long-lived credential in the worker. Blocked on Q-039a (provider
+    terms) and Q-039b (token design).
+Specs affected: 039
+Open questions added/resolved: Q-039a, Q-039b added
+
+Prior: Version change: 1.41.2 → 1.41.3 (this revision)
 Bump rationale: PATCH — wording only: the product name in current text.
 Changes this revision (owner request 2026-11-26, Tosin Akinosho; review of #228 and #232):
   - 037 note: the commit trailer that carries over is `Chalkeus-Run:` (it has been since 027;
@@ -2546,6 +2555,37 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Addresses:** docs/prd.md F11; issue #144
 - **Notes:** Added 2026-11-26 (owner, issue #144). Not part of the laptop release (013).
 
+### 039 — Subscription logins for the worker's model (OAuth, e.g. ChatGPT)  [status: needs-info]
+
+- **Description:** Let a worker use a model the owner reaches through an OAuth login (for
+  example OpenCode's ChatGPT login, `chatgpt-token-sharing`) instead of an API key, without
+  giving the worker a long-lived credential.
+- **Outcome:** _to be defined_ once Q-039a and Q-039b are answered. The intent: an owner whose
+  model access is a subscription login can run forge attempts on it; the worker only ever holds
+  a short-lived access token; the refresh token stays with the owner's machine (laptop) or the
+  operator (cluster mode); an attempt never fails because its token expired mid-run.
+- **Scope (in):** _to be defined_. Candidates, from research on 2026-11-26:
+  - **fresh token per attempt:** before each attempt the host refreshes the login and puts only
+    the access token (about an hour) in the attempt's model Secret; the attempt's deadline is
+    capped below the token's remaining life. Simplest; limits attempts to under an hour;
+  - **token refresh beside the worker:** a small sidecar or the model egress proxy holds the
+    refresh token and keeps a fresh access token available to the worker; long attempts work,
+    but a credential that can mint tokens sits in the attempt's network path (needs a
+    constitution IV review);
+  - `import-opencode` reads an OAuth login (`opencode auth export`), egress hosts for the
+    provider's API and token endpoints, doctor's model-key check for OAuth, docs.
+- **Scope (out):** storing or printing tokens in evidence (AU08 applies); sharing one login
+  between people; providers whose terms forbid automated use.
+- **Depends on:** 030
+- **Governed by:** C-03, C-12
+- **Notes:** Added 2026-11-26 (owner), while documcp's US2 waited for the owner's OpenCode Go
+  weekly quota. The owner's OpenCode login to OpenAI is OAuth (`chatgpt-token-sharing`,
+  scopes include `chatgpt.tokens.use.direct`); a test request to `openai/gpt-6.1-sol` through
+  OpenCode on the host succeeded; the access token had about an hour left. Forge today mounts
+  only API-key files (`import-opencode --from-login` expects an API key). Free OpenCode Go
+  models work with the existing key (`beam-free`, `hungerg-free`, `hy4-flash-free`;
+  `iceman-contributor-free` needs the org to allow training on requests).
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2678,6 +2718,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   research.md R3), so no stand-in is needed. The proof instance is a throwaway GitLab Community
   Edition container at a pinned version on the Ubuntu box, with a self-signed CA so the CA-bundle
   path is exercised (R9).
+- Q-039a — May forge use a subscription (OAuth) model login for automated worker attempts under
+  that provider's terms (for ChatGPT: OpenAI's terms for token sharing with third-party apps)?
+  Owner decision; unblocks 039.
+- Q-039b — Which token design for 039: a fresh access token per attempt (attempts capped under
+  the token's life), or a refresher beside the worker (long attempts; a minting credential in
+  the attempt's path)? Owner decision with the constitution IV review; unblocks 039.
 
 ## Cross-Cutting Notes
 
@@ -2742,4 +2788,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.41.3 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
+**Version**: 1.42.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
