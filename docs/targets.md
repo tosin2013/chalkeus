@@ -257,7 +257,8 @@ FORGE_GITHUB_ISSUES=off
 - **Optional keys** may only raise the toolchain's defaults: `FORGE_GRADER_MEMORY`,
   `FORGE_GRADER_DEADLINE_S` and `FORGE_CACHE_SIZE`; for the agent's pod, `FORGE_WORKER_CPU`
   (default `2`), `FORGE_WORKER_MEMORY` (default `2Gi`) and `FORGE_WORKER_DEADLINE_S` (seconds
-  per attempt, default 1200). `FORGE_MAX_INPUT_MB` (default 50) limits the repository snapshot.
+  per attempt, default 1200); for the test author's Job, `FORGE_AUTHOR_DEADLINE_S` (seconds per
+  author Job, default 1200). `FORGE_MAX_INPUT_MB` (default 50) limits the repository snapshot.
   A run keeps the budget it started with; delete a line to go back to the default for the next
   run. The worker stops the agent 2 minutes before its deadline, so an attempt that runs out of
   time still keeps its change, log, tokens and cost as evidence (it isn't graded), and the
@@ -409,6 +410,9 @@ tests.
   every Job.
 - **The pilot, not the Job, checks the draft** (your tests pass, the drafted tests fail on
   today's code) and opens the pull request with your target's usual test-author identity.
+- **A draft that runs out of time** (`DeadlineExceeded`, no draft) needs a longer author Job:
+  raise `FORGE_AUTHOR_DEADLINE_S` in the target's profile (documcp's skill slice needed more than
+  the default 20 minutes), then start the watcher with `--redraft`.
 - **A failed check gets one more try:** a second Job sees the failure. After that, the item
   waits until its spec changes, or you draft by hand. An item is never drafted twice for the
   same spec, unless you start the watcher with `--redraft`

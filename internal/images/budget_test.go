@@ -45,6 +45,7 @@ func TestCheckTargetWorkerFloors(t *testing.T) {
 		"PILOT_WORKER_CPU":        {Name: "g", Toolchain: "node24", WorkerCPU: "1500m"},
 		"PILOT_WORKER_MEMORY":     {Name: "g", Toolchain: "node24", WorkerMemory: "1Gi"},
 		"PILOT_WORKER_DEADLINE_S": {Name: "g", Toolchain: "node24", WorkerDeadlineS: 600},
+		"PILOT_AUTHOR_DEADLINE_S": {Name: "g", Toolchain: "node24", AuthorDeadlineS: 600},
 	} {
 		err := CheckTarget(c, lock, tg)
 		if err == nil || !strings.Contains(err.Error(), names.Display(key)) || !strings.Contains(err.Error(), "may only raise") {
@@ -58,5 +59,15 @@ func TestCPUMilli(t *testing.T) {
 		if got := cpuMilli(q); got != want {
 			t.Errorf("%s: %d", q, got)
 		}
+	}
+}
+
+// 030 T021: a target may raise the test author's deadline, never lower it.
+func TestAuthorDeadline(t *testing.T) {
+	if got := AuthorDeadline(config.Target{}); got != 1200 {
+		t.Fatalf("default %d", got)
+	}
+	if got := AuthorDeadline(config.Target{AuthorDeadlineS: 2400}); got != 2400 {
+		t.Fatalf("raised %d", got)
 	}
 }

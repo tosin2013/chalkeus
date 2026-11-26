@@ -171,6 +171,9 @@ func CheckTarget(c Catalog, lock map[string]string, t config.Target) error {
 	if t.WorkerDeadlineS != 0 && t.WorkerDeadlineS < wd.DeadlineS {
 		return low("PILOT_WORKER_DEADLINE_S", "may only raise the toolchain default "+strconv.Itoa(wd.DeadlineS))
 	}
+	if t.AuthorDeadlineS != 0 && t.AuthorDeadlineS < AuthorDeadlineS {
+		return low("PILOT_AUTHOR_DEADLINE_S", "may only raise the default "+strconv.Itoa(AuthorDeadlineS))
+	}
 	if tc.Cache != nil && t.CacheSize != "" && quantityMi(t.CacheSize) < quantityMi(tc.Cache.Size) {
 		return low("PILOT_CACHE_SIZE", "may only raise the toolchain default "+tc.Cache.Size)
 	}
@@ -188,4 +191,16 @@ func quantityMi(q string) int {
 		return n
 	}
 	return 0
+}
+
+// AuthorDeadlineS is the test author Job's default active deadline in seconds (the worker's
+// default); a target may raise it with FORGE_AUTHOR_DEADLINE_S (030 T021).
+const AuthorDeadlineS = 1200
+
+// AuthorDeadline is a target's author Job deadline: the default, raised by its profile.
+func AuthorDeadline(t config.Target) int {
+	if t.AuthorDeadlineS > AuthorDeadlineS {
+		return t.AuthorDeadlineS
+	}
+	return AuthorDeadlineS
 }

@@ -108,6 +108,7 @@ func TestLoadTargetRefusals(t *testing.T) {
 		"PILOT_WORKER_CPU":           goodTarget + "PILOT_WORKER_CPU=two\n",
 		"PILOT_WORKER_MEMORY":        goodTarget + "PILOT_WORKER_MEMORY=4GB\n",
 		"PILOT_WORKER_DEADLINE_S":    goodTarget + "PILOT_WORKER_DEADLINE_S=0\n",
+		"PILOT_AUTHOR_DEADLINE_S":    goodTarget + "PILOT_AUTHOR_DEADLINE_S=x\n",
 	} {
 		writeTarget(t, c, "t", body)
 		_, err := c.LoadTarget("t", "")

@@ -49,6 +49,8 @@ type Target struct {
 	WorkerCPU       string
 	WorkerMemory    string
 	WorkerDeadlineS int
+	// AuthorDeadlineS raises the test author Job's active deadline (030 T021; default 1200 s).
+	AuthorDeadlineS int
 	CacheSize       string // optional override
 	MaxInputMB      int
 	PublisherEnv    string // token mode: targets/<name>.publisher.env
@@ -322,7 +324,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		}
 	}
 	for k, dst := range map[string]*int{"PILOT_GRADER_DEADLINE_S": &t.GraderDeadlineS, "PILOT_MAX_INPUT_MB": &t.MaxInputMB,
-		"PILOT_WORKER_DEADLINE_S": &t.WorkerDeadlineS,
+		"PILOT_WORKER_DEADLINE_S": &t.WorkerDeadlineS, "PILOT_AUTHOR_DEADLINE_S": &t.AuthorDeadlineS,
 		"PILOT_AUTHOR_INTERVAL_S": &t.AuthorIntervalS, "PILOT_AUTHOR_AUTO_ATTEMPTS": &t.AuthorAttempts,
 		"PILOT_STEP_INTERVAL_S": &t.StepIntervalS} {
 		if x := v[k]; x != "" {
