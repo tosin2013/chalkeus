@@ -201,6 +201,15 @@ Read statically, from the API, without running anything:
   the item is prepared.
 - **Rejected:** a second baseline on the unchanged base (another grader pod and bundle per run,
   for a fact the default branch's CI and the report already show).
+- **Amended 2026-11-26 (owner, at T011):** "G5 runs even when G4 failed and must still fail"
+  can't be checked: the hidden tests run inside the project's test command, so a suite whose
+  visible tests fail always fails, whatever the hidden tests do (T011's test showed a baseline
+  passing with hidden tests that pass). The hidden tests may also legitimately pass on the bumped
+  base, since they guard what must not change. New rule: the base must show work, either the
+  visible tests fail (G5 `skipped`, not measured) or, when they pass, the hidden tests fail.
+  Rejected: isolating the hidden tests by removing the visible test files (needs
+  `FORGE_TEST_PATHS` for every dependency item), and recording G5 without a rule (a base where
+  nothing fails would pass with no work to do).
 
 ## R13. Dependency items and slices
 
