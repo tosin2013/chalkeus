@@ -81,11 +81,11 @@ func TestSnapshotThenReplay(t *testing.T) {
 		t.Fatal(msg)
 	}
 	// An item run's commit carries the PR's Conventional Commits title (squash merges use it).
-	head2, err := ReplayAs(repo, base, snap, change, filepath.Join(t.TempDir(), "r2.bundle"), "fix(006): bundled flags", "Specfoundry-Run: R1")
+	head2, err := ReplayAs(repo, base, snap, change, filepath.Join(t.TempDir(), "r2.bundle"), "fix(006): bundled flags", "Chalkeus-Run: R1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if msg := sh(t, repo, "log", "-1", "--format=%B", head2); !strings.HasPrefix(msg, "fix(006): bundled flags\n\npilot: change 2") || !strings.Contains(msg, "Specfoundry-Run: R1") {
+	if msg := sh(t, repo, "log", "-1", "--format=%B", head2); !strings.HasPrefix(msg, "fix(006): bundled flags\n\npilot: change 2") || !strings.Contains(msg, "Chalkeus-Run: R1") {
 		t.Fatalf("%q", msg)
 	}
 	if m := sh(t, repo, "log", "-1", "--format=%s", head2+"~1"); m != "pilot: change 1" {

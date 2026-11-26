@@ -1,7 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.41.1 → 1.41.2 (this revision)
+Version change: 1.41.2 → 1.41.3 (this revision)
+Bump rationale: PATCH — wording only: the product name in current text.
+Changes this revision (owner request 2026-11-26, Tosin Akinosho; review of #228 and #232):
+  - 037 note: the commit trailer that carries over is `Chalkeus-Run:` (it has been since 027;
+    release notes). The note said `Specfoundry-Run:`.
+  - Current text names the product Chalkeus: the title and intro, C-09's image path, C-11,
+    C-15, C-16, 011's title and 019's description. Dated decisions, resolved questions,
+    verified items' notes and issue links keep the old name (history; GitHub redirects).
+Specs affected: 011, 019, 037 (wording only)
+Open questions added/resolved: none
+
+Prior: Version change: 1.41.1 → 1.41.2
 Bump rationale: PATCH — an open question resolved (Q14), from 037's planning.
 Changes this revision (owner decisions 2026-11-26, Tosin Akinosho, /speckit-plan for 037):
   - Q14 resolved: Bitbucket Cloud's API opens native draft pull requests (research R3); the
@@ -871,9 +882,9 @@ Previous revision 1.0.0 (2026-11-13): initial creation from docs/prd.md, entries
 decisions C-01 … C-06, open questions Q1–Q5.
 -->
 
-# specfoundry — Spec Roadmap
+# Chalkeus — Spec Roadmap
 
-Living, non-binding map of the specs planned for specfoundry. It is **not a
+Living, non-binding map of the specs planned for Chalkeus (formerly specfoundry, renamed by 027). It is **not a
 commitment to order or scope** — it captures the spec-specific discussion,
 decisions, technology choices, outcomes, and constraints surfaced during the
 constitution and grilling phases so they are not lost before the spec that needs
@@ -943,7 +954,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   referenced only by digest. Digests live in `pilot/images.lock` (written only by the
   image workflow's PR and never a workflow trigger); build inputs live in `pilot/pins.env`.
   kind and local runs use GHCR (`ghcr.io/tosin2013/
-  specfoundry-*`). The OpenShift target may use different images published to Quay (for
+  chalkeus-*`; `specfoundry-pilot-*` before 027, still published). The OpenShift target may use different images published to Quay (for
   example UBI-based variants for OpenShift's arbitrary-UID restricted SCC); 005 decides
   (PRD S6, constitution VII; decided 2026-11-13).
   **Exception (owner decision 2026-11-17, 014):** a target's *toolchain* image, which only
@@ -959,7 +970,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   (constitution Security & Isolation Constraints, 1.1.0).
 - **C-11 — Two modes, one set of guarantees:** *laptop mode* (operator off): the CLI runs the
   orchestration itself against a local or remote cluster. *Cluster mode* (operator on): the
-  CLI is a client of the specfoundry Kubernetes operator running in the cluster. The CLI
+  CLI is a client of the Chalkeus Kubernetes operator running in the cluster. The CLI
   detects which applies, or the operator chooses it in configuration. Both modes keep C-01
   to C-10, produce the same evidence and pass the same audit; cluster mode adds features and
   never relaxes a guarantee. The human decisions (mode confirmation, retries, merge, approving
@@ -1031,18 +1042,18 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   separation of duties (who wrote the tests vs. who wrote the code) is often required. Evidence
   records the level; the audit reports it and never fails a run for using a lower level.
 
-- **C-16 — specfoundry grades deterministically; evaluating model behaviour is not its lane**
+- **C-16 — Chalkeus grades deterministically; evaluating model behaviour is not its lane**
   (owner decision 2026-11-18): an item is `verified` when its deterministic acceptance tests pass,
   offline. For AI-driven apps that covers everything around the model (prompt construction,
   tool and function wiring, parsing structured output, retries, guardrails), tested with a fake
   model or recorded responses. Judging live model behaviour ("is the answer good?", "does
   retrieval find the right document?", "does the model call the right tool?") is evaluation: it is
   probabilistic and model-dependent, and belongs to the project's own evaluation tools and CI,
-  which a human can read before merging. specfoundry neither runs live-model evaluations nor gives
+  which a human can read before merging. Chalkeus neither runs live-model evaluations nor gives
   graders model access for them.
 
 - **C-15 — Developer mode is a labelled sandbox** (owner decision 2026-11-17): while
-  specfoundry itself is being developed, an explicit flag (`--dev`, never a default) may relax
+  Chalkeus itself is being developed, an explicit flag (`--dev`, never a default) may relax
   steps that exist only to protect real results: hidden tests from a local folder, the same
   agent session drafting them, approvals in the terminal only. It never relaxes build-worker
   isolation (no secrets, model-only egress, no hidden tests in worker inputs). A dev-mode run is
@@ -1332,7 +1343,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   over TLS with certificates from cert-manager, verifies their signatures, and turns a proposal
   into the same decisions 021 makes, instead of polling.
 
-### 011 — Cluster mode: specfoundry Kubernetes operator  [status: planned]
+### 011 — Cluster mode: Chalkeus Kubernetes operator  [status: planned]
 
 - **Description:** An in-cluster operator runs governed runs, with the CLI as its client
   (operator on); the CLI still works standalone (operator off).
@@ -1767,7 +1778,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ### 019 — Developer mode  [status: specced]
 
-- **Description:** An explicit `--dev` flag for developing specfoundry itself, which relaxes
+- **Description:** An explicit `--dev` flag for developing Chalkeus itself, which relaxes
   steps that only protect real results and stamps the run as a development run (C-15).
 - **Outcome:** A maintainer can exercise the pilot end to end on a throwaway item without a
   private companion, a separate test-author session or GitHub approvals. Every dev-mode run is
@@ -2508,7 +2519,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Notes:** Added 2026-11-26 (owner, issue #144). Phase 1 ships with the laptop release (013).
   The issue writes the settings as `PILOT_*`; profiles use `FORGE_*` names since 027, read as
   `PILOT_*` keys. The tree-match check compares files, so merge commits, squash and
-  fast-forward all work; the PR title format and the `Specfoundry-Run:` trailer carry over.
+  fast-forward all work; the PR title format and the `Chalkeus-Run:` trailer carry over.
   Mode and retry decisions happen before any PR exists, so they stay in the terminal or
   harness on every host. **2026-11-26 (owner, planning):** on gitlab.com's Free plan, which has
   no project access tokens, a personal token of a dedicated bot account is accepted when doctor
@@ -2731,4 +2742,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.41.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
+**Version**: 1.41.3 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26

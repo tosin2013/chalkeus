@@ -11,7 +11,7 @@ developing we can create a spec for that" (roadmap entry 019, decision C-15).
 
 ## Context
 
-specfoundry is in active development. Some of the pilot's steps exist only so that a run's
+Chalkeus is in active development. Some of the pilot's steps exist only so that a run's
 result can be trusted: hidden tests in a private companion repository, a separate session
 drafting them (018), approvals on GitHub. When the goal is to exercise the pilot itself, for
 example "does the new grader check behave on a real Python project?", those steps slow work down
@@ -22,7 +22,7 @@ making sure such a run can never be mistaken for a real one.
 
 ### User Story 1 - Exercise the pilot end to end without the real-run ceremony (Priority: P1)
 
-As a specfoundry maintainer, I run an item with `--dev`, give it hidden tests from a local
+As a Chalkeus maintainer, I run an item with `--dev`, give it hidden tests from a local
 folder, approve in the terminal, and see the whole pipeline (prepare, baseline, attempts,
 grading, publish) work, without a private companion repository or a separate test-author
 session.
@@ -139,7 +139,7 @@ run and pass (no secrets in workers, model-only egress, no hidden tests in worke
 
 ## Assumptions
 
-- Dev mode is for specfoundry's own development; operators doing real work use a security level
+- Dev mode is for Chalkeus's own development; operators doing real work use a security level
   (minimal, recommended or strict, roadmap C-14), not dev mode.
 - PRs from dev runs may still be opened on the target, as drafts, because exercising the
   publisher is part of testing the pilot; a maintainer can close them.
