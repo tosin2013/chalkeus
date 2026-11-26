@@ -31,7 +31,7 @@ Coding agents can write code. The hard part is trusting the process around them:
 - Can a security team audit what happened afterwards?
 
 Chalkeus is built around those questions. [The approach](docs/approach.md) explains the
-process (humans plan and release, agents build in isolation) and the research behind it.
+process (humans plan and release, agents build in isolation) and the research behind it. For the practice, learned from real runs, see [strategies](docs/strategies.md).
 
 The promises:
 

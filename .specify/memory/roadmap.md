@@ -1,7 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.38.0 → 1.39.0 (this revision)
+Version change: 1.39.0 → 1.40.0 (this revision)
+Bump rationale: MINOR — a new planned item (036). Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-26, Tosin Akinosho):
+  - 036 (new, planned): `doctor --measure`. Measure a target's test suite before building (time,
+    peak memory, clean exit in one process and with workers, flakiness over three runs, the CI
+    command match), keep the numbers per target, recommend budgets, test command and research
+    tasks, and report misses against owner-set goals as goals for the project (refactor, change
+    libraries), never as forge failures. From documcp's 001 US1 runs.
+Specs affected: 036
+Open questions added/resolved: none
+
+Prior: Version change: 1.38.0 → 1.39.0
 Bump rationale: MINOR — a new planned item (035) and 031's scope wording amended, with a status
 transition (031 specced → verified). Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-25, Tosin Akinosho, from 031's debrief
@@ -2371,6 +2382,43 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   specs carry hidden-test output from the private companion. Workers never see evidence, so
   runs aren't affected; the companion's confidentiality is.
 
+### 036 — Measure a target before building: `doctor --measure`  [status: planned]
+
+- **Description:** Measure a target's test suite on the cluster before the first item, and keep
+  the numbers, so budgets, slice size and planning rest on evidence instead of failed attempts;
+  the numbers also set improvement goals for the project itself.
+- **Outcome:** `./chalkeus forge doctor --target <t> --measure` (opt-in, minutes, read-only)
+  reports for the target's test command, on the worker's CPU and memory budget: the time of a
+  full run, peak memory, whether the run exits on its own (in one process and with parallel
+  workers, without force-exit), tests whose result changes over three runs, and whether the
+  profile's test command matches what the project's CI runs (coverage gates, flags). Each line
+  carries a recommendation: a `FORGE_WORKER_DEADLINE_S` or `FORGE_WORKER_MEMORY` value, a
+  `FORGE_TEST_COMMAND`, or a research task for planning ("the suite leaks handles"). The
+  measurements are kept per target, with their date and commit, so the diagnosis (033) and
+  doctor's allowance check reuse them and a later measurement shows the trend.
+- **Scope (in):**
+  - the measurements above, run as grader-like Jobs (offline, the target's budget), needing no
+    item and no hidden tests, so they work for a new repository too;
+  - recommendations only: forge never changes the profile, the plan or the target;
+  - **goals:** each measurement compared with a target the owner may set in the profile (for
+    example a full test run under 60 s, peak memory under 2Gi); a miss is reported as a goal
+    for the project's own planning (refactor slow tests, change a library or test runner, split
+    the suite), never as a forge failure;
+  - kept results and a short trend (last measurements, per target);
+  - docs: reading the report, and acting on it (docs/strategies.md).
+- **Scope (out):** changing budgets or test commands automatically; profiling the project's
+  code beyond its test command; measuring live-model behaviour (C-16).
+- **Depends on:** 030, 033
+- **Governed by:** C-01, C-04, C-12, C-16
+- **Notes:** Added 2026-11-26 (owner). From documcp's 001 US1 slice (runs
+  20261125T163307Z, 20261125T191444Z, 20261125T200730Z, 20261125T223435Z): each failed attempt
+  came from something measurable before the first run: leaked handles (40 min of searching), a
+  worker OOM-killed at 2Gi, a deadline too short for a 222 s test run, a coverage gate the
+  profile's test command didn't check, and flaky tests. Owner: measurements are the most
+  important part of onboarding, and they set goals (if the times are too high, look at
+  refactoring or changing libraries). Lives under doctor, not a new command. Relates to 029
+  (debt report) and 033 (allowance, diagnosis).
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2557,4 +2605,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.39.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-25
+**Version**: 1.40.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
