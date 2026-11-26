@@ -139,6 +139,9 @@ func TestForgeEnvHosts(t *testing.T) {
 		if _, err := ValidateValues(bad); err == nil || strings.Contains(err.Error(), "PILOT_") {
 			t.Errorf("%s=%s: %v", k, val, err)
 		}
+		if _, err := ValidateValues(bad); k == "PILOT_PUBLISHER_CREDENTIAL" && (err == nil || !strings.HasPrefix(err.Error(), "FORGE_PUBLISHER_CREDENTIAL=app is GitHub-only")) {
+			t.Errorf("message: %v", err)
+		}
 	}
 	gh, _ := ValidateValues(map[string]string{"PILOT_FIXTURE_REPO": "o/x-pilot-fixture", "PILOT_MODEL": "p/m", "PILOT_MODEL_EGRESS_HOSTS": "h"})
 	if f := (&Config{Values: gh}).Fixture(); f.SCM != "" {

@@ -373,7 +373,7 @@ func ValidateValues(values map[string]string) (map[string]string, error) {
 		return nil, errf(2, "FORGE_GITHUB_APPROVALS=on needs FORGE_APPROVERS (comma-separated GitHub logins)")
 	}
 	if _, key, why := scmSyntax(v); key != "" { // 037
-		return nil, errf(2, "%s %s", names.Display(key), why)
+		return nil, errf(2, "%s", settingMsg(key, why))
 	}
 	cred := v["PILOT_PUBLISHER_CREDENTIAL"]
 	if cred != "" && cred != "token" && cred != "app" {

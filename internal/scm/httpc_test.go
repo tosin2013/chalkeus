@@ -2,6 +2,7 @@ package scm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -104,6 +105,60 @@ func TestHTTPRefusesCrossHostRedirect(t *testing.T) {
 	c := testHTTP(t, func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, other.URL+"/x", http.StatusFound) })
 	if _, err := c.Do(context.Background(), "GET", "x", nil, "", nil); err == nil || !strings.Contains(err.Error(), "another host") {
 		t.Fatalf("%v", err)
+	}
+}
+
+// A full URL on another host (a pagination link a server returned) is refused, and the other host
+// never sees the token.
+func TestHTTPRefusesAFullURLOnAnotherHost(t *testing.T) {
+	var leaked bool
+	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		leaked = r.Header.Get("Authorization") != ""
+		_, _ = fmt.Fprint(w, `{"values":[],"next":""}`)
+	}))
+	defer other.Close()
+	c := testHTTP(t, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintf(w, `{"values":[1],"next":"%s/steal"}`, other.URL)
+	})
+	_, err := c.List(context.Background(), "items", func(raw []byte) (int, string, error) {
+		var p struct {
+			Values []int  `json:"values"`
+			Next   string `json:"next"`
+		}
+		err := json.Unmarshal(raw, &p)
+		return len(p.Values), p.Next, err
+	})
+	if err == nil || !strings.Contains(err.Error(), "outside the API host") || leaked {
+		t.Fatalf("err=%v leaked=%v", err, leaked)
+	}
+	if _, err := c.Do(context.Background(), "GET", other.URL+"/x", nil, "", nil); err == nil || leaked {
+		t.Fatalf("Do: err=%v leaked=%v", err, leaked)
+	}
+}
+
+// Exactly PageCap items with no further page is a complete list, not a capped one.
+func TestHTTPListCapsOnlyWhenMoreRemain(t *testing.T) {
+	for _, more := range []bool{false, true} {
+		var srvURL string
+		c := testHTTP(t, func(w http.ResponseWriter, r *http.Request) {
+			next := ""
+			if more && r.URL.Query().Get("page") == "" {
+				next = srvURL + "/api/v4/items?page=2"
+			}
+			_, _ = fmt.Fprintf(w, `{"n":%d,"next":%q}`, PageCap, next)
+		})
+		srvURL = strings.TrimSuffix(c.Base, "/api/v4")
+		capped, err := c.List(context.Background(), "items", func(raw []byte) (int, string, error) {
+			var p struct {
+				N    int    `json:"n"`
+				Next string `json:"next"`
+			}
+			err := json.Unmarshal(raw, &p)
+			return p.N, p.Next, err
+		})
+		if err != nil || capped != more {
+			t.Errorf("more=%v: capped=%v err=%v", more, capped, err)
+		}
 	}
 }
 

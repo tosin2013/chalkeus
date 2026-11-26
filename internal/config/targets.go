@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tosin2013/chalkeus/internal/names"
 	"github.com/tosin2013/chalkeus/internal/scm"
 )
 
@@ -240,7 +239,7 @@ func (c *Config) LoadTarget(name, origin string) (Target, error) {
 
 func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	invalid := func(key, why string) error {
-		return targetErr("TARGET_INVALID", "targets/%s.env: %s %s", name, names.Display(key), why)
+		return targetErr("TARGET_INVALID", "targets/%s.env: %s", name, settingMsg(key, why))
 	}
 	t := Target{Name: name, Repo: v["PILOT_TARGET_REPO"], Branch: v["PILOT_TARGET_BRANCH"], Toolchain: v["PILOT_TOOLCHAIN"],
 		ToolchainImage: v["PILOT_TOOLCHAIN_IMAGE"],

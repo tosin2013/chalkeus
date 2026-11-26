@@ -77,6 +77,14 @@ func LoadCABundle(path string) (*x509.CertPool, error) {
 	return pool, nil
 }
 
+func schemeOf(base string) string {
+	u, err := url.Parse(base)
+	if err != nil {
+		return ""
+	}
+	return u.Scheme
+}
+
 func hostOf(base string) string {
 	u, err := url.Parse(base)
 	if err != nil {
@@ -92,6 +100,10 @@ func (c *HTTP) Do(ctx context.Context, method, path string, body any, contentTyp
 	u := path
 	if !strings.HasPrefix(path, "http://") && !strings.HasPrefix(path, "https://") {
 		u = c.Base + "/" + strings.TrimLeft(path, "/")
+	} else if pu, err := url.Parse(path); err != nil || pu.Scheme != schemeOf(c.Base) || pu.Host != hostOf(c.Base) {
+		// A full URL (a pagination link from the response) must stay on the API's own scheme and
+		// host: the token is never sent anywhere else.
+		return nil, &Error{Code: ErrInvalid, Msg: c.redact(fmt.Sprintf("%s %s: a URL outside the API host %s refused", method, c.shortURL(u), hostOf(c.Base)))}
 	}
 	var rd io.Reader
 	switch b := body.(type) {
@@ -146,7 +158,8 @@ var linkNextRE = regexp.MustCompile(`<([^>]+)>;\s*rel="next"`)
 
 // List follows pagination: a Link rel="next" header (GitHub, GitLab) or a JSON "next" field
 // (Bitbucket, via next). page decodes one page and returns its item count and the next URL found
-// in the body ("" for none). It stops at PageCap items and reports capped.
+// in the body ("" for none). It stops at PageCap items and reports capped when more pages remain.
+// A next URL on another host is refused (Do).
 func (c *HTTP) List(ctx context.Context, path string, page func(raw []byte) (int, string, error)) (capped bool, err error) {
 	next, total := path, 0
 	for next != "" {
@@ -160,9 +173,6 @@ func (c *HTTP) List(ctx context.Context, path string, page func(raw []byte) (int
 			return false, err
 		}
 		total += n
-		if total >= PageCap {
-			return true, nil
-		}
 		next = bodyNext
 		if next == "" {
 			if m := linkNextRE.FindStringSubmatch(h.Get("Link")); m != nil {
@@ -171,6 +181,9 @@ func (c *HTTP) List(ctx context.Context, path string, page func(raw []byte) (int
 		}
 		if n == 0 {
 			break
+		}
+		if total >= PageCap && next != "" { // capped only when there is more to read
+			return true, nil
 		}
 	}
 	return false, nil

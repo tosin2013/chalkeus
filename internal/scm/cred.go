@@ -93,14 +93,20 @@ const GitTokenEnv = "CHALKEUS_GIT_TOKEN"
 // nil (git keeps using the gh credential helper, unchanged). GitLab and Bitbucket get an inline
 // credential helper through git's GIT_CONFIG_COUNT variables (git 2.31+) that answers with the
 // username and the token from GitTokenEnv, so the token is never on a command line; plus
-// http.sslCAInfo when a CA bundle is set.
+// http.sslCAInfo when a CA bundle is set. The helper is scoped to https://<host> (credential URL
+// matching), so git never offers the token to another host (a submodule, a redirect).
 func GitEnv(h Host, token secret.Value) []string {
 	if h.IsGitHub() {
 		return nil
 	}
+	base := h.GitBase
+	if base == "" {
+		base = NewHost(h.KindOrGitHub(), h.Name, "").GitBase
+	}
+	scope := "credential." + strings.TrimRight(base, "/")
 	pairs := [][2]string{
-		{"credential.helper", ""}, // drop any helper the operator configured
-		{"credential.helper", `!f() { test "$1" = get || exit 0; echo username=` + GitUser(h, false) + `; echo "password=$` + GitTokenEnv + `"; }; f`},
+		{scope + ".helper", ""}, // drop any helper the operator configured for this host
+		{scope + ".helper", `!f() { test "$1" = get || exit 0; echo username=` + GitUser(h, false) + `; echo "password=$` + GitTokenEnv + `"; }; f`},
 	}
 	if h.CABundle != "" {
 		pairs = append(pairs, [2]string{"http.sslCAInfo", h.CABundle})

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/tosin2013/chalkeus/internal/names"
 	"github.com/tosin2013/chalkeus/internal/scm"
 )
 
@@ -44,6 +45,15 @@ func scmSyntax(v map[string]string) (scm.Kind, string, string) {
 		}
 	}
 	return kind, "", ""
+}
+
+// settingMsg joins a display key and a refusal reason; a reason that starts with "=" names the
+// value ("FORGE_PUBLISHER_CREDENTIAL=app is GitHub-only …").
+func settingMsg(key, why string) string {
+	if strings.HasPrefix(why, "=") {
+		return names.Display(key) + why
+	}
+	return names.Display(key) + " " + why
 }
 
 // caBundlePath resolves and checks FORGE_SCM_CA_BUNDLE in the config folder: mode 0600 and a PEM
