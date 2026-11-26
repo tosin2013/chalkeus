@@ -1,6 +1,6 @@
 # Model providers
 
-The pilot's worker runs **OpenCode** (v2.2.7, pinned in `pilot/pins.env`). OpenCode is the
+The pilot's worker runs **OpenCode** (v2.3.2, pinned in `pilot/pins.env`). OpenCode is the
 default and the only harness supported in this release; other harnesses are listed in
 [harnesses.md](harnesses.md). This page covers which model providers work and how to
 configure one.
@@ -57,8 +57,14 @@ What it does:
   - a key file outside `~/.config/opencode/`, or one not named `*_api_key`.
 - **Won't overwrite** an existing worker config unless you pass `--force`.
 
-Your host OpenCode version may differ from the worker's (v2.2.7). If the worker fails on
+Your host OpenCode version may differ from the worker's (v2.3.2). If the worker fails on
 config that works on your machine, compare against the format in option B.
+
+A model your host's OpenCode knows can be unknown to the worker's: the attempt then fails at
+once with `provider.no-route` ("Model unavailable: <provider>/<model>"), 0 tokens and grading
+stopped at G1. `./chalkeus forge doctor`'s model check asks the provider directly, so it can
+pass anyway. Pick a model the worker's OpenCode lists, or move the pin forward (free OpenCode Go
+models such as `opencode-go/beam-free` needed a newer OpenCode than v2.2.7).
 
 ### Quick start: OpenCode Go
 
@@ -144,7 +150,7 @@ opencode auth export | ./chalkeus forge import-opencode --from-login --auth-file
 | OpenCode's built-in provider packages for specific vendors | Not yet verified here | Should work if the key is a `{file:...}` reference and the API host is in `FORGE_MODEL_EGRESS_HOSTS`. Check package names in OpenCode's own docs. |
 | Self-hosted endpoint (an OpenAI-compatible server you run) | Not yet verified here | Needs a host name that pods in the kind cluster can resolve and reach; `localhost` on your machine doesn't work from inside the cluster. |
 
-Things that did **not** work with OpenCode 2.2.7 in testing:
+Things that did **not** work in testing (with the worker's earlier OpenCode release, 2.2.7):
 - passing the key through environment variables (`{env:...}`, `OPENCODE_CONFIG_CONTENT`);
 - `opencode auth`, which showed no credentials even on a configured machine. *(OpenCode 2.2
   keeps logins in its database; `opencode auth export` prints them, and `--auth-file -` reads
