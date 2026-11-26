@@ -36,7 +36,7 @@ func Check(ctx context.Context, e Env, item string, baseline Baseline) (*Draft, 
 		return d, d.fail(hash, refuse(CodeDraftPathInSpec, "%s named in the item's spec, plan or tasks; those are the build worker's own files. Rename the hidden test file(s), for example with an AcceptanceTests suffix",
 			strings.Join(clash, ", ")))
 	}
-	mapping, err := CheckMap(draftDir, Criteria(string(spec)), d.SpecSHA256, files)
+	mapping, err := CheckMap(draftDir, SliceCriteria(Criteria(string(spec)), d.Slice), d.SpecSHA256, files) // F12: a slice draft maps only its own criteria, as start writes them
 	if err != nil {
 		return d, d.fail(hash, err)
 	}

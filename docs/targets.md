@@ -411,7 +411,9 @@ tests.
   today's code) and opens the pull request with your target's usual test-author identity.
 - **A failed check gets one more try:** a second Job sees the failure. After that, the item
   waits until its spec changes, or you draft by hand. An item is never drafted twice for the
-  same spec.
+  same spec, unless you start the watcher with `--redraft`
+  (`./chalkeus forge author watch --target <name> --redraft`): it drafts each waiting item or
+  slice once more, for example after a forge fix.
 - `./chalkeus forge doctor --target <name>` shows whether auto-draft is on.
 - The session that drives runs (your coding agent with the forge skill) never starts the
   watcher or reads its drafts.

@@ -60,6 +60,11 @@ type WatchEnv struct {
 	// Slices gives an item's current slice (026: the first one not merged), "" for an item that
 	// isn't sliced. Nil: every item is drafted whole, as before.
 	Slices func(statusJSON, item string) string
+	// Redraft (`author watch --redraft`, the owner's choice): draft again even when this spec
+	// version already had an automatic draft, for example after a forge fix (F12). Once per item
+	// and slice per watcher process, so a failing draft isn't retried in a loop.
+	Redraft bool
+	redrafted map[string]bool
 }
 
 // Outcome of one watcher pass.
@@ -132,7 +137,7 @@ func (w WatchEnv) skip(ctx context.Context, item string) (string, string, error)
 	} else if len(open) > 0 {
 		return "a draft pull request is open (" + open[0] + ")", "", nil
 	}
-	if prev := w.previousAuto(item, w.Slice, res.SpecSHA256); prev != "" {
+	if prev := w.previousAuto(item, w.Slice, res.SpecSHA256); prev != "" && !w.takeRedraft(item, w.Slice) {
 		return "already drafted automatically for this spec version (" + prev + "); change the spec or draft by hand", "", nil
 	}
 	return "", res.SpecSHA256, nil
@@ -248,4 +253,25 @@ func (w WatchEnv) draft(ctx context.Context, item, specSHA string) (string, erro
 	_ = d.Save()
 	fmt.Fprintf(w.Out, "draft %s: failed, no PR\n", item)
 	return PassFailed, nil
+}
+
+// takeRedraft reports whether --redraft allows drafting item/slice again in this process, and
+// uses that allowance up.
+func (w WatchEnv) takeRedraft(item, slice string) bool {
+	if !w.Redraft || w.redrafted == nil {
+		return false
+	}
+	k := item + "/" + slice
+	if w.redrafted[k] {
+		return false
+	}
+	w.redrafted[k] = true
+	return true
+}
+
+// EnableRedraft turns on --redraft. The allowance map is shared by the per-pass copies of the
+// WatchEnv, so each item and slice is redrafted at most once per watcher process.
+func (w *WatchEnv) EnableRedraft() {
+	w.Redraft = true
+	w.redrafted = map[string]bool{}
 }
