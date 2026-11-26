@@ -12,20 +12,27 @@ every existing test are unchanged.
 
 ## `dependency` (baseline only)
 
-- `meta.dependency: true` changes the baseline's pass rule:
-  - `G4_visible_tests` is run and recorded; a failure doesn't fail the baseline. Its detail is
-    prefixed `with the approved manifest change: ` and the result is `fail` or `pass` as
-    observed;
-  - `G5_hidden_tests` runs whether G4 passed or failed, and must fail (as today);
-  - the baseline passes when G1 passes and G5 passes (hidden tests fail), and G8 when the item
-    has earlier slices (never, see R13).
-- Absent or false: today's rule (G4 must pass).
+- `meta.dependency: true` changes the baseline's pass rule (amended 2026-11-26, owner: "either
+  fails"; research R12):
+  - `G4_visible_tests` is run and recorded; its detail is prefixed
+    `with the approved manifest change: ` and the result is `fail` or `pass` as observed;
+  - **visible tests fail:** that is the work, and it proves there is some. `G5_hidden_tests` is
+    `skipped` with `not measured: …`, because the hidden tests run inside the same suite and a
+    failing suite can't tell them apart;
+  - **visible tests pass:** `G5_hidden_tests` runs and must fail, as today;
+  - the baseline passes when G1 passes and either the visible tests fail or the hidden tests
+    fail (G5 `pass`). Nothing failing means no work: the baseline fails with G5's "carry no
+    signal".
+- Absent or false: today's rule (G4 must pass, then G5 must pass).
 
 ## Tests
 
 `pilot/images/tests/test_grade_dependency.py`:
 - a change to a fixed path fails G2 with `MANIFEST_CHANGED`, even under `allowed_paths: ["**"]`;
 - a change elsewhere passes G2 as before;
-- a dependency baseline with failing visible tests and failing hidden tests passes;
-- a dependency baseline whose hidden tests pass fails (no signal);
+- a renamed or deleted fixed path fails G2 too;
+- a dependency baseline with failing visible tests passes, with G5 `skipped` (not measured);
+- a dependency baseline with passing visible tests needs failing hidden tests;
+- a dependency baseline where nothing fails fails (no signal);
+- without `dependency`, failing visible tests still fail the baseline;
 - a meta without the fields gives the same results as before (one existing case re-run).

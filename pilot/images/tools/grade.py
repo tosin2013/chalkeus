@@ -98,7 +98,11 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
         rc, out, _ = run_full(["git", "diff", "--name-only", base, "HEAD"], cwd=repo)
         changed = [p for p in out.splitlines() if p]
         bad = [p for p in changed if not any(fnmatch.fnmatch(p, g) for g in meta["allowed_paths"])]
-        if add("G2_allowed_paths", rc == 0 and not bad and bool(changed), f"changed={changed} disallowed={bad}"):
+        fixed = fixed_changed(meta, repo, base)
+        g2_detail = f"changed={changed} disallowed={bad}"
+        if fixed:
+            g2_detail = "MANIFEST_CHANGED: " + ", ".join(fixed) + " " + g2_detail
+        if add("G2_allowed_paths", rc == 0 and not bad and not fixed and bool(changed), g2_detail):
             if meta.get("slice"):
                 g3_ok, g3_detail = slice_tasks_checked(meta, repo, work, base)
             else:
@@ -140,6 +144,18 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
     return {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),
             "result": "pass" if passed else "fail", "failure": None,
             "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
+
+
+def fixed_changed(meta, repo, base):
+    """029: the paths of meta.fixed_paths (an approved manifest change) that the attempt touched:
+    added, modified, deleted, or renamed from or to (renames are listed as both sides)."""
+    fixed = set(meta.get("fixed_paths") or [])
+    if not fixed:
+        return []
+    rc, out, _ = run_full(["git", "diff", "--name-only", "--no-renames", base, "HEAD"], cwd=repo)
+    if rc != 0:
+        return sorted(fixed)  # fail closed: the diff couldn't be read
+    return sorted({p for p in out.splitlines() if p in fixed})
 
 
 def project_tests(meta, repo, limit=3000):
@@ -328,11 +344,19 @@ def baseline(meta, inp, grading, work, repo):
         started = time.monotonic()
         rc, out = project_tests(meta, repo)
         test_seconds = max(1, round(time.monotonic() - started))  # 033 R7: one run of the test command
+        dependency = bool(meta.get("dependency"))  # 029: the base carries the approved manifest change
+        if dependency:
+            out = "with the approved manifest change: " + out
         earlier_ok = True
         if add("G4_visible_tests", "pass" if rc == 0 else "fail", out) and earlier_slices(meta):
             # 026: a merged slice's hidden tests must still pass on this slice's base.
             earlier_ok = earlier_kept(meta, grading, repo, add, result=lambda r: r)
-        if by_id(results, "G4_visible_tests") == "pass" and earlier_ok:
+        if dependency and by_id(results, "G4_visible_tests") == "fail":
+            # 029: the failing visible tests are the work, and they prove there is some. The hidden
+            # tests run inside the same suite, so their result can't be told apart here.
+            add("G5_hidden_tests", "skipped", "not measured: the visible tests fail with the approved manifest change, "
+                "so a run of the whole suite can't tell the hidden tests apart (the failing visible tests are the signal)")
+        elif by_id(results, "G4_visible_tests") == "pass" and earlier_ok:
             ok, why = overlay(grading, repo)
             if not ok:
                 add("G5_hidden_tests", "fail", why)
@@ -349,8 +373,11 @@ def baseline(meta, inp, grading, work, repo):
         if cid not in done:
             results.append({"id": cid, "result": "skipped", "detail": "earlier check failed"})
     by = {r["id"]: r["result"] for r in results}
-    passed = by["G1_bundle_applies"] == "pass" and by["G4_visible_tests"] == "pass" and by["G5_hidden_tests"] == "pass" \
-        and by.get("G8_earlier_slices_kept", "pass") == "pass"
+    # The base must show there is work: the hidden tests fail on it. 029: for a dependency item,
+    # visible tests that fail with the approved change show it too (then G5 isn't measured).
+    signal = (by["G4_visible_tests"] == "pass" and by["G5_hidden_tests"] == "pass") or \
+        (bool(meta.get("dependency")) and by["G4_visible_tests"] == "fail")
+    passed = by["G1_bundle_applies"] == "pass" and signal and by.get("G8_earlier_slices_kept", "pass") == "pass"
     failure = "EARLIER_SLICE_BROKEN_ON_BASE" if by.get("G8_earlier_slices_kept") == "fail" else None
     report = {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),
               "mode": "baseline", "result": "pass" if passed else "fail", "failure": failure,

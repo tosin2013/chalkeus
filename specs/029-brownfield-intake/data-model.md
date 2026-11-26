@@ -80,7 +80,7 @@
 | Field | Where | Notes |
 |---|---|---|
 | `fixed_paths` | attempt and baseline `meta.json` | the listed files; G2 fails on any change to one (R11) |
-| `dependency` | baseline `meta.json` | true: G4 recorded, not required; G5 must still fail (R12) |
+| `dependency` | baseline `meta.json` | true: the base must show work: visible tests fail (G5 not measured), or they pass and G5 fails (R12, amended) |
 
 ## Readiness refusal codes (new)
 
