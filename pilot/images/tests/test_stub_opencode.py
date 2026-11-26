@@ -56,6 +56,27 @@ class TestStub(unittest.TestCase):
         self.assertEqual((d / "src/slugkit/slug.py").read_text(), (REF / "slug.py").read_text())
 
 
+    def test_a_rule_can_name_the_attempt(self):
+        # 029: the deps scenario edits the manifest on attempt 1 and fixes the code after it.
+        target = IMAGES.parents[1] / "test" / "integration" / "fixtures" / "deps"
+        prompt = "# Task list (`specs/001-greetlib-2/tasks.md`)\n"
+        for n, want in ((1, "edit-manifest"), (2, "fix-code"), (None, "fix-code")):
+            with self.subTest(attempt=n):
+                d = Path(tempfile.mkdtemp())
+                shutil.copytree(target, d, dirs_exist_ok=True)
+                (d / "requirements.txt").write_text("greetlib==2.0\n")  # the approved bump, as the worker gets it
+                meta = d.parent / (d.name + "-meta.json")
+                if n is not None:
+                    meta.write_text(json.dumps({"attempt": n}))
+                env = dict(os.environ, PILOT_STUB_DIR=str(SCEN), PILOT_STUB_SCENARIO="", PILOT_STUB_META=str(meta))
+                r = subprocess.run([str(STUB), "run", prompt], cwd=d, env=env, capture_output=True, text=True)
+                self.assertEqual(r.returncode, 0, r.stderr)
+                manifest_edited = (d / "requirements.txt").read_text() == "greetlib==1.0\n"
+                code_fixed = "Hello, " in (d / "src/greet/__init__.py").read_text()
+                self.assertEqual((manifest_edited, code_fixed), (want == "edit-manifest", want == "fix-code"))
+                self.assertEqual((d / "specs/001-greetlib-2/tasks.md").read_text().count("- [X]"), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
 
