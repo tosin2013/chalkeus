@@ -146,6 +146,11 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
             "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
 
 
+# 029: exit codes of a test command that produced no test result (run's timeout; sh's "not
+# executable" and "not found"). For a dependency baseline they don't count as failing tests.
+NO_TEST_RESULT = {124: "timed out", 126: "couldn't be executed", 127: "wasn't found"}
+
+
 def fixed_changed(meta, repo, base):
     """029: the paths of meta.fixed_paths (an approved manifest change) that the attempt touched:
     added, modified, deleted, or renamed from or to (renames are listed as both sides)."""
@@ -351,7 +356,11 @@ def baseline(meta, inp, grading, work, repo):
         if add("G4_visible_tests", "pass" if rc == 0 else "fail", out) and earlier_slices(meta):
             # 026: a merged slice's hidden tests must still pass on this slice's base.
             earlier_ok = earlier_kept(meta, grading, repo, add, result=lambda r: r)
-        if dependency and by_id(results, "G4_visible_tests") == "fail":
+        if dependency and rc in NO_TEST_RESULT:
+            # A timeout or a command that couldn't start isn't a test failure, so it shows no work.
+            add("G5_hidden_tests", "fail", f"not measured: the test command {NO_TEST_RESULT[rc]} (exit {rc}); "
+                "that isn't a test result, so it doesn't show there is work. Check the target's test command and limits")
+        elif dependency and by_id(results, "G4_visible_tests") == "fail":
             # 029: the failing visible tests are the work, and they prove there is some. The hidden
             # tests run inside the same suite, so their result can't be told apart here.
             add("G5_hidden_tests", "skipped", "not measured: the visible tests fail with the approved manifest change, "
@@ -376,7 +385,7 @@ def baseline(meta, inp, grading, work, repo):
     # The base must show there is work: the hidden tests fail on it. 029: for a dependency item,
     # visible tests that fail with the approved change show it too (then G5 isn't measured).
     signal = (by["G4_visible_tests"] == "pass" and by["G5_hidden_tests"] == "pass") or \
-        (bool(meta.get("dependency")) and by["G4_visible_tests"] == "fail")
+        (bool(meta.get("dependency")) and by["G4_visible_tests"] == "fail" and by["G5_hidden_tests"] == "skipped")
     passed = by["G1_bundle_applies"] == "pass" and signal and by.get("G8_earlier_slices_kept", "pass") == "pass"
     failure = "EARLIER_SLICE_BROKEN_ON_BASE" if by.get("G8_earlier_slices_kept") == "fail" else None
     report = {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),

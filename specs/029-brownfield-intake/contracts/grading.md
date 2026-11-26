@@ -19,6 +19,10 @@ every existing test are unchanged.
   - **visible tests fail:** that is the work, and it proves there is some. `G5_hidden_tests` is
     `skipped` with `not measured: …`, because the hidden tests run inside the same suite and a
     failing suite can't tell them apart;
+  - **the test command produced no result** (exit 124 timeout, 126 not executable, 127 not
+    found): that isn't a failing test, so it shows no work. `G5_hidden_tests` is `fail` with
+    `not measured: the test command … (exit N)`, and the baseline fails (amended 2026-11-26,
+    review of #218);
   - **visible tests pass:** `G5_hidden_tests` runs and must fail, as today;
   - the baseline passes when G1 passes and either the visible tests fail or the hidden tests
     fail (G5 `pass`). Nothing failing means no work: the baseline fails with G5's "carry no
@@ -34,5 +38,6 @@ every existing test are unchanged.
 - a dependency baseline with failing visible tests passes, with G5 `skipped` (not measured);
 - a dependency baseline with passing visible tests needs failing hidden tests;
 - a dependency baseline where nothing fails fails (no signal);
+- a dependency baseline whose test command timed out, wasn't found or couldn't be executed fails;
 - without `dependency`, failing visible tests still fail the baseline;
 - a meta without the fields gives the same results as before (one existing case re-run).
