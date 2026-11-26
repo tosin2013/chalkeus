@@ -35,9 +35,9 @@
   host-specific states (GitLab `locked`, Bitbucket `superseded`) to show where GitHub is wired
   in and what "merged" means per host. This follows the project's spec style (031 did the
   same); the requirements themselves state behaviour, not code structure.
-- No clarification markers: the open points are recorded as assumptions with defaults —
-  Bitbucket draft support (research, roadmap Q14), the self-managed GitLab instance for the
-  proof (owner, Q14), companion on the same host as its target, supported GitLab versions
-  (current and previous major).
+- No clarification markers. Points first recorded as assumptions were settled in planning
+  (research.md): Bitbucket has native drafts (R3); the self-managed proof is a GitLab CE
+  container (owner, Q14); gitlab.com Free accepts a dedicated bot account proven to reach one
+  project (owner, R4); GitLab 18.0 minimum (R9). The spec was updated to match (2026-11-26).
 - Owner decisions already taken (2026-11-26): GitLab first then Bitbucket Cloud in this item;
   phase 2 is 038; 013 depends on this item.

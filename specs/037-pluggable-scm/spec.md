@@ -72,7 +72,8 @@ evidence from before this item.
 1. **Given** profiles and `forge.env` with no host setting, **When** forge runs anything,
    **Then** the host is GitHub and behaviour is unchanged.
 2. **Given** the fixture walkthrough on GitHub, **When** it completes, **Then** the audit is
-   11/11 and the evidence matches the previous evidence apart from a recorded host field.
+   11/11 and the evidence matches the previous evidence apart from the recorded host, the
+   account ids next to logins, and the new publisher-egress check.
 3. **Given** a GitHub target with the GitHub loop on (issues, labels, comment approvals),
    **When** a run goes through its pauses, **Then** the loop works as before.
 
@@ -137,15 +138,17 @@ host) and confirm each is refused and recorded.
    without write access, **When** forge checks it, **Then** it refuses it and names the reason.
 3. **Given** a status-change request that changes anything besides the one roadmap line, **When**
    forge checks it, **Then** it refuses it.
-4. **Given** a publisher credential that reaches more than one repository (a GitLab group or
-   personal token, a Bitbucket workspace token), **When** doctor or the token check runs, **Then**
-   it refuses the credential and says which kind is required.
+4. **Given** a publisher credential that reaches more than one repository (a GitLab group
+   token, a personal token of an account with more than one membership, a Bitbucket project or
+   workspace token), **When** doctor or the token check runs, **Then** it refuses the credential
+   and says which kind is required.
 5. **Given** a run on any host, **When** the egress checks run, **Then** the publisher reaches its
    own host and is refused every other Git host, and workers and the grader reach no Git host.
 6. **Given** any run, **When** the audit checks the worker and grader evidence, **Then** no host
    token appears in it (P11 and AU04 unchanged).
 7. **Given** `FORGE_APPROVERS` with usernames, **When** forge loads it for GitLab or Bitbucket,
-   **Then** it resolves them to stable account ids, records the ids, and compares merges by id.
+   **Then** it resolves them to stable account ids, records the ids, and compares merges by id
+   (Bitbucket can't resolve usernames, so a Bitbucket list must name account ids).
 
 ---
 
@@ -188,11 +191,13 @@ publisher a repository access token, and runs an item end to end, as on GitLab.
 
 1. **Given** a profile with the host set to Bitbucket and a repository `workspace/repo`, **When**
    the operator runs an item, **Then** the publisher opens the change request as the repository
-   token's bot identity and marks it as a draft (natively, or by the documented stand-in when
-   Bitbucket has no draft state).
-2. **Given** a pull request declined or superseded, **When** reconcile runs, **Then** it counts as
+   token's bot identity, as a draft.
+2. **Given** a Bitbucket target branch without a restriction that stops the publisher's token
+   from merging, **When** doctor runs, **Then** it fails and says to add one (a repository token
+   that can open pull requests can also merge them).
+3. **Given** a pull request declined or superseded, **When** reconcile runs, **Then** it counts as
    not merged.
-3. **Given** a merged pull request, **When** reconcile and the status-change check run, **Then**
+4. **Given** a merged pull request, **When** reconcile and the status-change check run, **Then**
    they read the landed commit and who merged it, and pass or refuse as on GitHub and GitLab.
 
 ---
@@ -266,9 +271,11 @@ passes; break each setting in turn and doctor names it.
 - The companion on a different host from its target: refused in this release, with a message.
 - A self-managed instance reachable only through a corporate proxy: out of scope beyond the
   existing proxy settings; doctor reports the connection failure.
-- Bitbucket Cloud has no draft state for pull requests (to be verified, roadmap Q14): the
-  stand-in marks the request as a draft in its title and the docs say how to stop merges of
-  drafts with branch restrictions.
+- gitlab.com's Free plan has no project access tokens: a personal token of a dedicated bot
+  account is accepted when that account is a member of the one project only, proven before every
+  run (owner decision 2026-11-26).
+- An operator credential without repository admin on Bitbucket: forge can't read the approvers'
+  effective permissions, so doctor fails that check rather than assume.
 - A host's API rate limit: forge reports it and stops, as on GitHub; it doesn't retry in a loop.
 
 ## Requirements *(mandatory)*
@@ -286,20 +293,23 @@ passes; break each setting in turn and doctor names it.
   find an open request for an item, read its state, the landed commit, who merged it and its
   changed files, check an account's write access, read branch protection) MUST work on GitHub,
   GitLab and Bitbucket Cloud with the same meaning, through one interface.
-- **FR-005**: The publisher MUST open item change requests as drafts. Where a host has no draft
-  state, a documented stand-in MUST mark the request as a draft.
+- **FR-005**: The publisher MUST open item change requests as drafts, using each host's native
+  draft state.
 - **FR-006**: Reconcile MUST treat only a merged change request as merged (GitLab `closed`
   and `locked`, Bitbucket `declined` and `superseded` are not), record the landed commit (merge,
   squash or fast-forward head), and pass only when the merged files equal the graded attempt.
 - **FR-007**: The status-change check MUST accept a merge only when the merger is a listed
   approver with write access, is not the publisher's bot identity, and the request changes only
   the one roadmap line, on every host.
-- **FR-008**: `FORGE_APPROVERS` MUST be compared by stable account id on GitLab and Bitbucket;
-  usernames MUST be resolved to ids, and the ids recorded in the evidence.
+- **FR-008**: `FORGE_APPROVERS` MUST be compared by stable account id on GitLab and Bitbucket.
+  On GitLab usernames MUST be resolved to ids and the ids recorded in the evidence; on Bitbucket
+  the list MUST name account ids.
 - **FR-009**: The publisher MUST be the only holder of a write credential, and that credential
-  MUST be scoped to one repository: a GitLab project access token or a Bitbucket repository
-  access token (GitHub as today). Credentials that reach more than one repository MUST be
-  refused before any run.
+  MUST be scoped to one repository: a GitLab project access token, or a personal token of a
+  dedicated bot account that is a member of that one project only; a Bitbucket repository access
+  token (GitHub as today). Credentials that reach more than one repository MUST be refused before
+  any run. On Bitbucket, where the token can also merge, doctor MUST require a branch restriction
+  that stops it.
 - **FR-010**: No host credential MUST reach a worker or the grader (C-03; P11 and AU04
   unchanged).
 - **FR-011**: The publisher's egress allowlist MUST contain only the chosen host's Git and API
@@ -325,7 +335,7 @@ passes; break each setting in turn and doctor names it.
 - **FR-018**: Mode, retry and acceptance decisions MUST stay in the terminal or harness on GitLab
   and Bitbucket (phase 2 adds host comments, 038).
 - **FR-019**: The operator guide and `docs/targets.md` MUST document each host's setup
-  (credentials, approver ids, host name, certificate bundle, the draft stand-in), and the
+  (credentials, approver ids, host name, certificate bundle, the Bitbucket merge restriction), and the
   troubleshooting guide MUST cover each new refusal.
 
 ### Key Entities
@@ -344,7 +354,8 @@ passes; break each setting in turn and doctor names it.
 ### Measurable Outcomes
 
 - **SC-001**: With no host setting, 100% of existing tests pass and the GitHub fixture evidence
-  matches the evidence before this item apart from the recorded host.
+  matches the evidence before this item apart from the recorded host, account ids next to logins
+  and the new publisher-egress check.
 - **SC-002**: On each of gitlab.com, one self-managed GitLab and Bitbucket Cloud, the fixture
   walkthrough completes with the audit at 11/11.
 - **SC-003**: On each of those three, one target item run succeeds end to end: a draft request
@@ -360,16 +371,16 @@ passes; break each setting in turn and doctor names it.
 
 ## Assumptions
 
-- The owner provides, for the live proof, a throwaway project or repository and the matching
-  repository-scoped token on gitlab.com and Bitbucket Cloud, and a self-managed GitLab instance
-  (which one is roadmap Q14). The test-author identity on each host is a separate account or
-  token from the publisher's.
+- The owner provides, for the live proof, throwaway projects or repositories and the matching
+  tokens on gitlab.com and Bitbucket Cloud. The self-managed proof uses a throwaway GitLab
+  Community Edition container at a pinned version, with a self-signed CA (owner decision
+  2026-11-26, roadmap Q14). The test-author identity on each host is a separate account or token
+  from the publisher's.
 - The companion repository is on the same host as its target; the fixture's host is set in
   `forge.env` independently of any target.
-- Supported self-managed GitLab versions are the current and previous major releases; older
-  instances are refused by doctor with the minimum version.
-- Whether Bitbucket Cloud's API supports draft pull requests is verified in research (Q14); the
-  stand-in is a draft marker in the title plus documented branch restrictions.
+- Supported self-managed GitLab versions are the current and previous major releases (18.0 and
+  later); older instances are refused by doctor with the minimum version.
+- Bitbucket Cloud's API supports draft pull requests, and drafts can't be merged (research R3).
 - The operator authenticates to GitLab and Bitbucket with that host's usual personal token or
   CLI login, read from the environment or the host's CLI, as `GH_TOKEN` and `gh` are today.
 - Bitbucket Data Center/Server, Azure DevOps, webhooks, and the phase-2 loop features (038) are
