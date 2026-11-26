@@ -67,7 +67,7 @@ func TestAuthorNamespaceTemplate(t *testing.T) {
 // 024 R3: the author Job runs the worker image with only the model-key secret, through the
 // author proxy, with no token.
 func TestAuthorJobTemplate(t *testing.T) {
-	docs := renderDocs(t, "author-job.yaml.tmpl", map[string]string{"NS": "pilot-a-x-001", "DEADLINE": "1200",
+	docs := renderDocs(t, "author-job.yaml.tmpl", map[string]string{"DISABLE_FREE_MODELS": "1", "NS": "pilot-a-x-001", "DEADLINE": "1200",
 		"TOOLS_IMAGE": "t@sha256:1", "WORKER_IMAGE": "w@sha256:2", "PILOT_MODEL": "p/m", "SPEND_CAP": "1.0",
 		"TOKEN_CAP": "2000000", "INPUT_LIMIT": "512Mi"})
 	if len(docs) != 1 || docs[0]["kind"] != "Job" {
@@ -102,7 +102,7 @@ func TestAuthorJobTemplate(t *testing.T) {
 
 // The isolation checks find the author's pod by this label (checks.RunAuthorChecks).
 func TestAuthorJobPodLabel(t *testing.T) {
-	docs := renderDocs(t, "author-job.yaml.tmpl", map[string]string{"NS": "n", "DEADLINE": "1", "TOOLS_IMAGE": "t",
+	docs := renderDocs(t, "author-job.yaml.tmpl", map[string]string{"DISABLE_FREE_MODELS": "1", "NS": "n", "DEADLINE": "1", "TOOLS_IMAGE": "t",
 		"WORKER_IMAGE": "w", "PILOT_MODEL": "m", "SPEND_CAP": "1", "TOKEN_CAP": "1", "INPUT_LIMIT": "1Mi"})
 	if mm(mm(mm(mm(docs[0]["spec"])["template"])["metadata"])["labels"])["app"] != "author" {
 		t.Fatal("the author pod must carry app=author")

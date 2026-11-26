@@ -263,6 +263,13 @@ FORGE_GITHUB_ISSUES=off
   run. The worker stops the agent 2 minutes before its deadline, so an attempt that runs out of
   time still keeps its change, log, tokens and cost as evidence (it isn't graded), and the
   retry question says how far it got.
+- **Free models are off unless the target opts in.** The worker image turns off OpenCode's free
+  models (`OPENCODE_DISABLE_FREE_MODELS`), so a free model such as `opencode-go/beam-free` fails at
+  once with `provider.no-route` ("Model unavailable"). Set `FORGE_ALLOW_FREE_MODELS=on` in a
+  target's profile to let that target's worker and test author use them. The mode approval says
+  so, and a run keeps the setting it started with. Free models may handle requests differently
+  from paid ones, and some train on request data (OpenCode then asks your organisation to allow
+  it), so decide per target.
 - **The target repository can't be this one or any target's companion.** The pilot refuses
   with `TARGET_IS_CANARY`.
 

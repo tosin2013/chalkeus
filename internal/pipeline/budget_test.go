@@ -64,3 +64,22 @@ func TestDeadlineNote(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+// The run keeps the target's FORGE_ALLOW_FREE_MODELS from when it started, and says so in the mode.
+func TestRunFreeModelsKept(t *testing.T) {
+	p, r, _ := newP(t)
+	r.State["kind"] = "item"
+	r.State["item"] = "001"
+	p.Target = config.Target{Name: "documcp", Repo: "me/documcp", Branch: "main", Toolchain: "node24", FreeModels: "on"}
+	if !p.freeModels(r) || r.State["free_models"] != true {
+		t.Fatal("on at start")
+	}
+	if !strings.Contains(p.modeExtraGitHub(r), "free models allowed") {
+		t.Fatal(p.modeExtraGitHub(r))
+	}
+	q, _, _ := newP(t)
+	q.Target = config.Target{Name: "documcp", FreeModels: "off"}
+	if !q.freeModels(r) {
+		t.Fatal("a resumed run keeps its start value")
+	}
+}

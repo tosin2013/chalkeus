@@ -57,6 +57,7 @@ type Target struct {
 	SecurityLevel   string // minimal (default) | recommended | strict (roadmap C-14; 018)
 	AuthorEnv       string // targets/<name>.author.env: the test author's companion-only token (recommended level)
 	AuthorAuto      string // on|off: `./chalkeus forge author watch` may draft this target's items (024)
+	FreeModels      string // on|off: the worker and author may use OpenCode's free models (opt-in)
 	// SliceRuns on|off (026): step mode and automatic drafting work an item slice by slice. Off
 	// (the default) they build every item whole, as before; `run --slice` works either way.
 	SliceRuns       string
@@ -250,7 +251,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		GraderMemory: v["PILOT_GRADER_MEMORY"], CacheSize: v["PILOT_CACHE_SIZE"], MaxInputMB: 50,
 		WorkerCPU: strings.TrimSpace(v["PILOT_WORKER_CPU"]), WorkerMemory: strings.TrimSpace(v["PILOT_WORKER_MEMORY"]),
 		AuthorAuto: strings.TrimSpace(v["PILOT_AUTHOR_AUTO"]), AuthorIntervalS: 120, AuthorAttempts: 2,
-		SliceRuns:    strings.TrimSpace(v["PILOT_SLICE_RUNS"]),
+		SliceRuns: strings.TrimSpace(v["PILOT_SLICE_RUNS"]), FreeModels: strings.TrimSpace(v["PILOT_ALLOW_FREE_MODELS"]),
 		ProposeLabel: strings.TrimSpace(v["PILOT_PROPOSE_LABEL"]), StepIntervalS: 120}
 	kind, key, why := scmSyntax(v)
 	if key != "" {
@@ -336,7 +337,10 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	if t.SliceRuns == "" {
 		t.SliceRuns = "off" // slice-by-slice step mode is opt-in per target (026 FR-005)
 	}
-	for k, x := range map[string]string{"PILOT_GITHUB_ISSUES": t.GithubIssues, "PILOT_GITHUB_APPROVALS": t.GithubApprovals, "PILOT_AUTHOR_AUTO": t.AuthorAuto, "PILOT_SLICE_RUNS": t.SliceRuns} {
+	if t.FreeModels == "" {
+		t.FreeModels = "off" // the worker image disables OpenCode's free models; a target opts in
+	}
+	for k, x := range map[string]string{"PILOT_GITHUB_ISSUES": t.GithubIssues, "PILOT_GITHUB_APPROVALS": t.GithubApprovals, "PILOT_AUTHOR_AUTO": t.AuthorAuto, "PILOT_SLICE_RUNS": t.SliceRuns, "PILOT_ALLOW_FREE_MODELS": t.FreeModels} {
 		if x != "on" && x != "off" {
 			return Target{}, invalid(k, "must be on or off")
 		}

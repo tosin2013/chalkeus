@@ -89,6 +89,8 @@ type Item struct {
 	HomeLimit         string
 	// 026: the slice a slice run builds ("" for the whole item), its phases, and each earlier
 	// slice's phases (the grader's G8 and G3 need them).
+	// FreeModels lets OpenCode use its free models (the image disables them; a target opts in).
+	FreeModels    bool
 	Slice         string
 	SlicePhases   []string
 	EarlierPhases [][]string
@@ -338,6 +340,7 @@ func RunAttempt(d Deps, run *evidence.Run, cfg *config.Config, imgs map[string]s
 				inits = strings.TrimPrefix(inits+"\n"+toolchain.SetupInit(imgs["tools"], it.ProxyURL, it.ToolchainSpec, WorkerDeps), "\n")
 			}
 			vars["PROXY_URL"], vars["HOME_LIMIT"] = it.ProxyURL, it.HomeLimit
+			vars["DISABLE_FREE_MODELS"] = DisableFreeModels(it.FreeModels)
 			vars["TOOLCHAIN_INITS"], vars["TOOLCHAIN_ENV"], vars["TOOLCHAIN_MOUNTS"], vars["TOOLCHAIN_VOLUMES"] = inits, b.Env, b.Mounts, b.Volumes
 		}
 		jobYAML, err := k8s.Render(filepath.Join(d.L.Manifests, tmpl), vars)
@@ -586,4 +589,13 @@ func QuotaLimits(lim Limits) (cpu, memory string) {
 		memory = lim.Memory
 	}
 	return cpu, memory
+}
+
+// DisableFreeModels is OPENCODE_DISABLE_FREE_MODELS for a Job: "1" (the image's default) unless
+// the target opted in to OpenCode's free models (FORGE_ALLOW_FREE_MODELS=on).
+func DisableFreeModels(allow bool) string {
+	if allow {
+		return "0"
+	}
+	return "1"
 }

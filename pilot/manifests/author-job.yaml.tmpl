@@ -39,6 +39,7 @@ spec:
             - {name: HTTPS_PROXY, value: "http://proxy.pilot-egress-a.svc.cluster.local:8888"}
             - {name: https_proxy, value: "http://proxy.pilot-egress-a.svc.cluster.local:8888"}
             - {name: NO_PROXY, value: ""}
+            - {name: OPENCODE_DISABLE_FREE_MODELS, value: "${DISABLE_FREE_MODELS}"}
           securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
           resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "2", memory: 2Gi}}
           volumeMounts:

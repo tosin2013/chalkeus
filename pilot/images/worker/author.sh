@@ -13,7 +13,7 @@ ERROR=""; HEXIT=""
 finish() {
   cd "$TMP" || true
   python3 - "$ERROR" "$HEXIT" "$IN" "$TMP" <<'PY' > "$OUT/report.json"
-import json, os, re, sys
+import json, os, re, subprocess, sys
 err, hexit, inp, tmp = sys.argv[1] or None, sys.argv[2], sys.argv[3], sys.argv[4]
 meta = json.load(open(os.path.join(inp, "meta.json")))
 spend_p = os.path.join(tmp, "spend.json")
@@ -25,10 +25,14 @@ for f in ("entry.log", "harness.stderr", "harness.jsonl"):
         tail += open(p, errors="replace").read()[-2048:]
 tail = re.sub(r"(sk-|ghp_|gho_|ghs_|github_pat_)[A-Za-z0-9_\-]{4,}", r"\1***", tail)
 tail = re.sub(r"(?i)(bearer\s+)[A-Za-z0-9._\-]{8,}", r"\1***", tail)
+try:
+    harness_version = subprocess.run(["opencode", "--version"], capture_output=True, text=True, timeout=20).stdout.strip().lstrip("v") or None
+except Exception:  # noqa: BLE001 - the version is informational
+    harness_version = None
 print(json.dumps({
     "version": 1, "role": "author", "draft_id": meta.get("draft_id"), "item": meta.get("item"),
     "attempt": meta.get("attempt"),
-    "harness": {"name": "opencode", "version": "2.2.7", "exit": int(hexit) if hexit not in ("", None) else None},
+    "harness": {"name": "opencode", "version": harness_version, "exit": int(hexit) if hexit not in ("", None) else None},
     "spend": spend, "error": err, "log_tail": tail[-4096:],
 }))
 PY

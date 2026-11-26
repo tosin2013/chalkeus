@@ -184,6 +184,9 @@ func (p *P) modeExtra(run *evidence.Run) string {
 	if mc := manifestText(run); mc != "" {
 		s += "\n  " + mc
 	}
+	if p.freeModels(run) {
+		s += "\n  models: OpenCode's free models are allowed for this target (FORGE_ALLOW_FREE_MODELS=on)"
+	}
 	return s
 }
 
@@ -203,6 +206,9 @@ func (p *P) modeExtraGitHub(run *evidence.Run) string {
 		p.Target.Name, p.Target.Repo, p.Target.Branch, item, tc, regs, p.Target.SecurityLevel, coverage(run))
 	if mc := manifestText(run); mc != "" {
 		s += "; " + mc
+	}
+	if p.freeModels(run) {
+		s += "; free models allowed (FORGE_ALLOW_FREE_MODELS=on)"
 	}
 	return s
 }
@@ -597,7 +603,7 @@ func (p *P) workerItem(run *evidence.Run) *worker.Item {
 	if m := manifestOf(run); m != nil {
 		fixed = m.Files
 	}
-	return &worker.Item{FixedPaths: fixed, Slice: sliceID, SlicePhases: phases, EarlierPhases: earlierPhases, TestPaths: p.Target.TestPaths, TestsMayChange: mayChange, SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"), SnapshotCommit: commit,
+	return &worker.Item{FreeModels: p.freeModels(run), FixedPaths: fixed, Slice: sliceID, SlicePhases: phases, EarlierPhases: earlierPhases, TestPaths: p.Target.TestPaths, TestsMayChange: mayChange, SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"), SnapshotCommit: commit,
 		SpecDir: specDir, AllowedPaths: allowed, Toolchain: p.Target.Toolchain, TestCommand: p.Target.TestCommand,
 		CommandTimeout: p.commandTimeout(), InputLimit: p.inputLimit(),
 		ProxyNS: proxyNS, ProxyURL: "http://proxy." + proxyNS + ".svc.cluster.local:8888",
@@ -799,4 +805,16 @@ func PriorSlices(root, target, item, exceptRun string) map[string]readiness.Prio
 		return nil
 	}
 	return out
+}
+
+// freeModels reports whether the run's workers may use OpenCode's free models: the target's
+// FORGE_ALLOW_FREE_MODELS when the run started, kept in run.json so a resumed run keeps it.
+func (p *P) freeModels(run *evidence.Run) bool {
+	if v, ok := run.State["free_models"].(bool); ok {
+		return v
+	}
+	on := p.Target.FreeModels == "on"
+	run.State["free_models"] = on
+	_ = run.Save()
+	return on
 }

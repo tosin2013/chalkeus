@@ -40,6 +40,7 @@ type JobEnv struct {
 	TokenCap   string
 	ModelFiles []string // the worker's opencode.json and key file (the only Secret)
 	Deadline   int      // seconds
+	FreeModels bool     // the target opted in to OpenCode's free models
 	// Checks runs A01-A05 against the running author namespace (nil skips them, in tests).
 	Checks func(ns, draftID string) []AuthorCheck
 }
@@ -72,7 +73,8 @@ func RunJob(ctx context.Context, je JobEnv, d *Draft, attempt int, prompt string
 	}
 	jobYAML, err := k8s.Render(filepath.Join(je.Manifests, "author-job.yaml.tmpl"), map[string]string{"NS": ns,
 		"DEADLINE": fmt.Sprint(je.Deadline), "TOOLS_IMAGE": je.Images["tools"], "WORKER_IMAGE": je.Images["worker"],
-		"PILOT_MODEL": je.Model, "SPEND_CAP": je.SpendCap, "TOKEN_CAP": je.TokenCap, "INPUT_LIMIT": "1Gi"})
+		"PILOT_MODEL": je.Model, "SPEND_CAP": je.SpendCap, "TOKEN_CAP": je.TokenCap, "INPUT_LIMIT": "1Gi",
+		"DISABLE_FREE_MODELS": disableFree(je.FreeModels)})
 	if err != nil {
 		return fail("harness_error", err)
 	}
@@ -241,4 +243,12 @@ func unpackDraft(b []byte, dst string) (int, error) {
 		}
 	}
 	return len(files), nil
+}
+
+// disableFree mirrors worker.DisableFreeModels (no import: author doesn't depend on worker).
+func disableFree(allow bool) string {
+	if allow {
+		return "0"
+	}
+	return "1"
 }
