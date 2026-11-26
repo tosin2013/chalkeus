@@ -35,12 +35,15 @@ func nextSliceID(run *evidence.Run) string {
 
 // sliceMerged handles the merge of a slice that isn't the item's last (026 R7): it checks the
 // merge (CheckSlice), records slice_merged, proposes no status, and finishes the run. channel is
-// "github" or "terminal" (for the reconcile record).
-func (p *P) sliceMerged(run *evidence.Run, rec reconcile.Reconciler, task string, n int, changed []string, channel string) int {
+// "github" or "terminal" (for the reconcile record). cleanup removes reconcile's clones; it runs
+// as soon as the check is done, so the target's graded tree (.graded-<task>/ in the run folder)
+// is gone before the run finishes and its evidence is audited.
+func (p *P) sliceMerged(run *evidence.Run, rec reconcile.Reconciler, cleanup func(), task string, n int, changed []string, channel string) int {
 	tA := run.Task(task)
 	pr, _ := tA["pr"].(map[string]any)
 	id, phases, _ := sliceOf(run)
 	code, r := rec.CheckSlice(task, run.ItemOf(task), id, phases, asInt(pr["number"]), changed)
+	cleanup()
 	r["channel"] = channel
 	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", task+".json"), r)
 	reason, _ := r["reason"].(string)

@@ -249,8 +249,7 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 		return p.fail(run, "RECONCILE_SETUP")
 	}
 	if !SlicesLast(run) { // 026: a slice before the item's last: no status change
-		defer cleanup()
-		return p.sliceMerged(run, rec, task, n, changedPaths(tA, n), "github")
+		return p.sliceMerged(run, rec, cleanup, task, n, changedPaths(tA, n), "github")
 	}
 	pr, _ := tA["pr"].(map[string]any)
 	code, r, edited := rec.Check(task, run.ItemOf(task), asInt(pr["number"]), changedPaths(tA, n))

@@ -30,3 +30,5 @@ test/integration/out/
 
 # Test-author draft evidence stays local: it belongs to the separate test-author session (031 T031).
 specs/*/evidence/drafts/
+# Reconcile's temporary graded clone of the target, inside a run folder: never evidence.
+**/.graded-*/
