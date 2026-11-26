@@ -70,6 +70,9 @@ type Result struct {
 	Overlay    []string   `json:"overlay,omitempty"`
 	Earlier    []string   `json:"earlier,omitempty"`
 	Acceptance []string   `json:"acceptance,omitempty"`
+	// 029: the approved manifest change of a dependency item (the spec's `## Manifest change`),
+	// checked against the base; nil for an ordinary item.
+	ManifestChange *ManifestChange `json:"manifest_change,omitempty"`
 }
 
 var (
@@ -324,6 +327,28 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 		res.AllowedPaths = allowed
 		res.TestsMayChange = TestsMayChange(string(spec))
 		rule("allowed_paths", true, strings.Join(allowed, ", "))
+	}
+
+	// 4b. 029: an approved manifest change (dependency item), checked against this base.
+	if specOK {
+		switch mc, present, err := ParseManifestChange(string(spec)); {
+		case !present:
+		case err != nil:
+			if fail("MANIFEST_CHANGE_UNREADABLE", specDir+"/spec.md `## Manifest change`: "+err.Error()) {
+				return finish()
+			}
+		default:
+			refusals := CheckManifestChange(dir, t.Toolchain, t.Branch, mc, d.Slice != "")
+			for _, r := range refusals {
+				if fail(r.Code, r.Detail) {
+					return finish()
+				}
+			}
+			if len(refusals) == 0 {
+				res.ManifestChange = mc
+				rule("manifest_change", true, fmt.Sprintf("%s (%s): %s", mc.Commit[:7], mc.Subject, strings.Join(mc.Files, ", ")))
+			}
+		}
 	}
 
 	// 5. Hidden tests in the companion repository (read with the operator's own access).

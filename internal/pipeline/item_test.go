@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,5 +90,35 @@ func TestReplayNeedsTheRunsClone(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(adir, "change.bundle"), []byte("x"), 0o644)
 	if err := p.replay(r, "002", 1); err == nil || !strings.Contains(err.Error(), "target clone is gone") {
 		t.Fatal(err)
+	}
+}
+
+// 029: a dependency item's manifest change reaches the mode text, the worker and the baseline.
+func TestDependencyItemInputs(t *testing.T) {
+	p, r := itemP(t)
+	if manifestOf(r) != nil || manifestText(r) != "" || p.workerItem(r).FixedPaths != nil {
+		t.Fatal("an ordinary item has no manifest change")
+	}
+	if m := p.baselineMeta(r); m["dependency"] != nil || m["fixed_paths"] != nil {
+		t.Fatalf("ordinary baseline meta: %v", m)
+	}
+	c := "3f9c2d0e8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d"
+	r.State["manifest_change"] = map[string]any{"commit": c, "files": []any{"requirements.txt"}, "subject": "chore(deps): bump requests",
+		"packages": []any{map[string]any{"name": "requests", "from": "2.31.0", "to": "2.32.3", "level": "minor"}}}
+	if got := manifestText(r); got != `dependency item: approved manifest change 3f9c2d0 ("chore(deps): bump requests") in requirements.txt, fixed for the worker; bumps requests 2.31.0 → 2.32.3 (minor)` {
+		t.Fatal(got)
+	}
+	if !strings.Contains(p.modeExtra(r), "\n  dependency item: approved manifest change 3f9c2d0") || !strings.Contains(p.modeExtraGitHub(r), "; dependency item:") {
+		t.Fatalf("%s\n%s", p.modeExtra(r), p.modeExtraGitHub(r))
+	}
+	if w := p.workerItem(r); strings.Join(w.FixedPaths, ",") != "requirements.txt" {
+		t.Fatalf("%+v", w.FixedPaths)
+	}
+	m := p.baselineMeta(r)
+	if m["dependency"] != true || fmt.Sprint(m["fixed_paths"]) != "[requirements.txt]" || m["mode"] != "baseline" {
+		t.Fatalf("dependency baseline meta: %v", m)
+	}
+	if checkResult(map[string]any{"checks": []any{map[string]any{"id": "G4_visible_tests", "result": "fail"}}}, "G4_visible_tests") != "fail" {
+		t.Fatal("checkResult")
 	}
 }

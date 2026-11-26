@@ -56,6 +56,127 @@ func Snapshot(clone, base, out string) (string, error) {
 	return snap, nil
 }
 
+// Manifest is a dependency item's approved manifest change (029, research R10): the listed
+// files as they are at Commit, which is on the target (a branch or a pull request).
+type Manifest struct {
+	Commit string
+	Files  []string
+}
+
+// fetchCommit makes commit available in clone, fetching it from origin when it's missing.
+func fetchCommit(clone, commit string) error {
+	if _, err := gitEnv(clone, nil, "cat-file", "-e", commit+"^{commit}"); err == nil {
+		return nil
+	}
+	if _, err := gitEnv(clone, nil, "fetch", "-q", "origin", commit); err != nil {
+		return fmt.Errorf("manifest change %s: %v", short(commit), err)
+	}
+	return nil
+}
+
+func short(c string) string {
+	if len(c) > 7 {
+		return c[:7]
+	}
+	return c
+}
+
+// manifestTree is base's tree with m's files replaced by their blobs at m.Commit (a file absent
+// there is removed). It uses a temporary index, so the clone's index and worktree are untouched.
+func manifestTree(clone, base string, m *Manifest) (string, error) {
+	idx, err := os.CreateTemp("", "pilot-manifest-index-")
+	if err != nil {
+		return "", err
+	}
+	_ = idx.Close()
+	_ = os.Remove(idx.Name()) // git creates it
+	defer func() { _ = os.Remove(idx.Name()) }()
+	env := []string{"GIT_INDEX_FILE=" + idx.Name()}
+	if _, err := gitEnv(clone, env, "read-tree", base); err != nil {
+		return "", err
+	}
+	for _, f := range m.Files {
+		entry, err := gitEnv(clone, nil, "ls-tree", m.Commit, "--", f)
+		if err != nil {
+			return "", err
+		}
+		if entry == "" {
+			if _, err := gitEnv(clone, env, "update-index", "--force-remove", "--", f); err != nil {
+				return "", err
+			}
+			continue
+		}
+		meta, _, _ := strings.Cut(entry, "\t") // "<mode> blob <id>\t<path>"
+		fields := strings.Fields(meta)
+		if len(fields) != 3 || fields[1] != "blob" {
+			return "", fmt.Errorf("manifest change %s: %s is not a file there", short(m.Commit), f)
+		}
+		if _, err := gitEnv(clone, env, "update-index", "--add", "--cacheinfo", fields[0]+","+fields[2]+","+f); err != nil {
+			return "", err
+		}
+	}
+	return gitEnv(clone, env, "write-tree")
+}
+
+// SnapshotWith is Snapshot for a dependency item: the snapshot's tree is base's tree with the
+// approved manifest change applied, so the worker, the baseline and the prefetch all start from
+// it. m nil is Snapshot.
+func SnapshotWith(clone, base, out string, m *Manifest) (string, error) {
+	if m == nil {
+		return Snapshot(clone, base, out)
+	}
+	if err := fetchCommit(clone, m.Commit); err != nil {
+		return "", err
+	}
+	tree, err := manifestTree(clone, base, m)
+	if err != nil {
+		return "", err
+	}
+	snap, err := gitEnv(clone, snapshotEnv, "commit-tree", tree, "-m", "pilot snapshot of "+base+" with manifest change "+m.Commit)
+	if err != nil {
+		return "", err
+	}
+	if _, err := gitEnv(clone, nil, "update-ref", "refs/heads/pilot-snapshot", snap); err != nil {
+		return "", err
+	}
+	if _, err := gitEnv(clone, nil, "symbolic-ref", "HEAD", "refs/heads/pilot-snapshot"); err != nil {
+		return "", err
+	}
+	if _, err := gitEnv(clone, nil, "bundle", "create", "-q", out, "HEAD", "pilot-snapshot"); err != nil {
+		return "", err
+	}
+	return snap, nil
+}
+
+// manifestCommit commits the approved change on base: the snapshot's tree, the approved commit's
+// author and subject, and a body naming the commit (research R10). The owner reviews it apart
+// from the worker's fixes.
+func manifestCommit(clone, base, snapshot string, m *Manifest, trailers []string) (string, error) {
+	tree, err := manifestTree(clone, base, m)
+	if err != nil {
+		return "", err
+	}
+	if snapTree := mustTree(clone, snapshot); tree != snapTree {
+		return "", fmt.Errorf("snapshot %s is not %s with manifest change %s", short(snapshot), short(base), short(m.Commit))
+	}
+	meta, err := gitEnv(clone, nil, "show", "-s", "--format=%an%x00%ae%x00%aI%x00%cn%x00%ce%x00%cI%x00%s", m.Commit)
+	if err != nil {
+		return "", err
+	}
+	f := strings.SplitN(meta, "\x00", 7)
+	if len(f) != 7 {
+		return "", fmt.Errorf("unreadable commit %s", m.Commit)
+	}
+	env := []string{"GIT_AUTHOR_NAME=" + f[0], "GIT_AUTHOR_EMAIL=" + f[1], "GIT_AUTHOR_DATE=" + f[2],
+		"GIT_COMMITTER_NAME=" + f[3], "GIT_COMMITTER_EMAIL=" + f[4], "GIT_COMMITTER_DATE=" + f[5]}
+	msg := f[6] + "\n\nThe approved manifest change: " + strings.Join(m.Files, ", ") + " as in " + m.Commit +
+		", applied to " + short(base) + ".\n"
+	if len(trailers) > 0 {
+		msg += "\n" + strings.Join(trailers, "\n") + "\n"
+	}
+	return gitEnv(clone, env, "commit-tree", tree, "-p", base, "-m", msg)
+}
+
 // ReplayMismatch is REPLAY_MISMATCH: the replayed change's tree differs from the graded tree.
 type ReplayMismatch struct{ Graded, Replayed string }
 
@@ -77,10 +198,27 @@ func Replay(clone, base, snapshot, changeBundle, out string, trailers ...string)
 
 // ReplayAs is Replay with the last commit's subject replaced (see Replay).
 func ReplayAs(clone, base, snapshot, changeBundle, out, subject string, trailers ...string) (string, error) {
+	return ReplayWith(clone, base, snapshot, changeBundle, out, subject, nil, trailers...)
+}
+
+// ReplayWith is ReplayAs for a dependency item (m not nil, 029): it first commits the approved
+// manifest change on base (checking its tree is the snapshot's), then replays the worker's commits
+// on top, so the publish bundle holds the approved change byte for byte, then the fixes.
+func ReplayWith(clone, base, snapshot, changeBundle, out, subject string, m *Manifest, trailers ...string) (string, error) {
 	if _, err := gitEnv(clone, nil, "fetch", "-q", changeBundle, "HEAD:refs/pilot/change"); err != nil {
 		return "", err
 	}
-	if t1, _ := gitEnv(clone, nil, "rev-parse", snapshot+"^{tree}"); t1 != mustTree(clone, base) {
+	parent := base
+	if m != nil {
+		if err := fetchCommit(clone, m.Commit); err != nil {
+			return "", err
+		}
+		mc, err := manifestCommit(clone, base, snapshot, m, trailers)
+		if err != nil {
+			return "", err
+		}
+		parent = mc
+	} else if t1, _ := gitEnv(clone, nil, "rev-parse", snapshot+"^{tree}"); t1 != mustTree(clone, base) {
 		return "", fmt.Errorf("snapshot %s is not a snapshot of %s", snapshot, base)
 	}
 	revs, err := gitEnv(clone, nil, "rev-list", "--reverse", "--first-parent", snapshot+"..refs/pilot/change")
@@ -90,7 +228,6 @@ func ReplayAs(clone, base, snapshot, changeBundle, out, subject string, trailers
 	if revs == "" {
 		return "", fmt.Errorf("the change has no commits on top of the snapshot")
 	}
-	parent := base
 	commits := strings.Fields(revs)
 	for i, c := range commits {
 		meta, err := gitEnv(clone, nil, "show", "-s", "--format=%an%x00%ae%x00%aI%x00%cn%x00%ce%x00%cI%x00%B", c)

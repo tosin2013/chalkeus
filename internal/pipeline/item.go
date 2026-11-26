@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -109,6 +110,13 @@ func (p *P) RunItem(item, sliceID string) int {
 		r["earlier"] = toAnyList(res.Earlier)
 		run.State["slices_last"] = res.SlicesLast
 	}
+	if mc := res.ManifestChange; mc != nil { // 029: a dependency item's approved manifest change
+		var m map[string]any
+		raw, _ := json.Marshal(mc)
+		_ = json.Unmarshal(raw, &m)
+		run.State["manifest_change"] = m
+		_ = evidence.WriteJSON(filepath.Join(run.Dir, "manifest-change.json"), m)
+	}
 	run.State["security_level"] = p.Target.SecurityLevel // roadmap C-14; reported, never a failure
 	_ = run.Save()
 
@@ -169,8 +177,12 @@ func (p *P) modeExtra(run *evidence.Run) string {
 		tc += " (operator-supplied " + p.Target.ToolchainImage + ")"
 	}
 	item, _ := run.State["item"].(string)
-	return fmt.Sprintf("  target %s (%s@%s), item %s, toolchain %s\n  egress: model host(s) %d (from forge.env); registries: %s\n  security level: %s; hidden tests: %s",
+	s := fmt.Sprintf("  target %s (%s@%s), item %s, toolchain %s\n  egress: model host(s) %d (from forge.env); registries: %s\n  security level: %s; hidden tests: %s",
 		p.Target.Name, p.Target.Repo, p.Target.Branch, item, tc, len(p.Cfg.ModelHosts()), regs, p.Target.SecurityLevel, coverage(run))
+	if mc := manifestText(run); mc != "" {
+		s += "\n  " + mc
+	}
+	return s
 }
 
 // modeExtraGitHub is modeExtra's text for the GitHub decision post: target, item, toolchain and
@@ -185,8 +197,75 @@ func (p *P) modeExtraGitHub(run *evidence.Run) string {
 		tc += " (operator-supplied " + p.Target.ToolchainImage + ")"
 	}
 	item, _ := run.State["item"].(string)
-	return fmt.Sprintf("target %s (%s@%s), item %s, toolchain %s, registries: %s, security level: %s, hidden tests: %s",
+	s := fmt.Sprintf("target %s (%s@%s), item %s, toolchain %s, registries: %s, security level: %s, hidden tests: %s",
 		p.Target.Name, p.Target.Repo, p.Target.Branch, item, tc, regs, p.Target.SecurityLevel, coverage(run))
+	if mc := manifestText(run); mc != "" {
+		s += "; " + mc
+	}
+	return s
+}
+
+// manifestOf is a dependency item's approved manifest change (029), nil for an ordinary item.
+func manifestOf(run *evidence.Run) *fixture.Manifest {
+	mc, _ := run.State["manifest_change"].(map[string]any)
+	commit, _ := mc["commit"].(string)
+	if commit == "" {
+		return nil
+	}
+	m := &fixture.Manifest{Commit: commit}
+	for _, f := range anyList(mc["files"]) {
+		m.Files = append(m.Files, fmt.Sprint(f))
+	}
+	return m
+}
+
+// manifestText describes the approved manifest change for the mode approval (029 FR-011): the
+// commit, the files and each package's versions; "" for an ordinary item.
+func manifestText(run *evidence.Run) string {
+	m := manifestOf(run)
+	if m == nil {
+		return ""
+	}
+	mc, _ := run.State["manifest_change"].(map[string]any)
+	subject, _ := mc["subject"].(string)
+	s := fmt.Sprintf("dependency item: approved manifest change %s", m.Commit[:7])
+	if subject != "" {
+		s += fmt.Sprintf(" (%q)", subject)
+	}
+	s += " in " + strings.Join(m.Files, ", ") + ", fixed for the worker"
+	var pkgs []string
+	seen := map[string]bool{}
+	for _, x := range anyList(mc["packages"]) {
+		pk, _ := x.(map[string]any)
+		line := fmt.Sprintf("%v %v → %v", pk["name"], pk["from"], pk["to"])
+		if lvl, _ := pk["level"].(string); lvl != "" {
+			line += " (" + lvl + ")"
+		}
+		if !seen[line] {
+			seen[line] = true
+			pkgs = append(pkgs, line)
+		}
+	}
+	if len(pkgs) > 0 {
+		shown := pkgs
+		if len(shown) > 8 {
+			shown = append(append([]string{}, shown[:8]...), fmt.Sprintf("+%d more", len(pkgs)-8))
+		}
+		s += "; bumps " + strings.Join(shown, ", ")
+	}
+	return s
+}
+
+// checkResult is one check's result in a grade report ("" when absent).
+func checkResult(report map[string]any, id string) string {
+	for _, x := range anyList(report["checks"]) {
+		c, _ := x.(map[string]any)
+		if c["id"] == id {
+			r, _ := c["result"].(string)
+			return r
+		}
+	}
+	return ""
 }
 
 // startItem prepares the item's inputs, runs the baseline, then the first attempt.
@@ -217,11 +296,23 @@ func (p *P) startItem(run *evidence.Run) int {
 	start := time.Now()
 	g := grader.GradeItem(p.L, p.C, p.Runner, run, p.Imgs, item, 0, p.itemGrading(run), mp, bdir)
 	verbose.V(1, "baseline %s: %v after %s", item, g["result"], time.Since(start).Round(time.Second))
+	dependency := manifestOf(run) != nil
 	if g["result"] != "pass" {
-		p.say("baseline for item %s failed: on the unchanged code the project's tests must pass and the hidden tests must fail", item)
+		if dependency {
+			p.say("baseline for item %s failed: with the approved manifest change, the project's tests must fail (that's the work) or, if they pass, the hidden tests must fail; a test command that timed out or couldn't start shows nothing", item)
+		} else {
+			p.say("baseline for item %s failed: on the unchanged code the project's tests must pass and the hidden tests must fail", item)
+		}
 		return p.fail(run, grader.BaselineReason(g))
 	}
-	p.say("  baseline %s: pass (the project's tests pass and the hidden tests fail on the base)", item)
+	switch {
+	case dependency && checkResult(g, "G4_visible_tests") == "fail":
+		p.say("  baseline %s: pass (with the approved manifest change the project's tests fail: that's the work)", item)
+	case dependency:
+		p.say("  baseline %s: pass (with the approved manifest change the project's tests pass and the hidden tests fail)", item)
+	default:
+		p.say("  baseline %s: pass (the project's tests pass and the hidden tests fail on the base)", item)
+	}
 	if secs := asInt(g["test_seconds"]); secs > 0 { // 033 R7: the diagnosis's test-run allowance
 		run.State["baseline_test_seconds"] = secs
 		_ = run.Save()
@@ -252,7 +343,7 @@ func (p *P) prepareItem(run *evidence.Run) error {
 		if err := os.Rename(tmp, clone); err != nil {
 			return err
 		}
-		snap, err := fixture.Snapshot(clone, base, bundle)
+		snap, err := fixture.SnapshotWith(clone, base, bundle, manifestOf(run))
 		if err != nil {
 			return err
 		}
@@ -440,10 +531,21 @@ func (p *P) replay(run *evidence.Run, task string, n int) error {
 	}
 	// The PR's Conventional Commits title goes on the commit too: GitHub squash-merges a one-commit
 	// PR with the commit's message, which becomes the target's changelog entry.
-	head, err := fixture.ReplayAs(clone, base, commit, filepath.Join(adir, "change.bundle"), out,
-		publisher.ItemTitle(run, task), "Chalkeus-Run: "+run.ID)
+	m := manifestOf(run)
+	head, err := fixture.ReplayWith(clone, base, commit, filepath.Join(adir, "change.bundle"), out,
+		publisher.ItemTitle(run, task), m, "Chalkeus-Run: "+run.ID)
 	if err != nil {
 		return err
+	}
+	if m != nil { // 029: the manifest commit is the first one on the base (research R10)
+		if revs, err := fixture.Git(clone, "rev-list", "--reverse", base+".."+head); err == nil {
+			if f := strings.Fields(revs); len(f) > 0 {
+				mc, _ := run.State["manifest_change"].(map[string]any)
+				mc["replayed_commit"] = f[0]
+				_ = evidence.WriteJSON(filepath.Join(run.Dir, "manifest-change.json"), mc)
+				_ = run.Save()
+			}
+		}
 	}
 	_ = run.Event("publish", task, n, "change_replayed", head)
 	return nil
@@ -489,7 +591,11 @@ func (p *P) workerItem(run *evidence.Run) *worker.Item {
 		mayChange = append(mayChange, fmt.Sprint(x))
 	}
 	sliceID, phases, earlierPhases := sliceOf(run)
-	return &worker.Item{Slice: sliceID, SlicePhases: phases, EarlierPhases: earlierPhases, TestPaths: p.Target.TestPaths, TestsMayChange: mayChange, SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"), SnapshotCommit: commit,
+	var fixed []string
+	if m := manifestOf(run); m != nil {
+		fixed = m.Files
+	}
+	return &worker.Item{FixedPaths: fixed, Slice: sliceID, SlicePhases: phases, EarlierPhases: earlierPhases, TestPaths: p.Target.TestPaths, TestsMayChange: mayChange, SnapshotBundle: filepath.Join(p.itemDir(run), "snapshot.bundle"), SnapshotCommit: commit,
 		SpecDir: specDir, AllowedPaths: allowed, Toolchain: p.Target.Toolchain, TestCommand: p.Target.TestCommand,
 		CommandTimeout: p.commandTimeout(), InputLimit: p.inputLimit(),
 		ProxyNS: proxyNS, ProxyURL: "http://proxy." + proxyNS + ".svc.cluster.local:8888",
@@ -558,6 +664,9 @@ func (p *P) baselineMeta(run *evidence.Run) map[string]any {
 		"toolchain": it.Toolchain, "command_timeout_s": it.CommandTimeout}
 	if sm := it.SliceMeta(); sm != nil { // 026: the slice baseline (G8 passes, G5 fails)
 		m["slice"] = sm
+	}
+	if len(it.FixedPaths) > 0 { // 029: the base carries the approved manifest change
+		m["fixed_paths"], m["dependency"] = toAnyList(it.FixedPaths), true
 	}
 	return grader.BaselineMeta(m)
 }
