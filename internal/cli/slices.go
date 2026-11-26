@@ -50,7 +50,7 @@ func runSlices(cmd *cobra.Command, _ []string) error {
 	if t.Fixture {
 		return Exit(ExitError, "slices reads a --target repository, not the fixture")
 	}
-	dir, commit, err := fixture.FreshClone(t.Repo, t.Branch, 1)
+	dir, commit, err := fixture.FreshClone(t.Host(), t.Repo, t.Branch, 1)
 	if err != nil {
 		return Exit(ExitError, "could not clone %s@%s: %v", t.Repo, t.Branch, err)
 	}

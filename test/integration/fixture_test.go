@@ -60,7 +60,7 @@ func TestFixtureRun(t *testing.T) {
 			got[cid] = res // one failing row for an id is a failure
 		}
 	}
-	for _, cid := range []string{"P01", "P02", "P03", "P04", "P05", "P06", "P07", "P08", "P09", "P10", "GM01", "GM02", "GM03", "GM04"} {
+	for _, cid := range []string{"P01", "P02", "P03", "P04", "P05", "P06", "P07", "P08", "P09", "P10", "P13", "GM01", "GM02", "GM03", "GM04"} {
 		if got[cid] != "pass" {
 			t.Errorf("check %s: %q (want pass)", cid, got[cid])
 		}

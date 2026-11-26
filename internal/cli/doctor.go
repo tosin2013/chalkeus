@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
+	"github.com/tosin2013/chalkeus/internal/grader"
+	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,8 +21,6 @@ import (
 	"github.com/tosin2013/chalkeus/internal/doctor"
 	"github.com/tosin2013/chalkeus/internal/fixture"
 	"github.com/tosin2013/chalkeus/internal/gate"
-	"github.com/tosin2013/chalkeus/internal/ghloop"
-	"github.com/tosin2013/chalkeus/internal/grader"
 	"github.com/tosin2013/chalkeus/internal/images"
 	"github.com/tosin2013/chalkeus/internal/paths"
 	"github.com/tosin2013/chalkeus/internal/readiness"
@@ -162,15 +161,19 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	// GitHub access.
-	gh, err := ghloop.OperatorClient()
-	if !r.OK("github", "your GitHub token", err, "") {
+	// Git host access (037: through the host interface; GitHub's rows read as before).
+	h := t.Host()
+	area, tokenRow := "github", "your GitHub token"
+	if !h.IsGitHub() {
+		area, tokenRow = "scm", "your "+h.Name+" token"
+	}
+	sc, err := hosts.Operator(h)
+	if !r.OK(area, tokenRow, err, "") {
 		return Code(ExitFail)
 	}
 	for _, repo := range []string{t.Repo, t.CompanionRepo} {
-		owner, name := ghloop.SplitRepo(repo)
-		_, _, err := gh.Repositories.Get(ctx, owner, name)
-		r.OK("github", "can read "+repo, err, "")
+		_, err := sc.Repository(ctx, repo)
+		r.OK(area, "can read "+repo, err, "")
 	}
 	id, err := author.ResolveIdentity(ctx, t)
 	switch {
@@ -181,16 +184,13 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	default:
 		r.Add("github", "test author identity", doctor.Pass, fmt.Sprintf("%s (level %s; companion only)", id.Login, id.Level))
 	}
-	owner, name := ghloop.SplitRepo(t.Repo)
-	if _, resp, err := gh.Repositories.GetBranchProtection(ctx, owner, name, t.Branch); err != nil {
-		switch {
-		case resp != nil && resp.StatusCode == http.StatusNotFound:
-			r.Add("github", "branch protection", doctor.Warn, t.Repo+"@"+t.Branch+" is not protected; protect it so changes arrive only by reviewed PR (important at the minimal level)")
-		default:
-			r.Add("github", "branch protection", doctor.Warn, "could not check: "+err.Error())
-		}
-	} else {
-		r.Add("github", "branch protection", doctor.Pass, t.Branch+" is protected")
+	switch prot, err := sc.BranchProtection(ctx, t.Repo, t.Branch); {
+	case err != nil:
+		r.Add(area, "branch protection", doctor.Warn, "could not check: "+err.Error())
+	case !prot.Protected:
+		r.Add(area, "branch protection", doctor.Warn, t.Repo+"@"+t.Branch+" is not protected; protect it so changes arrive only by reviewed PR (important at the minimal level)")
+	default:
+		r.Add(area, "branch protection", doctor.Pass, t.Branch+" is protected")
 	}
 	doctorRoadmap(&r, t)
 	if item == "" {
@@ -199,14 +199,11 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 
 	// The item: every readiness rule.
 	deps := readiness.Deps{Src: gate.ExecStatus{}, AllRules: true, Slice: sliceID,
-		Clone: func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) },
+		Clone: func(repo, branch string) (string, string, error) {
+			return fixture.FreshClone(t.Host(), repo, branch, 1)
+		},
 		OpenPRHeads: func(repo string) ([]string, error) {
-			prs, err := ghloop.OpenPilotPRs(ctx, gh, repo)
-			heads := make([]string, 0, len(prs))
-			for _, p := range prs {
-				heads = append(heads, p.HeadRef)
-			}
-			return heads, err
+			return hosts.OpenPilotHeads(ctx, sc, repo)
 		}}
 	res, err := readiness.Check(deps, t, item, 0, "")
 	if !r.OK("item", "readiness", err, "") {
@@ -218,7 +215,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		if res.Slice != nil {
 			phases = res.Slice.Phases
 		}
-		doctorTasks(ctx, &r, gh, l, t, res.SpecDir, res.Commit, phases)
+		doctorTasks(ctx, &r, sc, l, t, res.SpecDir, res.Commit, phases)
 	}
 	if !withBaseline {
 		return doctorExit(&r)
@@ -287,7 +284,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 // isn't a test, so the baseline still proves the project's own tests run offline.
 func doctorOverlay(t config.Target, item string, res readiness.Result) ([]byte, bool, error) {
 	if res.HiddenFiles > 0 {
-		cdir, commit, err := fixture.FreshClone(t.CompanionRepo, "", 1)
+		cdir, commit, err := fixture.FreshClone(t.Host(), t.CompanionRepo, "", 1)
 		if err != nil {
 			return nil, false, err
 		}
@@ -320,14 +317,14 @@ func doctorExit(r *doctor.Report) error {
 
 // doctorRoadmap adds the target's roadmap: every active item and what the pilot needs next.
 func doctorRoadmap(r *doctor.Report, t config.Target) {
-	dir, _, err := fixture.FreshClone(t.Repo, t.Branch, 1)
+	dir, _, err := fixture.FreshClone(t.Host(), t.Repo, t.Branch, 1)
 	if err != nil {
 		r.Add("roadmap", "clone", doctor.Warn, "could not clone "+t.Repo+": "+err.Error())
 		return
 	}
 	defer func() { _ = os.RemoveAll(dir) }()
 	_, stdout := gate.ExecStatus{}.Status(dir)
-	cdir, _, cerr := fixture.FreshClone(t.CompanionRepo, "", 1)
+	cdir, _, cerr := fixture.FreshClone(t.Host(), t.CompanionRepo, "", 1)
 	if cerr == nil {
 		defer func() { _ = os.RemoveAll(cdir) }()
 	}

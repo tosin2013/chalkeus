@@ -30,7 +30,9 @@ publisher's NetworkPolicy and proxy settings, holding no credential.
 - **Fail:** names which request behaved wrongly.
 - Recorded in `checks.json` like P01–P12; diagnosis (`-vv`) shows the proxy's refusal line.
 
-AU04 stays "P04 and P09 passed". P13 is a live check, not an audit check, so the audit stays at
+**Amended 2026-11-26 (implementation):** AU04 also requires P13 to pass whenever the run recorded
+it (runs from before 037 have none), so a publisher that could reach another Git host fails the
+audit. AU04's description text is unchanged (the golden records compare it). The audit stays at
 11 checks.
 
 ## Audit

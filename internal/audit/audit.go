@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -26,7 +27,7 @@ import (
 // 16 characters and was flagged in a target's docs (documcp run 20261125T223435Z). Most evidence
 // is JSON, where a newline or tab inside a string is written \n or \t: a token after one still
 // starts a word, though the character before it is a letter.
-var Patterns = regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:^|[^A-Za-z0-9]|\\[nrt])(?:github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{16,}|sk-[A-Za-z0-9_-]{16,})|Bearer [A-Za-z0-9._-]{16,}`)
+var Patterns = regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:^|[^A-Za-z0-9]|\\[nrt])(?:github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{16,}|glpat-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{16,})|Bearer [A-Za-z0-9._-]{16,}`)
 
 // nonSecretEnvKeys are the App token file's metadata (app-token.env): its kind ("app") and the
 // bot login are public, and "app" would match nearly every file. Every other value is a secret.
@@ -370,7 +371,8 @@ func Dir(d string, keyFiles, envFiles []string, final bool) ([]evidence.CheckRow
 		"exactly 2 draft task PRs (plus at most 1 status PR per item), all by the publisher identity (SC-003)",
 		pyrepr.JSONDumps(detail)))
 
-	// AU04: credential checks present and passing.
+	// AU04: credential checks present and passing. 037: P13 (the publisher reaches only its Git
+	// host) must pass too when the run recorded it; runs from before 037 have none.
 	var p04, p09, cred int
 	credPass := true
 	for _, c := range checks {
@@ -379,6 +381,7 @@ func Dir(d string, keyFiles, envFiles []string, final bool) ([]evidence.CheckRow
 			p04++
 		case "P09":
 			p09++
+		case "P13":
 		default:
 			continue
 		}
@@ -701,10 +704,7 @@ func itemAU03(d string, st map[string]any) evidence.CheckRow {
 		default:
 			ok = false
 		}
-		draft, _ := p["draft"].(bool)
-		url, _ := p["url"].(string)
-		if !draft || !truthy(p["author"]) || fmt.Sprint(p["author"]) != fmt.Sprint(p["publisher_identity"]) ||
-			!strings.Contains(url, "github.com/"+repo+"/pull/") {
+		if !prOnHost(p, st, repo) {
 			ok = false
 		}
 	}
@@ -758,4 +758,37 @@ func specSection(p string) string {
 		}
 	}
 	return rest
+}
+
+// runHost is the run's Git host from run.json "scm" (037); a run from before 037 is GitHub.
+func runHost(st map[string]any) scm.Host {
+	m, _ := st["scm"].(map[string]any)
+	kind, _ := m["kind"].(string)
+	name, _ := m["host"].(string)
+	k, err := scm.ParseKind(kind)
+	if err != nil {
+		return scm.Host{Kind: scm.Kind(kind), Name: name}
+	}
+	if k != scm.GitLab {
+		name = ""
+	}
+	return scm.NewHost(k, name, "")
+}
+
+// prOnHost is AU03's rule for one PR on an item or slice run: a draft by the publisher identity,
+// its URL on the run's Git host and repository (037: the host's form), and, when the publisher
+// read-back recorded ids, the author's id equal to the run's publisher id.
+func prOnHost(p map[string]any, st map[string]any, repo string) bool {
+	draft, _ := p["draft"].(bool)
+	url, _ := p["url"].(string)
+	if !draft || !truthy(p["author"]) || fmt.Sprint(p["author"]) != fmt.Sprint(p["publisher_identity"]) ||
+		!strings.Contains(url, scm.ChangeRequestURLPrefix(runHost(st), repo)) {
+		return false
+	}
+	if id, _ := p["author_id"].(string); id != "" {
+		if pub, _ := st["publisher_id"].(string); pub != "" && scm.NormalID(id) != scm.NormalID(pub) {
+			return false
+		}
+	}
+	return true
 }

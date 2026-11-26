@@ -128,7 +128,7 @@ func Run(t *testing.T, newClient func(t *testing.T) (scm.Client, Fake)) {
 			t.Fatalf("%+v %v", info, err)
 		}
 	})
-	t.Run("CommitFilesAndOpenDraft", func(t *testing.T) {
+	t.Run("CommitFilesAndOpenRequest", func(t *testing.T) {
 		c, f := newClient(t)
 		f.CreateRepo(t, "ws/repo", map[string]string{"README.md": "hi\n"})
 		sha, err := c.CommitFiles(ctx, "ws/repo", "main", "author/006-x", []scm.File{
@@ -136,7 +136,7 @@ func Run(t *testing.T, newClient func(t *testing.T) (scm.Client, Fake)) {
 		if err != nil || sha == "" {
 			t.Fatalf("%q %v", sha, err)
 		}
-		cr, err := c.OpenDraft(ctx, "ws/repo", "author/006-x", "main", "test: 006", "body")
+		cr, err := c.OpenRequest(ctx, "ws/repo", "author/006-x", "main", "test: 006", "body", true)
 		if err != nil || !cr.Draft || cr.HeadRef != "author/006-x" || cr.State != scm.StateOpen {
 			t.Fatalf("%+v %v", cr, err)
 		}
@@ -147,6 +147,14 @@ func Run(t *testing.T, newClient func(t *testing.T) (scm.Client, Fake)) {
 		}
 		if got, _ := c.FileAt(ctx, "ws/repo", sha, "tests/a_test.py"); string(got) != "a\n" {
 			t.Fatalf("committed content %q", got)
+		}
+		sha2, err := c.CommitFiles(ctx, "ws/repo", "main", "author/006-y", []scm.File{
+			{Path: "tests/b_test.py", Content: []byte("b\n")}, {Path: "README.md", Delete: true}}, "test: replace")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := c.FileAt(ctx, "ws/repo", sha2, "README.md"); !scm.IsCode(err, scm.ErrNotFound) {
+			t.Fatalf("deleted file still there: %v", err)
 		}
 	})
 	t.Run("CloseChangeRequest", func(t *testing.T) {

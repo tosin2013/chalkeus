@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -243,7 +244,7 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 	n := asInt(tA["passing_attempt"])
 	adir, _ := run.AttemptDir(task, n)
 	baseRev, _ := tA["base_revision"].(string)
-	rec, cleanup, err := reconcile.ForFixture(p.repo(), p.branch(), run.Dir, run.ID, task, adir, baseRev,
+	rec, cleanup, err := reconcile.ForFixture(p.host(), p.repo(), p.branch(), run.Dir, run.ID, task, adir, baseRev,
 		func(string) string { return "" }, func(s string) { p.say("%s", s) })
 	if err != nil {
 		return p.fail(run, "RECONCILE_SETUP")
@@ -344,17 +345,17 @@ func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
 		p.ensureWatcher(run)
 		return ExitAwaitMerge
 	}
-	clone, _, err := fixture.FreshClone(p.repo(), p.branch(), 0)
+	clone, _, err := fixture.FreshClone(p.host(), p.repo(), p.branch(), 0)
 	if err != nil {
 		p.pause(run, "awaiting-merge", statusPending(task, num, base))
 		p.say("could not read status-change PR #%d: %v; the run stays paused", num, err)
 		return ExitError
 	}
 	head := view.HeadSHA
-	_, ferr := fixture.Git(clone, "fetch", "--quiet", "origin", fmt.Sprintf("pull/%d/head", num))
-	diff, derr := fixture.Git(clone, "diff", "--name-only", base, head)
+	_, ferr := fixture.Git(p.host(), clone, "fetch", "--quiet", "origin", fmt.Sprintf("pull/%d/head", num))
+	diff, derr := fixture.Git(p.host(), clone, "diff", "--name-only", base, head)
 	show := func(rev string) string {
-		out, err := fixture.Git(clone, "show", rev+":"+reconcile.RoadmapRel)
+		out, err := fixture.Git(p.host(), clone, "show", rev+":"+reconcile.RoadmapRel)
 		if err != nil {
 			return ""
 		}
@@ -384,7 +385,7 @@ func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
 		changedAny[i] = c
 	}
 	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", task+"-status.json"), map[string]any{"pr": num, "base": base,
-		"head": nullable(view.HeadSHA), "merge_commit": nullable(view.MergeCommit), "merged_by": nullable(view.MergedBy),
+		"head": nullable(view.HeadSHA), "merge_commit": nullable(view.MergeCommit), "merged_by": nullable(view.MergedBy), "merged_by_id": nullable(scm.NormalID(view.MergedBy)),
 		"changed": changedAny, "ok": ok, "reason": nullable(reason), "at": evidence.Now()})
 	rs := reason
 	if rs == "" {

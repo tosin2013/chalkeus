@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
 	"io"
 	"os"
 	"strconv"
@@ -106,9 +107,11 @@ func applyTestMode() error {
 	}
 	if tm.API != "" {
 		ghloop.API = strings.TrimSuffix(tm.API, "/")
+		scm.GitHubAPI = ghloop.API // 037: scm/github builds its clients from scm.NewHost
 	}
 	if tm.GitBase != "" {
 		fixture.BaseURL = tm.GitBase
+		scm.GitHubGitBase = tm.GitBase
 	}
 	evidence.TestMode = tm.Record()
 	return nil

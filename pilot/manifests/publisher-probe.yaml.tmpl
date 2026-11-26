@@ -1,0 +1,19 @@
+# P13 (037): a sleeping tools pod in pilot-publish, under the publisher's NetworkPolicies and
+# service account but holding no credential (no envFrom), to prove the publisher's egress reaches
+# only the run's Git host. Deleted after the check.
+apiVersion: v1
+kind: Pod
+metadata: {name: p13-probe, namespace: pilot-publish, labels: {app: p13-probe}}
+spec:
+  serviceAccountName: publisher
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  restartPolicy: Never
+  activeDeadlineSeconds: 300
+  securityContext: {runAsNonRoot: true, runAsUser: 10002, seccompProfile: {type: RuntimeDefault}}
+  containers:
+    - name: probe
+      image: ${TOOLS_IMAGE}
+      command: [sleep, "300"]
+      securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+      resources: {requests: {cpu: 50m, memory: 32Mi}, limits: {cpu: 200m, memory: 64Mi}}

@@ -75,6 +75,9 @@ func credsForTarget(cfg *config.Config, t config.Target) (pipeline.Creds, error)
 		return credsFor(cfg)
 	}
 	cred := cfg.Get("PILOT_PUBLISHER_CREDENTIAL")
+	if !t.Host().IsGitHub() { // 037: the GitHub App is GitHub-only; other hosts use the target's own token file
+		cred = "token"
+	}
 	if cred == "" {
 		if _, err := os.Stat(cfg.AppKey()); err == nil {
 			cred = "app"

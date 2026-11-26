@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -365,7 +366,7 @@ func DriftReport(desired []Desired, issues []Issue, prs []map[string]any, number
 // DefaultSnapshot clones the fixture default branch (depth 1) and runs spec status there.
 func DefaultSnapshot(repo, branch string) func() (map[string]any, map[string]*string, error) {
 	return func() (map[string]any, map[string]*string, error) {
-		clone, _, err := fixture.FreshClone(repo, branch, 1)
+		clone, _, err := fixture.FreshClone(scm.Host{}, repo, branch, 1)
 		if err != nil {
 			return nil, nil, loopErr("cannot clone %s: %v", repo, err)
 		}

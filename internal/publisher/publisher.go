@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
+	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +16,6 @@ import (
 	"github.com/tosin2013/chalkeus/internal/config"
 	"github.com/tosin2013/chalkeus/internal/evidence"
 	"github.com/tosin2013/chalkeus/internal/frame"
-	"github.com/tosin2013/chalkeus/internal/ghloop"
 	"github.com/tosin2013/chalkeus/internal/k8s"
 	"github.com/tosin2013/chalkeus/internal/paths"
 	"github.com/tosin2013/chalkeus/internal/runner"
@@ -35,6 +36,7 @@ type Deps struct {
 	Runner runner.Runner
 	Repo   string
 	Branch string
+	Host   scm.Host // the repository's Git host (037; zero = GitHub)
 	// RefreshSecret puts a fresh credential in scm-token before each publish (App mode); may be nil.
 	RefreshSecret func() error
 	// LoginHint is the bot login passed to the Job for App tokens ("" for fine-grained tokens).
@@ -252,19 +254,18 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 	if err != nil {
 		return nil, err
 	}
-	gh, err := ghloop.OperatorClient()
+	sc, err := hosts.Operator(d.Host)
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	owner, name := ghloop.SplitRepo(d.Repo)
 	number := asInt(res["number"])
-	pr, _, err := gh.PullRequests.Get(ctx, owner, name, number)
+	pr, err := readBack(ctx, sc, d.Repo, number, head, res)
 	if err != nil {
 		return nil, err
 	}
-	me, _, err := gh.Users.Get(ctx, "")
+	me, err := sc.Whoami(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -272,12 +273,10 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 	if closes > 0 {
 		closesV = closes
 	}
-	entry := map[string]any{"task": task, "number": number, "url": pr.GetHTMLURL(), "head": pr.GetHead().GetRef(),
-		"draft": pr.GetDraft(), "author": pr.GetUser().GetLogin(), "publisher_identity": res["token_login"],
-		"operator_login": me.GetLogin(), "attempt": n, "created": res["created"] == true, "kind": "task", "closes": closesV}
-	if !pr.GetDraft() || pr.GetHead().GetRef() != head {
-		return nil, &Error{fmt.Sprintf("PR #%d is not the expected draft for %s", number, head)}
-	}
+	entry := map[string]any{"task": task, "number": number, "url": pr.URL, "head": pr.HeadRef,
+		"draft": pr.Draft, "author": pr.Author.Name, "author_id": pr.Author.ID, "publisher_identity": res["token_login"],
+		"operator_login": me.Name, "attempt": n, "created": res["created"] == true, "kind": "task", "closes": closesV}
+	run.SetPublisherID(pr.Author.ID)
 	all := append(PRs(run), entry)
 	if err := evidence.WriteJSON(filepath.Join(run.Dir, "prs.json"), all); err != nil {
 		return nil, err
@@ -286,7 +285,7 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 	if entry["created"] == true {
 		ev = "pr_opened"
 	}
-	_ = run.Event("publish", task, n, ev, pr.GetHTMLURL())
+	_ = run.Event("publish", task, n, ev, pr.URL)
 	return entry, nil
 }
 
@@ -405,27 +404,40 @@ func (d Deps) PublishStatus(run *evidence.Run, imgs map[string]string, task, bas
 	if err != nil {
 		return nil, err
 	}
-	gh, err := ghloop.OperatorClient()
+	sc, err := hosts.Operator(d.Host)
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	owner, name := ghloop.SplitRepo(d.Repo)
 	number := asInt(res["number"])
-	pr, _, err := gh.PullRequests.Get(ctx, owner, name, number)
+	pr, err := readBack(ctx, sc, d.Repo, number, head, res)
 	if err != nil {
 		return nil, err
 	}
-	entry := map[string]any{"task": task, "kind": "status", "number": number, "url": pr.GetHTMLURL(), "head": pr.GetHead().GetRef(),
-		"draft": pr.GetDraft(), "author": pr.GetUser().GetLogin(), "publisher_identity": res["token_login"],
+	entry := map[string]any{"task": task, "kind": "status", "number": number, "url": pr.URL, "head": pr.HeadRef,
+		"draft": pr.Draft, "author": pr.Author.Name, "author_id": pr.Author.ID, "publisher_identity": res["token_login"],
 		"base_revision": baseRev, "created": res["created"] == true}
-	if !pr.GetDraft() || pr.GetHead().GetRef() != head {
-		return nil, &Error{fmt.Sprintf("PR #%d is not the expected draft for %s", number, head)}
-	}
 	if err := evidence.WriteJSON(filepath.Join(run.Dir, "prs.json"), append(PRs(run), entry)); err != nil {
 		return nil, err
 	}
-	_ = run.Event("publish", task, nil, "status_pr_opened", pr.GetHTMLURL())
+	_ = run.Event("publish", task, nil, "status_pr_opened", pr.URL)
 	return entry, nil
+}
+
+// readBack reads the request the publisher Job reported with the operator's credential and
+// checks it is the expected draft (037 contracts/publisher.md "Read-back"): a draft, the expected
+// head, and, when the Job reports the author's id, that author.
+func readBack(ctx context.Context, sc scm.Client, repo string, number int, head string, res map[string]any) (scm.ChangeRequest, error) {
+	pr, err := sc.ChangeRequest(ctx, repo, number)
+	if err != nil {
+		return scm.ChangeRequest{}, err
+	}
+	if !pr.Draft || pr.HeadRef != head {
+		return scm.ChangeRequest{}, &Error{fmt.Sprintf("PR #%d is not the expected draft for %s", number, head)}
+	}
+	if want, _ := res["author_id"].(string); want != "" && !pr.Author.Same(scm.Account{ID: want}) {
+		return scm.ChangeRequest{}, &Error{fmt.Sprintf("PR #%d was opened by %s, not the publisher (%s)", number, pr.Author.ID, want)}
+	}
+	return pr, nil
 }

@@ -32,8 +32,10 @@ type Client interface {
 	// CommitFiles writes files on top of base as one commit on a new branch (companion drafts
 	// only) and returns the commit.
 	CommitFiles(ctx context.Context, repo, base, branch string, files []File, message string) (string, error)
-	// OpenDraft opens a draft request from head into base (companion drafts only).
-	OpenDraft(ctx context.Context, repo, head, base, title, body string) (ChangeRequest, error)
+	// OpenRequest opens a request from head into base (companion drafts only). draft asks for the
+	// host's draft state; GitHub's companion PRs aren't drafts, because GitHub's Free plan has no
+	// draft PRs in private repositories and companions are private.
+	OpenRequest(ctx context.Context, repo, head, base, title, body string, draft bool) (ChangeRequest, error)
 	// CloseChangeRequest closes a request without merging and deletes its branch (reset-fixture
 	// only, when the human asked).
 	CloseChangeRequest(ctx context.Context, repo string, id int, comment string) error

@@ -21,7 +21,7 @@ type Client interface {
     FileAt(ctx, repo, rev, path string) ([]byte, error)
 
     CommitFiles(ctx, repo, base, branch string, files []File, message string) (string, error) // companion only
-    OpenDraft(ctx, repo, head, base, title, body string) (ChangeRequest, error)               // companion only
+    OpenRequest(ctx, repo, head, base, title, body string, draft bool) (ChangeRequest, error) // companion only
     CloseChangeRequest(ctx, repo string, id int, comment string) error                        // reset-fixture only
 
     ProbePublisher(ctx, repo string) TokenProbeResult // the publisher credential's check (R4)
@@ -45,11 +45,16 @@ allowed, and for Bitbucket whether a `restrict_merges` restriction exists.
 | ChangedFiles | `GET pulls/{n}/files` | `GET merge_requests/:iid/diffs` | `GET diffstat/{dest}..{src}` |
 | FileAt | `GET contents/{path}?ref=` | `GET repository/files/:path/raw?ref=` | `GET src/{rev}/{path}` |
 | CommitFiles | Git Data API | `POST repository/commits` (actions) | `POST src` (multipart) |
-| OpenDraft | `POST pulls` `draft:true` | `POST merge_requests` title `Draft: …` | `POST pullrequests` `draft:true` |
+| OpenRequest | `POST pulls` (`draft:true` when asked; companion PRs aren't drafts, see below) | `POST merge_requests` title `Draft: …` | `POST pullrequests` `draft:true` |
 | CloseChangeRequest | comment, `PATCH state=closed`, delete ref | note, `PUT state_event=close`, delete branch | `POST pullrequests/{id}/decline` |
 | ProbePublisher | `ghloop.Probe` (unchanged) | `personal_access_tokens/self`, `/self/associations`, `/user` | `/user` refused, repo read, workspace listing |
 
 ## Rules
+
+- **Companion drafts on GitHub (amended 2026-11-26, implementation):** GitHub's Free plan has no
+  draft PRs in private repositories, and companions are private, so the test author's GitHub PR
+  stays a normal PR, as before 037. GitLab and Bitbucket companion requests are drafts.
+  `CommitFiles` takes `File.Delete` for paths a resubmitted draft drops.
 
 - No implementation calls a merge, approve or accept endpoint (no-merge guard, R12).
 - Reads on the operator's machine use the operator credential (R8); `ProbePublisher` uses the

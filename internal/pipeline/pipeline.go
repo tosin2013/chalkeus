@@ -12,6 +12,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
+	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 	"io"
 	"os"
 	"path/filepath"
@@ -91,6 +93,9 @@ func (p *P) repo() string {
 	}
 	return p.Cfg.Repo()
 }
+
+// host is the Git host of the repository this invocation acts on (037).
+func (p *P) host() scm.Host { return p.Target.Host() }
 
 func (p *P) branch() string {
 	if p.item() {
@@ -239,7 +244,9 @@ func (p *P) gateTask(run *evidence.Run, task string) gate.Decision {
 	start := time.Now()
 	defer func() { verbose.V(1, "gate %s (seq %d) took %s", task, seq, time.Since(start).Round(time.Millisecond)) }()
 	d, _ := gate.EvaluateFresh(p.Status, p.Cfg.Repo(), p.Cfg.Branch(), task, paths.Tasks[task], seq, filepath.Join(run.Dir, "gate"),
-		func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) })
+		func(repo, branch string) (string, string, error) {
+			return fixture.FreshClone(p.host(), repo, branch, 1)
+		})
 	t := run.Task(task)
 	t["gate_seqs"] = append(anyList(t["gate_seqs"]), seq)
 	if d.Decision == "allow" && d.Input.FixtureCommit != nil {
@@ -254,11 +261,11 @@ func (p *P) gateTask(run *evidence.Run, task string) gate.Decision {
 func anyList(v any) []any { x, _ := v.([]any); return x }
 
 func (p *P) cloneAt(rev string) (string, error) {
-	dir, _, err := fixture.FreshClone(p.repo(), p.branch(), 0)
+	dir, _, err := fixture.FreshClone(p.host(), p.repo(), p.branch(), 0)
 	if err != nil {
 		return "", err
 	}
-	if _, err := fixture.Git(dir, "checkout", "--quiet", rev); err != nil {
+	if _, err := fixture.Git(p.host(), dir, "checkout", "--quiet", rev); err != nil {
 		_ = os.RemoveAll(dir)
 		return "", err
 	}
@@ -414,7 +421,15 @@ func asInt(v any) int {
 }
 
 func (p *P) publisherDeps(run *evidence.Run) (publisher.Deps, error) {
-	d := publisher.Deps{L: p.L, C: p.C, Runner: p.Runner, Repo: p.repo(), Branch: p.branch(), Closes: p.closes(run)}
+	// 037: the publisher's proxy allows the run's Git host only (P13 proves it after the publish).
+	if p.C != nil {
+		if recreated, err := cluster.EnsureSCMProxy(p.L, p.C, p.host(), p.Imgs["egress"]); err != nil {
+			return publisher.Deps{}, err
+		} else if recreated {
+			p.say("publisher egress now allows %s only", p.host().Name)
+		}
+	}
+	d := publisher.Deps{L: p.L, C: p.C, Runner: p.Runner, Repo: p.repo(), Branch: p.branch(), Host: p.host(), Closes: p.closes(run)}
 	if p.item() { // the cluster's scm-token was set at `up` for the fixture: put the target's in (014)
 		d.RefreshSecret = p.refreshSecret
 	}
@@ -456,6 +471,7 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 	t["pr"] = pr
 	_ = run.Save()
 	p.checks().RunClusterChecks(run)
+	p.checks().RunPublisherEgressCheck(run, p.Imgs["tools"], p.host()) // 037 P13
 	if task == "A" {
 		if d := p.gateTask(run, "B"); d.Decision != "refuse" {
 			return p.fail(run, "B_NOT_BLOCKED")
@@ -506,12 +522,12 @@ func (p *P) Run() int {
 		return ExitError
 	}
 	p.Imgs = imgs
-	gh, err := ghloop.OperatorClient()
+	sc, err := hosts.Operator(p.host())
 	if err != nil {
 		p.say("chalkeus: %v", err)
 		return ExitError
 	}
-	open, err := ghloop.OpenPilotPRs(context.Background(), gh, p.Cfg.Repo())
+	open, err := sc.OpenChangeRequests(context.Background(), p.Cfg.Repo(), "pilot/")
 	if err != nil {
 		p.say("chalkeus: %v", err)
 		return ExitError
@@ -678,7 +694,7 @@ func (p *P) reconcileA(run *evidence.Run) int {
 	}
 	adir, _ := run.AttemptDir(task, n)
 	base, _ := tA["base_revision"].(string)
-	rec, cleanup, err := reconcile.ForFixture(p.repo(), p.branch(), run.Dir, run.ID, task, adir, base, ask, func(s string) { p.say("%s", s) })
+	rec, cleanup, err := reconcile.ForFixture(p.host(), p.repo(), p.branch(), run.Dir, run.ID, task, adir, base, ask, func(s string) { p.say("%s", s) })
 	if err != nil {
 		return p.fail(run, "RECONCILE_SETUP")
 	}

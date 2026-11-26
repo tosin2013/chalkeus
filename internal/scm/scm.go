@@ -148,6 +148,7 @@ type RepoInfo struct {
 type File struct {
 	Path    string
 	Content []byte
+	Delete  bool // remove the path instead (a resubmitted draft drops files it no longer has)
 }
 
 // Change request states, normalised across hosts (research R5).

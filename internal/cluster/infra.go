@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -128,12 +129,12 @@ func FailOnPull(c *k8s.Client, ns, what string) error {
 
 // ApplyAll applies the long-lived infrastructure: egress proxies, the publisher namespace and
 // its SCM secret (from credentialEnv: the token or App token env file), and the check helpers.
-func ApplyAll(e Env, c *k8s.Client, modelHosts []string, imgs map[string]string, credentialEnv string) error {
+func ApplyAll(e Env, c *k8s.Client, modelHosts []string, imgs map[string]string, credentialEnv string, scmHost scm.Host) error {
 	e.say("egress proxies")
 	for _, p := range []struct {
 		ns, role string
 		hosts    []string
-	}{{"pilot-egress-model", "worker", modelHosts}, {"pilot-egress-scm", "publisher", SCMHosts()},
+	}{{"pilot-egress-model", "worker", modelHosts}, {"pilot-egress-scm", "publisher", SCMHosts(scmHost)},
 		{AuthorProxyNS, "author", modelHosts}} { // 024: the test author's Job reaches only the model
 		y, err := RenderEgress(e.L, p.ns, p.role, p.hosts, imgs["egress"])
 		if err != nil {
@@ -187,10 +188,10 @@ func ApplyAll(e Env, c *k8s.Client, modelHosts []string, imgs map[string]string,
 	return nil
 }
 
-// SCMHosts is the publisher proxy's allowlist: GitHub, plus the integration tests' fake GitHub
-// host in test mode (025).
-func SCMHosts() []string {
-	hosts := []string{"github.com", "api.github.com"}
+// SCMHosts is the publisher proxy's allowlist: the run's Git host only (037 R10), plus the
+// integration tests' fake GitHub host in test mode (025).
+func SCMHosts(h scm.Host) []string {
+	hosts := h.EgressHosts()
 	tm, _ := config.TestMode()
 	for _, a := range []string{tm.API, tm.GitBase} {
 		if u, err := url.Parse(a); err == nil && u.Hostname() != "" && tm.On {
@@ -198,4 +199,31 @@ func SCMHosts() []string {
 		}
 	}
 	return hosts
+}
+
+// EnsureSCMProxy makes the publisher's proxy allow exactly h's hosts (037): a run on another host
+// than the last one re-creates it, as ApplyAll does for a changed host list. It returns whether it
+// re-created the proxy.
+func EnsureSCMProxy(l paths.Layout, c *k8s.Client, h scm.Host, image string) (bool, error) {
+	const ns = "pilot-egress-scm"
+	hosts := SCMHosts(h)
+	if cm, err := c.Get(ns, "configmap", "proxy-config"); err == nil && cm != nil {
+		data, _ := cm["data"].(map[string]any)
+		old, _ := data["allowlist"].(string)
+		if !AllowlistChanged(old, hosts) {
+			return false, nil
+		}
+	}
+	y, err := RenderEgress(l, ns, "publisher", hosts, image)
+	if err != nil {
+		return false, err
+	}
+	c.DeleteNS(ns, true)
+	if err := c.Apply(y); err != nil {
+		return true, err
+	}
+	if !c.RolloutStatus(ns, "proxy", 180*time.Second) {
+		return true, FailOnPull(c, ns, "egress proxy in "+ns+" did not become ready")
+	}
+	return true, nil
 }

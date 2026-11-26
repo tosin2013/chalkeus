@@ -486,6 +486,23 @@ func (c *Client) DeleteSecret(ns, name string) error {
 	return ignoreNotFound(c.CS.CoreV1().Secrets(ns).Delete(ctx, name, metav1.DeleteOptions{}))
 }
 
+// DeletePod deletes a pod if it exists, without a grace period, and waits up to 60 s for it to
+// be gone (a namespace quota of one pod needs the slot back; 037 P13).
+func (c *Client) DeletePod(ns, name string) error {
+	ctx, cancel := ctxT(30 * time.Second)
+	defer cancel()
+	zero := int64(0)
+	if err := ignoreNotFound(c.CS.CoreV1().Pods(ns).Delete(ctx, name, metav1.DeleteOptions{GracePeriodSeconds: &zero})); err != nil {
+		return err
+	}
+	for end := time.Now().Add(60 * time.Second); time.Now().Before(end); time.Sleep(time.Second) {
+		if p, _ := c.Get(ns, "pod", name); p == nil {
+			return nil
+		}
+	}
+	return fmt.Errorf("pod %s/%s still exists after 60 s", ns, name)
+}
+
 // DeleteConfigMap deletes a configmap if it exists.
 func (c *Client) DeleteConfigMap(ns, name string) error {
 	ctx, cancel := ctxT(30 * time.Second)

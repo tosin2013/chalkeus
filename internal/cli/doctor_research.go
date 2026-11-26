@@ -4,15 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
 	"path"
 	"strings"
-
-	"github.com/google/go-github/v85/github"
 
 	"github.com/tosin2013/chalkeus/internal/config"
 	"github.com/tosin2013/chalkeus/internal/diagnose"
 	"github.com/tosin2013/chalkeus/internal/doctor"
-	"github.com/tosin2013/chalkeus/internal/ghloop"
 	"github.com/tosin2013/chalkeus/internal/images"
 	"github.com/tosin2013/chalkeus/internal/paths"
 )
@@ -61,19 +59,14 @@ func doctorAllowance(r *doctor.Report, testSeconds, deadlineS int) {
 
 // doctorTasks reads the item's tasks.md at the readiness commit and adds the task warnings.
 // A read failure is a warning, never a failure.
-func doctorTasks(ctx context.Context, r *doctor.Report, gh *github.Client, l paths.Layout, t config.Target, specDir, commit string, phases []string) {
-	owner, name := ghloop.SplitRepo(t.Repo)
+func doctorTasks(ctx context.Context, r *doctor.Report, sc scm.Client, l paths.Layout, t config.Target, specDir, commit string, phases []string) {
 	p := strings.TrimSuffix(specDir, "/") + "/tasks.md"
-	fc, _, _, err := gh.Repositories.GetContents(ctx, owner, name, p, &github.RepositoryContentGetOptions{Ref: commit})
-	if err != nil || fc == nil {
-		r.Add("item", "research tasks", doctor.Warn, fmt.Sprintf("could not read %s: %v", p, err))
-		return
-	}
-	text, err := fc.GetContent()
+	raw, err := sc.FileAt(ctx, t.Repo, commit, p)
 	if err != nil {
 		r.Add("item", "research tasks", doctor.Warn, fmt.Sprintf("could not read %s: %v", p, err))
 		return
 	}
+	text := string(raw)
 	goVersion := ""
 	if pins, err := paths.ReadEnv(l.Pins); err == nil {
 		goVersion = pins["GO_VERSION"]

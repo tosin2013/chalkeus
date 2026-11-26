@@ -1,7 +1,8 @@
 // Package fixture handles the throwaway fixture repo (reference: the former Python pilot's fixture.py).
 //
-// Host-side git uses the operator's own `gh` login through a one-off credential helper
-// (`-c credential.helper=!gh auth git-credential`); no git config is changed and the publisher
+// Host-side git uses the operator's own login: on GitHub the `gh` login through a one-off
+// credential helper (`-c credential.helper=!gh auth git-credential`); on GitLab and Bitbucket
+// the operator's token through scm.GitEnv (037). No git config is changed and the publisher
 // token is never used here.
 package fixture
 
@@ -16,15 +17,28 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/tosin2013/chalkeus/internal/scm"
 )
 
 var ghCred = []string{"-c", "credential.helper=", "-c", "credential.helper=!gh auth git-credential"}
 
-// Git runs git with the one-off credential helper. On failure the error carries git's message.
-func Git(dir string, args ...string) (string, error) {
+// Git runs git for a repository on h with the operator's credential (the one-off gh helper on
+// GitHub). On failure the error carries git's message.
+func Git(h scm.Host, dir string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", append(append([]string{}, ghCred...), args...)...)
+	var cmd *exec.Cmd
+	if h.IsGitHub() {
+		cmd = exec.CommandContext(ctx, "git", append(append([]string{}, ghCred...), args...)...)
+	} else {
+		tok, err := scm.OperatorCredential(h)
+		if err != nil {
+			return "", err
+		}
+		cmd = exec.CommandContext(ctx, "git", args...)
+		cmd.Env = append(os.Environ(), scm.GitEnv(h, tok)...)
+	}
 	cmd.Dir = dir
 	var stdout, stderr strings.Builder
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
@@ -45,15 +59,20 @@ func Git(dir string, args ...string) (string, error) {
 	return stdout.String(), nil
 }
 
-// BaseURL is where fixture repos live (tests point it at local bare repositories).
+// BaseURL is where GitHub repos live (tests point it at local bare repositories).
 var BaseURL = "https://github.com/"
 
-// URL is the clone URL of owner/name.
-func URL(repo string) string { return BaseURL + repo + ".git" }
+// URL is the clone URL of repo on h (GitHub honours BaseURL).
+func URL(h scm.Host, repo string) string {
+	if h.IsGitHub() {
+		return BaseURL + repo + ".git"
+	}
+	return scm.RepoURL(h, repo)
+}
 
 // FreshClone clones the branch into a new temp dir (depth 0 = full history). It returns the
 // directory and HEAD's sha; the caller removes the directory.
-func FreshClone(repo, branch string, depth int) (string, string, error) {
+func FreshClone(h scm.Host, repo, branch string, depth int) (string, string, error) {
 	d, err := os.MkdirTemp("", "pilot-fixture-")
 	if err != nil {
 		return "", "", err
@@ -65,11 +84,11 @@ func FreshClone(repo, branch string, depth int) (string, string, error) {
 	if depth > 0 {
 		args = append(args, "--depth", fmt.Sprint(depth))
 	}
-	if _, err := Git("", append(args, URL(repo), d)...); err != nil {
+	if _, err := Git(h, "", append(args, URL(h, repo), d)...); err != nil {
 		_ = os.RemoveAll(d)
 		return "", "", err
 	}
-	head, err := Git(d, "rev-parse", "HEAD")
+	head, err := Git(h, d, "rev-parse", "HEAD")
 	if err != nil {
 		_ = os.RemoveAll(d)
 		return "", "", err
@@ -112,21 +131,21 @@ func Reset(ctx context.Context, opts ResetOptions) (int, error) {
 	for _, args := range [][]string{
 		{"init", "--quiet", "-b", opts.Branch}, {"add", "-A"},
 		{"commit", "--quiet", "-m", "pilot: reset fixture"}, // the operator's own git identity, as in the reference
-		{"push", "--quiet", "--force", URL(opts.Repo), "HEAD:refs/heads/" + opts.Branch},
+		{"push", "--quiet", "--force", URL(opts.Host, opts.Repo), "HEAD:refs/heads/" + opts.Branch},
 	} {
-		if _, err := Git(t, args...); err != nil {
+		if _, err := Git(opts.Host, t, args...); err != nil {
 			return 2, err
 		}
 	}
-	base, err := Git(t, "rev-parse", "HEAD")
+	base, err := Git(opts.Host, t, "rev-parse", "HEAD")
 	if err != nil {
 		return 2, err
 	}
 	base = strings.TrimSpace(base)
-	if heads, err := Git("", "ls-remote", "--heads", URL(opts.Repo), "refs/heads/pilot/*"); err == nil {
+	if heads, err := Git(opts.Host, "", "ls-remote", "--heads", URL(opts.Host, opts.Repo), "refs/heads/pilot/*"); err == nil {
 		for _, line := range strings.Split(strings.TrimSpace(heads), "\n") {
 			if f := strings.Fields(line); len(f) == 2 {
-				_, _ = Git("", "push", "--quiet", URL(opts.Repo), ":"+f[1])
+				_, _ = Git(opts.Host, "", "push", "--quiet", URL(opts.Host, opts.Repo), ":"+f[1])
 			}
 		}
 	}
@@ -143,6 +162,7 @@ func Reset(ctx context.Context, opts ResetOptions) (int, error) {
 // ResetOptions are Reset's inputs; ListPRs and ClosePR are injected so tests need no network.
 type ResetOptions struct {
 	Repo, Branch, Template, BaseFile string
+	Host                             scm.Host // the fixture's Git host (037; zero = GitHub)
 	Yes                              bool
 	In                               io.Reader
 	Out                              io.Writer

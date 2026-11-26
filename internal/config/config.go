@@ -37,7 +37,7 @@ func errf(code int, format string, a ...any) *Error {
 }
 
 var (
-	scmNameRE     = regexp.MustCompile(`(?i)GITHUB|^GH_|GIT_.*TOKEN`)
+	scmNameRE     = regexp.MustCompile(`(?i)GITHUB|^GH_|GIT_.*TOKEN|GITLAB|BITBUCKET|GLPAT`) // 037: other hosts' names
 	refRE         = regexp.MustCompile(`^\{(file|env):[^}]+\}$`)
 	secretFieldRE = regexp.MustCompile(`(?i)key|token|secret|password`)
 	repoRE        = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)

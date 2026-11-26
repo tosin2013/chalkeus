@@ -2,6 +2,7 @@ package fixture
 
 import (
 	"context"
+	"github.com/tosin2013/chalkeus/internal/scm"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,7 +51,7 @@ func TestResetAndFreshClone(t *testing.T) {
 		t.Fatalf("output:\n%s", out.String())
 	}
 	raw, _ := os.ReadFile(base)
-	dir, head, err := FreshClone("o/x-pilot-fixture", "main", 1)
+	dir, head, err := FreshClone(scm.Host{}, "o/x-pilot-fixture", "main", 1)
 	if err != nil {
 		t.Fatal(err)
 	}

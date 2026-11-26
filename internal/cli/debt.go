@@ -47,6 +47,9 @@ func runDebt(cmd *cobra.Command, _ []string) error {
 	if t.Fixture {
 		return Exit(ExitError, "debt reads a --target repository, not the fixture")
 	}
+	if err := gitHubOnly("forge debt", t.Host()); err != nil { // reads Dependabot (037)
+		return err
+	}
 	gh, cred, perms, err := reportClient(cfg, t)
 	if err != nil {
 		return Exit(ExitError, "%v", err)

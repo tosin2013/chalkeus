@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	"github.com/tosin2013/chalkeus/internal/diagnose"
 	"github.com/tosin2013/chalkeus/internal/evidence"
 	"github.com/tosin2013/chalkeus/internal/fixture"
-	"github.com/tosin2013/chalkeus/internal/ghloop"
 	"github.com/tosin2013/chalkeus/internal/grader"
 	"github.com/tosin2013/chalkeus/internal/images"
 	"github.com/tosin2013/chalkeus/internal/names"
@@ -149,18 +149,15 @@ func (p *P) RunItem(item, sliceID string) int {
 
 func (p *P) readinessDeps() readiness.Deps {
 	return readiness.Deps{Src: p.Status,
-		Clone: func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) },
+		Clone: func(repo, branch string) (string, string, error) {
+			return fixture.FreshClone(p.host(), repo, branch, 1)
+		},
 		OpenPRHeads: func(repo string) ([]string, error) {
-			gh, err := ghloop.OperatorClient()
+			sc, err := hosts.Operator(p.host())
 			if err != nil {
 				return nil, err
 			}
-			prs, err := ghloop.OpenPilotPRs(context.Background(), gh, repo)
-			heads := make([]string, 0, len(prs))
-			for _, pr := range prs {
-				heads = append(heads, pr.HeadRef)
-			}
-			return heads, err
+			return hosts.OpenPilotHeads(context.Background(), sc, repo)
 		}}
 }
 
@@ -338,7 +335,7 @@ func (p *P) prepareItem(run *evidence.Run) error {
 	bundle := filepath.Join(d, "snapshot.bundle")
 	if _, err := os.Stat(bundle); err != nil {
 		_ = os.RemoveAll(clone)
-		tmp, _, err := fixture.FreshClone(p.repo(), p.branch(), 0)
+		tmp, _, err := fixture.FreshClone(p.host(), p.repo(), p.branch(), 0)
 		if err != nil {
 			return err
 		}
@@ -356,7 +353,7 @@ func (p *P) prepareItem(run *evidence.Run) error {
 	}
 	overlay := filepath.Join(d, "overlay.tar")
 	if _, err := os.Stat(overlay); err != nil {
-		cdir, commit, err := fixture.FreshClone(p.Target.CompanionRepo, "", 1)
+		cdir, commit, err := fixture.FreshClone(p.host(), p.Target.CompanionRepo, "", 1)
 		if err != nil {
 			return fmt.Errorf("companion repository %s: %v", p.Target.CompanionRepo, err)
 		}
@@ -540,7 +537,7 @@ func (p *P) replay(run *evidence.Run, task string, n int) error {
 		return err
 	}
 	if m != nil { // 029: the manifest commit is the first one on the base (research R10)
-		if revs, err := fixture.Git(clone, "rev-list", "--reverse", base+".."+head); err == nil {
+		if revs, err := fixture.Git(p.host(), clone, "rev-list", "--reverse", base+".."+head); err == nil {
 			if f := strings.Fields(revs); len(f) > 0 {
 				mc, _ := run.State["manifest_change"].(map[string]any)
 				mc["replayed_commit"] = f[0]

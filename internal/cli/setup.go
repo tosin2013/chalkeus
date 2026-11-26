@@ -113,7 +113,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return Exit(ExitError, "%v", err)
 	}
-	if err := cluster.ApplyAll(e, c, cfg.ModelHosts(), imgs, credEnv); err != nil {
+	if err := cluster.ApplyAll(e, c, cfg.ModelHosts(), imgs, credEnv, cfg.FixtureHost()); err != nil {
 		return Exit(ExitError, "%v", err)
 	}
 	// The live probes (P06, and the author's A03, which can run before any `./chalkeus forge run`) read the
