@@ -19,23 +19,23 @@ code (R1). GitLab and Bitbucket Cloud get plain-HTTP implementations (R2). The w
    - The GitHub loop, the App and the debt report keep their code and stay GitHub-only.
    - Config gains `FORGE_SCM`, `FORGE_SCM_HOST`, `FORGE_SCM_CA_BUNDLE`, per-host repository forms
      and the GitHub-only refusals (contracts/config.md).
-2. **GitLab (US2, US3, US6).**
-   - `internal/scm/gitlab`: the interface over `/api/v4` (R3–R7, R11).
-   - The publisher token check for project tokens and dedicated bot accounts (R4, owner decision
-     2026-11-26).
+2. **Bitbucket Cloud first (US5, US3, US6; owner decision 2026-11-26).**
+   - `internal/scm/bitbucket`: the interface over `/2.0` (R3–R7, R11).
+   - The repository-token check, the required `restrict_merges` restriction, approvers by
+     account UUID (R4, R7).
    - `publish.py` per host (contracts/publisher.md).
    - Egress per host and the new live check P13 (R10); AU03's URL form per host; secret
      heuristics (R12).
    - The companion change request on the target's host (R11).
-3. **Self-managed GitLab (US4).** Host name, CA bundle (Go client, host-side git, publisher pod),
+3. **gitlab.com (US2).** `internal/scm/gitlab` over `/api/v4`; the token check for project
+   tokens and dedicated bot accounts (R4, owner decision 2026-11-26); GitLab publisher steps.
+4. **Self-managed GitLab (US4).** Host name, CA bundle (Go client, host-side git, publisher pod),
    minimum version 18.0 (R9); proof on a throwaway GitLab CE container (owner decision
    2026-11-26).
-4. **Bitbucket Cloud (US5).** `internal/scm/bitbucket` over `/2.0`, the repository-token check,
-   the required `restrict_merges` restriction, approvers by account UUID (R4, R7).
 5. **doctor and docs (US7).** The rows in contracts/checks.md; `docs/targets.md` per host,
    troubleshooting entries, operator guide, release notes.
-6. **Proof.** gitlab.com, GitLab CE and Bitbucket Cloud: the fixture walkthrough and one target
-   item run each, with the refusal cases (quickstart.md).
+6. **Proof.** Bitbucket Cloud, gitlab.com and GitLab CE, in that order: the fixture walkthrough
+   and one target item run each, with the refusal cases (quickstart.md).
 
 ## Technical Context
 
@@ -163,15 +163,19 @@ code and its tests don't move. Callers that take a raw `*github.Client` today ta
    from today's code, callers switched, config keys and refusals, evidence fields. Proof: the full
    test suite, and quickstart scenario 1 on GitHub (fixture 11/11; evidence diff limited to the
    new fields). P13 lands here too, so GitHub proves it first.
-2. **GitLab client and publisher (US2, US3):** `scm/gitlab` with its fake, the token probe, host
-   git credentials, `publish.py` GitLab steps, egress per host, AU03 per host, secret heuristics.
-   The tools image rebuilds once (digest PR, owner merges).
-3. **Companion on GitLab (US6)**, so the owner's test-author session can open hidden-test MRs.
-4. **gitlab.com proof (scenario 2).**
-5. **Self-managed (US4):** host name, CA bundle in Go, git and the publisher pod, version check;
-   the GitLab CE container; scenario 3.
-6. **Bitbucket Cloud (US5, US6):** `scm/bitbucket`, probe, `restrict_merges` row, publisher steps
-   (a second tools-image rebuild); scenario 4.
+2. **Bitbucket client and publisher (US5, US3):** `scm/bitbucket` with its fake, the token
+   probe, the `restrict_merges` row, host git credentials, `publish.py` Bitbucket steps, egress
+   per host, AU03 per host, secret heuristics. The tools image rebuilds once (digest PR, owner
+   merges).
+3. **Companion on Bitbucket (US6)**, so the owner's test-author session can open hidden-test PRs.
+4. **Bitbucket Cloud proof (scenario 2).** Throwaway repositories only. A private target is run
+   only after the proof, with `FORGE_EVIDENCE_FEATURE` set to an absolute path outside this
+   repository, so its evidence is never committed here (existing behaviour of
+   `paths.EvidenceRoot`).
+5. **gitlab.com (US2):** `scm/gitlab`, the token probe (project token or dedicated bot account),
+   `publish.py` GitLab steps (a second tools-image rebuild), the companion on GitLab; scenario 3.
+6. **Self-managed (US4):** host name, CA bundle in Go, git and the publisher pod, version check;
+   the GitLab CE container; scenario 4.
 7. **doctor and docs (US7)**, release notes; then the debrief and roadmap status.
 
 ## Complexity Tracking

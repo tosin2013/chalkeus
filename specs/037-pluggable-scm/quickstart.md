@@ -26,7 +26,27 @@ On the Ubuntu box, with no `FORGE_SCM` anywhere:
 4. Compare the evidence with the last GitHub fixture run: only `scm`, `author_id`,
    `merged_by_id` and P13 differ.
 
-## 2. gitlab.com (US2, US3, US6; SC-002, SC-003, SC-004, SC-005)
+## 2. Bitbucket Cloud (US5, US3, US6; SC-002 to SC-005)
+
+Prerequisites (owner): a throwaway workspace or repositories for fixture, target and companion;
+a repository access token per publisher (scopes `repository:write`, `pullrequest:write`); a
+`restrict_merges` branch restriction on each target branch; `BITBUCKET_TOKEN` (the owner's
+Atlassian API token, with repository admin on those repositories); approvers as account UUIDs.
+
+Steps:
+1. doctor: every row ok. Remove the `restrict_merges` restriction → `branch protection` fails.
+   Restore.
+2. Put a workspace access token in the publisher file → `SCM_TOKEN_WIDER_THAN_REPO` (confirms the
+   listing probe, research R4).
+3. The fixture walkthrough: draft PRs (confirm the open-PR lookup finds drafts, research R3),
+   audit 11/11.
+4. Hidden tests by a draft PR on the companion; one target item run with the status change;
+   audit 11/11.
+5. The status-change refusals: merged by the publisher's bot, merged by a non-approver, an extra
+   changed line; each refused with its reason code. Grep the evidence for the token: no match in
+   worker or grader evidence.
+
+## 3. gitlab.com (US2, US3, US6; SC-002 to SC-005)
 
 Prerequisites (owner):
 - A throwaway gitlab.com project for the fixture (`<group>/<name>-pilot-fixture`) and one for a
@@ -53,7 +73,7 @@ Steps:
 7. Grep the run's evidence for the token prefix (`glpat-`): no match in worker or grader
    evidence.
 
-## 3. Self-managed GitLab CE (US4; SC-002, SC-003)
+## 4. Self-managed GitLab CE (US4; SC-002, SC-003)
 
 Setup (on the Ubuntu box, torn down afterwards):
 1. Make a CA and a server certificate for a host name that resolves both on the host and inside
@@ -67,28 +87,10 @@ Steps:
 1. Profile: `FORGE_SCM=gitlab`, `FORGE_SCM_HOST=<host>`, `FORGE_SCM_CA_BUNDLE=gitlab-ca.pem`.
    doctor: `scm host` shows the version, `scm ca bundle` ok.
 2. Remove the bundle setting → doctor fails naming `FORGE_SCM_CA_BUNDLE`. Restore.
-3. The fixture walkthrough and one target item run, as in scenario 2 (fast-forward merge this
+3. The fixture walkthrough and one target item run, as in scenario 3 (fast-forward merge this
    time); P13 proves gitlab.com and github.com are refused.
 4. Tear down the container; record its version and the certificate fingerprints (not keys) in
    the evidence.
-
-## 4. Bitbucket Cloud (US5, US6; SC-002 to SC-005)
-
-Prerequisites (owner): a throwaway workspace or repositories for fixture, target and companion;
-a repository access token per publisher (scopes `repository:write`, `pullrequest:write`); a
-`restrict_merges` branch restriction on each target branch; `BITBUCKET_TOKEN` (the owner's
-Atlassian API token, with repository admin on those repositories); approvers as account UUIDs.
-
-Steps:
-1. doctor: every row ok. Remove the `restrict_merges` restriction → `branch protection` fails.
-   Restore.
-2. Put a workspace access token in the publisher file → `SCM_TOKEN_WIDER_THAN_REPO` (confirms the
-   listing probe, research R4).
-3. The fixture walkthrough: draft PRs (confirm the open-PR lookup finds drafts, research R3),
-   audit 11/11.
-4. Hidden tests by a draft PR on the companion; one target item run with the status change;
-   audit 11/11.
-5. The status-change refusals, as in scenario 2.
 
 ## 5. Docs (US7, SC-006)
 

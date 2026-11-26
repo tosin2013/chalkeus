@@ -8,6 +8,8 @@ Changes this revision (owner decisions 2026-11-26, Tosin Akinosho, /speckit-plan
     self-managed GitLab proof uses a throwaway GitLab CE container with a self-signed CA.
   - 037 note: on gitlab.com's Free plan (no project access tokens) a personal token of a
     dedicated bot account is accepted when it reaches only the one project (research R4).
+  - 037 order: Bitbucket Cloud first, then gitlab.com, then self-managed GitLab (owner
+    decision 2026-11-26; a Bitbucket target is waiting). Was GitLab first.
 Specs affected: 037
 Open questions added/resolved: Q14 resolved
 
@@ -2492,8 +2494,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     self-managed GitLab, mounted like the proxy settings;
   - **commit author:** doctor checks the publisher's commit email is valid (some CI integrations
     refuse an `*.invalid` address);
-  - **order:** GitLab first (gitlab.com, then self-managed), proving the interface; Bitbucket
-    Cloud next, in this item;
+  - **order:** ~~GitLab first (gitlab.com, then self-managed), proving the interface; Bitbucket
+    Cloud next, in this item;~~ **(owner decision 2026-11-26)** Bitbucket Cloud first, proving
+    the interface; then gitlab.com; then self-managed GitLab, in this item;
   - terminal and harness approvals only; the GitHub loop (issues, labels, comment approvals)
     stays GitHub-only.
 - **Scope (out):** the loop features of 038; Bitbucket Data Center/Server and Azure DevOps

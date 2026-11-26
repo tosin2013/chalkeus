@@ -10,8 +10,9 @@
 (https://github.com/tosin2013/chalkeus/issues/144), PRD F11 ("Pluggable SCM. GitHub first;
 Bitbucket later"). Let targets, companions and the fixture live on GitLab (gitlab.com and
 self-managed) or Bitbucket Cloud as well as GitHub, with the same guarantees, so teams on those
-hosts can use the laptop release (013) without mirroring to GitHub. GitLab comes first, then
-Bitbucket Cloud, in this item. Phase 2 (038: issues, labels and comment approvals on the other
+hosts can use the laptop release (013) without mirroring to GitHub. Bitbucket Cloud comes
+first, then gitlab.com, then self-managed GitLab, in this item (owner decision 2026-11-26,
+reordered from GitLab first because a Bitbucket target is waiting). Phase 2 (038: issues, labels and comment approvals on the other
 hosts) is out of scope.
 
 Governed by C-03 (isolation and credentials), C-04 (human merge only), C-07 (egress through
@@ -79,7 +80,7 @@ evidence from before this item.
 
 ---
 
-### User Story 2 - Build an item on gitlab.com (Priority: P1)
+### User Story 2 - Build an item on gitlab.com (Priority: P2)
 
 An operator whose code is on gitlab.com sets the target's host to GitLab, gives the publisher a
 project access token for that one project, and runs an item. The worker builds as usual; the
@@ -88,8 +89,8 @@ reviews and merges it on GitLab; forge checks the merge (merged, the merge or sq
 merged tree equals the graded attempt) and proposes the status change as a second merge
 request, which an approver merges.
 
-**Why this priority**: this is the item's main promise and proves the host interface on a second
-host before Bitbucket.
+**Why this priority**: the second new host; it proves the interface on a host with a different
+API shape (merge requests, nested groups, project tokens) after Bitbucket.
 
 **Independent Test**: against a throwaway gitlab.com project, run the fixture walkthrough (audit
 11/11) and one target item run end to end, including the status change.
@@ -152,7 +153,7 @@ host) and confirm each is refused and recorded.
 
 ---
 
-### User Story 4 - A self-managed GitLab (Priority: P2)
+### User Story 4 - A self-managed GitLab (Priority: P3)
 
 An enterprise operator points a target at their own GitLab instance by host name, supplies the
 corporate certificate authority if the instance uses one, and runs items exactly as on
@@ -177,12 +178,16 @@ OpenShift direction (005, 011) aim at, but it builds on US2.
 
 ---
 
-### User Story 5 - Build an item on Bitbucket Cloud (Priority: P2)
+### User Story 5 - Build an item on Bitbucket Cloud (Priority: P1)
 
 An operator whose code is on Bitbucket Cloud sets the target's host to Bitbucket, gives the
-publisher a repository access token, and runs an item end to end, as on GitLab.
+publisher a repository access token, and runs an item. The publisher pushes the graded commit
+and opens a draft pull request as the token's bot identity; the operator merges it on Bitbucket;
+forge checks the merge (merged, the merge commit, the merged tree equals the graded attempt) and
+proposes the status change as a second pull request, which an approver merges.
 
-**Why this priority**: the issue's second host; it reuses the interface proven on GitLab.
+**Why this priority**: the first new host (owner decision 2026-11-26: a Bitbucket target is
+waiting); it proves the host interface first.
 
 **Independent Test**: against a throwaway Bitbucket Cloud repository, run the fixture walkthrough
 (audit 11/11) and one target item run end to end, including the status change.
@@ -202,7 +207,7 @@ publisher a repository access token, and runs an item end to end, as on GitLab.
 
 ---
 
-### User Story 6 - Hidden tests arrive by change request on the same host (Priority: P2)
+### User Story 6 - Hidden tests arrive by change request on the same host (Priority: P1)
 
 The test author (a separate session, 018/024) drafts an item's hidden tests and opens a draft
 change request on the companion repository, which lives on the same host as its target; a human
@@ -211,7 +216,7 @@ reviews and merges it.
 **Why this priority**: a target item run needs hidden tests in the companion; without this the
 operator must push them by hand on the new hosts.
 
-**Independent Test**: with a companion on gitlab.com (then Bitbucket Cloud), submit a checked
+**Independent Test**: with a companion on Bitbucket Cloud (then gitlab.com), submit a checked
 draft; a draft change request opens from the test-author identity.
 
 **Acceptance Scenarios**:
