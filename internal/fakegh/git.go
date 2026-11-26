@@ -38,6 +38,11 @@ func initRepo(bare, fromDir string) error {
 	if _, err := git(bare, nil, nil, "config", "http.receivepack", "true"); err != nil {
 		return err
 	}
+	// GitHub serves any commit reachable from a branch or pull request by its id (029: readiness
+	// fetches an approved bot commit that way).
+	if _, err := git(bare, nil, nil, "config", "uploadpack.allowReachableSHA1InWant", "true"); err != nil {
+		return err
+	}
 	if fromDir == "" {
 		return nil
 	}
