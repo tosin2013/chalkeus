@@ -94,6 +94,8 @@ type Item struct {
 	// 026: a slice run builds only these phases of the task list (Slice is the id, e.g. "US2").
 	Slice       string
 	SlicePhases []string
+	// 029: a dependency item's approved manifest files, fixed: the worker fixes the code instead.
+	FixedPaths []string
 }
 
 // BuildItem is the prompt for one item of a target repository. It has no induction and no
@@ -118,6 +120,10 @@ func BuildItem(it Item) (string, error) {
 	b.WriteString("- Change only files matching these paths (`*` also matches `/`):\n")
 	for _, p := range it.AllowedPaths {
 		fmt.Fprintf(&b, "  - `%s`\n", p)
+	}
+	if len(it.FixedPaths) > 0 {
+		fmt.Fprintf(&b, "- The dependency files %s already hold an approved dependency update, and they are fixed:\n", quoteList(it.FixedPaths))
+		b.WriteString("  don't edit, delete or rename them. Fix the code so it works with the updated dependencies.\n")
 	}
 	fmt.Fprintf(&b, "- The project uses the %s toolchain. Check your work with: `%s`\n", it.Toolchain, it.TestCommand)
 	if len(it.TestPaths) > 0 {

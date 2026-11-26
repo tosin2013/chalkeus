@@ -92,6 +92,8 @@ type Item struct {
 	Slice         string
 	SlicePhases   []string
 	EarlierPhases [][]string
+	// 029: a dependency item's approved manifest files (the grader's G2 fails on any change to them).
+	FixedPaths []string
 }
 
 // SliceMeta is meta.json's "slice" object for a slice run (contracts/grading.md), nil otherwise.
@@ -456,7 +458,8 @@ func MakeItemInputs(d Deps, run *evidence.Run, task string, n int, clone string)
 	plan, _ := rd("plan.md") // optional for an item
 	text, err := prompt.BuildItem(prompt.Item{Spec: spec, Plan: plan, Tasks: tasks, TasksPath: it.SpecDir + "/tasks.md",
 		AllowedPaths: it.AllowedPaths, Toolchain: it.Toolchain, TestCommand: it.TestCommand,
-		TestPaths: it.TestPaths, TestsMayChange: it.TestsMayChange, Slice: it.Slice, SlicePhases: it.SlicePhases})
+		TestPaths: it.TestPaths, TestsMayChange: it.TestsMayChange, Slice: it.Slice, SlicePhases: it.SlicePhases,
+		FixedPaths: it.FixedPaths})
 	if err != nil {
 		return "", err
 	}
@@ -472,6 +475,9 @@ func MakeItemInputs(d Deps, run *evidence.Run, task string, n int, clone string)
 	}
 	if sm := it.SliceMeta(); sm != nil { // 026: slice G3 and G8 (absent: grading as before)
 		meta["slice"] = sm
+	}
+	if len(it.FixedPaths) > 0 { // 029: G2 fails with MANIFEST_CHANGED on any change to them
+		meta["fixed_paths"] = anyStrings(it.FixedPaths)
 	}
 	if sd := d.Limits.SoftDeadlineS; sd > 0 { // 030: the watchdog's soft deadline (absent: none)
 		meta["soft_deadline_s"] = sd

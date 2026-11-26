@@ -195,3 +195,41 @@ func TestWorkerQuotaFollowsBudget(t *testing.T) {
 		t.Fatalf("defaults %s %s", c, m)
 	}
 }
+
+// 029: a dependency item's fixed manifest files are in the attempt meta and the worker's rules.
+func TestFixedPathsInMetaAndPrompt(t *testing.T) {
+	clone := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(clone, "specs/010-zod"), 0o755)
+	_ = os.WriteFile(filepath.Join(clone, "specs/010-zod/spec.md"), []byte("# Zod 4\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(clone, "specs/010-zod/tasks.md"), []byte("- [ ] T001 fix\n"), 0o644)
+	rd := filepath.Join(t.TempDir(), "20990101T000000Z")
+	_ = os.MkdirAll(filepath.Join(rd, "attempts"), 0o755)
+	run := &evidence.Run{Dir: rd, ID: filepath.Base(rd), State: map[string]any{"kind": "item", "item": "010"}}
+	it := &Item{SnapshotCommit: "s", SpecDir: "specs/010-zod", AllowedPaths: []string{"src/*"}, Toolchain: "node24",
+		TestCommand: "npm test", CommandTimeout: 180, FixedPaths: []string{"package.json", "package-lock.json"}}
+	idir, err := MakeItemInputs(Deps{L: paths.At(t.TempDir()), Item: it}, run, "010", 1, clone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	adir, _ := run.AttemptDir("010", 1)
+	var meta map[string]any
+	raw, _ := os.ReadFile(filepath.Join(adir, "meta.json"))
+	_ = json.Unmarshal(raw, &meta)
+	if fmt.Sprint(meta["fixed_paths"]) != "[package.json package-lock.json]" {
+		t.Fatalf("meta: %v", meta)
+	}
+	p, _ := os.ReadFile(filepath.Join(idir, "prompt.md"))
+	if !strings.Contains(string(p), "The dependency files `package.json`, `package-lock.json` already hold an approved dependency update") ||
+		!strings.Contains(string(p), "don't edit, delete or rename them") {
+		t.Fatalf("prompt:\n%s", p)
+	}
+	it.FixedPaths = nil
+	if _, err := MakeItemInputs(Deps{L: paths.At(t.TempDir()), Item: it}, run, "010", 2, clone); err != nil {
+		t.Fatal(err)
+	}
+	adir2, _ := run.AttemptDir("010", 2)
+	raw, _ = os.ReadFile(filepath.Join(adir2, "meta.json"))
+	if strings.Contains(string(raw), "fixed_paths") {
+		t.Fatal("an ordinary item's meta has no fixed_paths")
+	}
+}

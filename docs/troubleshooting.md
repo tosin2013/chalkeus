@@ -632,6 +632,30 @@ These entries apply only with `FORGE_GITHUB_ISSUES=on` or `FORGE_GITHUB_APPROVAL
   `current`, and `./chalkeus forge doctor --target <name> --item NNN --slice USn` passes.
 - **Source:** `internal/readiness/slices.go`, `internal/slice/slice.go`.
 
+<a id="manifest-change"></a>
+### Dependency item refused: `MANIFEST_CHANGE_…`, or an attempt fails `MANIFEST_CHANGED`
+
+- **Symptom:** a run, `gate` or `doctor` for an item whose `spec.md` has a `## Manifest change`
+  section refuses with exit 10 and one of the codes below; or an attempt's grade fails
+  `G2_allowed_paths` with `MANIFEST_CHANGED: <file>`.
+- **Cause and fix, by code:**
+  - `MANIFEST_CHANGE_UNREADABLE`: the section needs exactly one `Commit:` with the full
+    40-character id in backticks, and a `Files:` line with backticked paths (no globs).
+  - `MANIFEST_CHANGE_UNRESOLVED`: the commit can't be fetched from the target. Name a commit
+    that is on a branch or a pull request of the repository (a Dependabot PR's head commit is).
+  - `MANIFEST_CHANGE_NOT_MANIFEST`: a listed file isn't a dependency manifest of the target's
+    toolchain, or the commit also changes files that aren't listed. List only manifest files,
+    and name a commit that changes only them.
+  - `MANIFEST_CHANGE_STALE`: a listed file changed on the default branch since the commit's
+    parent. Rebase the bot PR (or commit the change again on the current branch) and update
+    the commit in `spec.md`. Forge never rebases it.
+  - `MANIFEST_CHANGE_EMPTY`: the commit doesn't change the listed files.
+  - `MANIFEST_CHANGE_SLICED`: a dependency item is built whole; run it without `--slice`.
+  - `MANIFEST_CHANGED` (an attempt): the worker edited, deleted or renamed an approved manifest
+    file. They are fixed: the change must fix the code. The next attempt is told so again.
+- **Confirm:** `./chalkeus forge doctor --target <name> --item NNN` shows `manifest_change` passing.
+- **Source:** `internal/readiness/manifest.go`, `pilot/images/tools/grade.py` (`fixed_changed`).
+
 <a id="slice-earlier-broken"></a>
 ### Slice baseline: `EARLIER_SLICE_BROKEN_ON_BASE`
 

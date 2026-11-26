@@ -79,6 +79,10 @@ type world struct {
 	allRules          bool
 	slice             string                // 026: the slice to check
 	prior             map[string]PriorSlice // 026: locally recorded slicing
+	// 029: a bump commit on a Dependabot branch (files it changes), and the item's spec, written
+	// on main after it with the bump's commit id.
+	bump     map[string]string
+	bumpSpec func(sha string) string
 }
 
 func newWorld() *world {
@@ -97,6 +101,25 @@ func newWorld() *world {
 func (w *world) check(t *testing.T, item string, maxMB int) (Result, string) {
 	t.Helper()
 	tgt := gitRepo(t, w.target)
+	if w.bump != nil {
+		g := func(args ...string) string {
+			out, err := exec.Command("git", append([]string{"-C", tgt, "-c", "user.name=t", "-c", "user.email=t@invalid"}, args...)...).CombinedOutput()
+			if err != nil {
+				t.Fatalf("git %v: %s", args, out)
+			}
+			return strings.TrimSpace(string(out))
+		}
+		g("checkout", "-q", "-b", "dependabot/maven")
+		for p, body := range w.bump {
+			_ = os.WriteFile(filepath.Join(tgt, p), []byte(body), 0o644)
+		}
+		g("add", "-A")
+		g("commit", "-qm", "chore(deps): bump junit")
+		sha := g("rev-parse", "HEAD")
+		g("checkout", "-q", "main")
+		_ = os.WriteFile(filepath.Join(tgt, "specs/002-feature/spec.md"), []byte(w.bumpSpec(sha)), 0o644)
+		g("commit", "-qam", "spec names the bump")
+	}
 	comp := gitRepo(t, w.companion)
 	out := t.TempDir()
 	d := Deps{Src: w.status,
@@ -118,7 +141,7 @@ func (w *world) check(t *testing.T, item string, maxMB int) (Result, string) {
 		Slice:       w.slice,
 		PriorSlices: w.prior,
 	}
-	tg := config.Target{Name: "t", Repo: "me/target", Branch: "main", CompanionRepo: "me/target-acceptance", CompanionPath: w.companionPath, MaxInputMB: maxMB}
+	tg := config.Target{Name: "t", Repo: "me/target", Branch: "main", Toolchain: "jdk21-maven", CompanionRepo: "me/target-acceptance", CompanionPath: w.companionPath, MaxInputMB: maxMB}
 	res, err := Check(d, tg, item, 3, out)
 	if err != nil {
 		t.Fatal(err)
@@ -281,5 +304,47 @@ func TestAllRulesReportsEveryProblem(t *testing.T) {
 	w2.allRules = true
 	if res, _ := w2.check(t, "002", 50); res.Decision != "allow" {
 		t.Fatalf("a prepared item still allows in all-rules mode: %v", res.Reasons)
+	}
+}
+
+// 029: a dependency item's manifest change is checked in readiness; a bad one refuses with its
+// code (gate), and doctor (AllRules) lists every code at once.
+func TestManifestChangeReadiness(t *testing.T) {
+	pom := func(v string) string { return "<project><properties><junit.version>" + v + "</junit.version></properties></project>\n" }
+	spec := func(files string) func(string) string {
+		return func(sha string) string {
+			return goodSpec + "\n## Manifest change\n\n- Commit: `" + sha + "`\n- Files: " + files + "\n"
+		}
+	}
+	w := newWorld()
+	w.target["pom.xml"] = pom("5.10.0")
+	w.bump, w.bumpSpec = map[string]string{"pom.xml": pom("5.11.0")}, spec("`pom.xml`")
+	res, _ := w.check(t, "002", 50)
+	if res.Decision != "allow" || res.ManifestChange == nil || len(res.ManifestChange.Changes) != 1 {
+		t.Fatalf("%+v %+v", res.Reasons, res.ManifestChange)
+	}
+
+	w = newWorld()
+	w.target["pom.xml"] = pom("5.10.0")
+	w.bump, w.bumpSpec = map[string]string{"pom.xml": pom("5.11.0")}, spec("`pom.xml`, `src/main/java/App.java`")
+	res, _ = w.check(t, "002", 50)
+	if res.Decision != "refuse" || res.Reasons[0] != "MANIFEST_CHANGE_NOT_MANIFEST" || res.ManifestChange != nil {
+		t.Fatalf("gate: %v", res.Reasons)
+	}
+
+	w = newWorld()
+	w.target["pom.xml"] = pom("5.10.0")
+	w.bump, w.bumpSpec = map[string]string{"pom.xml": pom("5.11.0")}, spec("`pom.xml`, `src/main/java/App.java`")
+	w.slice, w.allRules = "", true
+	res, _ = w.check(t, "002", 50)
+	if strings.Join(res.Reasons, ",") != "MANIFEST_CHANGE_NOT_MANIFEST" {
+		t.Fatalf("doctor: %v", res.Reasons)
+	}
+
+	w = newWorld()
+	w.target["specs/002-feature/spec.md"] = goodSpec + "\n## Manifest change\n\n- Commit: `abc`\n"
+	res, _ = w.check(t, "002", 50)
+	if res.Decision != "refuse" || res.Reasons[0] != "MANIFEST_CHANGE_UNREADABLE" {
+		t.Fatalf("unreadable: %v", res.Reasons)
 	}
 }
