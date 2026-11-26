@@ -1,7 +1,14 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.40.0 → 1.41.0 (this revision)
+Version change: 1.41.0 → 1.41.1 (this revision)
+Bump rationale: PATCH — a status transition (037 planned → specced) and its Spec dir.
+Changes this revision (owner request 2026-11-26, Tosin Akinosho, /speckit-specify for 037):
+  - 037 planned → specced: spec in specs/037-pluggable-scm/. Spec dir added.
+Specs affected: 037
+Open questions added/resolved: none
+
+Prior: Version change: 1.40.0 → 1.41.0
 Bump rationale: MINOR — two new planned items (037, 038), a new open question (Q14), and a new
 dependency of 013 on 037. Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-26, Tosin Akinosho; issue #144, PRD F11):
@@ -2437,7 +2444,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   refactoring or changing libraries). Lives under doctor, not a new command. Relates to 029
   (debt report) and 033 (allowance, diagnosis).
 
-### 037 — Pluggable SCM, phase 1: GitLab and Bitbucket Cloud beside GitHub  [status: planned]
+### 037 — Pluggable SCM, phase 1: GitLab and Bitbucket Cloud beside GitHub  [status: specced]
 
 - **Description:** Let targets and companions live on GitLab (gitlab.com and self-managed) or
   Bitbucket Cloud as well as GitHub, with the same guarantees, so teams on those hosts can use
@@ -2484,6 +2491,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Depends on:** 004, 016, 024
 - **Governed by:** C-03, C-04, C-07, C-11, C-14
 - **Addresses:** docs/prd.md F11; issue #144
+- **Spec dir:** specs/037-pluggable-scm/
 - **Notes:** Added 2026-11-26 (owner, issue #144). Phase 1 ships with the laptop release (013).
   The issue writes the settings as `PILOT_*`; profiles use `FORGE_*` names since 027, read as
   `PILOT_*` keys. The tree-match check compares files, so merge commits, squash and
@@ -2703,4 +2711,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.41.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
+**Version**: 1.41.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
