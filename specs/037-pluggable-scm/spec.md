@@ -39,7 +39,7 @@ Every interaction with a Git host goes to GitHub today. Where:
 
 What doesn't depend on the host: the gate, workers, the grader, hidden-test handling inside the
 cluster, and the **tree-match check** (it compares files, so it works for merge commits, squash
-and fast-forward). The PR title format and the `Specfoundry-Run:` commit trailer carry over.
+and fast-forward). The PR title format and the `Chalkeus-Run:` commit trailer carry over.
 
 Terms:
 - **Host:** the Git hosting service a repository lives on: GitHub, GitLab (gitlab.com or a
