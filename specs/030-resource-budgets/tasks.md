@@ -69,7 +69,7 @@ removing them returns new runs to the floors.
 - [ ] T018 [P] [US1] Go tests in `internal/pipeline/item_test.go` and `internal/author/job_test.go`: grader and prefetch Jobs carry the raised CPU; the grader's `command_timeout_s` and the worker prompt's stated timeout equal the resolved value; the author Job carries the author budget
 - [ ] T019 [US1] Add keys `FORGE_GRADER_CPU`, `FORGE_COMMAND_TIMEOUT_S`, `FORGE_AUTHOR_CPU`, `FORGE_AUTHOR_MEMORY`, `FORGE_AUTHOR_DEADLINE_S` in `internal/config/targets.go` (existing `FORGE_GRADER_MEMORY` and `FORGE_GRADER_DEADLINE_S` move to the resolver)
 - [ ] T020 [US1] Use the resolved grader budget for grader and prefetch Jobs and `commandTimeout()` in `internal/pipeline/item.go` (replacing lines 486–526's catalog-plus-override logic)
-- [ ] T021 [US1] Template the author Job's limits (`pilot/manifests/author-job.yaml.tmpl`) and take its deadline from the author budget in `internal/author/job.go` and `internal/cli/author.go`; draft checks (`author check`) use the grader budget
+- [ ] T021 [US1] (deadline done 2026-11-26: `FORGE_AUTHOR_DEADLINE_S`, raise-only, `images.AuthorDeadline`; CPU and memory still to come) Template the author Job's limits (`pilot/manifests/author-job.yaml.tmpl`) and take its deadline from the author budget in `internal/author/job.go` and `internal/cli/author.go`; draft checks (`author check`) use the grader budget
 - [ ] T022 [US1] Record the budget in the draft's `draft.json` (`internal/author/`), resolved at `author check` start
 - [ ] T023 [P] [US1] `./chalkeus forge targets` prints each target's raised keys (`internal/cli/targets.go`)
 
