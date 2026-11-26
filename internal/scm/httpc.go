@@ -191,21 +191,21 @@ func (c *HTTP) List(ctx context.Context, path string, page func(raw []byte) (int
 
 func (c *HTTP) statusErr(method, u string, resp *http.Response, raw []byte) error {
 	code := ErrUnavailable
-	switch s := resp.StatusCode; {
-	case s == 401:
+	switch resp.StatusCode {
+	case 401:
 		code = ErrUnauthorized
-	case s == 403:
+	case 403:
 		code = ErrForbidden
 		if resp.Header.Get("RateLimit-Remaining") == "0" || resp.Header.Get("X-RateLimit-Remaining") == "0" {
 			code = ErrRateLimited
 		}
-	case s == 404:
+	case 404:
 		code = ErrNotFound
-	case s == 409:
+	case 409:
 		code = ErrConflict
-	case s == 429:
+	case 429:
 		code = ErrRateLimited
-	case s == 400 || s == 422:
+	case 400, 422:
 		code = ErrInvalid
 	}
 	msg := strings.TrimSpace(string(raw))
