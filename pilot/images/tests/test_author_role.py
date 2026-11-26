@@ -59,7 +59,9 @@ class TestAuthorRole(unittest.TestCase):
                 t.addfile(info, io.BytesIO(data))
         (inp / "workspace.tar").write_bytes(buf.getvalue())
         env = dict(os.environ, PILOT_IN=str(inp), PILOT_WORK=str(work), PILOT_LIB=str(lib), PILOT_TMP=str(tmp),
-                   PATH=f"{bin_}:{os.environ['PATH']}", PILOT_MODEL="p/m", FAKE_ACTION=action, FAKE_EXIT=str(exit_code))
+                   PATH=f"{bin_}:{os.environ['PATH']}", PILOT_MODEL="p/m", FAKE_ACTION=action, FAKE_EXIT=str(exit_code),
+                   # macOS bsdtar adds AppleDouble "._" entries to draft.tar; the image's GNU tar never does.
+                   COPYFILE_DISABLE="1")
         r = subprocess.run(["bash", "-c", f'exec 3>&1; exec 1>>"{tmp}/entry.log" 2>&1; exec "{SCRIPT}"'],
                            env=env, capture_output=True, timeout=60)
         self.assertEqual(r.returncode, 0, r.stderr)
