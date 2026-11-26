@@ -21,6 +21,7 @@ func TestPatternsWordStart(t *testing.T) {
 		"Authorization: Bearer abcdefghijklmnopqrstu",
 		"-----BEGIN RSA PRIVATE KEY-----",
 		"sk-abcdefghijklmnop1234",
+		"GITLAB_TOKEN=glpat-abcdefghijklmnopqrst12", // 037: GitLab personal, project and group tokens
 		// JSON evidence: a token after an escaped newline, tab or carriage return.
 		`{"detail": "line one\nghp_abcdefghijklmnopqrstuvwxyz"}`,
 		`{"out": "x\tsk-abcdefghijklmnop1234"}`,

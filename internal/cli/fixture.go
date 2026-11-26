@@ -2,12 +2,12 @@ package cli
 
 import (
 	"context"
+	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 
 	"github.com/spf13/cobra"
 
 	"github.com/tosin2013/chalkeus/internal/config"
 	"github.com/tosin2013/chalkeus/internal/fixture"
-	"github.com/tosin2013/chalkeus/internal/ghloop"
 )
 
 func runResetFixture(cmd *cobra.Command, _ []string) error {
@@ -22,27 +22,28 @@ func runResetFixture(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	if err := config.RepoGuard(cfg.Repo(), config.OriginRepo(l.Root)); err != nil {
+	h := cfg.FixtureHost()
+	if err := config.RepoGuardFor(h.Kind, cfg.Repo(), config.OriginRepo(l.Root)); err != nil {
 		return err
 	}
-	gh, err := ghloop.OperatorClient()
+	sc, err := hosts.Operator(h)
 	if err != nil {
 		return Exit(ExitError, "%v", err)
 	}
 	yes, _ := cmd.Flags().GetBool("yes")
 	code, err := fixture.Reset(context.Background(), fixture.ResetOptions{
-		Repo: cfg.Repo(), Branch: cfg.Branch(), Template: l.FixtureTemplate, BaseFile: l.FixtureBase,
+		Repo: cfg.Repo(), Branch: cfg.Branch(), Host: h, Template: l.FixtureTemplate, BaseFile: l.FixtureBase,
 		Yes: yes, In: cmd.InOrStdin(), Out: cmd.OutOrStdout(),
 		ListPRs: func(ctx context.Context) ([]fixture.PRRef, error) {
-			prs, err := ghloop.OpenPilotPRs(ctx, gh, cfg.Repo())
+			prs, err := sc.OpenChangeRequests(ctx, cfg.Repo(), "pilot/")
 			out := make([]fixture.PRRef, 0, len(prs))
 			for _, p := range prs {
-				out = append(out, fixture.PRRef{Number: p.Number, HeadRef: p.HeadRef})
+				out = append(out, fixture.PRRef{Number: p.ID, HeadRef: p.HeadRef})
 			}
 			return out, err
 		},
 		ClosePR: func(ctx context.Context, p fixture.PRRef) error {
-			return ghloop.ClosePR(ctx, gh, cfg.Repo(), ghloop.PR{Number: p.Number, HeadRef: p.HeadRef}, "Closed by `./chalkeus forge reset-fixture`.")
+			return sc.CloseChangeRequest(ctx, cfg.Repo(), p.Number, "Closed by `./chalkeus forge reset-fixture`.")
 		},
 	})
 	if err != nil {

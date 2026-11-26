@@ -53,10 +53,7 @@ func sliceAU03(d string, st map[string]any, item, sliceID string) evidence.Check
 		default:
 			ok = false
 		}
-		draft, _ := p["draft"].(bool)
-		url, _ := p["url"].(string)
-		if !draft || !truthy(p["author"]) || fmt.Sprint(p["author"]) != fmt.Sprint(p["publisher_identity"]) ||
-			!strings.Contains(url, "github.com/"+repo+"/pull/") {
+		if !prOnHost(p, st, repo) {
 			ok = false
 		}
 	}

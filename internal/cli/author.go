@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 	"io"
 	"os"
 	"os/signal"
@@ -18,7 +19,6 @@ import (
 	"github.com/tosin2013/chalkeus/internal/config"
 	"github.com/tosin2013/chalkeus/internal/fixture"
 	"github.com/tosin2013/chalkeus/internal/gate"
-	"github.com/tosin2013/chalkeus/internal/ghloop"
 	"github.com/tosin2013/chalkeus/internal/images"
 	"github.com/tosin2013/chalkeus/internal/names"
 	"github.com/tosin2013/chalkeus/internal/pipeline"
@@ -172,19 +172,16 @@ func authorEnv(cmd *cobra.Command) (author.Env, string, error) {
 	if t.Fixture {
 		return author.Env{}, "", Exit(ExitError, "the test author works on a --target repository's items, not the fixture")
 	}
-	gh, err := ghloop.OperatorClient()
+	sc, err := hosts.Operator(t.Host())
 	if err != nil {
 		return author.Env{}, "", Exit(ExitError, "%v", err)
 	}
 	deps := readiness.Deps{Src: gate.ExecStatus{},
-		Clone: func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) },
+		Clone: func(repo, branch string) (string, string, error) {
+			return fixture.FreshClone(t.Host(), repo, branch, 1)
+		},
 		OpenPRHeads: func(repo string) ([]string, error) {
-			prs, err := ghloop.OpenPilotPRs(context.Background(), gh, repo)
-			heads := make([]string, 0, len(prs))
-			for _, p := range prs {
-				heads = append(heads, p.HeadRef)
-			}
-			return heads, err
+			return hosts.OpenPilotHeads(context.Background(), sc, repo)
 		}}
 	deps.SkipHidden = true
 	ready := func(t config.Target, item, sl string) (readiness.Result, error) {
@@ -240,7 +237,7 @@ func authorWatchEnv(e author.Env, p *pipeline.P) (author.WatchEnv, error) {
 // targetStatus is `spec status --json` of the target's branch, on a fresh clone.
 func targetStatus(t config.Target) func() (string, error) {
 	return func() (string, error) {
-		dir, _, err := fixture.FreshClone(t.Repo, t.Branch, 1)
+		dir, _, err := fixture.FreshClone(t.Host(), t.Repo, t.Branch, 1)
 		if err != nil {
 			return "", err
 		}

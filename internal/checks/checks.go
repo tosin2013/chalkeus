@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	scmRE = regexp.MustCompile(`(?i)TOKEN|GITHUB|^GH_|PASSWORD`)
+	scmRE = regexp.MustCompile(`(?i)TOKEN|GITHUB|^GH_|PASSWORD|GITLAB|BITBUCKET|GLPAT`) // 037: other hosts' names
 	// The pilot's own non-credential env names (PILOT_TOKEN_CAP is a spend cap, not a token).
 	pilotEnv = map[string]bool{"PILOT_MODEL": true, "PILOT_SPEND_CAP_USD": true, "PILOT_TOKEN_CAP": true,
 		"HTTPS_PROXY": true, "https_proxy": true, "NO_PROXY": true}

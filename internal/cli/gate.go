@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
+	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +17,6 @@ import (
 	"github.com/tosin2013/chalkeus/internal/evidence"
 	"github.com/tosin2013/chalkeus/internal/fixture"
 	"github.com/tosin2013/chalkeus/internal/gate"
-	"github.com/tosin2013/chalkeus/internal/ghloop"
 	"github.com/tosin2013/chalkeus/internal/paths"
 	"github.com/tosin2013/chalkeus/internal/readiness"
 )
@@ -67,7 +68,9 @@ func runGate(cmd *cobra.Command, args []string) error {
 			return cerr
 		}
 		d, err = gate.EvaluateFresh(src, cfg.Repo(), cfg.Branch(), task, item, seq, outDir,
-			func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) })
+			func(repo, branch string) (string, string, error) {
+				return fixture.FreshClone(cfg.FixtureHost(), repo, branch, 1)
+			})
 	}
 	if err != nil {
 		return Exit(ExitError, "%v", err)
@@ -102,11 +105,13 @@ func runItemReadiness(cmd *cobra.Command, l paths.Layout, item string) error {
 	if err != nil {
 		return err
 	}
-	gh, err := ghloop.OperatorClient()
+	sc, err := hosts.Operator(t.Host())
 	if err != nil {
 		return Exit(ExitError, "%v", err)
 	}
-	clone := func(repo, branch string) (string, string, error) { return fixture.FreshClone(repo, branch, 1) }
+	clone := func(repo, branch string) (string, string, error) {
+		return fixture.FreshClone(t.Host(), repo, branch, 1)
+	}
 	if root, _ := cmd.Flags().GetString("root"); root != "" {
 		// Check a local checkout of the target instead of its branch on GitHub: its committed
 		// HEAD, copied, because readiness deletes its clone. The companion and open PRs are
@@ -114,7 +119,7 @@ func runItemReadiness(cmd *cobra.Command, l paths.Layout, item string) error {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "gate: checking the committed HEAD of %s instead of %s@%s\n", root, t.Repo, t.Branch)
 		clone = func(repo, branch string) (string, string, error) {
 			if repo != t.Repo {
-				return fixture.FreshClone(repo, branch, 1)
+				return fixture.FreshClone(t.Host(), repo, branch, 1)
 			}
 			return LocalClone(root)
 		}
@@ -122,12 +127,7 @@ func runItemReadiness(cmd *cobra.Command, l paths.Layout, item string) error {
 	res, err := readiness.Check(readiness.Deps{Src: gate.ExecStatus{},
 		Clone: clone,
 		OpenPRHeads: func(repo string) ([]string, error) {
-			prs, err := ghloop.OpenPilotPRs(context.Background(), gh, repo)
-			heads := make([]string, 0, len(prs))
-			for _, p := range prs {
-				heads = append(heads, p.HeadRef)
-			}
-			return heads, err
+			return hosts.OpenPilotHeads(context.Background(), sc, repo)
 		}}, t, item, 0, "")
 	if err != nil {
 		return Exit(ExitError, "%v", err)
@@ -153,11 +153,11 @@ func LocalClone(root string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	if _, err := fixture.Git("", "clone", "--quiet", "--no-hardlinks", abs, d); err != nil {
+	if _, err := fixture.Git(scm.Host{}, "", "clone", "--quiet", "--no-hardlinks", abs, d); err != nil {
 		_ = os.RemoveAll(d)
 		return "", "", fmt.Errorf("--root %s is not a git checkout: %v", root, err)
 	}
-	commit, err := fixture.Git(d, "rev-parse", "HEAD")
+	commit, err := fixture.Git(scm.Host{}, d, "rev-parse", "HEAD")
 	if err != nil {
 		_ = os.RemoveAll(d)
 		return "", "", err

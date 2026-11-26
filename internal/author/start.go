@@ -112,11 +112,11 @@ func makeWorkspace(d *Draft, t config.Target, res readiness.Result) error {
 	if err := os.MkdirAll(filepath.Join(ws, "draft"), 0o755); err != nil {
 		return err
 	}
-	clone, _, err := fixture.FreshClone(t.Repo, t.Branch, 0)
+	clone, _, err := fixture.FreshClone(t.Host(), t.Repo, t.Branch, 0)
 	if err != nil {
 		return err
 	}
-	if _, err := fixture.Git(clone, "checkout", "--quiet", res.Commit); err != nil {
+	if _, err := fixture.Git(t.Host(), clone, "checkout", "--quiet", res.Commit); err != nil {
 		_ = os.RemoveAll(clone)
 		return err
 	}

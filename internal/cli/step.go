@@ -41,6 +41,9 @@ func stepCmd() *cobra.Command {
 				return err
 			}
 			t := e.Target
+			if err := gitHubOnly("forge step", t.Host()); err != nil {
+				return err
+			}
 			if !stepGitHubOn(t) {
 				return Exit(ExitError, "step mode needs GitHub approvals for target %s (FORGE_GITHUB_APPROVALS=on in its profile or forge.env): items are proposed on their issues and every gate is answered on GitHub", t.Name)
 			}

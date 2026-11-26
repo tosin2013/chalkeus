@@ -64,6 +64,9 @@ type NoCredentialError struct {
 }
 
 func (e *NoCredentialError) Error() string {
+	if e.Host.IsGitHub() { // the wording forge always used (ghloop.ErrNoToken)
+		return "no GitHub token for reads: set GH_TOKEN or GITHUB_TOKEN, or sign in with `gh auth login`"
+	}
 	return "no credential of yours for " + e.Host.Name + ": " + e.How
 }
 

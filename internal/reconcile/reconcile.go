@@ -9,6 +9,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tosin2013/chalkeus/internal/scm"
+	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +19,6 @@ import (
 
 	"github.com/tosin2013/chalkeus/internal/evidence"
 	"github.com/tosin2013/chalkeus/internal/fixture"
-	"github.com/tosin2013/chalkeus/internal/ghloop"
 	"github.com/tosin2013/chalkeus/internal/paths"
 	"github.com/tosin2013/chalkeus/internal/slice"
 )
@@ -294,8 +295,8 @@ func gitIn(dir string, args ...string) (string, error) {
 
 // ForFixture builds a Reconciler bound to a fresh full clone of the fixture default branch and
 // a graded tree (base + the passing attempt's bundle). The cleanup func removes both.
-func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev string, ask func(string) string, say func(string)) (Reconciler, func(), error) {
-	clone, _, err := fixture.FreshClone(repo, branch, 0)
+func ForFixture(h scm.Host, repo, branch string, runDir, runID, task, attemptDir, baseRev string, ask func(string) string, say func(string)) (Reconciler, func(), error) {
+	clone, _, err := fixture.FreshClone(h, repo, branch, 0)
 	if err != nil {
 		return Reconciler{}, func() {}, err
 	}
@@ -328,22 +329,15 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 	}
 	r := Reconciler{
 		PRView: func(n int) (map[string]any, error) {
-			gh, err := ghloop.OperatorClient()
+			sc, err := hosts.Operator(h)
 			if err != nil {
 				return nil, err
 			}
-			owner, name := ghloop.SplitRepo(repo)
-			pr, _, err := gh.PullRequests.Get(context.Background(), owner, name, n)
+			cr, err := sc.ChangeRequest(context.Background(), repo, n)
 			if err != nil {
 				return nil, err
 			}
-			view := map[string]any{"state": strings.ToUpper(pr.GetState()), "mergedAt": nil, "mergeCommit": nil}
-			if pr.GetMerged() {
-				view["state"] = "MERGED"
-				view["mergedAt"] = pr.GetMergedAt().UTC().Format(evidence.TimeFormat)
-				view["mergeCommit"] = map[string]any{"oid": pr.GetMergeCommitSHA()}
-			}
-			return view, nil
+			return PRViewOf(cr), nil
 		},
 		ItemStatus: func(item string) map[string]any {
 			out, _ := exec.Command("spec", "status", "--json", "--root", clone).Output()
@@ -381,13 +375,13 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 			if err := os.WriteFile(filepath.Join(clone, RoadmapRel), []byte(text), 0o644); err != nil {
 				return "", err
 			}
-			if _, err := fixture.Git(clone, "add", RoadmapRel); err != nil {
+			if _, err := fixture.Git(h, clone, "add", RoadmapRel); err != nil {
 				return "", err
 			}
-			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", statusMsg(task, runID)); err != nil {
+			if _, err := fixture.Git(h, clone, "commit", "--quiet", "-m", statusMsg(task, runID)); err != nil {
 				return "", err
 			}
-			if _, err := fixture.Git(clone, "push", "--quiet", fixture.URL(repo), "HEAD:refs/heads/"+branch); err != nil {
+			if _, err := fixture.Git(h, clone, "push", "--quiet", fixture.URL(h, repo), "HEAD:refs/heads/"+branch); err != nil {
 				return "", err
 			}
 			return gitIn(clone, "rev-parse", "HEAD")
@@ -400,14 +394,14 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 			if err := os.WriteFile(filepath.Join(clone, RoadmapRel), []byte(text), 0o644); err != nil {
 				return "", "", err
 			}
-			if _, err := fixture.Git(clone, "add", RoadmapRel); err != nil {
+			if _, err := fixture.Git(h, clone, "add", RoadmapRel); err != nil {
 				return "", "", err
 			}
-			if _, err := fixture.Git(clone, "commit", "--quiet", "-m", statusMsg(task, runID)); err != nil {
+			if _, err := fixture.Git(h, clone, "commit", "--quiet", "-m", statusMsg(task, runID)); err != nil {
 				return "", "", err
 			}
 			out := filepath.Join(runDir, ".status-"+task+".bundle")
-			if _, err := fixture.Git(clone, "bundle", "create", "--quiet", out, base+"..HEAD"); err != nil {
+			if _, err := fixture.Git(h, clone, "bundle", "create", "--quiet", out, base+"..HEAD"); err != nil {
 				return "", "", err
 			}
 			return base, out, nil
@@ -415,4 +409,16 @@ func ForFixture(repo, branch string, runDir, runID, task, attemptDir, baseRev st
 		Ask: ask, Say: say,
 	}
 	return r, cleanup, nil
+}
+
+// PRViewOf is the view Check reads, from a change request on any host (037): the landed commit
+// is the merge commit, the squash commit or the fast-forwarded head (research R5).
+func PRViewOf(cr scm.ChangeRequest) map[string]any {
+	view := map[string]any{"state": strings.ToUpper(cr.State), "mergedAt": nil, "mergeCommit": nil}
+	if cr.Merged() {
+		view["state"] = "MERGED"
+		view["mergedAt"] = "merged" // Check needs a non-empty value; the host's merge time isn't recorded
+		view["mergeCommit"] = map[string]any{"oid": cr.LandedCommit}
+	}
+	return view
 }

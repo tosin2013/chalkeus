@@ -55,6 +55,9 @@ func githubSetup(cmd *cobra.Command) (*config.Config, *ghloop.Loop, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := gitHubOnly("forge github", cfg.FixtureHost()); err != nil {
+		return nil, nil, err
+	}
 	lp, err := loopFor(cfg)
 	if err != nil {
 		if _, ok := err.(*config.Error); ok {
@@ -128,6 +131,9 @@ func appSetup() (ghapp.App, string, error) {
 	}
 	cfg, err := config.Load(l.Root, false, true)
 	if err != nil {
+		return ghapp.App{}, "", err
+	}
+	if err := gitHubOnly("the GitHub App (forge app-key, app-token)", cfg.FixtureHost()); err != nil {
 		return ghapp.App{}, "", err
 	}
 	return ghapp.App{Cfg: cfg}, config.OriginRepo(l.Root), nil

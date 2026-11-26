@@ -89,7 +89,7 @@ func (p *P) ItemBaseline(dir, id, item string, res readiness.Result, overlay []b
 // writeEarlierOverlays writes each earlier slice's companion folder as earlier-<n>.tar in dir, for
 // the grader's G8 (026). They never reach a worker.
 func (p *P) writeEarlierOverlays(dir string, folders []string) error {
-	cdir, commit, err := fixture.FreshClone(p.Target.CompanionRepo, "", 1)
+	cdir, commit, err := fixture.FreshClone(p.host(), p.Target.CompanionRepo, "", 1)
 	if err != nil {
 		return fmt.Errorf("companion repository %s: %v", p.Target.CompanionRepo, err)
 	}
