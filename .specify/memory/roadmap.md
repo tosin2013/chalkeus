@@ -1,7 +1,22 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.39.0 → 1.40.0 (this revision)
+Version change: 1.40.0 → 1.41.0 (this revision)
+Bump rationale: MINOR — two new planned items (037, 038), a new open question (Q14), and a new
+dependency of 013 on 037. Nothing verified is invalidated.
+Changes this revision (owner decision 2026-11-26, Tosin Akinosho; issue #144, PRD F11):
+  - 037 (new, planned): pluggable SCM phase 1. One host interface; GitLab (gitlab.com and
+    self-managed) first, then Bitbucket Cloud in the same item, for the publisher, reconcile,
+    the status-change PR and the companion PR; terminal and harness approvals only.
+  - 038 (new, planned): pluggable SCM phase 2. GitLab loop parity, Bitbucket approvals,
+    optional Jira link. Depends on 037; not part of the laptop release.
+  - 013: depends on 037 (phase 1 ships with the laptop release; 038 does not).
+  - 004: scope (out) "Bitbucket and other SCMs" annotated as now covered by 037 and 038.
+Specs affected: 004, 013, 037, 038
+Open questions added/resolved: Q14 added (Bitbucket Cloud draft PRs; the self-managed GitLab
+used for the proof)
+
+Prior: Version change: 1.39.0 → 1.40.0
 Bump rationale: MINOR — a new planned item (036). Nothing verified is invalidated.
 Changes this revision (owner decision 2026-11-26, Tosin Akinosho):
   - 036 (new, planned): `doctor --measure`. Measure a target's test suite before building (time,
@@ -1120,7 +1135,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   2026-11-14: GitHub approvals for the human decisions (mode, retry, approving a status
   change; merge is already on GitHub), usable in laptop and cluster mode (C-11); GitHub App
   as a second publisher credential beside the fine-grained token, with setup docs and checks.
-- **Scope (out):** Bitbucket and other SCMs.
+- **Scope (out):** Bitbucket and other SCMs. *(2026-11-26: GitLab and Bitbucket Cloud are now
+  planned in 037 (phase 1) and 038 (phase 2), issue #144.)*
 - **Depends on:** 003
 - **Governed by:** C-01, C-04, C-11
 - **Addresses:** docs/prd.md §9 M3, F3, F11
@@ -1388,9 +1404,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   README and install docs (the spec is the raw metal, the worker build is the forging, the
   grader is the testing and tempering, and the draft PR is the proven piece a human inspects).
 - **Scope (out):** OS package managers; signing beyond checksums (revisit with Q10).
-- **Depends on:** 016, 024, 021, 026, 027, 029, 031 (2026-11-23: macOS support with multi-arch images and kind on Docker Desktop ships with the laptop release. 2026-11-23: brownfield intake including failed Dependabot PRs ships with the laptop release. 2026-11-22: it ships under the new name. 2026-11-19: the laptop release includes auto-draft and the
+- **Depends on:** 016, 024, 021, 026, 027, 029, 031, 037 (2026-11-26: pluggable SCM phase 1 for GitLab and Bitbucket Cloud ships with the laptop release; phase 2 in item 038 does not. 2026-11-23: macOS support with multi-arch images and kind on Docker Desktop ships with the laptop release. 2026-11-23: brownfield intake including failed Dependabot PRs ships with the laptop release. 2026-11-22: it ships under the new name. 2026-11-19: the laptop release includes auto-draft and the
   manager loop. 2026-11-21: it also ships slice runs)
-- **Notes:** **Owner decision 2026-11-23:** brownfield intake (029), including failed
+- **Notes:** **Owner decision 2026-11-26 (issue #144):** pluggable SCM phase 1 (037) ships with
+  the laptop release, so teams on GitLab or Bitbucket Cloud can use it without a GitHub mirror.
+  **Owner decision 2026-11-23:** brownfield intake (029), including failed
   Dependabot PRs, ships with the laptop release. **Owner decision 2026-11-21 (issue #142):** the laptop release ships with slice
   runs (026), so items with several stories of different risk can be built and reviewed one
   story at a time. **Owner decision 2026-11-19:** the laptop-mode release ships with the test
@@ -2419,6 +2437,81 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   refactoring or changing libraries). Lives under doctor, not a new command. Relates to 029
   (debt report) and 033 (allowance, diagnosis).
 
+### 037 — Pluggable SCM, phase 1: GitLab and Bitbucket Cloud beside GitHub  [status: planned]
+
+- **Description:** Let targets and companions live on GitLab (gitlab.com and self-managed) or
+  Bitbucket Cloud as well as GitHub, with the same guarantees, so teams on those hosts can use
+  Chalkeus without mirroring to GitHub.
+- **Outcome:** A target profile chooses its host (`FORGE_SCM=github|gitlab|bitbucket`, default
+  `github`; `FORGE_SCM_HOST` for self-managed GitLab). On each host the publisher is the only
+  holder of a token scoped to one repository or project, item PRs/MRs open as drafts from the
+  bot identity, a human merges, reconcile checks the merge and that the merged tree matches the
+  graded attempt, the status change is a PR/MR a listed approver merges, the companion's hidden
+  tests arrive by a PR/MR, and the audit is complete. With the setting unset, everything
+  behaves as today.
+  **Acceptance:** with `FORGE_SCM` unset, existing tests and evidence pass unchanged. For each of
+  gitlab.com, one self-managed GitLab (Q14) and Bitbucket Cloud, against a throwaway repository:
+  the fixture run completes with the audit at 11/11, and one target item run succeeds (draft
+  PR/MR by the bot, a human merge, tree match, status change approved). On every host the
+  status-change check refuses a PR/MR merged by the bot, by a non-approver, or with any change
+  beyond the one roadmap line. P-checks prove the publisher reaches only the chosen host. No
+  host token reaches a worker or the grader (P11, AU04 unchanged).
+- **Scope (in):**
+  - **one host interface:** the PR/MR, permission and branch-protection operations behind one
+    Go interface (`Reader`, `Writer`, `PRView` without go-github types), and the same split in
+    `publish.py` and `ghops.py`; GitHub becomes one implementation;
+  - **profile and identity:** repository formats `group/subgroup/project` (GitLab) and
+    `workspace/repo` (Bitbucket); `FORGE_APPROVERS` as stable account ids (GitLab numeric user
+    id, Bitbucket account UUID; usernames resolved to ids and recorded); the publisher's bot
+    identity never counts as an approver (as `STATUS_PR_MERGED_BY_PUBLISHER` today);
+  - **credentials:** GitLab project access token, Bitbucket repository access token (git user
+    `x-token-auth`); setup docs and doctor checks for each;
+  - **operations per host:** open a draft (GitLab `Draft:` MR; Bitbucket per Q14), find an open
+    PR/MR for the item, merged state (declined, superseded, closed and locked are not merged),
+    the merge or squash commit, who merged, changed files of the status PR/MR, the approver's
+    write access, branch protection for doctor;
+  - **egress:** the publisher's SCM allowlist follows the chosen host (`gitlab.com` or
+    `FORGE_SCM_HOST`; `bitbucket.org`, `api.bitbucket.org`); a corporate CA bundle for
+    self-managed GitLab, mounted like the proxy settings;
+  - **commit author:** doctor checks the publisher's commit email is valid (some CI integrations
+    refuse an `*.invalid` address);
+  - **order:** GitLab first (gitlab.com, then self-managed), proving the interface; Bitbucket
+    Cloud next, in this item;
+  - terminal and harness approvals only; the GitHub loop (issues, labels, comment approvals)
+    stays GitHub-only.
+- **Scope (out):** the loop features of 038; Bitbucket Data Center/Server and Azure DevOps
+  (later, through the same interface); webhooks (forge polls, as today).
+- **Depends on:** 004, 016, 024
+- **Governed by:** C-03, C-04, C-07, C-11, C-14
+- **Addresses:** docs/prd.md F11; issue #144
+- **Notes:** Added 2026-11-26 (owner, issue #144). Phase 1 ships with the laptop release (013).
+  The issue writes the settings as `PILOT_*`; profiles use `FORGE_*` names since 027, read as
+  `PILOT_*` keys. The tree-match check compares files, so merge commits, squash and
+  fast-forward all work; the PR title format and the `Specfoundry-Run:` trailer carry over.
+  Mode and retry decisions happen before any PR exists, so they stay in the terminal or
+  harness on every host.
+
+### 038 — Pluggable SCM, phase 2: loop parity on GitLab and Bitbucket  [status: planned]
+
+- **Description:** Bring the GitHub loop's issue and comment features to the other hosts.
+- **Outcome:** On GitLab, a run gets the same loop as on GitHub: one issue per item with its
+  task checklist, scoped labels mirroring spec status (for example `status::verified`),
+  `Closes #N`, and approvals by comment (MR and issue notes). On Bitbucket Cloud, item and
+  status-change PRs can be approved by comment or by the native PR Approve. Optionally, a
+  Bitbucket run links a Jira issue.
+- **Scope (in):**
+  - GitLab issues, scoped labels, `Closes #N`, comment approvals through notes (system notes
+    skipped, edits detected with `created_at` against `updated_at`);
+  - Bitbucket comment approvals (`created_on` against `updated_on`) or native PR Approve for item
+    and status PRs;
+  - mode and retry decisions stay in the terminal, harness or comments (no PR exists yet);
+  - an optional Jira link for Bitbucket (Bitbucket issues are often disabled).
+- **Scope (out):** Bitbucket Data Center/Server and Azure DevOps; webhooks.
+- **Depends on:** 037
+- **Governed by:** C-04, C-11
+- **Addresses:** docs/prd.md F11; issue #144
+- **Notes:** Added 2026-11-26 (owner, issue #144). Not part of the laptop release (013).
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2541,6 +2634,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   human, and the human approves and merges them. Build workers still never plan, and the test
   author (018) stays a separate session from the controller (C-14). Still open: what tooling
   helps (for example migration analysis reports in brownfield upgrades).
+- Q14 — Pluggable SCM details for 037 (raised 2026-11-26, issue #144).
+  - Does Bitbucket Cloud's API open a draft pull request? If not, a `Draft:` title prefix plus
+    branch restrictions stand in for it. Verify in 037's research.
+  - Which self-managed GitLab instance carries 037's proof (an owner-run instance, or one
+    stood up for the test), and does it need a corporate CA bundle?
 
 ## Cross-Cutting Notes
 
@@ -2605,4 +2703,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.40.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
+**Version**: 1.41.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
