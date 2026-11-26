@@ -12,6 +12,7 @@ func TestPatternsWordStart(t *testing.T) {
 		"- Risk assessments: `risk-assessment-YYYY-MM-DD-topic.md`",
 		"desk-organisation-guide-for-2026-and-beyond",
 		"laughs_aaaaaaaaaaaaaaaaaaaaaaaa",
+		`{"doc": "see risk-assessment-2026-11-25-topic.md"}`,
 	}
 	yes := []string{
 		"OPENAI_API_KEY=sk-abcdefghijklmnop1234",
@@ -20,6 +21,10 @@ func TestPatternsWordStart(t *testing.T) {
 		"Authorization: Bearer abcdefghijklmnopqrstu",
 		"-----BEGIN RSA PRIVATE KEY-----",
 		"sk-abcdefghijklmnop1234",
+		// JSON evidence: a token after an escaped newline, tab or carriage return.
+		`{"detail": "line one\nghp_abcdefghijklmnopqrstuvwxyz"}`,
+		`{"out": "x\tsk-abcdefghijklmnop1234"}`,
+		`{"out": "x\rgithub_pat_abcdefghij_klmnop"}`,
 	}
 	for _, s := range no {
 		if Patterns.MatchString(s) {

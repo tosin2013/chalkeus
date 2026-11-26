@@ -23,8 +23,10 @@ import (
 
 // Patterns are the token-like strings that must never appear in evidence.
 // The token prefixes must start a word: "risk-assessment-YYYY-MM-DD" contains "sk-" followed by
-// 16 characters and was flagged in a target's docs (documcp run 20261125T223435Z).
-var Patterns = regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:^|[^A-Za-z0-9])(?:github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{16,}|sk-[A-Za-z0-9_-]{16,})|Bearer [A-Za-z0-9._-]{16,}`)
+// 16 characters and was flagged in a target's docs (documcp run 20261125T223435Z). Most evidence
+// is JSON, where a newline or tab inside a string is written \n or \t: a token after one still
+// starts a word, though the character before it is a letter.
+var Patterns = regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----|(?:^|[^A-Za-z0-9]|\\[nrt])(?:github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{16,}|sk-[A-Za-z0-9_-]{16,})|Bearer [A-Za-z0-9._-]{16,}`)
 
 // nonSecretEnvKeys are the App token file's metadata (app-token.env): its kind ("app") and the
 // bot login are public, and "app" would match nearly every file. Every other value is a secret.
