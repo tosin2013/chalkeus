@@ -102,6 +102,19 @@ class DependencyBaseline(Modes):
         self.assertEqual(self.check(r, "G5_hidden_tests")["result"], "fail")
         self.assertIn("carry no signal", self.check(r, "G5_hidden_tests")["detail"])
 
+    def test_a_test_command_that_produced_no_result_is_no_signal(self):
+        # A timeout (124) or a command that can't start (126, 127) isn't a failing test: no work shown.
+        for name, kw, rc in (("timeout", {"test_command": "sleep 5", "command_timeout_s": 1}, 124),
+                             ("not found", {"test_command": "no-such-test-runner-xyz"}, 127),
+                             ("not executable", {"test_command": "./app.py"}, 126)):
+            with self.subTest(name):
+                r = self.run_grade(self.meta(mode="baseline", dependency=True, **kw))
+                self.assertEqual(r["result"], "fail", r["checks"])
+                self.assertEqual(self.check(r, "G4_visible_tests")["result"], "fail")
+                g5 = self.check(r, "G5_hidden_tests")
+                self.assertEqual(g5["result"], "fail")
+                self.assertIn(f"(exit {rc})", g5["detail"])
+
     def test_without_dependency_failing_visible_tests_still_fail(self):
         self.break_visible()
         r = self.run_grade(self.meta(mode="baseline"))
