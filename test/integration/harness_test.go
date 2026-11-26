@@ -138,6 +138,10 @@ func setUp() (*world, error) {
 	if err := x.addTarget("slices", "FORGE_GITHUB_APPROVALS=on\n"); err != nil {
 		return x, err
 	}
+	// deps: a dependency item (029), whose approved bump the scenario commits on a bot branch.
+	if err := x.addTarget("deps", "FORGE_GITHUB_APPROVALS=on\n"); err != nil {
+		return x, err
+	}
 	if err := os.MkdirAll(filepath.Join(x.out, "cover"), 0o755); err != nil {
 		return x, err
 	}

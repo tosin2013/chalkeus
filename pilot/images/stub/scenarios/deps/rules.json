@@ -1,0 +1,7 @@
+[
+  {"match": ["# Task list (`specs/001-greetlib-2/tasks.md`)"], "requires": [["specs/001-greetlib-2/spec.md", "Spec 001: Greetlib 2"]],
+   "attempt": 1, "files": "edit-manifest",
+   "note": "attempt 1 takes the shortcut: pins greetlib back to 1.0 instead of fixing the code (G2 MANIFEST_CHANGED)"},
+  {"match": ["# Task list (`specs/001-greetlib-2/tasks.md`)"], "requires": [["specs/001-greetlib-2/spec.md", "Spec 001: Greetlib 2"]],
+   "files": "fix-code", "note": "later attempts fix the code for greetlib 2"}
+]
