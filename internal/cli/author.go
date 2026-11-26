@@ -122,6 +122,9 @@ func authorWatchCmd() *cobra.Command {
 			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			once, _ := cmd.Flags().GetBool("once")
+			if redraft, _ := cmd.Flags().GetBool("redraft"); redraft {
+				w.EnableRedraft()
+			}
 			out := cmd.OutOrStdout()
 			fmt.Fprintf(out, "author watch: target %s, every %d s, up to %d author Job(s) per draft; Ctrl-C stops it\n", t.Name, t.AuthorIntervalS, t.AuthorAttempts)
 			for {
@@ -149,6 +152,7 @@ func authorWatchCmd() *cobra.Command {
 	addTargetFlag(c)
 	requireTarget(c)
 	c.Flags().Bool("once", false, "one pass, then exit (0: nothing to do or a PR opened; 1: a draft failed)")
+	c.Flags().Bool("redraft", false, "draft again, once per item and slice, even when this spec version was already drafted automatically (for example after a forge fix)")
 	return c
 }
 

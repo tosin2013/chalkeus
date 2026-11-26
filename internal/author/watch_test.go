@@ -231,3 +231,22 @@ func TestAutoDraftedAcrossFeatures(t *testing.T) {
 		t.Errorf("outside the layout: %v", r)
 	}
 }
+
+// `author watch --redraft`: the owner can have a spec version drafted again (after a forge fix,
+// F12), once per item and slice per watcher process.
+func TestRedraftOnceAfterAFailedAutoDraft(t *testing.T) {
+	w, we, _ := watchWorld(t, "hidden_passes", "hidden_passes")
+	if out, err := Pass(context.Background(), we); err != nil || out != PassFailed {
+		t.Fatalf("%s %v\n%s", out, err, w.out)
+	}
+	if why, _, _ := we.skip(context.Background(), "006"); !strings.Contains(why, "already drafted automatically") {
+		t.Fatalf("without --redraft: %q", why)
+	}
+	we.EnableRedraft()
+	if why, _, _ := we.skip(context.Background(), "006"); why != "" {
+		t.Fatalf("--redraft makes it eligible once: %q", why)
+	}
+	if why, _, _ := we.skip(context.Background(), "006"); !strings.Contains(why, "already drafted automatically") {
+		t.Fatalf("only once per process: %q", why)
+	}
+}

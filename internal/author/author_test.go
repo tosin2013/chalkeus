@@ -141,3 +141,21 @@ func TestExitCodes(t *testing.T) {
 		t.Fatal("results exit 1, refusals exit 10")
 	}
 }
+
+// F12: a slice draft's map lists only its slice's criteria; check validates it against those
+// (SliceCriteria), as start writes them, not against every criterion of the item.
+func TestCheckMapSliceCriteria(t *testing.T) {
+	all := []Criterion{{ID: "US1-AS1"}, {ID: "US2-AS1"}, {ID: "US2-AS2"}, {ID: "FR-001"}}
+	files := []File{{Path: "tests/skill.test.ts"}}
+	d := t.TempDir()
+	raw, _ := json.Marshal(Map{Version: 1, SpecSHA256: "s",
+		Criteria:  map[string][]string{"US2-AS1": {"tests/skill.test.ts"}, "US2-AS2": {"tests/skill.test.ts"}},
+		Uncovered: []string{"FR-001"}})
+	write(t, d, MapFile, string(raw))
+	if _, err := CheckMap(d, SliceCriteria(all, "US2"), "s", files); err != nil {
+		t.Fatalf("a US2 map is valid against US2's criteria: %v", err)
+	}
+	if _, err := CheckMap(d, all, "s", files); code(err) != CodeMapInvalid {
+		t.Fatal("against every criterion it lacks US1-AS1: the F12 failure")
+	}
+}
