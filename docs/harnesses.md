@@ -52,7 +52,8 @@ from an operator's machine:
 
 Update checks, model-catalogue fetches and free-model discovery are switched off in the
 image (`OPENCODE_DISABLE_AUTOUPDATE`, `OPENCODE_DISABLE_MODELS_FETCH`,
-`OPENCODE_DISABLE_FREE_MODELS`).
+`OPENCODE_DISABLE_FREE_MODELS`). A target can turn free models back on for its worker and test
+author with `FORGE_ALLOW_FREE_MODELS=on` ([targets](targets.md#2-configure-the-target)).
 
 ### Enterprise environments
 

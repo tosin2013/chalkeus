@@ -216,7 +216,7 @@ func authorWatchEnv(e author.Env, p *pipeline.P) (author.WatchEnv, error) {
 	ck := checks.Deps{L: p.L, C: p.C, Out: io.Discard}
 	je := author.JobEnv{Manifests: p.L.Manifests, Cluster: p.C, Runner: p.Runner, Images: p.Imgs,
 		Model: p.Cfg.Get("PILOT_MODEL"), SpendCap: p.Cfg.Get("PILOT_SPEND_CAP_USD"), TokenCap: p.Cfg.Get("PILOT_TOKEN_CAP"),
-		ModelFiles: p.Cfg.ModelFiles(), Deadline: images.AuthorDeadline(e.Target),
+		ModelFiles: p.Cfg.ModelFiles(), Deadline: images.AuthorDeadline(e.Target), FreeModels: e.Target.FreeModels == "on",
 		Checks: func(ns, draftID string) []author.AuthorCheck {
 			var out []author.AuthorCheck
 			for _, r := range ck.RunAuthorChecks(ns, draftID, p.Imgs) {

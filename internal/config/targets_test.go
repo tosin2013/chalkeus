@@ -59,7 +59,7 @@ func TestLoadTargetGood(t *testing.T) {
 		TestCommand: "mvn -B test", RegistryHosts: []string{"repo.maven.apache.org", "repo1.example.org"},
 		CompanionRepo: "me/greeting-service-acceptance", GithubIssues: "off", GithubApprovals: "on", MaxInputMB: 50, ChangeType: "feat",
 		PublisherEnv: filepath.Join(c.TargetsDir(), "greeting.publisher.env"), SecurityLevel: LevelMinimal,
-		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env"), AuthorAuto: "off", SliceRuns: "off", AuthorIntervalS: 120, AuthorAttempts: 2,
+		AuthorEnv: filepath.Join(c.TargetsDir(), "greeting.author.env"), AuthorAuto: "off", SliceRuns: "off", FreeModels: "off", AuthorIntervalS: 120, AuthorAttempts: 2,
 		ProposeLabel: "chalkeus:proposed", ProposeLabelDefault: true, StepIntervalS: 120}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("\n got %+v\nwant %+v", got, want)
@@ -304,5 +304,20 @@ func TestLoadTargetWorkerBudget(t *testing.T) {
 	writeTarget(t, c, "t", goodTarget)
 	if tg, _ = c.LoadTarget("t", ""); tg.WorkerCPU != "" || tg.WorkerMemory != "" || tg.WorkerDeadlineS != 0 {
 		t.Fatalf("unset keys must stay empty (the toolchain default applies): %+v", tg)
+	}
+}
+
+// FORGE_ALLOW_FREE_MODELS is opt-in per target: off by default, on or off only.
+func TestTargetFreeModels(t *testing.T) {
+	c := targetCfg(t)
+	writeTarget(t, c, "greeting", goodTarget+"FORGE_ALLOW_FREE_MODELS=on\n")
+	got, err := c.LoadTarget("greeting", "tosin2013/specfoundry")
+	if err != nil || got.FreeModels != "on" {
+		t.Fatalf("%v %q", err, got.FreeModels)
+	}
+	writeTarget(t, c, "greeting", goodTarget+"FORGE_ALLOW_FREE_MODELS=yes\n")
+	_, err = c.LoadTarget("greeting", "tosin2013/specfoundry")
+	if err == nil || !strings.Contains(err.Error(), "ALLOW_FREE_MODELS") {
+		t.Fatalf("want a refusal naming the key, got %v", err)
 	}
 }

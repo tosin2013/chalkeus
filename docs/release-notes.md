@@ -1,5 +1,15 @@
 # Release notes
 
+## Free models per target, and OpenCode 2.3.2
+
+- The worker image runs **OpenCode 2.3.2**. Attempt reports now record the OpenCode version the
+  worker actually ran (it said 2.2.7 whatever the image held).
+- **`FORGE_ALLOW_FREE_MODELS=on`** in a target's profile lets that target's worker and test
+  author use OpenCode's free models, which the image otherwise turns off. Off by default; the mode
+  approval says when it's on ([targets](targets.md#2-configure-the-target)).
+
+Nothing to do unless you want free models for a target.
+
 ## macOS: multi-platform images and Docker Desktop (031)
 
 New:

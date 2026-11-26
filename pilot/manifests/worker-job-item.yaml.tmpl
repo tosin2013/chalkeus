@@ -40,6 +40,7 @@ ${TOOLCHAIN_INITS}
             - {name: HTTPS_PROXY, value: "${PROXY_URL}"}
             - {name: https_proxy, value: "${PROXY_URL}"}
             - {name: NO_PROXY, value: ""}
+            - {name: OPENCODE_DISABLE_FREE_MODELS, value: "${DISABLE_FREE_MODELS}"}
 ${TOOLCHAIN_ENV}
           securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
           resources: {requests: {cpu: 500m, memory: 512Mi}, limits: {cpu: "${CPU}", memory: ${MEMORY}}}

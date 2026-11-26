@@ -88,7 +88,7 @@ func TestItemWorkerJobRenders(t *testing.T) {
 		y, err := k8s.Render(filepath.Join(root, "pilot/manifests/worker-job-item.yaml.tmpl"), map[string]string{
 			"NS": "pilot-w-002-1", "DEADLINE": "1200", "CPU": "2", "MEMORY": "2Gi", "WORKER_IMAGE": "w@sha256:0", "TOOLS_IMAGE": "t@sha256:0", "PILOT_MODEL": "p/m",
 			"SPEND_CAP": "1.00", "TOKEN_CAP": "2000000", "INPUT_LIMIT": "64Mi", "PROXY_URL": "http://proxy.pilot-egress-w-g.svc.cluster.local:8888",
-			"HOME_LIMIT": "1Gi", "TOOLCHAIN_INITS": inits, "TOOLCHAIN_ENV": b.Env, "TOOLCHAIN_MOUNTS": b.Mounts, "TOOLCHAIN_VOLUMES": b.Volumes})
+			"HOME_LIMIT": "1Gi", "DISABLE_FREE_MODELS": "1", "TOOLCHAIN_INITS": inits, "TOOLCHAIN_ENV": b.Env, "TOOLCHAIN_MOUNTS": b.Mounts, "TOOLCHAIN_VOLUMES": b.Volumes})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -231,5 +231,17 @@ func TestFixedPathsInMetaAndPrompt(t *testing.T) {
 	raw, _ = os.ReadFile(filepath.Join(adir2, "meta.json"))
 	if strings.Contains(string(raw), "fixed_paths") {
 		t.Fatal("an ordinary item's meta has no fixed_paths")
+	}
+}
+
+// The item worker Job keeps OpenCode's free models off unless the target opted in.
+func TestDisableFreeModelsEnv(t *testing.T) {
+	if DisableFreeModels(false) != "1" || DisableFreeModels(true) != "0" {
+		t.Fatal("DisableFreeModels")
+	}
+	root, _ := filepath.Abs("../..")
+	raw, err := os.ReadFile(filepath.Join(root, "pilot/manifests/worker-job-item.yaml.tmpl"))
+	if err != nil || !strings.Contains(string(raw), `{name: OPENCODE_DISABLE_FREE_MODELS, value: "${DISABLE_FREE_MODELS}"}`) {
+		t.Fatalf("worker-job-item must set OPENCODE_DISABLE_FREE_MODELS from DISABLE_FREE_MODELS (%v)", err)
 	}
 }

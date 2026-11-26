@@ -35,10 +35,14 @@ for f in ("/tmp/entry.log", "/tmp/harness.stderr", "/tmp/harness.jsonl"):
         tail += open(f, errors="replace").read()[-2048:]
 tail = re.sub(r"(sk-|ghp_|gho_|github_pat_)[A-Za-z0-9_\-]{4,}", r"\1***", tail)
 tail = re.sub(r"(?i)(bearer\s+)[A-Za-z0-9._\-]{8,}", r"\1***", tail)
+try:
+    harness_version = subprocess.run(["opencode", "--version"], capture_output=True, text=True, timeout=20).stdout.strip().lstrip("v") or None
+except Exception:  # noqa: BLE001 - the version is informational
+    harness_version = None
 print(json.dumps({
     "version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": meta["attempt"],
     "base_revision": meta["base_revision"], "head": head,
-    "harness": {"name": "opencode", "version": "2.2.7", "exit": int(hexit) if hexit not in ("", None) else None},
+    "harness": {"name": "opencode", "version": harness_version, "exit": int(hexit) if hexit not in ("", None) else None},
     "spend": spend, "changed_paths": changed, "error": err, "log_tail": tail[-4096:],
     "stopped_by": "deadline" if (spend or {}).get("stopped_by_deadline") else ("spend_cap" if (spend or {}).get("stopped_by_cap") else None),
 }))
