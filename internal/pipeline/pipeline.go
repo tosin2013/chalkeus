@@ -694,8 +694,7 @@ func (p *P) reconcileA(run *evidence.Run) int {
 		rec.Where = p.repo() + "'s roadmap"
 	}
 	if !SlicesLast(run) { // 026: a slice before the item's last: no status change
-		defer cleanup()
-		return p.sliceMerged(run, rec, task, n, changed, "terminal")
+		return p.sliceMerged(run, rec, cleanup, task, n, changed, "terminal")
 	}
 	if len(acceptanceChecks(run)) > 0 && run.State["acceptance_recorded"] != true { // 026 FR-018
 		if c, _, _ := rec.Check(task, run.ItemOf(task), asInt(pr["number"]), changed); c == 0 {

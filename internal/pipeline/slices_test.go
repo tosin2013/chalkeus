@@ -63,7 +63,7 @@ func events(t *testing.T, r *evidence.Run) string {
 // roadmap; it says which slice is next.
 func TestSliceMergedNoStatusChange(t *testing.T) {
 	p, r := slicedRun(t, false)
-	_ = p.sliceMerged(r, fakeRec(true, 2), "006", 1, []string{"app.py"}, "terminal")
+	_ = p.sliceMerged(r, fakeRec(true, 2), func() {}, "006", 1, []string{"app.py"}, "terminal")
 	if r.Task("006")["state"] != "merged" {
 		t.Fatalf("task state %v", r.Task("006")["state"])
 	}
@@ -80,13 +80,42 @@ func TestSliceMergedNoStatusChange(t *testing.T) {
 	}
 }
 
+// The graded clone of the target (.graded-<task>/ in the run folder) is removed before the run
+// finishes, so the audit never scans the target's files and a killed process can't leave them
+// behind in evidence (documcp run 20261125T223435Z: AU08 flagged a file in .graded-001/).
+func TestSliceMergedCleansUpBeforeFinishing(t *testing.T) {
+	p, r := slicedRun(t, false)
+	graded := filepath.Join(r.Dir, ".graded-006")
+	if err := os.MkdirAll(graded, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	cleanup := func() {
+		calls++
+		if _, err := os.Stat(filepath.Join(r.Dir, "audit.jsonl")); err == nil {
+			t.Error("cleanup ran after the audit (audit.jsonl already written)")
+		}
+		_ = os.RemoveAll(graded)
+	}
+	_ = p.sliceMerged(r, fakeRec(true, 2), cleanup, "006", 1, []string{"app.py"}, "terminal")
+	if calls != 1 {
+		t.Fatalf("cleanup called %d times", calls)
+	}
+	if _, err := os.Stat(graded); !os.IsNotExist(err) {
+		t.Fatalf("graded clone still in the run folder: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(r.Dir, "audit.jsonl")); err != nil {
+		t.Fatalf("the run didn't finish with an audit, so the order check above proves nothing: %v", err)
+	}
+}
+
 func TestSliceMergedWaitsForTheMerge(t *testing.T) {
 	p, r := slicedRun(t, false)
-	if code := p.sliceMerged(r, fakeRec(false, 2), "006", 1, nil, "terminal"); code != ExitAwaitMerge || r.State["state"] != "paused(awaiting-merge)" {
+	if code := p.sliceMerged(r, fakeRec(false, 2), func() {}, "006", 1, nil, "terminal"); code != ExitAwaitMerge || r.State["state"] != "paused(awaiting-merge)" {
 		t.Fatalf("%d %v", code, r.State["state"])
 	}
 	p, r = slicedRun(t, false)
-	if code := p.sliceMerged(r, fakeRec(true, 1), "006", 1, nil, "terminal"); code == ExitOK || r.State["reason"] != "RECONCILE_SLICE_TASKS_INCOMPLETE" {
+	if code := p.sliceMerged(r, fakeRec(true, 1), func() {}, "006", 1, nil, "terminal"); code == ExitOK || r.State["reason"] != "RECONCILE_SLICE_TASKS_INCOMPLETE" {
 		t.Fatalf("%d %v", code, r.State["reason"])
 	}
 }
