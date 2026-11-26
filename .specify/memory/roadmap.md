@@ -1,7 +1,19 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.41.0 → 1.41.1 (this revision)
+Version change: 1.41.1 → 1.41.2 (this revision)
+Bump rationale: PATCH — an open question resolved (Q14), from 037's planning.
+Changes this revision (owner decisions 2026-11-26, Tosin Akinosho, /speckit-plan for 037):
+  - Q14 resolved: Bitbucket Cloud's API opens native draft pull requests (research R3); the
+    self-managed GitLab proof uses a throwaway GitLab CE container with a self-signed CA.
+  - 037 note: on gitlab.com's Free plan (no project access tokens) a personal token of a
+    dedicated bot account is accepted when it reaches only the one project (research R4).
+  - 037 order: Bitbucket Cloud first, then gitlab.com, then self-managed GitLab (owner
+    decision 2026-11-26; a Bitbucket target is waiting). Was GitLab first.
+Specs affected: 037
+Open questions added/resolved: Q14 resolved
+
+Prior: Version change: 1.41.0 → 1.41.1
 Bump rationale: PATCH — a status transition (037 planned → specced) and its Spec dir.
 Changes this revision (owner request 2026-11-26, Tosin Akinosho, /speckit-specify for 037):
   - 037 planned → specced: spec in specs/037-pluggable-scm/. Spec dir added.
@@ -2482,8 +2494,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     self-managed GitLab, mounted like the proxy settings;
   - **commit author:** doctor checks the publisher's commit email is valid (some CI integrations
     refuse an `*.invalid` address);
-  - **order:** GitLab first (gitlab.com, then self-managed), proving the interface; Bitbucket
-    Cloud next, in this item;
+  - **order:** ~~GitLab first (gitlab.com, then self-managed), proving the interface; Bitbucket
+    Cloud next, in this item;~~ **(owner decision 2026-11-26)** Bitbucket Cloud first, proving
+    the interface; then gitlab.com; then self-managed GitLab, in this item;
   - terminal and harness approvals only; the GitHub loop (issues, labels, comment approvals)
     stays GitHub-only.
 - **Scope (out):** the loop features of 038; Bitbucket Data Center/Server and Azure DevOps
@@ -2497,7 +2510,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   `PILOT_*` keys. The tree-match check compares files, so merge commits, squash and
   fast-forward all work; the PR title format and the `Specfoundry-Run:` trailer carry over.
   Mode and retry decisions happen before any PR exists, so they stay in the terminal or
-  harness on every host.
+  harness on every host. **2026-11-26 (owner, planning):** on gitlab.com's Free plan, which has
+  no project access tokens, a personal token of a dedicated bot account is accepted when doctor
+  proves it reaches only the one project.
 
 ### 038 — Pluggable SCM, phase 2: loop parity on GitLab and Bitbucket  [status: planned]
 
@@ -2647,6 +2662,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     branch restrictions stand in for it. Verify in 037's research.
   - Which self-managed GitLab instance carries 037's proof (an owner-run instance, or one
     stood up for the test), and does it need a corporate CA bundle?
+  **Resolved 2026-11-26 (owner, 037 planning):** Bitbucket Cloud's API has a `draft` field on
+  pull requests, and drafts can't be merged until marked ready (specs/037-pluggable-scm/
+  research.md R3), so no stand-in is needed. The proof instance is a throwaway GitLab Community
+  Edition container at a pinned version on the Ubuntu box, with a self-signed CA so the CA-bundle
+  path is exercised (R9).
 
 ## Cross-Cutting Notes
 
@@ -2711,4 +2731,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.41.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
+**Version**: 1.41.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
