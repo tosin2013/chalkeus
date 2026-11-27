@@ -1,7 +1,15 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.42.1 → 1.43.0 (this revision)
+Version change: 1.43.0 → 1.43.1 (this revision)
+Bump rationale: PATCH — status transition: 036 in-progress (US1, the CI review, built).
+Changes this revision (owner go-ahead 2026-11-27, Tosin Akinosho):
+  - 036 → in-progress, spec dir specs/036-measure-and-ci-review/; US1 (doctor's CI review) is
+    built; US2 (`--measure`) is still to be specced.
+Specs affected: 036
+Open questions added/resolved: none
+
+Prior: Version change: 1.42.1 → 1.43.0
 Bump rationale: MINOR — material scope change to 036: a CI review (GitHub first).
 Changes this revision (owner decision 2026-11-27, Tosin Akinosho):
   - 036 gains a CI review in `doctor --target` (read-only, no cluster, detected automatically
@@ -2468,7 +2476,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   specs carry hidden-test output from the private companion. Workers never see evidence, so
   runs aren't affected; the companion's confidentiality is.
 
-### 036 — Measure a target before building: `doctor --measure` and a CI review  [status: planned]
+### 036 — Measure a target before building: `doctor --measure` and a CI review  [status: in-progress]
 
 - **Description:** Measure a target's test suite on the cluster before the first item, and keep
   the numbers, so budgets, slice size and planning rest on evidence instead of failed attempts;
@@ -2516,6 +2524,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   (later, through 037's interface).
 - **Depends on:** 030, 033
 - **Governed by:** C-01, C-04, C-12, C-16
+- **Spec dir:** specs/036-measure-and-ci-review/
 - **Notes:** Added 2026-11-26 (owner). From documcp's 001 US1 slice (runs
   20261125T163307Z, 20261125T191444Z, 20261125T200730Z, 20261125T223435Z): each failed attempt
   came from something measurable before the first run: leaked handles (40 min of searching), a
@@ -2846,4 +2855,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.43.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-27
+**Version**: 1.43.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-27

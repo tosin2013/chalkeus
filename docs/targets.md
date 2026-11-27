@@ -604,6 +604,8 @@ then uses the committed HEAD of your local checkout instead of the branch on Git
   ones), `spec status`'s own findings (for example `SS_STATUS_AHEAD_OF_TASKS`), and for each item
   what the pilot needs next: `done`, `ready to run`, or what's missing (dependencies, a spec,
   tasks, allowed paths, hidden tests). It never fails `doctor`; use it to pick the next item.
+- **CI** (every run of `doctor`, when the target has `.github/workflows/`): a read-only review of
+  the target's CI, with CI's exact commands next to forge's ([below](#doctors-ci-review)).
 - **Item:** every readiness rule, with each failure's detail (for example the snapshot size), and
   the hidden tests' coverage.
 - **`--baseline`:** the project's tests pass on today's code with no network (the check that
@@ -611,6 +613,23 @@ then uses the committed HEAD of your local checkout instead of the branch on Git
   It never shows hidden-test output.
 
 Exit 0 means no failures (warnings allowed); exit 1 means at least one failure.
+
+### Doctor's CI review
+
+Grading runs the profile's `FORGE_TEST_COMMAND`; the project's CI may run more, or run it
+differently. Whenever the target has CI configuration, `doctor` reads it (GitHub Actions for now,
+with your read token; nothing is changed or re-run) and reports, as warnings and information only:
+
+| Row | What it tells you | What to do |
+|---|---|---|
+| `workflows` | which workflows check changes (push or pull request); release, tag-only, schedule and manual workflows are listed but not compared | nothing |
+| `default branch` | each job whose latest run on the default branch failed, with the failed step, its command and the telling log line (an advisory, a failing test, a compiler error) | fix it first: a forge baseline fails on it too, or every PR inherits the red check; a vulnerable dependency fits a [dependency item](#a-dependency-upgrade-as-an-item). A deployment or credentials failure is information |
+| `test command` | CI's test commands and forge's, each resolved through `package.json` scripts, and whether they agree on coverage and on force-exit or the race detector | make `FORGE_TEST_COMMAND` match CI, or change CI ([strategies](strategies.md#3-grade-the-way-ci-does)) |
+| `checks grading doesn't run` | typecheck, lint, build, audit, commit lint and scanning steps that CI runs and grading doesn't | add the ones a change can break to `FORGE_TEST_COMMAND` (for example `npm run typecheck && npm run lint && npm run test:ci`), or accept the gap |
+| `runtime` | the Node, Go or Java versions CI sets up, against the target's toolchain | align CI or the toolchain in a planning PR |
+
+documcp's first review (2026-11-27) found the Security Audit job red on `main` (zod < 4.6.6, high)
+and that CI's typecheck and lint never ran in grading.
 
 ## 4. Run the item
 

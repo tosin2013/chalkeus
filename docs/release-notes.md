@@ -1,5 +1,15 @@
 # Release notes
 
+## Doctor reviews the target's CI (036, first part)
+
+- `./chalkeus forge doctor --target <t>` now reads the target's CI whenever it has
+  `.github/workflows/`, read-only: jobs red on the default branch (with the failed step, its
+  command and the telling log line), CI's test commands next to the profile's (coverage,
+  force-exit), the checks grading never runs (typecheck, lint, build, audit, commit lint), and
+  CI's runtime versions against the toolchain. Warnings and information only
+  ([targets: doctor's CI review](targets.md#doctors-ci-review)).
+- Other Git hosts get one information line for now.
+
 ## Tracking issues readable by visitors
 
 - A run's tracking issue now names the work instead of the run: `Chalkeus: <story> (<item> · <slice>)`.
