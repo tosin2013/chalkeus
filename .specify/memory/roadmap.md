@@ -1,7 +1,20 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.42.0 → 1.42.1 (this revision)
+Version change: 1.42.1 → 1.43.0 (this revision)
+Bump rationale: MINOR — material scope change to 036: a CI review (GitHub first).
+Changes this revision (owner decision 2026-11-27, Tosin Akinosho):
+  - 036 gains a CI review in `doctor --target` (read-only, no cluster): default-branch CI health
+    with each red job's failed step and first error line; the profile's test command compared
+    with CI's test step; CI-only checks grading never runs; CI's runtime version against the
+    toolchain image. The report shows CI's exact commands next to forge's. GitHub first, behind
+    a CI-reader interface that 037's SCM hosts can implement later.
+  - Motivation (documcp): the coverage gate (001 US1), `--forceExit` hiding open handles, and
+    the Security Audit job red on `main` (zod advisory, documcp item 004) were all found late.
+Specs affected: 036
+Open questions added/resolved: none
+
+Prior: Version change: 1.42.0 → 1.42.1
 Bump rationale: PATCH — clarifications to 039 from the review of #235; no scope or status change.
 Changes this revision (owner go-ahead 2026-11-27, Tosin Akinosho; review of #235):
   - Q-039a and Q-039b renamed Q15 and Q16, continuing the numbering (the old names are kept in
@@ -2454,7 +2467,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   specs carry hidden-test output from the private companion. Workers never see evidence, so
   runs aren't affected; the companion's confidentiality is.
 
-### 036 — Measure a target before building: `doctor --measure`  [status: planned]
+### 036 — Measure a target before building: `doctor --measure` and a CI review  [status: planned]
 
 - **Description:** Measure a target's test suite on the cluster before the first item, and keep
   the numbers, so budgets, slice size and planning rest on evidence instead of failed attempts;
@@ -2468,6 +2481,16 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   `FORGE_TEST_COMMAND`, or a research task for planning ("the suite leaks handles"). The
   measurements are kept per target, with their date and commit, so the diagnosis (033) and
   doctor's allowance check reuse them and a later measurement shows the trend.
+  **CI review** (added 2026-11-27): `./chalkeus forge doctor --target <t>` (always, read-only,
+  seconds, no cluster) also reads the target's CI and prints CI's exact commands next to
+  forge's, so the operator knows before the first run whether to change the profile, fix tests or
+  update CI: (1) default-branch health: the latest CI run per job, and for each red job the
+  failed step and its first error line, with a warning that a red default branch is fixed first
+  (often as a dependency item, 029); (2) the profile's `FORGE_TEST_COMMAND` against CI's test
+  step (coverage thresholds, `--forceExit`, worker count), warning on a mismatch that grading
+  can pass while CI fails; (3) CI-only checks that grading never runs (audit, lint, typecheck,
+  build, commit lint), for the operator to add to the test command or accept as a gap; (4) CI's
+  runtime version against the toolchain image (extends 033's runtime mismatch check).
 - **Scope (in):**
   - the measurements above, run as grader-like Jobs (offline, the target's budget), needing no
     item and no hidden tests, so they work for a new repository too;
@@ -2477,9 +2500,14 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     for the project's own planning (refactor slow tests, change a library or test runner, split
     the suite), never as a forge failure;
   - kept results and a short trend (last measurements, per target);
+  - the CI review above: GitHub Actions first (workflow files and the latest default-branch
+    runs, through the operator's read credential), behind a small CI-reader interface keyed by
+    the target's `scm.kind`, so 037's hosts can add theirs later; warnings only, never a refusal;
   - docs: reading the report, and acting on it (docs/strategies.md).
 - **Scope (out):** changing budgets or test commands automatically; profiling the project's
-  code beyond its test command; measuring live-model behaviour (C-16).
+  code beyond its test command; measuring live-model behaviour (C-16); changing, re-running or
+  approving the target's CI (the review only reads it); CI readers for GitLab and Bitbucket
+  (later, through 037's interface).
 - **Depends on:** 030, 033
 - **Governed by:** C-01, C-04, C-12, C-16
 - **Notes:** Added 2026-11-26 (owner). From documcp's 001 US1 slice (runs
@@ -2489,7 +2517,10 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   profile's test command didn't check, and flaky tests. Owner: measurements are the most
   important part of onboarding, and they set goals (if the times are too high, look at
   refactoring or changing libraries). Lives under doctor, not a new command. Relates to 029
-  (debt report) and 033 (allowance, diagnosis).
+  (debt report) and 033 (allowance, diagnosis). 2026-11-27 (owner): add a CI review, GitHub
+  first, so CI's commands are known before the first run; documcp found its coverage gate
+  (001 US1), `--forceExit` and a Security Audit job red on `main` (zod advisory, its item 004)
+  only after the fact. Relates to 037 (SCM interface) without depending on it.
 
 ### 037 — Pluggable SCM, phase 1: GitLab and Bitbucket Cloud beside GitHub  [status: specced]
 
@@ -2809,4 +2840,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.42.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-27
+**Version**: 1.43.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-27
