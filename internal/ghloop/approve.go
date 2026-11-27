@@ -101,14 +101,15 @@ func (l *Loop) EnsureTracking(run *evidence.Run) (int, error) {
 	if n, ok := num(t.Issue); ok && n > 0 {
 		return n, nil
 	}
-	body := fmt.Sprintf("<!-- chalkeus:run=%s -->\nDecisions for pilot run `%s` are posted here. "+
-		"Allowed approvers reply with the exact command shown in each post.\n\n"+
-		"_The pilot never merges, and a merge is never approved here._\n", run.ID, run.ID)
 	w, err := l.W()
 	if err != nil {
 		return 0, err
 	}
-	n, err := w.CreateIssue(l.ctx(), l.Repo, "pilot run "+run.ID, body, nil)
+	var labels []string // a label that can't be made never blocks the issue
+	if _, err := w.EnsureLabels(l.ctx(), l.Repo, []Label{{Name: TrackingLabel, Color: "5319e7"}}); err == nil {
+		labels = []string{TrackingLabel}
+	}
+	n, err := w.CreateIssue(l.ctx(), l.Repo, issueTitle(run), l.issueBody(run, openStatus(run, nil)), labels)
 	if err != nil {
 		return 0, err
 	}
@@ -152,14 +153,14 @@ func (l *Loop) PostDecision(run *evidence.Run, p *decisions.Pending) (map[string
 	for _, a := range l.Approvers {
 		at = append(at, "@"+a)
 	}
-	body := fmt.Sprintf("%s\n**Decision pending: %s.**\n\nTo approve, reply with exactly:\n\n    /approve %s\n\n"+
+	body := fmt.Sprintf("%s\n%s\n\nDecision pending: %s.\n\nTo approve, reply with exactly:\n\n    /approve %s\n\n"+
 		"Allowed approvers: %s. To cancel your approval before the run resumes: `/withdraw %s`.\n",
-		key, decisions.Describe(p), p.Step, strings.Join(at, ", "), p.Step)
+		key, decisionLead(p), decisions.Describe(p), p.Step, strings.Join(at, ", "), p.Step)
 	if p.Step == "retry" { // 033: the other answer to a retry
 		body += "\nTo end the run instead and go back to planning, reply with exactly:\n\n    /approve replan\n"
 	}
 	if note := decisionNote(run, p.Step); note != "" { // 030: e.g. why the last attempt stopped
-		body += "\n" + note + "\n"
+		body += "\n<details><summary>Diagnosis</summary>\n\n```text\n" + strings.TrimRight(note, "\n") + "\n```\n</details>\n"
 	}
 	w, err := l.W()
 	if err != nil {
@@ -176,6 +177,7 @@ func (l *Loop) PostDecision(run *evidence.Run, p *decisions.Pending) (map[string
 		return nil, err
 	}
 	_ = run.Event("github", p.Task, p.N, "decision_posted", fmt.Sprintf("step=%s issue=%d comment=%d", p.Step, issue, cid))
+	l.updateStatus(run, w, issue, openStatus(run, p))
 	return d, nil
 }
 
@@ -213,6 +215,7 @@ func (l *Loop) CloseTracking(run *evidence.Run, outcome, evidencePath string) er
 	if _, err := w.Comment(l.ctx(), l.Repo, issue, body); err != nil {
 		return err
 	}
+	l.updateStatus(run, w, issue, closedStatus(run, outcome))
 	if err := w.CloseIssue(l.ctx(), l.Repo, issue); err != nil {
 		return err
 	}
