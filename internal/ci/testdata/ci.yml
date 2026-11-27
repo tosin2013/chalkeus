@@ -1,0 +1,66 @@
+# A reduced copy of documcp's CI (2026-11-27): a matrix test job with typecheck and lint, a
+# security audit, commit lint on pull requests, and a step that runs only after a failure.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Clean up any existing memory files
+        run: rm -rf .documcp
+      - name: Type check
+        run: npm run typecheck
+      - name: Lint code
+        run: npm run lint
+      - name: Run tests
+        run: npm test
+      - name: Save test results JSON
+        if: failure() && matrix.node-version == '24.x'
+        run: npm test -- --json --outputFile=test-results.json 2>/dev/null || true
+      - name: Run tests with coverage
+        run: npm test -- --coverage
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+      - run: npm ci
+      - name: Check for high severity vulnerabilities (production)
+        run: npm audit --audit-level=high --production
+
+  commitlint:
+    name: Commit Message Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check
+        run: |
+          # quoted names are data, not commands
+          ALLOWED=(
+            "jest"
+            "eslint"
+          )
+          npx commitlint --from HEAD~1 --to HEAD --verbose

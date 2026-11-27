@@ -193,6 +193,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		r.Add(area, "branch protection", doctor.Pass, t.Branch+" is protected")
 	}
 	doctorRoadmap(&r, t)
+	doctorCI(ctx, &r, l, t) // 036: the target's CI, compared with the profile (warnings only)
 	if item == "" {
 		return doctorExit(&r)
 	}

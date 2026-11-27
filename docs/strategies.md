@@ -56,7 +56,9 @@ and an agent can spend a whole attempt searching. More time or smaller attempts 
 ## 3. Grade the way CI does
 
 Set `FORGE_TEST_COMMAND` in the target profile to what the project's CI runs, including coverage
-thresholds and without workarounds such as force-exit flags. Otherwise a slice can pass grading
+thresholds and without workarounds such as force-exit flags. `./chalkeus forge doctor --target <t>`
+shows CI's commands next to forge's, the checks grading doesn't run (typecheck, lint, audit) and
+any CI job red on the default branch ([targets: doctor's CI review](targets.md#doctors-ci-review)). Otherwise a slice can pass grading
 and still turn the project's CI red (documcp: a 78% branch-coverage gate the profile's command
 didn't check), or hide a defect the slice was meant to fix.
 
