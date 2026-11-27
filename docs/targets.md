@@ -30,8 +30,8 @@ nothing of the target's. It needs no cluster and no model.
   - `superseded`: the default branch's lockfile already has that version or newer, or a newer bot
     PR bumps the same package. Close it;
   - `safe`: a patch or minor bump that fails no check of its own;
-  - `needs code changes`: a major bump, or a check of its own fails. A later forge release builds
-    such a change as a dependency item (roadmap item 029);
+  - `needs code changes`: a major bump, or a check of its own fails. Forge can build the code
+    change as a [dependency item](#a-dependency-upgrade-as-an-item);
   - `pending`: its checks haven't finished;
   - `not triaged`: another bot, an ecosystem without a toolchain, or checks the credential can't
     read.
@@ -47,6 +47,65 @@ token for that one repository with read permissions only, kept in memory. Otherw
 read token (`GH_TOKEN`, `GITHUB_TOKEN`, then `gh auth token`). It never uses the publisher's
 token. For private repositories, and for advisories, grant the App **Checks**, **Commit statuses**
 and **Dependabot alerts**, all read; the report names whichever is missing.
+
+### Acting on the report
+
+Forge proposes; you act on GitHub yourself:
+
+1. **Fix the shared checks first.** A check that fails on the default branch, or on most bot PRs,
+   is one problem, not twenty. Fix it on the default branch (by hand or as an ordinary item),
+   then let the bot rebase its PRs.
+2. **Close the `superseded` PRs**, and merge or batch the `safe` ones as you normally would.
+3. **Fix the baseline flags** before the first run:
+   - a **red default branch**: a forge baseline on it fails too, so fix it first;
+   - **test scripts that force an exit**: the flag hides tests that leave handles open. Keep it in
+     `FORGE_TEST_COMMAND` for now if you must, and plan an item that fixes the leaks;
+   - **install scripts**: see [native builds](#installs-that-build-native-code-or-download-files)
+     (`npm ci --ignore-scripts` when the native build isn't needed).
+4. **Turn each `needs code changes` PR you want into a dependency item** (next section), or close
+   it.
+
+### A dependency upgrade as an item
+
+A major bump (zod 3 → 4, for example) breaks code. A **dependency item** takes the bump exactly as
+you approved it, and the agent fixes the code around it. Prepare it like any item
+([section 1](#1-prepare-the-repository)), plus:
+
+1. **Get the bump onto the current default branch.** The listed files at the base must equal the
+   commit's parent. If the bot PR is behind, ask the bot to rebase it (`@dependabot rebase`), or
+   commit the same change yourself on a branch from the current default branch and push it.
+   Forge never rebases anything.
+2. **Name the commit in the item's `spec.md`**, beside `## Allowed paths`:
+
+   ```markdown
+   ## Manifest change
+
+   - Commit: `3f9c2d0e8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d`
+   - Files: `package.json`, `package-lock.json`
+   ```
+
+   Exactly one full 40-character commit, and every file its diff changes (no globs). The files
+   must be the toolchain's dependency manifests. Other lines are ignored, so you can note which
+   bot PR it came from. The commit must be fetchable from the target: a bot PR's head commit is.
+3. **Write the tasks as the code change** ("move the schemas to zod 4's API"), with allowed paths
+   for the code. The manifest files need not be listed: the agent may not change them.
+4. **Write hidden tests that guard what must not change**: the behaviour your users rely on, which
+   the upgrade must keep. Visible tests the bump breaks are already part of the work.
+
+What the run does:
+- `gate` and `doctor` check the section (`manifest_change`); each problem refuses the item with a
+  `MANIFEST_CHANGE_…` code ([troubleshooting](troubleshooting.md#manifest-change)).
+- The mode approval shows the commit, the files, and the packages and versions it changes.
+- The baseline, the dependency cache and the worker all start from the base with the bump applied.
+  Visible tests the bump breaks are recorded in the baseline; afterwards they must pass, with the
+  hidden tests. If the bump breaks no visible test, the hidden tests must fail on it instead.
+- An attempt that edits, deletes or renames a manifest file fails G2 with
+  `MANIFEST_CHANGED: <file>`.
+- The draft PR starts with the manifest commit (your approved files byte for byte, with the
+  commit's author and subject and `Chalkeus-Run: <run>` in its body), then the agent's fixes.
+- A dependency item is built whole: `--slice` is refused.
+
+After you merge forge's PR, close the bot PR if the bot hasn't already.
 
 ## 1. Prepare the repository
 
@@ -93,6 +152,33 @@ For each item you want the pilot to build:
     grader. The agent never sees them.
   - They must fail on the current code.
   - They may only use dependencies the project's build already declares.
+
+### The planning tools
+
+Prepare items with Spec Kit and two extensions, the roadmap and spec-status. With Spec Kit 1.4.3,
+from the repository root:
+
+```sh
+pipx install uv
+S="uvx --from git+https://github.com/github/spec-kit.git@v1.4.3 specify"
+$S init --here --integration claude --script sh --ignore-agent-tools --force --non-interactive
+$S extension add roadmap --from https://github.com/srobroek/speckit-roadmap/archive/refs/tags/v0.1.1.zip
+$S extension add spec-status --from https://github.com/tosin2013/spec-status/releases/download/v0.4.0/spec-status-extension_0.4.0.zip
+```
+
+- `--integration` names your coding agent (it was `--ai` before Spec Kit 1.4). Both extensions
+  are community extensions, not vetted by Spec Kit: `extension add` asks you to trust each.
+- **Where are your ADRs?** The roadmap extension looks in your repository's docs/adr folder. If
+  yours are elsewhere (docs/adrs, for example), set `adr.dir` in `.specify/extensions/roadmap/roadmap-config.yml`,
+  then check it took effect: `.specify/extensions/roadmap/scripts/bash/load-config.sh` prints
+  `adr_dir` and `adr_present`.
+- **If that check ignores your settings** (it reports the extension's own roadmap, or the default
+  `adr_dir`), the installed archive carried a nested `.specify/` folder and the script took the
+  extension's folder for the repository root. Until a fixed release, set `SPECKIT_ROADMAP_PATH`
+  and `SPECKIT_ROADMAP_ADR_DIR` in your environment.
+- **Agent skills are per machine** unless you commit them: `specify init` writes your agent's
+  skills (`.claude/skills/` for Claude Code), and many repositories ignore that folder. Commit
+  them, or run `init` on each machine you plan from.
 
 <a id="research-tasks"></a>
 ### Research tasks and environment changes belong in planning

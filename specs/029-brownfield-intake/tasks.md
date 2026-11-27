@@ -84,9 +84,9 @@ integration harness on kind.
 
 **Independent Test**: the docs check passes; a reader follows the brownfield section.
 
-- [ ] T022 [US4] Add a brownfield section to `docs/targets.md`: run `forge debt`, act on it (merge, batch or close bot PRs yourself), fix baseline flags, prepare a dependency item (`## Manifest change`, rebasing a stale bot PR, hidden tests that guard what must not change); link it from `docs/greenfield.md` and `docs/operator-guide.md`
-- [ ] T023 [US4] Documcp friction fixes in `docs/targets.md` and `docs/greenfield.md`: confirm F1 and F6 (fixed by #183); add F2's exact Spec Kit install commands and F4's `adr.dir` check; note F3 and F5
-- [ ] T024 [US4] Add a 029 section to `docs/release-notes.md` (the new command, dependency items, the App permissions the report can use: Checks, Commit statuses, Dependabot alerts, all read)
+- [X] T022 [US4] Add a brownfield section to `docs/targets.md`: run `forge debt`, act on it (merge, batch or close bot PRs yourself), fix baseline flags, prepare a dependency item (`## Manifest change`, rebasing a stale bot PR, hidden tests that guard what must not change); link it from `docs/greenfield.md` and `docs/operator-guide.md` (Done as: docs/targets.md "Acting on the report" and "A dependency upgrade as an item"; the `needs code changes` class links it; linked from docs/greenfield.md's intro and docs/operator-guide.md (§1 and a §13 row))
+- [X] T023 [US4] Documcp friction fixes in `docs/targets.md` and `docs/greenfield.md`: confirm F1 and F6 (fixed by #183); add F2's exact Spec Kit install commands and F4's `adr.dir` check; note F3 and F5 (Done as: F1 and F6 confirmed fixed in docs/targets.md (the intro lists the four toolchains; the dependencies paragraph covers runtime upgrades); docs/targets.md "The planning tools" gives F2's commands (linked from docs/greenfield.md §2), F4's `adr.dir` check with `load-config.sh`, F5's nested `.specify/` workaround (`SPECKIT_ROADMAP_*`) and F3's per-machine skills)
+- [X] T024 [US4] Add a 029 section to `docs/release-notes.md` (the new command, dependency items, the App permissions the report can use: Checks, Commit statuses, Dependabot alerts, all read) (Done as: docs/release-notes.md "Brownfield intake: dependency items (029, part 2)")
 
 ## Phase 7: Polish and close
 

@@ -46,6 +46,11 @@ approve a status change.
 
 **Time:** about 60 minutes hands-on, plus downloads and about 10 minutes of model work.
 
+**Afterwards**, point the pilot at your own repositories: a new project from an empty repository
+([greenfield](greenfield.md)), or an existing one, starting with its
+[debt report](targets.md#an-existing-repository-the-debt-report) and turning a breaking
+dependency bump into a [dependency item](targets.md#a-dependency-upgrade-as-an-item).
+
 ---
 
 ## 2. How Chalkeus keeps you safe
@@ -733,6 +738,7 @@ This guide describes the pilot today. Planned
 | **004:** GitHub loop | Available as an option: issues per roadmap item, approvals on GitHub, and a GitHub App as the publisher. See [the GitHub loop](github-loop.md) and [GitHub App](github-app.md). This walkthrough is unchanged with it off |
 | **014:** Your own repositories | Run one prepared item of your own repository: `./chalkeus forge run --target <name> --item NNN`, with readiness checks, hidden tests from a private companion repository, and the same approvals and audit. Today: Python projects (Python 3.13 with packages from PyPI, or the built-in Python without packages); other toolchains and your own toolchain image are next. Each target is a file you create, `~/.config/chalkeus/targets/<name>.env`; see [targets](targets.md). The fixture walkthrough is unchanged |
 | **026:** Slice runs | Build a large item one user story at a time: `./chalkeus forge slices --target <name> --item NNN` lists its slices, and `./chalkeus forge run --target <name> --item NNN --slice US1` builds one, with its own draft PR; the status change comes after the last slice. See [targets](targets.md#one-slice-at-a-time). The fixture walkthrough is unchanged |
+| **029:** Brownfield intake | `./chalkeus forge debt --target <name>` reports an existing repository's bot PRs and baseline problems, read-only; a `## Manifest change` section makes an item a dependency item, which takes an approved bump and fixes the code. See [targets](targets.md#an-existing-repository-the-debt-report). The fixture walkthrough is unchanged |
 | **005:** OpenShift | An enterprise install path (restricted SCC, possibly images on Quay), and per-run model keys |
 | **007:** Operator observability | Metrics, traces and events from each run to a collector you run |
 | **008:** More harnesses | Claude Code and Codex workers alongside OpenCode |
