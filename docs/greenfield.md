@@ -8,7 +8,8 @@ roadmap are there to read as a reference.
 
 The pilot treats a new project like any other target ([targets.md](targets.md)). The difference is
 the order: **everything is planned before anything is built.** The first item is a scaffold, and
-each later item grows the project from there.
+each later item grows the project from there. An existing repository starts instead with its
+[debt report](targets.md#an-existing-repository-the-debt-report).
 
 Before you start, set up Chalkeus with the [operator guide](operator-guide.md): `forge.env`, a
 model key, the GitHub App, and `./chalkeus forge up`.
@@ -29,7 +30,7 @@ an agent needs, and your merge approves it:
 
 | File | What it decides | Stockroom |
 |---|---|---|
-| Spec Kit (`specify init`), plus the roadmap and spec-status extensions | the planning tools | [`.specify/`](https://github.com/tosin2013/stockroom/tree/main/.specify) |
+| Spec Kit (`specify init`), plus the roadmap and spec-status extensions ([commands](targets.md#the-planning-tools)) | the planning tools | [`.specify/`](https://github.com/tosin2013/stockroom/tree/main/.specify) |
 | `.specify/memory/constitution.md` | how decisions are made, and what every change must meet | six principles: the roadmap decides; you decide in writing; one PR with tests per change; dependencies approved in planning; offline tests; planning files and CI are yours |
 | `.specify/memory/roadmap.md` | the items, their order and their status | 001 Scaffold, 002 Products API, then 003–006 planned |
 | each first item's `spec.md` and `tasks.md`, in its own folder under `specs/` | the first items in detail, with their **allowed paths** | 001 and 002 specced; later items get specs when they start |

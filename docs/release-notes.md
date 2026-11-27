@@ -68,6 +68,30 @@ New:
 The test-run time comes from the next tools image; until then doctor says it isn't recorded.
 Nothing to do.
 
+## Brownfield intake: dependency items (029, part 2)
+
+New: a **dependency item** takes a dependency bump exactly as you approved it, and the agent fixes
+the code around it ([targets.md](targets.md#a-dependency-upgrade-as-an-item)). Add a
+`## Manifest change` section to the item's `spec.md` with the bump's commit (a bot PR's head
+commit, for example) and its manifest files:
+- `gate` and `doctor` check it (`manifest_change`): the commit is fetchable, it changes only the
+  listed manifest files, and the files on the default branch still equal its parent. Forge never
+  rebases a bot PR for you ([troubleshooting](troubleshooting.md#manifest-change)).
+- The mode approval shows the commit, the files, and the packages and versions it changes.
+- The baseline, the dependency cache and the worker start from the base with the bump applied;
+  tests the bump breaks are the work.
+- The manifest files are fixed: an attempt that changes them fails G2 with `MANIFEST_CHANGED`.
+- The draft PR starts with the manifest commit (your files byte for byte, with
+  `Chalkeus-Run: <run>`), then the agent's fixes.
+- A dependency item is built whole: `--slice` is refused.
+
+Also: [acting on the debt report](targets.md#acting-on-the-report), and the Spec Kit install
+commands with an ADR folder check ([the planning tools](targets.md#the-planning-tools)).
+
+The debt report reads private repositories' checks and each PR's advisories with the GitHub App's
+**Checks**, **Commit statuses** and **Dependabot alerts** permissions, all read; it names any that
+are missing. Nothing to do unless you want dependency items.
+
 ## Brownfield intake: the debt report (029, part 1)
 
 New: `./chalkeus forge debt --target <name> [--json]`, a read-only report for an existing
