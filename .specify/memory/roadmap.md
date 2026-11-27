@@ -1,7 +1,22 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.41.3 → 1.42.0 (this revision)
+Version change: 1.42.0 → 1.42.1 (this revision)
+Bump rationale: PATCH — clarifications to 039 from the review of #235; no scope or status change.
+Changes this revision (owner go-ahead 2026-11-27, Tosin Akinosho; review of #235):
+  - Q-039a and Q-039b renamed Q15 and Q16, continuing the numbering (the old names are kept in
+    brackets).
+  - 039 is governed by C-07 too: the refresher design puts a credential that can mint tokens in
+    the attempt's network path (the model egress proxy), which C-07 keeps allowlist-only. Q16
+    names it beside the constitution IV review.
+  - 039's dependency on 030 gets its reason: the per-attempt token design caps the attempt
+    deadline, which 030's budgets set.
+  - Q5's 2026-11-18 amendment ("never a subscription OAuth login") is marked as reopened by 039
+    (Q15, Q16); 039's notes point back to it.
+Specs affected: 039 (wording only)
+Open questions added/resolved: none (Q-039a, Q-039b renamed Q15, Q16)
+
+Prior: Version change: 1.41.3 → 1.42.0
 Bump rationale: MINOR — a new item (039, needs-info) and two new open questions (Q-039a, Q-039b).
 Changes this revision (owner decision 2026-11-26, Tosin Akinosho):
   - 039 (new, needs-info): subscription (OAuth) logins for the worker's model, e.g. OpenCode's
@@ -10,7 +25,7 @@ Changes this revision (owner decision 2026-11-26, Tosin Akinosho):
 Specs affected: 039
 Open questions added/resolved: Q-039a, Q-039b added
 
-Prior: Version change: 1.41.2 → 1.41.3 (this revision)
+Prior: Version change: 1.41.2 → 1.41.3
 Bump rationale: PATCH — wording only: the product name in current text.
 Changes this revision (owner request 2026-11-26, Tosin Akinosho; review of #228 and #232):
   - 037 note: the commit trailer that carries over is `Chalkeus-Run:` (it has been since 027;
@@ -2560,7 +2575,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Description:** Let a worker use a model the owner reaches through an OAuth login (for
   example OpenCode's ChatGPT login, `chatgpt-token-sharing`) instead of an API key, without
   giving the worker a long-lived credential.
-- **Outcome:** _to be defined_ once Q-039a and Q-039b are answered. The intent: an owner whose
+- **Outcome:** _to be defined_ once Q15 and Q16 are answered. The intent: an owner whose
   model access is a subscription login can run forge attempts on it; the worker only ever holds
   a short-lived access token; the refresh token stays with the owner's machine (laptop) or the
   operator (cluster mode); an attempt never fails because its token expired mid-run.
@@ -2576,15 +2591,18 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     provider's API and token endpoints, doctor's model-key check for OAuth, docs.
 - **Scope (out):** storing or printing tokens in evidence (AU08 applies); sharing one login
   between people; providers whose terms forbid automated use.
-- **Depends on:** 030
-- **Governed by:** C-03, C-12
+- **Depends on:** 030 (the per-attempt token design caps each attempt's deadline below the
+  token's remaining life; 030's budgets set that deadline)
+- **Governed by:** C-03, C-07, C-12
 - **Notes:** Added 2026-11-26 (owner), while documcp's US2 waited for the owner's OpenCode Go
   weekly quota. The owner's OpenCode login to OpenAI is OAuth (`chatgpt-token-sharing`,
   scopes include `chatgpt.tokens.use.direct`); a test request to `openai/gpt-6.1-sol` through
   OpenCode on the host succeeded; the access token had about an hour left. Forge today mounts
   only API-key files (`import-opencode --from-login` expects an API key). Free OpenCode Go
   models work with the existing key (`beam-free`, `hungerg-free`, `hy4-flash-free`;
-  `iceman-contributor-free` needs the org to allow training on requests).
+  `iceman-contributor-free` needs the org to allow training on requests). Reopens Q5's
+  2026-11-18 amendment, which ruled out importing a subscription OAuth login; Q15 and Q16
+  decide it.
 
 ## Open Questions
 
@@ -2620,6 +2638,8 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   stay operator configuration. `pilot import-opencode --from-login` imports an OpenCode API-key
   login (never a subscription OAuth login), and `pilot doctor` checks the model key with one tiny
   request before any run.
+  **Reopened 2026-11-26 by 039:** whether forge may use a subscription OAuth login is open again
+  (Q15, Q16); until they are decided, the 2026-11-18 rule stands.
 - Q6 — Which spec delivers operator observability (C-10): metrics, traces and events for
   gate decisions, attempts, spend and run duration to an operator-run collector? Candidates:
   a new entry after 003, or folded into 004/005. **Resolved 2026-11-13:** entry 007.
@@ -2718,12 +2738,13 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   research.md R3), so no stand-in is needed. The proof instance is a throwaway GitLab Community
   Edition container at a pinned version on the Ubuntu box, with a self-signed CA so the CA-bundle
   path is exercised (R9).
-- Q-039a — May forge use a subscription (OAuth) model login for automated worker attempts under
-  that provider's terms (for ChatGPT: OpenAI's terms for token sharing with third-party apps)?
-  Owner decision; unblocks 039.
-- Q-039b — Which token design for 039: a fresh access token per attempt (attempts capped under
-  the token's life), or a refresher beside the worker (long attempts; a minting credential in
-  the attempt's path)? Owner decision with the constitution IV review; unblocks 039.
+- Q15 [Q-039a] — May forge use a subscription (OAuth) model login for automated worker
+  attempts under that provider's terms (for ChatGPT: OpenAI's terms for token sharing with
+  third-party apps)? Owner decision; unblocks 039.
+- Q16 [Q-039b] — Which token design for 039: a fresh access token per attempt (attempts capped
+  under the token's life), or a refresher beside the worker (long attempts; a minting credential
+  in the attempt's path)? Owner decision with the constitution IV review and C-07 (the worker
+  proxies stay allowlist-only); unblocks 039.
 
 ## Cross-Cutting Notes
 
@@ -2788,4 +2809,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.42.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-26
+**Version**: 1.42.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-27
