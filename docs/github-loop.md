@@ -22,9 +22,13 @@ whenever it drifts.
   issue.
 - **A drift report.** It lists anything on GitHub that disagrees with the roadmap.
 - **With approvals on, also:**
-  - one tracking issue per run, where the pilot posts each decision it waits for. When the run
-    ends (succeeded or failed), the pilot posts the outcome there and closes the issue; a paused
-    run keeps it open;
+  - one tracking issue per run, where the pilot posts each decision it waits for. It is written
+    for anyone browsing the repository: the title names the work (for example
+    `Chalkeus: Flagship documentation-analysis skill (001 · US2)`), the body links the item's spec
+    and tasks, keeps a Status row up to date and tells visitors they needn't do anything, and the
+    issue carries the `chalkeus` label so maintainers can filter it out of triage. When the run
+    ends (succeeded, failed or back to planning), the pilot sets the Status row, posts the outcome
+    and closes the issue; a paused run keeps it open;
   - a status-change PR after A's merge; your merge of it approves the roadmap change.
 
 ## 2. Turn it on
@@ -73,8 +77,9 @@ and it exits when the run ends; `./chalkeus forge status` shows it while it runs
 The watcher doesn't survive a reboot. The run stays paused; `./chalkeus forge resume` or a new
 `github watch` picks it up.
 
-At each decision, the run prints a link to its tracking issue. The decision post there says
-what is being decided, and gives the exact reply:
+At each decision, the run prints a link to its tracking issue. The decision post there opens
+with a plain question ("Attempt 1 didn't pass. Try again?"), says what is being decided, gives the
+exact reply, and folds any diagnosis into a collapsed section:
 
 ```text
 /approve mode        # start staging workers in the mode shown

@@ -1,5 +1,16 @@
 # Release notes
 
+## Tracking issues readable by visitors
+
+- A run's tracking issue now names the work instead of the run: `Chalkeus: <story> (<item> · <slice>)`.
+  Its body links the item's spec and tasks, keeps a **Status** row up to date (waiting for a
+  decision, draft PR ready, finished, back to planning), says visitors needn't do anything, and
+  the run id moves to the footer. The issue gets a `chalkeus` label.
+- Decision posts open with a plain question and fold the diagnosis into a collapsed section. The
+  `/approve` commands and the hidden markers are unchanged.
+
+Applies to runs started after the upgrade; open issues keep their text.
+
 ## Free models per target, and OpenCode 2.3.2
 
 - The worker image runs **OpenCode 2.3.2**. Attempt reports now record the OpenCode version the
