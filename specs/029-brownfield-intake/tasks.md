@@ -90,7 +90,7 @@ integration harness on kind.
 
 ## Phase 7: Polish and close
 
-- [ ] T025 Privacy check: the report's text and JSON, `manifest-change.json` and the test data contain no token, key or model host (scan, counts only); `go vet ./... && go test ./...` and the Python tests pass
+- [X] T025 Privacy check: the report's text and JSON, `manifest-change.json` and the test data contain no token, key or model host (scan, counts only); `go vet ./... && go test ./...` and the Python tests pass (Done as, 2026-11-27: the audit's AU08 scanner (`audit.RedactionScan` with the configured model key files, model host and publisher/App token files) over live `forge debt` text and JSON for stockroom and cli-schema-mcp (App read token), `manifest-change.json` and the rest of `TestDependencyItem`'s run (41 files), `internal/debt/testdata`, the deps fixture and its acceptance tests, the stub's deps scenario, and `internal/{readiness,fixture,debt}`: 0 hits in every folder; a planted token-shaped string was caught (positive control). `go vet ./... && go test ./...` and the Python tests pass)
 - [ ] T026 Live proof (SC-005): the owner prepares documcp's zod 3 → 4 dependency item (manifest change, tasks, hidden tests); a run reaches a merged PR with the audit passing; evidence in `specs/029-brownfield-intake/evidence/`
 - [ ] T027 Run `speckit-roadmap-debrief` for 029 and propose the status change to the owner
 
