@@ -4,7 +4,8 @@ SYNC IMPACT REPORT
 Version change: 1.42.1 → 1.43.0 (this revision)
 Bump rationale: MINOR — material scope change to 036: a CI review (GitHub first).
 Changes this revision (owner decision 2026-11-27, Tosin Akinosho):
-  - 036 gains a CI review in `doctor --target` (read-only, no cluster): default-branch CI health
+  - 036 gains a CI review in `doctor --target` (read-only, no cluster, detected automatically
+    from the target's CI configuration, no flag): default-branch CI health
     with each red job's failed step and first error line; the profile's test command compared
     with CI's test step; CI-only checks grading never runs; CI's runtime version against the
     toolchain image. The report shows CI's exact commands next to forge's. GitHub first, behind
@@ -2503,6 +2504,11 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   - the CI review above: GitHub Actions first (workflow files and the latest default-branch
     runs, through the operator's read credential), behind a small CI-reader interface keyed by
     the target's `scm.kind`, so 037's hosts can add theirs later; warnings only, never a refusal;
+  - **automatic detection:** no flag; the review runs whenever the target copy doctor already
+    fetches has CI configuration (`.github/workflows/*.yml` for GitHub). No CI configuration →
+    one info line ("no CI found: grading is the only check"); configuration but no read access to
+    CI runs → the parts read from the files (2–4) still run, and the report says why (1) is
+    missing; a host without a CI reader yet → one info line;
   - docs: reading the report, and acting on it (docs/strategies.md).
 - **Scope (out):** changing budgets or test commands automatically; profiling the project's
   code beyond its test command; measuring live-model behaviour (C-16); changing, re-running or
