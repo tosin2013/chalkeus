@@ -1,5 +1,12 @@
 # Release notes
 
+## Scoring the test author (041, fourth part)
+
+- `./chalkeus forge author eval --target <t> [--case <c>]` (owner-run) drafts each case in the
+  companion's `evals/` with the current author settings, proves it against the case's reference,
+  and prints the score and what changed since the last run; `SCORE DROPPED` exits 1. Results stay
+  in `~/.local/state/chalkeus/evals/` ([targets: the eval set](targets.md#scoring-the-test-author-the-eval-set)).
+
 ## A run needs proven hidden tests (041, third part)
 
 - **Readiness now refuses an item whose hidden tests aren't proven** (`HIDDEN_TESTS_UNVERIFIED`):

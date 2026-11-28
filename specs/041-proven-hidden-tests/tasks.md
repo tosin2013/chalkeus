@@ -59,16 +59,17 @@ grader changes also with `pilot/images/tests/`.
 
 ## Phase 3: User Story 2 - Score the test author against known cases (Priority: P2)
 
-- [ ] T018 [US2] `internal/author/eval.go`: read `evals/<case>/case.json` from the companion;
+- [x] T018 [US2] `internal/author/eval.go` (version 1: `--target`, cases of that target; the vote
+  joins with US4): read `evals/<case>/case.json` from the companion;
   draft each ready case with the current settings, run the reference check (and the vote once
   US4 is built), score; write `~/.local/state/chalkeus/evals/<timestamp>.json`; compare with the
   previous result and report drops.
-- [ ] T019 [US2] `author eval [--case]` (`internal/cli`); classify in the command audit with
+- [x] T019 [US2] `author eval [--case]` (`internal/cli`); classify in the command audit with
   `author`; owner-run only.
-- [ ] T020 [P] [US2] Tests: case loading, scoring, comparison, `pending` cases.
-- [ ] T021 [US2] Owner: add eval cases `documcp-004` (ready) and `documcp-001-us2` (pending until
+- [x] T020 [P] [US2] Tests: case loading, scoring, comparison, `pending` cases.
+- [ ] T021 [US2] Owner (case.json format in `docs/targets.md`): add eval cases `documcp-004` (ready) and `documcp-001-us2` (pending until
   it has a reference) to the companion.
-- [ ] T022 [P] [US2] Docs: running the eval and reading the score; release notes.
+- [x] T022 [P] [US2] Docs: running the eval and reading the score; release notes.
 
 ## Phase 4: User Story 4 - Independent votes on each test (Priority: P4)
 

@@ -589,6 +589,48 @@ Every attempt also records **P11r**: neither the reference's path nor its hash i
 ConfigMaps or prompt, and nothing beyond the usual three inputs was staged. A run never loads a
 reference; P11r proves it, and the audit's AU04 requires it.
 
+### Scoring the test author: the eval set
+
+Before you keep a change to the test author (a new `FORGE_AUTHOR_MODEL`, a forge update with a new
+prompt), check it against items whose hidden tests went wrong before. The eval set lives in the
+private companion, one folder per case:
+
+```text
+evals/<case>/case.json        # what to draft against
+evals/<case>/reference.patch  # a correct implementation, as for the reference check
+```
+
+`case.json` names a configured target and a fixed base commit (one with the item's spec and tasks
+but not its change), so a case drafts the same way after the item is built:
+
+```json
+{"id": "documcp-004", "target": "documcp", "base_revision": "<commit>", "item": "004",
+ "spec_dir": "specs/004-zod4", "title": "zod 4 migration", "allowed_paths": ["src/**", "tests/**"],
+ "manifest_commit": "<the approved bump, for a dependency item>", "manifest_files": ["package.json", "package-lock.json"],
+ "known_failure": "the hidden test didn't compile (TS18046)", "status": "ready"}
+```
+
+A case without a reference yet is `"status": "pending"` and is listed, not run. Then, in **your
+own terminal**:
+
+```sh
+./chalkeus forge author eval --target documcp                # every case for documcp
+./chalkeus forge author eval --target documcp --case documcp-004
+```
+
+Each case is drafted like `author watch` would (the author Job, its attempts with feedback), then
+checked: the baseline and the reference check. Nothing is submitted. It prints each case as
+`proven`, `unproven <code>` or `error <why>`, the score (cases proven), and, after the first run,
+the change per case and `SCORE DROPPED` when it fell (exit 1). Results and the drafts stay on your
+machine in `~/.local/state/chalkeus/evals/<target>/` (or under `XDG_STATE_HOME`), never in
+committed evidence; the result records the author's model, a hash of the prompt template and the
+forge version.
+
+- Stop `author watch` for the target first: a case uses the same author namespace as the
+  watcher's draft of that item, and eval refuses that case while the namespace is in use.
+- Each case costs what a draft does: author Jobs on your model, plus a baseline and a reference
+  check on the cluster.
+
 ### Step mode: leave it running
 
 Step mode carries items through every automatic step and stops at each of your decisions, so
