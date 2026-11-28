@@ -1,7 +1,19 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.43.1 → 1.44.0 (this revision)
+Version change: 1.44.0 → 1.45.0 (this revision)
+Bump rationale: MINOR — a new planned spec, 041, and scope added to 040.
+Changes this revision (owner go-ahead 2026-11-28, Tosin Akinosho):
+  - New 041 — Proven hidden tests: a reference check (fail on the baseline, pass on a reference
+    patch kept in the companion), a per-test vote against the spec, a test plan in the spec, a
+    test-author model separate from the worker's, and an author eval set. From three G1–G4
+    pass / G5 fail attempts on documcp; sources SWE-bench Verified, SWT-bench, Anthropic's
+    code-review and multi-agent articles, Paradigm 3's swarms study.
+  - 040 gains one active run per item and hidden-test failure output for the owner (human-only).
+Specs affected: 040 (scope), 041 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.43.1 → 1.44.0
 Bump rationale: MINOR — a new planned spec, 040.
 Changes this revision (owner go-ahead 2026-11-28, Tosin Akinosho):
   - New 040 — Watching drafts and runs: progress, safe logs, one watcher per target. A log
@@ -2696,6 +2708,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     then. `.claude/settings.json` gets deny rules for that flag, author `-vvv` and
     `kubectl logs` of an author job; the flag is classified in `command_audit.go`; its use (not
     the output) is recorded in the draft's evidence.
+  - **One run per item:** readiness refuses a second active run of the same item (and slice);
+    two runs of documcp 004 started four minutes apart shared `pilot-g-004` and both attempt 1s
+    timed out in grading.
+  - **Hidden-test failures for the owner:** when G5 fails, the owner can see the failing output
+    through the same human-only path as `--show-agent`; the driving session still sees only
+    "withheld".
 - **Scope (out):** exporting metrics or traces to a collector (007 takes these counters later);
   dashboards; storing agent output in evidence (035).
 - **Depends on:** 024, 026
@@ -2706,6 +2724,59 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   restarted watcher waited on a pod that was already gone. Nobody could tell a working draft
   from a dead one: `kubectl logs` on the author job printed only the result frame. 007 later
   exports the same counters; the log audit decides the always/`-vv`/never split before code.
+
+### 041 — Proven hidden tests: a reference check, a per-test vote and a test plan  [status: planned]
+
+- **Description:** Check the hidden tests before they grade anything: prove they can pass on a
+  correct change and fail on today's code, have an independent agent judge each test against
+  the spec, and give the test author a test plan in the spec instead of leaving it to invent one.
+- **Outcome:** a companion PR opens as ready only when every drafted test fails on the baseline
+  and passes on the item's reference (or the owner chose `reference: none`); each test carries an
+  independent verdict against the spec; the owner reviews a test plan, not test code; readiness
+  blocks a run whose hidden tests are unproven; a repeated G1–G4 pass with a G5 fail can no
+  longer come from tests that cannot pass.
+- **Scope (in):**
+  - **Reference check** (SWE-bench's fail-to-pass and pass-to-pass, validated against a gold
+    patch): an item's reference patch lives in the private companion
+    (`<target>/items/NNN[/<slice>]/reference.patch`), written by the planner, a human or taken
+    from a branch, and never reaches the worker (a P11-style check). The author's check adds
+    runs on baseline + reference: hidden tests and visible tests must pass; each hidden test must
+    fail on the baseline and pass on the reference on its own; the reference run is repeated to
+    catch flaky tests (SWT-bench dropped about 311 of 2,294 instances whose gold patch did not
+    pass reliably). The PR body shows "fails on baseline · passes on reference (n/n)". An item
+    may declare `reference: none` (an owner decision, shown as a readiness warning).
+  - **Readiness:** a new rule, `HIDDEN_TESTS_UNVERIFIED`, until the reference check passed for
+    the merged tests' commit or the owner accepted `reference: none`.
+  - **Per-test vote** (code-review practice: a separate group votes on each finding): one or more
+    agents with fresh context and the spec, not the drafting history, rate each test on SWE-bench
+    Verified's 0–3 validity scale (0 covers every valid solution; 2–3 too narrow, too broad or
+    checks something the spec doesn't ask for); 2–3 sends the test back. They also check the
+    spec's own rules (for example "no message wording"). The verdicts go in the PR body for the
+    owner.
+  - **Test plan in the spec:** each acceptance criterion maps to what its test asserts and how
+    (start-up, storage, assertion style), so the author and the worker read the same source
+    instead of passing intent along (the multi-agent "telephone game"); `doctor` and the author
+    flag a criterion with no plan line.
+  - **Model per role:** a test-author model setting separate from the worker's (for example a
+    frontier model for the author, a free model for the worker); the author is drafted once and
+    grades every attempt, so a miss costs the most there.
+  - **Author eval set** (code-review practice: incidents become a daily eval): documcp 001 US2 and
+    004 become cases; a change to the author's prompt, model or checks is kept only if the set's
+    score does not drop.
+- **Scope (out):** mutation testing and patch-coverage scores (later, if loose tests show up);
+  multi-agent swarms for drafting (Paradigm 3, 2026-11-24: teams lost to one agent at a matched
+  budget in 54 of 70 comparisons); showing hidden-test failure output (040).
+- **Depends on:** 014, 024
+- **Governed by:** C-12, C-14
+- **Notes:** Added 2026-11-28 (owner), after three attempts in a row (documcp 001 US2 twice, 004
+  attempt 2) passed G1–G4 and failed G5 with the output withheld; 004 attempt 2 matched the spec's
+  research helper exactly and reproduced all 52 tool schemas of the contract, so the tests are
+  the suspect (the owner's local check decides). The author's check today only proves the tests
+  fail on the baseline, which a test that can never pass also does. SWE-bench Verified's review
+  of 1,699 samples flagged 61.1% for unit tests that may mark valid solutions incorrect.
+  Sources: SWE-bench Verified (OpenAI); SWT-bench (arXiv 2406.12952); "Solving code review at
+  Anthropic" (2026-10-15); "When to use multi-agent systems" (Anthropic, 2026-01-23); Paradigm 3,
+  "Swarms" (2026-11-24).
 
 ## Open Questions
 
@@ -2912,4 +2983,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.44.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-28
+**Version**: 1.45.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-28
