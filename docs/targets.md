@@ -525,6 +525,47 @@ tests.
 - The session that drives runs (your coding agent with the forge skill) never starts the
   watcher or reads its drafts.
 
+### Proving hidden tests against a reference change
+
+A hidden test that can't compile, or that asserts something the spec doesn't ask for, still
+"fails on today's code", so the draft check alone lets it through, and every attempt then fails
+it. documcp 004 did exactly that. A **reference change** catches it: a correct implementation
+of the item, kept in the private companion, that the drafted tests must pass on.
+
+1. Put the reference in the companion as a patch against the target's default branch, outside
+   the item's test folder:
+
+   ```text
+   [<FORGE_COMPANION_PATH>/]references/NNN.patch          # the whole item
+   [<FORGE_COMPANION_PATH>/]references/NNN/<slice>.patch  # one slice (026)
+   ```
+
+   Any correct change works: one you wrote, or the change of an earlier attempt you trust
+   (`git diff <base>..<head>`). For a dependency item (029) the patch goes on top of the
+   approved manifest change, as an attempt does.
+2. `author check` (by hand or in `author watch`) then runs the **reference check** after its
+   usual one: the project's tests must pass with the reference applied, and each hidden test
+   file, on its own, must fail on today's code and pass on the reference in every one of
+   `FORGE_REFERENCE_REPEATS` runs (default 3, at least 2).
+3. A passing draft's companion pull request adds a proof,
+   `[<FORGE_COMPANION_PATH>/]proofs/NNN.json`: each file's verdicts and the hashes of the tests
+   and the reference, never their contents. Its body says
+   `Reference check: fails on the base · passes on the reference (n of n files, 3 runs)`.
+
+- **One test file at a time:** each run overlays one hidden test file and runs the test command.
+  With a slow test command that adds up (documcp: about 4 minutes a run). Set
+  `FORGE_HIDDEN_TEST_COMMAND` to a command that runs only the given files, with `{files}` where
+  the file goes, for example `npx jest {files}` or `python -m pytest {files}`.
+- **Who sees what:** the reference is read from the companion into memory and staged only to the
+  grader, never to the test author's workspace or a build worker. The tests' output on the base
+  and the reference is printed in the terminal that ran the check and never stored.
+- **Without a reference** the check says the reference check was skipped, and the pull request
+  says so too.
+- Codes: `DRAFT_FAILS_ON_REFERENCE`, `DRAFT_PASSES_ON_BASE`, `DRAFT_FLAKY` (the draft's
+  problem; `author watch` drafts again with the output), and `REFERENCE_BROKEN`,
+  `REFERENCE_DOESNT_APPLY` (the reference's problem, for you to fix). See
+  [troubleshooting](troubleshooting.md#test-author).
+
 ### Step mode: leave it running
 
 Step mode carries items through every automatic step and stops at each of your decisions, so

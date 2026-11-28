@@ -64,6 +64,7 @@ func authorCmd() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		e.Reference, e.LoadReference = p.AuthorReference, author.LoadReference // 041 US3
 		_, err = author.Check(context.Background(), e, item, p.AuthorBaseline)
 		return err
 	})
@@ -231,6 +232,7 @@ func authorWatchEnv(e author.Env, p *pipeline.P) (author.WatchEnv, error) {
 	if e.Target.SliceRuns == "on" { // 026: draft each item's current slice; off: whole items, as before
 		slices = slice.CurrentOf
 	}
+	e.Reference, e.LoadReference = p.AuthorReference, author.LoadReference // 041 US3
 	return author.WatchEnv{Env: e, Baseline: p.AuthorBaseline, Status: targetStatus(e.Target), Slices: slices,
 		Job: func(ctx context.Context, d *author.Draft, attempt int, prompt string) author.JobRecord {
 			return author.RunJob(ctx, je, d, attempt, prompt)

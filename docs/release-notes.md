@@ -1,5 +1,18 @@
 # Release notes
 
+## Hidden tests proven against a reference change (041, second part)
+
+- Put a correct implementation of an item in the companion as `references/NNN.patch`, and
+  `author check` (and `author watch`) proves each drafted test file on its own: it fails on
+  today's code and passes with the reference, in every one of `FORGE_REFERENCE_REPEATS` runs
+  (default 3). A test that doesn't compile, like documcp 004's, is now refused
+  (`DRAFT_FAILS_ON_REFERENCE`) instead of reaching a run.
+- The companion pull request adds `proofs/NNN.json` (verdicts and hashes only) and a
+  "Reference check" line. `FORGE_HIDDEN_TEST_COMMAND` runs one file quickly instead of the
+  whole test command ([targets: proving hidden tests](targets.md#proving-hidden-tests-against-a-reference-change)).
+- For a dependency item (029), `author check` now grades on the base with the approved manifest
+  change, as a run does.
+
 ## A separate model for the test author (041, first part)
 
 - `FORGE_AUTHOR_MODEL` (target profile, or `forge.env` for every target) sets the model that

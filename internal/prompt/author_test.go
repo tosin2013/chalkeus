@@ -43,3 +43,13 @@ func TestBuildAuthor(t *testing.T) {
 		t.Error("needs item and spec hash")
 	}
 }
+
+func TestReferenceFeedback(t *testing.T) {
+	for code, want := range map[string]string{"DRAFT_FAILS_ON_REFERENCE": "did not pass on a correct implementation",
+		"DRAFT_PASSES_ON_BASE": "already passes on today's code", "DRAFT_FLAKY": "nondeterministic"} {
+		p, _ := BuildAuthor(Author{Item: "004", SpecSHA256: "abc", FeedbackCode: code, FeedbackOutput: "out"})
+		if !strings.Contains(p, want) || !strings.Contains(p, "on today's code and on the correct implementation") {
+			t.Errorf("%s: %s", code, p)
+		}
+	}
+}

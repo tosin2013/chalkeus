@@ -44,6 +44,10 @@ type Target struct {
 	GithubApprovals string // on|off
 	GraderMemory    string // optional override, e.g. 3Gi
 	GraderDeadlineS int    // optional override, 0 = catalog default
+	// 041 reference check: reference runs per hidden file (FORGE_REFERENCE_REPEATS, default 3,
+	// at least 2) and an optional focused test command with {files} (FORGE_HIDDEN_TEST_COMMAND).
+	ReferenceRepeats  int
+	HiddenTestCommand string
 	// 030: the worker's budget, raise-only (images.CheckTarget checks the floors); "" or 0 = the
 	// toolchain's default.
 	WorkerCPU       string
@@ -122,6 +126,38 @@ func (t Target) CompanionItemDir(item string) string {
 		return "items/" + item
 	}
 	return t.CompanionPath + "/items/" + item
+}
+
+// Repeats is the reference check's runs per hidden file (041): FORGE_REFERENCE_REPEATS, default 3.
+func (t Target) Repeats() int {
+	if t.ReferenceRepeats >= 2 {
+		return t.ReferenceRepeats
+	}
+	return 3
+}
+
+// CompanionReferencePath is an item's reference change in the companion (041 research R4),
+// outside the overlay: [<PILOT_COMPANION_PATH>/]references/<item>.patch, or
+// references/<item>/<slice>.patch for a slice.
+func (t Target) CompanionReferencePath(item, slice string) string {
+	return t.companionFile("references", item, slice, ".patch")
+}
+
+// CompanionProofPath is the proof of an item's merged hidden tests (041 data model):
+// [<PILOT_COMPANION_PATH>/]proofs/<item>.json, or proofs/<item>/<slice>.json.
+func (t Target) CompanionProofPath(item, slice string) string {
+	return t.companionFile("proofs", item, slice, ".json")
+}
+
+func (t Target) companionFile(dir, item, slice, ext string) string {
+	p := dir + "/" + item + ext
+	if slice != "" {
+		p = dir + "/" + item + "/" + slice + ext
+	}
+	if t.CompanionPath != "" {
+		p = t.CompanionPath + "/" + p
+	}
+	return p
 }
 
 // CompanionSliceDir is where one slice's hidden tests live (026, contracts/slices.md):
@@ -254,7 +290,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 		AuthorAuto: strings.TrimSpace(v["PILOT_AUTHOR_AUTO"]), AuthorIntervalS: 120, AuthorAttempts: 2,
 		SliceRuns: strings.TrimSpace(v["PILOT_SLICE_RUNS"]), FreeModels: strings.TrimSpace(v["PILOT_ALLOW_FREE_MODELS"]),
 		ProposeLabel: strings.TrimSpace(v["PILOT_PROPOSE_LABEL"]), StepIntervalS: 120,
-		AuthorModel: strings.TrimSpace(v["PILOT_AUTHOR_MODEL"])}
+		AuthorModel: strings.TrimSpace(v["PILOT_AUTHOR_MODEL"]), HiddenTestCommand: strings.TrimSpace(v["PILOT_HIDDEN_TEST_COMMAND"])}
 	kind, key, why := scmSyntax(v)
 	if key != "" {
 		return Target{}, invalid(key, why)
@@ -358,7 +394,7 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	for k, dst := range map[string]*int{"PILOT_GRADER_DEADLINE_S": &t.GraderDeadlineS, "PILOT_MAX_INPUT_MB": &t.MaxInputMB,
 		"PILOT_WORKER_DEADLINE_S": &t.WorkerDeadlineS, "PILOT_AUTHOR_DEADLINE_S": &t.AuthorDeadlineS,
 		"PILOT_AUTHOR_INTERVAL_S": &t.AuthorIntervalS, "PILOT_AUTHOR_AUTO_ATTEMPTS": &t.AuthorAttempts,
-		"PILOT_STEP_INTERVAL_S": &t.StepIntervalS} {
+		"PILOT_STEP_INTERVAL_S": &t.StepIntervalS, "PILOT_REFERENCE_REPEATS": &t.ReferenceRepeats} {
 		if x := v[k]; x != "" {
 			n, err := strconv.Atoi(x)
 			if err != nil || n <= 0 {
@@ -366,6 +402,12 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 			}
 			*dst = n
 		}
+	}
+	if t.ReferenceRepeats == 1 {
+		return Target{}, invalid("PILOT_REFERENCE_REPEATS", "must be at least 2: one run can't show a flaky test")
+	}
+	if t.HiddenTestCommand != "" && !strings.Contains(t.HiddenTestCommand, "{files}") {
+		return Target{}, invalid("PILOT_HIDDEN_TEST_COMMAND", "must contain {files}, where the hidden test file goes")
 	}
 	if t.AuthorAttempts > 3 {
 		return Target{}, invalid("PILOT_AUTHOR_AUTO_ATTEMPTS", "must be 1, 2 or 3")

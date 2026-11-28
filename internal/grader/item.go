@@ -43,6 +43,10 @@ type ItemGrading struct {
 	// the grader's hidden_output.txt frame file. It is for the test author's terminal; it is never
 	// written to evidence.
 	HiddenOutput *[]byte
+	// Reference, when set (041), makes the Job the reference check: the patch is staged as
+	// grading/reference.patch for the grader only (never a worker, P11r) and the report must be
+	// mode "reference".
+	Reference []byte
 }
 
 // Deps is where the cache PVC is mounted: read-write in the prefetch Job, read-only in graders,
@@ -115,14 +119,36 @@ func BaselineMeta(attemptMeta map[string]any) map[string]any {
 	return m
 }
 
+// ReferenceMeta is the reference check's meta.json (041): the baseline meta with mode=reference,
+// the runs per file, the optional focused command and the project's test globs.
+func ReferenceMeta(baselineMeta map[string]any, repeats int, focused string, testPaths []string) map[string]any {
+	m := BaselineMeta(baselineMeta)
+	m["mode"], m["repeats"] = "reference", repeats
+	if focused != "" {
+		m["hidden_test_command"] = focused
+	}
+	if len(testPaths) > 0 {
+		tp := make([]any, len(testPaths))
+		for i, x := range testPaths {
+			tp[i] = x
+		}
+		m["test_paths"] = tp
+	}
+	return m
+}
+
 // GradeItem runs one grading Job of an item run: the baseline (n = 0) or attempt n. Evidence
 // goes to outDir (run/baseline, or the attempt dir). Any grader trouble is a fail, never a pass.
 func GradeItem(l paths.Layout, c *k8s.Client, rn runner.Runner, run *evidence.Run, imgs map[string]string,
 	task string, n int, g ItemGrading, metaPath, outDir string) map[string]any {
 	baseline := n == 0
+	reference := baseline && g.Reference != nil
 	stageName, job := "grade", fmt.Sprintf("grader-%d", n)
 	if baseline {
 		stageName, job = "baseline", "baseline"
+	}
+	if reference {
+		stageName, job = "reference", "reference"
 	}
 	if !baseline {
 		_ = run.Event("grade", task, n, "grade_started", g.NS)
@@ -154,6 +180,12 @@ func GradeItem(l paths.Layout, c *k8s.Client, rn runner.Runner, run *evidence.Ru
 		if err := t.AddTar("grading/overlay", g.Overlay); err != nil {
 			fail("grader_error", err)
 			return
+		}
+		if reference { // 041: the reference change, grader only
+			if err := t.AddBytes("grading/reference.patch", g.Reference); err != nil {
+				fail("grader_error", err)
+				return
+			}
 		}
 		for i, e := range g.Earlier { // 026: earlier slices' hidden tests, for G8 (grader only, P11)
 			if err := t.AddTar(fmt.Sprintf("grading/earlier/%d", i), e); err != nil {
@@ -210,7 +242,7 @@ func GradeItem(l paths.Layout, c *k8s.Client, rn runner.Runner, run *evidence.Ru
 		}
 		att, ok := num(report["attempt"])
 		if r := report["result"]; (r != "pass" && r != "fail") || !ok || att != n || report["task"] != task ||
-			(baseline && report["mode"] != "baseline") {
+			(baseline && !reference && report["mode"] != "baseline") || (reference && report["mode"] != "reference") {
 			fail("bad_frame", nil)
 		}
 	}()

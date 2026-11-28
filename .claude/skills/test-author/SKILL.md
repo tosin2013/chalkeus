@@ -46,6 +46,12 @@ and the pilot only uses them after a human reviews and merges your pull request
    - `DRAFT_HIDDEN_PASSES`: your tests already pass today; they must fail until the change exists.
    - `DRAFT_SUITE_FAILS`: with your tests added, the project's own tests fail; don't break them.
    - `MAP_INVALID`: fix the map as the message says.
+   - When the companion has a reference change for the item (041), each test file must also pass
+     on it, in every run. `DRAFT_FAILS_ON_REFERENCE`: a file didn't pass on a correct
+     implementation (it doesn't compile or load, or it asserts what the spec doesn't ask for);
+     `DRAFT_PASSES_ON_BASE`: the named file passes today; `DRAFT_FLAKY`: make it deterministic.
+     `REFERENCE_BROKEN` and `REFERENCE_DOESNT_APPLY` are the owner's to fix: tell the human.
+     You never see the reference itself.
 6. Run `./chalkeus forge author submit --target <name> --item <NNN>` and give the human the pull
    request link. **The human reviews and merges it.** You don't.
 

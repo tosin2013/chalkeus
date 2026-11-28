@@ -20,6 +20,10 @@ Item runs (014, specs/014-any-project/contracts/grading.md) add optional meta fi
   author_check       true for `pilot author check` (018): the baseline's hidden-test output is
                      returned in a separate frame file, hidden_output.txt, for the test author's
                      own terminal; grade.json keeps only the withheld summary
+  mode "reference"   041: prove the hidden tests against a reference change
+                     (/grading/reference.patch, grader only): see reference() below. Adds
+                     repeats (reference runs per file, default 3, at least 2) and
+                     hidden_test_command (optional focused command; {files} is replaced)
 Without them, grading is exactly the fixture's.
 """
 from __future__ import annotations
@@ -82,6 +86,8 @@ def grade(meta: dict, inp: str = "/in", grading: str = "/grading", work: str | N
     base = meta["base_revision"]
     if meta.get("mode") == "baseline":
         return baseline(meta, inp, grading, work, repo)
+    if meta.get("mode") == "reference":
+        return reference(meta, inp, grading, work, repo)
     change = os.path.join(inp, "change.bundle")
     ok = os.path.exists(change)
     detail = "no change.bundle from worker"
@@ -396,6 +402,137 @@ def baseline(meta, inp, grading, work, repo):
     return report
 
 
+# 041: the reference check (specs/041-proven-hidden-tests, research R1-R3, contracts/commands.md).
+REFERENCE_CHECKS = ["R1_reference_applies", "R2_reference_suite_passes", "R3_hidden_files"]
+MAP_FILE = ".acceptance-map.json"  # the author's coverage map (018), never a test
+
+
+def hidden_files(grading, meta):
+    """(test files, helper files) of the overlay, as paths relative to the project root. With
+    test_paths, only matching files are tests; the rest (fixtures, helpers) go in with every run."""
+    src = os.path.join(grading, "overlay")
+    allf = []
+    for root, _, names in os.walk(src):
+        for n in names:
+            rel = os.path.relpath(os.path.join(root, n), src)
+            if rel != MAP_FILE:
+                allf.append(rel)
+    allf.sort()
+    globs = meta.get("test_paths") or []
+    tests = [p for p in allf if not globs or matches(p, globs)]
+    return tests, [p for p in allf if p not in tests]
+
+
+def clean_tree(tree):
+    """Back to the tree's commit: tracked files restored, untracked (not ignored) files removed, so
+    each run sees only the files it overlays; ignored dependency folders stay."""
+    run(["git", "checkout", "--quiet", "--", "."], cwd=tree)
+    run(["git", "clean", "-fdq"], cwd=tree)
+
+
+def run_with(meta, grading, tree, test, helpers, limit):
+    """Overlay one hidden test file (and the helpers), run the focused or full test command once."""
+    import shlex
+    clean_tree(tree)
+    src = os.path.join(grading, "overlay")
+    for rel in [*helpers, test]:
+        dst = os.path.join(tree, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy(os.path.join(src, rel), dst)
+    focused = meta.get("hidden_test_command") or ""
+    cmd = focused.replace("{files}", shlex.quote(test)) if focused else meta["test_command"]
+    rc, out = run(["sh", "-c", cmd], cwd=tree, timeout=int(meta.get("command_timeout_s") or 180), limit=limit)
+    clean_tree(tree)
+    return rc, out
+
+
+def file_verdict(base, refs):
+    if base == "pass":
+        return "passes_on_base"
+    if all(r == "pass" for r in refs):
+        return "proven"
+    if any(r == "pass" for r in refs):
+        return "flaky"
+    return "fails_on_reference"
+
+
+def reference(meta, inp, grading, work, repo):
+    """041 FR-008..FR-013: on the base (with an approved manifest change, 029, already in the base
+    snapshot) apply the reference patch; the project's tests must pass with it; then each hidden
+    test file on its own must fail on the base and pass on the reference in every one of `repeats`
+    runs. Per-file verdicts go in grade.json; the hidden tests' output only to hidden_output.txt
+    (author_check), never to grade.json (C-14)."""
+    results, files = [], []
+    show = bool(meta.get("author_check"))
+    limit = AUTHOR_OUTPUT_LIMIT if show else 3000
+    repeats = max(2, int(meta.get("repeats") or 3))
+    failure = None
+
+    def add(cid, result, detail=""):
+        results.append({"id": cid, "result": result, "detail": str(detail)[-4000:]})
+        return result == "pass"
+
+    patch = os.path.join(grading, "reference.patch")
+    rc1, o1 = run(["git", "clone", "--quiet", os.path.join(inp, "base.bundle"), repo])
+    rc2, o2 = (run(["git", "checkout", "--quiet", meta["base_revision"]], cwd=repo) if rc1 == 0 else (1, o1))
+    ref = os.path.join(work, "reference-tree")
+    ok, detail = False, "the base could not be checked out: " + o2[:500]
+    if rc2 == 0 and not os.path.isfile(patch):
+        detail = "no reference patch staged"
+    elif rc2 == 0:
+        rc, out = run(["git", "worktree", "add", "--quiet", "--detach", ref, meta["base_revision"]], cwd=repo)
+        if rc == 0:
+            rc, out = run(["git", "apply", "--index", "--whitespace=nowarn", patch], cwd=ref)
+        if rc == 0:
+            rc, out = run([*GIT_ID, "commit", "--quiet", "--no-verify", "-m", "reference"], cwd=ref)
+        ok, detail = rc == 0, ("reference patch applied" if rc == 0 else "the reference patch does not apply to the base: " + out[-1500:])
+    if not add("R1_reference_applies", "pass" if ok else "fail", detail):
+        failure = "REFERENCE_DOESNT_APPLY"
+    else:
+        rc, out = project_tests(meta, ref)
+        clean_tree(ref)
+        if not add("R2_reference_suite_passes", "pass" if rc == 0 else "fail",
+                   ("the project's tests pass with the reference change\n" if rc == 0 else
+                    "the project's tests FAIL with the reference change: fix the reference\n") + out):
+            failure = "REFERENCE_BROKEN"
+        else:
+            tests, helpers = hidden_files(grading, meta)
+            for t in tests:
+                rc, out = run_with(meta, grading, repo, t, helpers, limit)
+                b = "pass" if rc == 0 else "fail"
+                if show:
+                    AUTHOR_OUTPUT.append(f"===== {t} on the base (must fail): exit {rc} =====\n{out}\n")
+                refs = []
+                for i in range(repeats):
+                    rc, out = run_with(meta, grading, ref, t, helpers, limit)
+                    refs.append("pass" if rc == 0 else "fail")
+                    if show:
+                        AUTHOR_OUTPUT.append(f"===== {t} on the reference, run {i + 1}/{repeats} (must pass): exit {rc} =====\n{out}\n")
+                files.append({"path": t, "base": b, "reference": refs, "verdict": file_verdict(b, refs)})
+            verdicts = [f["verdict"] for f in files]
+            for code, v in (("DRAFT_FAILS_ON_REFERENCE", "fails_on_reference"), ("DRAFT_FLAKY", "flaky"),
+                            ("DRAFT_PASSES_ON_BASE", "passes_on_base")):
+                if failure is None and v in verdicts:
+                    failure = code
+            proven = sum(1 for v in verdicts if v == "proven")
+            summary = f"{proven} of {len(files)} hidden test file(s) proven ({repeats} reference runs each)"
+            if not files:
+                failure, summary = "DRAFT_FAILS_ON_REFERENCE", "no hidden test files in the overlay"
+            add("R3_hidden_files", "pass" if failure is None else "fail",
+                summary + "".join(f"\n{f['path']}: {f['verdict']}" for f in files if f["verdict"] != "proven"))
+    done = {r["id"] for r in results}
+    for cid in REFERENCE_CHECKS:
+        if cid not in done:
+            results.append({"id": cid, "result": "skipped", "detail": "earlier check failed"})
+    return {"version": 1, "run_id": meta["run_id"], "task": meta["task"], "attempt": int(meta["attempt"]),
+            "mode": "reference", "result": "pass" if failure is None else "fail", "failure": failure,
+            "repeats": repeats, "files": files,
+            "grader_image": os.environ.get("GRADER_IMAGE", "unknown"), "checks": results}
+
+
+GIT_ID = ["git", "-c", "user.name=chalkeus-grader", "-c", "user.email=grader@chalkeus.invalid"]
+
+
 def main() -> int:
     sys.path.insert(0, "/usr/local/lib/pilot")
     import frame  # noqa: E402
@@ -415,7 +552,8 @@ def main() -> int:
     if meta.get("author_check") and AUTHOR_OUTPUT:
         hidden = os.path.join(tmp, "hidden_output.txt")
         with open(hidden, "w") as f:
-            f.write(AUTHOR_OUTPUT[-1])
+            # The reference mode collects one block per file and run; the baseline one output.
+            f.write("".join(AUTHOR_OUTPUT) if report.get("mode") == "reference" else AUTHOR_OUTPUT[-1])
         files.append(f"hidden_output.txt={hidden}")
     frame.main(["emit", *files])
     return 0

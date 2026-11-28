@@ -25,19 +25,19 @@ grader changes also with `pilot/images/tests/`.
 
 ## Phase 2: User Story 3 - Prove drafted tests against a reference change (Priority: P3)
 
-- [ ] T007 [US3] `pilot/images/tools/grade.py`: `mode: reference`: apply the manifest change (029)
+- [x] T007 [US3] `pilot/images/tools/grade.py`: `mode: reference`: apply the manifest change (029)
   and the reference patch on the base; check the project's tests pass (`REFERENCE_BROKEN`,
   `REFERENCE_DOESNT_APPLY`); per hidden file, run the focused (`FORGE_HIDDEN_TEST_COMMAND`) or
   full test command on the base once and on the reference `repeats` times; per-file verdicts in
   the frame, hidden output only in the separate output file.
-- [ ] T008 [P] [US3] `pilot/images/tests/`: reference mode (applies, broken reference, per-file
+- [x] T008 [P] [US3] `pilot/images/tests/`: reference mode (applies, broken reference, per-file
   pass/fail, flaky, focused command).
-- [ ] T009 [US3] `internal/grader`: stage the reference for the grader Job (never the worker);
+- [x] T009 [US3] `internal/grader`: stage the reference for the grader Job (never the worker);
   `FORGE_REFERENCE_REPEATS` (default 3, min 2), `FORGE_HIDDEN_TEST_COMMAND`.
-- [ ] T010 [US3] `internal/author/check.go`: run the reference mode after today's baseline when a
+- [x] T010 [US3] `internal/author/check.go`: run the reference mode after today's baseline when a
   reference exists; codes `DRAFT_FAILS_ON_REFERENCE`, `DRAFT_PASSES_ON_BASE`, `DRAFT_FLAKY`,
   `REFERENCE_BROKEN`, `REFERENCE_DOESNT_APPLY`; record the result (no output) in `draft.json`.
-- [ ] T011 [US3] `internal/author/submit.go`: write `<target>/proofs/NNN[/<slice>].json` (data
+- [x] T011 [US3] `internal/author/submit.go`: write `<target>/proofs/NNN[/<slice>].json` (data
   model) into the companion PR; PR body "Reference check: …".
 - [ ] T012 [US3] `author prove --target --item [--slice]` (`internal/cli`, `internal/author`):
   prove merged hidden tests and open a companion PR with the proof; classify it in
@@ -47,9 +47,11 @@ grader changes also with `pilot/images/tests/`.
   reference row.
 - [ ] T014 [US3] `internal/checks`: P11r, no reference path or content hash in the attempt's staged
   inputs, ConfigMaps or prompt; add it to the audit.
-- [ ] T015 [P] [US3] Go tests: check codes, proof writing and reading, readiness staleness, P11r,
+- [ ] T015 [P] [US3] Go tests (check codes and proof writing done with T010-T011; the rest with
+  T012-T014): check codes, proof writing and reading, readiness staleness, P11r,
   command audit.
-- [ ] T016 [P] [US3] Docs: `docs/test-author.md` (references, proofs, `reference: none`),
+- [ ] T016 [P] [US3] Docs (the check, its codes and proofs done with T010-T011, in
+  `docs/targets.md`, as `docs/test-author.md` doesn't exist; `prove` and readiness to come): `docs/test-author.md` (references, proofs, `reference: none`),
   `docs/troubleshooting.md` (the new codes), release notes.
 - [ ] T017 [US3] SC-001 on the cluster: owner commits `documcp/references/004.patch` (attempt 2's
   change from run 20261128T012908Z); `author prove --target documcp --item 004` refuses the merged

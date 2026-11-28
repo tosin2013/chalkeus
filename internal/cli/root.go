@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/tosin2013/chalkeus/internal/author"
 	"github.com/tosin2013/chalkeus/internal/config"
 	"github.com/tosin2013/chalkeus/internal/evidence"
 	"github.com/tosin2013/chalkeus/internal/fixture"
@@ -36,6 +37,7 @@ func NewRoot(version string) *cobra.Command {
 
 // NewForge is `./chalkeus forge`: every pilot command.
 func NewForge(version string) *cobra.Command {
+	author.ForgeVersion = version // 041: recorded in proofs
 	forge := &cobra.Command{
 		Use:   "forge",
 		Short: "run roadmap items with agents, under your approval",

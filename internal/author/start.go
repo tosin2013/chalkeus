@@ -30,6 +30,10 @@ type Env struct {
 	// Slice is the slice the draft is for (026; "" = the whole item): its tests go to
 	// items/<item>/<slice>/ and its criteria are that story's.
 	Slice string
+	// Reference and LoadReference run the reference check after a passing baseline (041 US3);
+	// nil skips it (tests, and callers that don't check drafts).
+	Reference     Reference
+	LoadReference func(t config.Target, item, slice string) (ReferenceFile, error)
 }
 
 func branchPrefix(item string) string { return "author/" + item + "-" }
@@ -83,6 +87,9 @@ func Start(ctx context.Context, e Env, item string, replace bool) (*Draft, error
 	d.Workspace = filepath.Join(e.BuildDir, "author", d.ID)
 	d.Readiness = map[string]any{"spec_dir": res.SpecDir, "allowed_paths": res.AllowedPaths, "tests_may_change": res.TestsMayChange,
 		"title": res.Title, "replace": replace, "existing_files": res.HiddenFiles}
+	if res.ManifestChange != nil { // 029: author check grades on the base with the approved manifest change, as a run does
+		d.Readiness["manifest_change"] = res.ManifestChange
+	}
 	if res.Slice != nil { // 026: author check's baseline is the slice baseline (earlier slices' tests pass)
 		d.Readiness["slice"], d.Readiness["earlier"], d.Readiness["overlay"] = res.Slice, res.Earlier, res.Overlay
 	}

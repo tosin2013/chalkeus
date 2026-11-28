@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,6 +27,21 @@ func (p *P) AuthorBaseline(dir, id, item string, res readiness.Result, overlay [
 // tests' output comes back) or for `./chalkeus forge doctor --baseline` (never: doctor runs in the session
 // that drives runs, which must not see hidden tests).
 func (p *P) ItemBaseline(dir, id, item string, res readiness.Result, overlay []byte, showHidden bool) (map[string]any, []byte, error) {
+	return p.itemCheck(dir, id, item, res, overlay, showHidden, nil)
+}
+
+// AuthorReference is the reference check (041 US3) for `author check` and `author prove`: the
+// same preparation as the baseline, then the grader's reference mode with reference staged for
+// the grader only. It returns the report (per-file verdicts, no output) and the hidden tests'
+// output for the owner's or author's terminal only.
+func (p *P) AuthorReference(dir, id, item string, res readiness.Result, overlay, reference []byte) (map[string]any, []byte, error) {
+	if len(reference) == 0 {
+		return nil, nil, fmt.Errorf("REFERENCE_DOESNT_APPLY: the reference patch is empty")
+	}
+	return p.itemCheck(dir, id, item, res, overlay, true, reference)
+}
+
+func (p *P) itemCheck(dir, id, item string, res readiness.Result, overlay []byte, showHidden bool, reference []byte) (map[string]any, []byte, error) {
 	imgs, err := images.Load(p.L)
 	if err != nil {
 		return nil, nil, err
@@ -47,6 +63,12 @@ func (p *P) ItemBaseline(dir, id, item string, res readiness.Result, overlay []b
 		run.SetSlice(res.Slice.ID)
 		r := run.State["readiness"].(map[string]any)
 		r["slice"], r["earlier"] = res.Slice, toAnyList(res.Earlier)
+	}
+	if mc := res.ManifestChange; mc != nil { // 029: the base carries the approved manifest change, as in a run
+		var m map[string]any
+		raw, _ := json.Marshal(mc)
+		_ = json.Unmarshal(raw, &m)
+		run.State["manifest_change"] = m
 	}
 	_ = run.Save()
 	in := p.itemDir(run)
@@ -81,6 +103,21 @@ func (p *P) ItemBaseline(dir, id, item string, res readiness.Result, overlay []b
 	g := p.itemGrading(run)
 	if showHidden {
 		g.HiddenOutput = &hidden
+	}
+	if reference != nil { // 041: the reference mode's meta beside the baseline's
+		g.Reference = reference
+		meta := grader.ReferenceMeta(p.baselineMeta(run), p.Target.Repeats(), p.Target.HiddenTestCommand, p.Target.TestPaths)
+		if showHidden {
+			meta["author_check"] = true
+		}
+		rdir := filepath.Join(run.Dir, "reference")
+		if err := os.MkdirAll(rdir, 0o755); err != nil {
+			return nil, nil, err
+		}
+		mp = filepath.Join(rdir, "meta.json")
+		if err := evidence.WriteJSON(mp, meta); err != nil {
+			return nil, nil, err
+		}
 	}
 	report := grader.GradeItem(p.L, p.C, p.Runner, run, p.Imgs, item, 0, g, mp, filepath.Dir(mp))
 	return report, hidden, nil

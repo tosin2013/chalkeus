@@ -12,7 +12,9 @@ import (
 
 	"github.com/google/go-github/v85/github"
 
+	"github.com/tosin2013/chalkeus/internal/config"
 	"github.com/tosin2013/chalkeus/internal/ghloop"
+	"github.com/tosin2013/chalkeus/internal/proof"
 )
 
 // Submit is `./chalkeus forge author submit` (018 T011): only a draft whose last check passed, unchanged
@@ -47,8 +49,14 @@ func Submit(ctx context.Context, e Env, item string) (*Draft, error) {
 	var m Map
 	raw, _ := os.ReadFile(filepath.Join(draftDir, MapFile))
 	_ = json.Unmarshal(raw, &m)
+	extra := map[string][]byte{}
+	if pf, perr := d.Proof(e.Target, draftDir); perr != nil {
+		return d, perr
+	} else if pf != nil { // 041: the reference check's proof goes beside the tests, outside the overlay
+		extra[e.Target.CompanionProofPath(item, d.Slice)] = pf.Marshal()
+	}
 	pr, commit, err := openPR(ctx, id.Client, d, draftDir, append(files, File{Path: MapFile}), replaceOn(d),
-		fmt.Sprintf("test(%s): hidden acceptance tests for %s", item, d.Title), PRBody(d, Criteria(string(spec)), m))
+		fmt.Sprintf("test(%s): hidden acceptance tests for %s", item, d.Title), PRBody(d, Criteria(string(spec)), m), extra)
 	if err != nil {
 		_ = d.Event("submit_error", clip(err.Error()))
 		return d, err
@@ -59,6 +67,33 @@ func Submit(ctx context.Context, e Env, item string) (*Draft, error) {
 	_ = d.Event("submitted", fmt.Sprintf("pr=%s commit=%s files=%d", pr.GetHTMLURL(), commit, len(files)))
 	fmt.Fprintf(e.Out, "opened %s\nA human reviews and merges it; then the item's run can start.\n", pr.GetHTMLURL())
 	return d, nil
+}
+
+// ForgeVersion is the running forge's version, recorded in proofs (set by the CLI).
+var ForgeVersion = "dev"
+
+// Proof is the proof of a draft whose last check ran the reference check (041 data model), nil
+// when it didn't. The tree hash covers the files the PR adds under the item's folder.
+func (d *Draft) Proof(t config.Target, draftDir string) (*proof.Proof, error) {
+	last := d.Checks[len(d.Checks)-1]
+	rr := last.Reference
+	if rr == nil {
+		return nil, nil
+	}
+	tree, err := proof.TreeSHA256(draftDir)
+	if err != nil {
+		return nil, err
+	}
+	p := &proof.Proof{Version: 1, Item: d.Item, Slice: d.Slice, Reference: "patch", ReferencePath: rr.ReferencePath,
+		ReferenceSHA256: rr.ReferenceSHA256, TestsTreeSHA256: tree, BaseRevision: d.BaseRevision, Repeats: rr.Repeats,
+		Result: rr.Result, Code: rr.Code, Model: d.Model, CheckedAt: last.At, ForgeVersion: ForgeVersion}
+	if mc := manifestOf(d.Readiness["manifest_change"]); mc != nil {
+		p.ManifestCommit = mc.Commit
+	}
+	for _, f := range rr.Files {
+		p.Files = append(p.Files, proof.File(f))
+	}
+	return p, nil
 }
 
 func replaceOn(d *Draft) bool { b, _ := d.Readiness["replace"].(bool); return b }
@@ -74,6 +109,11 @@ func PRBody(d *Draft, criteria []Criterion, m Map) string {
 	}
 	last := d.Checks[len(d.Checks)-1]
 	fmt.Fprintf(&b, "- Checked on the unchanged base `%s`: the project's tests pass and these tests fail (`%s`, draft `%s`).\n", short(d.BaseRevision), last.Result, short(last.DraftHash))
+	if rr := last.Reference; rr != nil { // 041
+		fmt.Fprintf(&b, "- Reference check: %s, against `%s` (`%s`); proof in this PR.\n", rr.Summary(), rr.ReferencePath, short(rr.ReferenceSHA256))
+	} else {
+		b.WriteString("- Reference check: not run (no reference change in the companion). A run needs a proof first (`HIDDEN_TESTS_UNVERIFIED`): add the reference and run `author prove`, or record `reference: none`.\n")
+	}
 	fmt.Fprintf(&b, "- Spec SHA-256 `%s`.\n- Files only under `%s/`.\n\n", short(d.SpecSHA256), d.CompanionDir)
 	b.WriteString("## Coverage\n\n| Criterion | | Tests |\n|---|---|---|\n")
 	for _, c := range criteria {
@@ -97,7 +137,8 @@ func short(s string) string {
 
 // openPR writes the files as one commit on a new branch through the Git Data API and opens the
 // pull request. With replace, files under the item folder that aren't in the draft are deleted.
-func openPR(ctx context.Context, c *github.Client, d *Draft, draftDir string, files []File, replace bool, title, body string) (*github.PullRequest, string, error) {
+// extra maps further companion paths to their contents (041: the proof, outside the item folder).
+func openPR(ctx context.Context, c *github.Client, d *Draft, draftDir string, files []File, replace bool, title, body string, extra map[string][]byte) (*github.PullRequest, string, error) {
 	owner, name := ghloop.SplitRepo(d.Companion)
 	repo, _, err := c.Repositories.Get(ctx, owner, name)
 	if err != nil {
@@ -127,6 +168,18 @@ func openPR(ctx context.Context, c *github.Client, d *Draft, draftDir string, fi
 		}
 		p := path.Join(d.CompanionDir, f.Path)
 		keep[p] = true
+		entries = append(entries, &github.TreeEntry{Path: github.Ptr(p), Mode: github.Ptr("100644"), Type: github.Ptr("blob"), SHA: blob.SHA})
+	}
+	var extras []string
+	for p := range extra {
+		extras = append(extras, p)
+	}
+	sort.Strings(extras)
+	for _, p := range extras {
+		blob, _, err := c.Git.CreateBlob(ctx, owner, name, github.Blob{Content: github.Ptr(string(extra[p])), Encoding: github.Ptr("utf-8")})
+		if err != nil {
+			return nil, "", err
+		}
 		entries = append(entries, &github.TreeEntry{Path: github.Ptr(p), Mode: github.Ptr("100644"), Type: github.Ptr("blob"), SHA: blob.SHA})
 	}
 	if replace {
