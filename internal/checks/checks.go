@@ -219,6 +219,8 @@ func (d Deps) RunWorkerChecks(run *evidence.Run, imgs map[string]string, task st
 		promptText, _ := os.ReadFile(filepath.Join(adir, "prompt.md"))
 		ok, detail := HiddenTestsAbsent(run.Dir, cmText.String(), string(promptText), []string{"base.bundle", "meta.json", "prompt.md"})
 		d.rec(run, "P11", "014 FR-008", ok, "no hidden-test file reaches the worker (ConfigMaps, staged inputs, prompt)", unit, detail)
+		ok, detail = ReferenceAbsent(run.State, cmText.String(), string(promptText), []string{"base.bundle", "meta.json", "prompt.md"})
+		d.rec(run, "P11r", "041 FR-010", ok, "no reference change reaches the worker (path or hash in ConfigMaps or prompt; staged inputs)", unit, detail)
 	}
 	// P06/P07 network, from the probe twin
 	func() {
@@ -360,6 +362,31 @@ func HiddenTestsAbsent(runDir, configMaps, prompt string, staged []string) (bool
 		}
 	}
 	return len(leaks) == 0, fmt.Sprintf("hidden_files=%d leaks=%s", len(c.Files), pyrepr.Value(strsAny(leaks)))
+}
+
+// ReferenceAbsent is P11r's rule (041 FR-010): the reference changes readiness recorded (path and
+// hash) appear in neither the worker's ConfigMaps nor its prompt, and the staged inputs are exactly the expected three. A run never loads a
+// reference, so this holds by construction; the check proves it per attempt.
+func ReferenceAbsent(state map[string]any, configMaps, prompt string, staged []string) (bool, string) {
+	r, _ := state["readiness"].(map[string]any)
+	refs, _ := r["references"].([]any)
+	var leaks []string
+	text := configMaps + "\n" + prompt
+	for _, x := range refs {
+		ref, _ := x.(map[string]any)
+		for _, k := range []string{"path", "sha256"} {
+			if v := s(ref[k]); v != "" && strings.Contains(text, v) {
+				leaks = append(leaks, k+":"+v)
+			}
+		}
+	}
+	want := map[string]bool{"base.bundle": true, "meta.json": true, "prompt.md": true}
+	for _, n := range staged {
+		if !want[n] {
+			leaks = append(leaks, "staged:"+n)
+		}
+	}
+	return len(leaks) == 0, fmt.Sprintf("references=%d leaks=%s", len(refs), pyrepr.Value(strsAny(leaks)))
 }
 
 // GradingPolicies is P12's rule (014 R7) over a grading namespace's NetworkPolicies: a default deny

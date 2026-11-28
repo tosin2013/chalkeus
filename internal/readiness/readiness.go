@@ -60,8 +60,14 @@ type Result struct {
 	SpecSHA256      string         `json:"spec_sha256,omitempty"`
 	Mapping         map[string]any `json:"mapping,omitempty"` // the test author's coverage map (018): present, uncovered, stale
 	CompanionCommit string         `json:"companion_commit,omitempty"`
-	HiddenFiles     int            `json:"hidden_files,omitempty"`
-	InputBytes      int64          `json:"input_bytes,omitempty"`
+	// ProofNone is set when the owner recorded reference: none for the hidden tests (041): the
+	// run is allowed with a warning.
+	ProofNone bool `json:"proof_none,omitempty"`
+	// References are the proven folders' reference changes (path and hash, never content), for
+	// P11r (041).
+	References  []Reference `json:"references,omitempty"`
+	HiddenFiles int         `json:"hidden_files,omitempty"`
+	InputBytes  int64       `json:"input_bytes,omitempty"`
 	// 026: the slice a slice run builds, whether it is the item's last, the companion folders the
 	// grader overlays (this slice or the whole item) and the earlier slices' folders (G8), and the
 	// item-level acceptance checks the spec declares.
@@ -387,6 +393,21 @@ func Check(d Deps, t config.Target, item string, seq int, outDir string) (Result
 			}
 		default:
 			rule("hidden_tests", true, fmt.Sprintf("%d file(s) at %s@%s", n, t.CompanionRepo, short(ccommit)))
+			// 041 FR-014: the hidden tests must be proven against a reference change, or the owner
+			// recorded reference: none.
+			problems, warn, refs := proofProblems(cdir, t, item, overlay)
+			res.References = refs
+			if len(problems) > 0 {
+				if fail("HIDDEN_TESTS_UNVERIFIED", fmt.Sprintf("the hidden tests at %s@%s have no passing reference check (%s). Fix: add %s and run ./chalkeus forge author prove --target %s --item %s, or record reference: none in %s (your decision)",
+					t.CompanionRepo, short(ccommit), strings.Join(problems, "; "), t.CompanionReferencePath(item, sliceOf(sl)), t.Name, item, t.CompanionProofPath(item, sliceOf(sl)))) {
+					return finish()
+				}
+			} else if warn != "" {
+				rule("hidden_tests_proof", true, "WARN "+warn)
+				res.ProofNone = true
+			} else {
+				rule("hidden_tests_proof", true, "proven against the reference change")
+			}
 		}
 		// The one realistic way a worker could learn hidden tests is finding them in the target
 		// repository (018, roadmap C-14): refuse if any hidden test's content is already there.

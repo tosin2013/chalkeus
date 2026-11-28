@@ -592,6 +592,15 @@ func itemAU04(d string, base evidence.CheckRow) evidence.CheckRow {
 		}
 	}
 	ok := base.Result == "pass" && n > 0 && pass
+	// 041: P11r (no reference change reached a worker) must pass wherever it was recorded; runs
+	// before 041 have no rows.
+	p11r := 0
+	for _, c := range checks {
+		if str(c, "id") == "P11r" {
+			p11r++
+			ok = ok && str(c, "result") == "pass"
+		}
+	}
 	// With a dependency cache, P12 must pass too: graders had no egress (014 R7).
 	var st map[string]any
 	readJSON(filepath.Join(d, "run.json"), &st)
@@ -611,7 +620,15 @@ func itemAU04(d string, base evidence.CheckRow) evidence.CheckRow {
 		level = "unrecorded"
 	}
 	return row("AU04", ok, base.Description+"; no hidden test reached a worker (P11, 014)",
-		fmt.Sprintf("%s p11_rows=%d p12_rows=%d security_level=%s", base.Detail, n, p12, level))
+		fmt.Sprintf("%s p11_rows=%d%s p12_rows=%d security_level=%s", base.Detail, n, p11rDetail(p11r), p12, level))
+}
+
+// p11rDetail shows P11r's row count once a run has any (041); older runs' detail is unchanged.
+func p11rDetail(n int) string {
+	if n == 0 {
+		return ""
+	}
+	return fmt.Sprintf(" p11r_rows=%d", n)
 }
 
 // itemAU01: only the item was gated allow, its readiness passed, and no other task has events

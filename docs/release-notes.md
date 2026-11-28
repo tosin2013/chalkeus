@@ -1,5 +1,16 @@
 # Release notes
 
+## A run needs proven hidden tests (041, third part)
+
+- **Readiness now refuses an item whose hidden tests aren't proven** (`HIDDEN_TESTS_UNVERIFIED`):
+  the companion needs `proofs/NNN.json` for the tests as they are now. Items whose tests were
+  merged before this release need one too.
+- `./chalkeus forge author prove --target <t> --item NNN [--slice S]` (owner-run) proves merged
+  hidden tests against `references/NNN.patch` and opens a companion pull request with the proof.
+  Or commit a `reference: none` proof yourself; runs are then allowed with a warning
+  ([targets](targets.md#proving-hidden-tests-against-a-reference-change)).
+- Each attempt records P11r (no reference path or hash reached the worker); AU04 requires it.
+
 ## Hidden tests proven against a reference change (041, second part)
 
 - Put a correct implementation of an item in the companion as `references/NNN.patch`, and

@@ -82,7 +82,19 @@ func authorCmd() *cobra.Command {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(raw))
 		return nil
 	})
-	g.AddCommand(start, check, submit, status, authorWatchCmd())
+	prove := mk("prove", "041: prove an item's merged hidden tests against the companion's reference change and open a pull request with the proof; owner-run, never by the session that drives runs", func(cmd *cobra.Command, e author.Env, item string) error {
+		p, err := pipelineFor(cmd)
+		if err != nil {
+			return err
+		}
+		sl, _ := cmd.Flags().GetString("slice")
+		e.Slice = slice.Normalize(sl)
+		e.Reference = p.AuthorReference
+		_, err = author.Prove(context.Background(), e, item)
+		return err
+	})
+	prove.Flags().String("slice", "", "prove one slice's hidden tests (026), e.g. US2")
+	g.AddCommand(start, check, submit, status, prove, authorWatchCmd())
 	return g
 }
 

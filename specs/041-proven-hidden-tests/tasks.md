@@ -39,18 +39,18 @@ grader changes also with `pilot/images/tests/`.
   `REFERENCE_BROKEN`, `REFERENCE_DOESNT_APPLY`; record the result (no output) in `draft.json`.
 - [x] T011 [US3] `internal/author/submit.go`: write `<target>/proofs/NNN[/<slice>].json` (data
   model) into the companion PR; PR body "Reference check: …".
-- [ ] T012 [US3] `author prove --target --item [--slice]` (`internal/cli`, `internal/author`):
+- [x] T012 [US3] `author prove --target --item [--slice]` (`internal/cli`, `internal/author`):
   prove merged hidden tests and open a companion PR with the proof; classify it in
   `internal/cli/command_audit.go` with `author`.
-- [ ] T013 [US3] `internal/readiness`: `HIDDEN_TESTS_UNVERIFIED` (missing, failed or stale proof:
+- [x] T013 [US3] `internal/readiness`: `HIDDEN_TESTS_UNVERIFIED` (missing, failed or stale proof:
   recompute the hidden tests' tree hash); `reference: none` allows with a warning; doctor's
   reference row.
-- [ ] T014 [US3] `internal/checks`: P11r, no reference path or content hash in the attempt's staged
+- [x] T014 [US3] `internal/checks`: P11r, no reference path or content hash in the attempt's staged
   inputs, ConfigMaps or prompt; add it to the audit.
-- [ ] T015 [P] [US3] Go tests (check codes and proof writing done with T010-T011; the rest with
+- [x] T015 [P] [US3] Go tests (check codes and proof writing done with T010-T011; the rest with
   T012-T014): check codes, proof writing and reading, readiness staleness, P11r,
   command audit.
-- [ ] T016 [P] [US3] Docs (the check, its codes and proofs done with T010-T011, in
+- [x] T016 [P] [US3] Docs (the check, its codes and proofs done with T010-T011, in
   `docs/targets.md`, as `docs/test-author.md` doesn't exist; `prove` and readiness to come): `docs/test-author.md` (references, proofs, `reference: none`),
   `docs/troubleshooting.md` (the new codes), release notes.
 - [ ] T017 [US3] SC-001 on the cluster: owner commits `documcp/references/004.patch` (attempt 2's
