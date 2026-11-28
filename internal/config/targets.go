@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/tosin2013/chalkeus/internal/scm/bitbucket"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -74,6 +75,20 @@ type Target struct {
 	SCM         scm.Kind
 	SCMHost     string
 	SCMCABundle string
+	// Approvers overrides forge.env's FORGE_APPROVERS for this target (037: a host's own account
+	// ids; Bitbucket lists account ids only). Empty: forge.env's list.
+	Approvers []string
+}
+
+// ApproversOr is the target's approver list, or forge.env's when the profile sets none.
+func (t Target) ApproversOr(c *Config) []string {
+	if len(t.Approvers) > 0 {
+		return t.Approvers
+	}
+	if c == nil {
+		return nil
+	}
+	return c.Approvers()
 }
 
 // Security levels (roadmap C-14): who may write the target and read the companion.
@@ -269,6 +284,18 @@ func parseTarget(name string, v map[string]string, c *Config) (Target, error) {
 	}
 	if err := scm.ValidRepo(kind, t.Repo); err != nil {
 		return Target{}, invalid("PILOT_TARGET_REPO", err.Error())
+	}
+	t.Approvers = splitList(v["PILOT_APPROVERS"], true)
+	if kind == scm.Bitbucket { // 037 R7: Bitbucket can't resolve usernames, so ids only
+		list, where := t.Approvers, "targets/"+name+".env"
+		if len(list) == 0 && c != nil {
+			list, where = c.Approvers(), "forge.env"
+		}
+		for _, a := range list {
+			if !bitbucket.ValidAccountID(a) {
+				return Target{}, targetErr("TARGET_INVALID", "targets/%s.env: FORGE_APPROVERS (from %s) must list Bitbucket account ids ({uuid} or account_id), got %q; set the target's own FORGE_APPROVERS in its profile", name, where, a)
+			}
+		}
 	}
 	if t.Branch == "" {
 		t.Branch = "main"

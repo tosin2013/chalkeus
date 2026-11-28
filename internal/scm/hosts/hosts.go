@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/tosin2013/chalkeus/internal/scm"
+	"github.com/tosin2013/chalkeus/internal/scm/bitbucket"
 	"github.com/tosin2013/chalkeus/internal/scm/github"
 	"github.com/tosin2013/chalkeus/internal/secret"
 )
@@ -18,6 +19,8 @@ func New(h scm.Host, token secret.Value) (scm.Client, error) {
 			h = scm.NewHost(scm.GitHub, "", "")
 		}
 		return github.New(h, token), nil
+	case scm.Bitbucket:
+		return bitbucket.New(h, token)
 	}
 	return nil, &scm.Error{Code: scm.ErrInvalid, Msg: string(h.Kind) + " support isn't built yet (roadmap 037)"}
 }

@@ -52,6 +52,17 @@ func credsFor(cfg *config.Config) (pipeline.Creds, error) {
 }
 
 func verifyPublisher(cmd *cobra.Command, l paths.Layout, cfg *config.Config, envFile string) ghloop.ProbeResult {
+	if h := cfg.FixtureHost(); !h.IsGitHub() { // 037: the host's own probe
+		r := probeOnHost(h, envFile, cfg.Repo())
+		reportProbe(cmd.OutOrStdout(), h, r)
+		res := ghloop.ProbeResult{OK: r.OK(), Repo: cfg.Repo()}
+		for _, ln := range r.Lines {
+			if !ln.OK {
+				res.Problems = append(res.Problems, ln.Name+": "+ln.Detail)
+			}
+		}
+		return res
+	}
 	res := ghloop.VerifyFile(envFile, cfg.Repo(), config.OriginRepo(l.Root), cfg.GithubIssues())
 	ghloop.Report(cmd.OutOrStdout(), res)
 	return res
@@ -173,7 +184,11 @@ func runPublisherToken(cmd *cobra.Command, _ []string) error {
 	}
 	staging := cfg.PublisherEnv + ".new"
 	defer func() { _ = os.Remove(staging) }()
-	fmt.Fprintln(out, "Paste the fine-grained token for the fixture repo (input hidden):")
+	if cfg.FixtureHost().IsGitHub() {
+		fmt.Fprintln(out, "Paste the fine-grained token for the fixture repo (input hidden):")
+	} else {
+		fmt.Fprintf(out, "Paste the publisher token for the fixture repo on %s (input hidden):\n", cfg.FixtureHost().Name)
+	}
 	tok, err := readHidden()
 	if err != nil || tok == "" {
 		fmt.Fprintln(out, "no token written")

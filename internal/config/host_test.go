@@ -62,10 +62,18 @@ func TestTargetHosts(t *testing.T) {
 		t.Fatalf("%+v", h)
 	}
 
-	writeTarget(t, c, "bb", strings.NewReplacer("gitlab", "bitbucket", "group/sub/greeting", "ws/greeting", "group/greeting-acceptance", "ws/greeting-acceptance").Replace(gitlabTarget))
+	bbBody := strings.NewReplacer("gitlab", "bitbucket", "group/sub/greeting", "ws/greeting", "group/greeting-acceptance", "ws/greeting-acceptance").Replace(gitlabTarget)
+	writeTarget(t, c, "bb", bbBody)
+	if _, err := c.LoadTarget("bb", ""); err == nil || !strings.Contains(err.Error(), "must list Bitbucket account ids") || !strings.Contains(err.Error(), "from forge.env") {
+		t.Fatalf("forge.env's GitHub logins on a Bitbucket target: %v", err)
+	}
+	writeTarget(t, c, "bb", bbBody+"FORGE_APPROVERS={11111111-1111-1111-1111-111111111111}\n")
 	bb, err := c.LoadTarget("bb", "")
 	if err != nil || bb.Host().Kind != scm.Bitbucket || bb.Host().APIBase != "https://api.bitbucket.org/2.0" {
 		t.Fatalf("%v %+v", err, bb)
+	}
+	if got := bb.ApproversOr(c); len(got) != 1 || got[0] != "{11111111-1111-1111-1111-111111111111}" {
+		t.Fatalf("the target's own approvers: %v", got)
 	}
 
 	writeTarget(t, c, "gh", goodTarget)
