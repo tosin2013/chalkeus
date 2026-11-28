@@ -249,6 +249,9 @@ func (d Deps) Publish(run *evidence.Run, imgs map[string]string, task string, n 
 	if d.LoginHint != "" {
 		spec["publisher_login"] = d.LoginHint
 	}
+	if b := scmBlock(d.Host); b != nil {
+		spec["scm"] = b
+	}
 	_ = run.Event("publish", task, n, "publish_started", head)
 	res, err := d.submit(run, imgs, strings.ToLower(task), spec, bundle)
 	if err != nil {
@@ -399,6 +402,9 @@ func (d Deps) PublishStatus(run *evidence.Run, imgs map[string]string, task, bas
 	if d.LoginHint != "" {
 		spec["publisher_login"] = d.LoginHint
 	}
+	if b := scmBlock(d.Host); b != nil {
+		spec["scm"] = b
+	}
 	_ = run.Event("publish", task, nil, "status_pr_started", head)
 	res, err := d.submit(run, imgs, "status-"+strings.ToLower(task), spec, bundle)
 	if err != nil {
@@ -440,4 +446,14 @@ func readBack(ctx context.Context, sc scm.Client, repo string, number int, head 
 		return scm.ChangeRequest{}, &Error{fmt.Sprintf("PR #%d was opened by %s, not the publisher (%s)", number, pr.Author.ID, want)}
 	}
 	return pr, nil
+}
+
+// scmBlock is pr.json's "scm" block for the publisher Job (037 contracts/publisher.md): nil on
+// GitHub, so GitHub's pr.json is unchanged. The CA file is added with the self-managed GitLab
+// mount (T055).
+func scmBlock(h scm.Host) map[string]any {
+	if h.IsGitHub() {
+		return nil
+	}
+	return map[string]any{"kind": string(h.Kind), "api": h.APIBase, "git_base": h.GitBase}
 }

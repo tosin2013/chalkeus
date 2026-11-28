@@ -36,7 +36,7 @@ func OperatorCredential(h Host) (secret.Value, error) {
 		how = "set GITLAB_TOKEN to your own GitLab token for " + h.Name + " (scope api), or log in with glab"
 	case Bitbucket:
 		envs = []string{"BITBUCKET_TOKEN"}
-		how = "set BITBUCKET_TOKEN to your own Atlassian API token for Bitbucket (repository and pull request read; repository admin for doctor's approver check)"
+		how = "set BITBUCKET_TOKEN to your own Atlassian API token for Bitbucket (repository and pull request read; repository admin for doctor's approver check), and BITBUCKET_EMAIL to your Atlassian email if the token has no scopes"
 	default:
 		envs = []string{"GH_TOKEN", "GITHUB_TOKEN"}
 		cli = []string{"gh", "auth", "token"}

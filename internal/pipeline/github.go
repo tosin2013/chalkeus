@@ -1,8 +1,10 @@
 package pipeline
 
 import (
+	"context"
 	"fmt"
 	"github.com/tosin2013/chalkeus/internal/scm"
+	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -56,7 +58,7 @@ func (p *P) loop() (*ghloop.Loop, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.GH = &ghloop.Loop{Repo: p.repo(), Branch: p.branch(), Approvers: p.Cfg.Approvers(), R: r,
+	p.GH = &ghloop.Loop{Repo: p.repo(), Branch: p.branch(), Approvers: p.Target.ApproversOr(p.Cfg), R: r,
 		W: func() (ghloop.Writer, error) {
 			env, err := p.Creds.Env()
 			if err != nil {
@@ -86,7 +88,7 @@ func (p *P) githubPost(run *evidence.Run) {
 		return
 	}
 	p.say("  or approve on GitHub: https://github.com/%s/issues/%d (reply `/approve %s`; allowed: %s)",
-		p.repo(), ghloop.TrackingIssue(run), pend.Step, strings.Join(p.Cfg.Approvers(), ", "))
+		p.repo(), ghloop.TrackingIssue(run), pend.Step, strings.Join(p.Target.ApproversOr(p.Cfg), ", "))
 	p.ensureWatcher(run)
 }
 
@@ -282,9 +284,9 @@ func (p *P) reconcileGitHub(run *evidence.Run, pend map[string]any) int {
 	if code == ExitAwaitMerge {
 		p.pause(run, "awaiting-merge", map[string]any{"task": task})
 		if task == "A" {
-			p.say("A's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` (or `./chalkeus forge github watch`).") // the guide quotes this
+			p.say(p.onHost("A's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` (or `./chalkeus forge github watch`).")) // the guide quotes this
 		} else {
-			p.say("%s's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` (or `./chalkeus forge github watch`).", task)
+			p.say(p.onHost("%s's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` (or `./chalkeus forge github watch`)."), task)
 		}
 		p.ensureWatcher(run)
 		return ExitAwaitMerge
@@ -325,6 +327,9 @@ func changedPaths(t map[string]any, n int) []string {
 }
 
 func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
+	if !p.host().IsGitHub() { // 037: read the status-change request through the host's API
+		return p.statusPRMergedOnHost(run, pend)
+	}
 	num := asInt(pend["status_pr"])
 	base, _ := pend["status_base"].(string)
 	task := mergeTask(run)
@@ -341,7 +346,7 @@ func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
 	}
 	if view.State != "MERGED" {
 		p.pause(run, "awaiting-merge", statusPending(task, num, base))
-		p.say("status-change PR #%d is not merged yet. Merge it on GitHub to approve, then `./chalkeus forge resume`.", num)
+		p.say(p.onHost("status-change PR #%d is not merged yet. Merge it on GitHub to approve, then `./chalkeus forge resume`."), num)
 		p.ensureWatcher(run)
 		return ExitAwaitMerge
 	}
@@ -376,7 +381,7 @@ func (p *P) statusPRMerged(run *evidence.Run, pend map[string]any) int {
 		p.say("could not read status-change PR #%d: %v; the run stays paused", num, err)
 		return ExitError
 	}
-	ok, reason := reconcile.CheckStatusPR(view.State, view.MergedBy, baseText, headText, changed, item, p.Cfg.Approvers(), pub)
+	ok, reason := reconcile.CheckStatusPR(view.State, view.MergedBy, baseText, headText, changed, item, p.Target.ApproversOr(p.Cfg), pub)
 	if ok && !onDefault {
 		ok, reason = false, "STATUS_NOT_ON_DEFAULT"
 	}
@@ -501,4 +506,82 @@ func (p *P) Watch(runID string, interval time.Duration, sleep func(time.Duration
 		}
 		sleep(interval)
 	}
+}
+
+// statusPRMergedOnHost is statusPRMerged for GitLab and Bitbucket (037 T033): the request, its
+// changed files and the roadmap at its head, at the base and on the default branch are read with
+// the operator's credential through scm.Client instead of GitHub's pull/N/head fetch. The rules
+// (CheckStatusPR, STATUS_NOT_ON_DEFAULT) are the same; mergers compare by stable id.
+func (p *P) statusPRMergedOnHost(run *evidence.Run, pend map[string]any) int {
+	num := asInt(pend["status_pr"])
+	base, _ := pend["status_base"].(string)
+	task := mergeTask(run)
+	item := run.ItemOf(task)
+	h := p.host()
+	stay := func(err error) int {
+		p.pause(run, "awaiting-merge", statusPending(task, num, base))
+		p.say("could not read status-change request #%d: %v; the run stays paused", num, err)
+		return ExitError
+	}
+	sc, err := hosts.Operator(h)
+	if err != nil {
+		return stay(err)
+	}
+	ctx := context.Background()
+	cr, err := sc.ChangeRequest(ctx, p.repo(), num)
+	if err != nil {
+		return stay(err)
+	}
+	if !cr.Merged() {
+		p.pause(run, "awaiting-merge", statusPending(task, num, base))
+		p.say("status-change request #%d is not merged yet. Merge it on %s to approve, then `./chalkeus forge resume`.", num, h.Name)
+		return ExitAwaitMerge
+	}
+	changed, err := sc.ChangedFiles(ctx, p.repo(), cr)
+	if err != nil {
+		return stay(err)
+	}
+	read := func(rev string) string {
+		raw, err := sc.FileAt(ctx, p.repo(), rev, reconcile.RoadmapRel)
+		if err != nil {
+			return ""
+		}
+		return string(raw)
+	}
+	baseText, headText := read(base), read(cr.HeadSHA)
+	onDefault := regexp.MustCompile(`(?m)^### ` + regexp.QuoteMeta(item) + ` — .*\[status: verified\]`).MatchString(read(p.branch()))
+	pub := run.PublisherID()
+	ok, reason := reconcile.CheckStatusPR("MERGED", cr.MergedBy.ID, baseText, headText, changed, item, p.Target.ApproversOr(p.Cfg), pub)
+	if ok && !onDefault {
+		ok, reason = false, "STATUS_NOT_ON_DEFAULT"
+	}
+	changedAny := make([]any, len(changed))
+	for i, c := range changed {
+		changedAny[i] = c
+	}
+	_ = evidence.WriteJSON(filepath.Join(run.Dir, "reconcile", task+"-status.json"), map[string]any{"pr": num, "base": base,
+		"head": nullable(cr.HeadSHA), "merge_commit": nullable(cr.LandedCommit), "merged_by": nullable(cr.MergedBy.Name),
+		"merged_by_id": nullable(cr.MergedBy.ID), "changed": changedAny, "ok": ok, "reason": nullable(reason), "at": evidence.Now()})
+	rs := reason
+	if rs == "" {
+		rs = "None"
+	}
+	_ = run.Event("reconcile", task, nil, "status_pr_checked", fmt.Sprintf("pr=%d ok=%t reason=%s", num, ok, rs))
+	channel := string(h.KindOrGitHub())
+	if !ok {
+		decisions.Note(run, "reconcile", task, nil, false, channel, cr.MergedBy.ID, fmt.Sprintf("pr=%d reason=%s", num, reason))
+		return p.fail(run, reason)
+	}
+	decisions.Note(run, "reconcile", task, nil, true, channel, cr.MergedBy.ID, fmt.Sprintf("pr=%d", num))
+	tA := run.Task(task)
+	tA["state"] = "verified"
+	_ = run.Save()
+	_ = run.Event("status", task, nil, "task_verified", cr.LandedCommit)
+	if run.Kind() == evidence.KindItem {
+		return p.finish(run)
+	}
+	if d := p.gateTask(run, "B"); d.Decision != "allow" {
+		return p.fail(run, "B_STILL_BLOCKED")
+	}
+	return p.runTask(run, "B", 1)
 }

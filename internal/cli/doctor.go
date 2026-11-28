@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/tosin2013/chalkeus/internal/grader"
+	"github.com/tosin2013/chalkeus/internal/scm"
 	"github.com/tosin2013/chalkeus/internal/scm/hosts"
 	"os"
 	"os/exec"
@@ -176,18 +177,24 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		_, err := sc.Repository(ctx, repo)
 		r.OK(area, "can read "+repo, err, "")
 	}
-	id, err := author.ResolveIdentity(ctx, t)
-	switch {
-	case err != nil:
-		r.Add("github", "test author identity", doctor.Warn, err.Error()+" (needed only to draft hidden tests with the test author)")
-	case id.CanWriteTarget:
-		r.Add("github", "test author identity", doctor.Pass, fmt.Sprintf("%s (level %s; it can also write the target)", id.Login, id.Level))
-	default:
-		r.Add("github", "test author identity", doctor.Pass, fmt.Sprintf("%s (level %s; companion only)", id.Login, id.Level))
+	if h.IsGitHub() {
+		id, err := author.ResolveIdentity(ctx, t)
+		switch {
+		case err != nil:
+			r.Add("github", "test author identity", doctor.Warn, err.Error()+" (needed only to draft hidden tests with the test author)")
+		case id.CanWriteTarget:
+			r.Add("github", "test author identity", doctor.Pass, fmt.Sprintf("%s (level %s; it can also write the target)", id.Login, id.Level))
+		default:
+			r.Add("github", "test author identity", doctor.Pass, fmt.Sprintf("%s (level %s; companion only)", id.Login, id.Level))
+		}
+	} else {
+		doctorHostRows(ctx, &r, sc, t, cfg) // 037: publisher credential and approvers on GitLab and Bitbucket
 	}
 	switch prot, err := sc.BranchProtection(ctx, t.Repo, t.Branch); {
 	case err != nil:
 		r.Add(area, "branch protection", doctor.Warn, "could not check: "+err.Error())
+	case h.Kind == scm.Bitbucket && !prot.RestrictMerges:
+		r.Add(area, "branch protection", doctor.Fail, "the publisher's token can merge without a restrict_merges restriction on "+t.Repo+"@"+t.Branch+" (docs/targets.md)")
 	case !prot.Protected:
 		r.Add(area, "branch protection", doctor.Warn, t.Repo+"@"+t.Branch+" is not protected; protect it so changes arrive only by reviewed PR (important at the minimal level)")
 	default:

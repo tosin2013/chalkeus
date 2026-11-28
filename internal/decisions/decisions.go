@@ -306,7 +306,7 @@ func Decide(run *evidence.Run, step, question string, task, n any, say func(stri
 // Note records an approval_channel event; approver and extra apply to the github channel.
 func Note(run *evidence.Run, step string, task, n any, approved bool, channel, approver, extra string) {
 	detail := fmt.Sprintf("step=%s approved=%t channel=%s", step, approved, channel)
-	if channel == "github" {
+	if channel == "github" || channel == "gitlab" || channel == "bitbucket" { // 037: a merge on any Git host names its approver
 		var a map[string]any
 		if approver == "" {
 			a = run.LastApproval

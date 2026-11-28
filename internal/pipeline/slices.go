@@ -56,7 +56,7 @@ func (p *P) sliceMerged(run *evidence.Run, rec reconcile.Reconciler, cleanup fun
 	switch code {
 	case ExitAwaitMerge:
 		p.pause(run, "awaiting-merge", map[string]any{"task": task})
-		p.say("%s's slice %s PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` (or `./chalkeus forge github watch`).", task, id)
+		p.say(p.onHost("%s's slice %s PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` (or `./chalkeus forge github watch`)."), task, id)
 		p.ensureWatcher(run)
 		return ExitAwaitMerge
 	case 0:

@@ -97,6 +97,18 @@ func (p *P) repo() string {
 // host is the Git host of the repository this invocation acts on (037).
 func (p *P) host() scm.Host { return p.Target.Host() }
 
+// onHost adapts a message written for GitHub (the guide quotes several word for word) to the
+// run's host (037): "on GitHub" names the host, and the `github watch` hint is dropped, since
+// the watcher is GitHub-only. On GitHub the message is unchanged.
+func (p *P) onHost(msg string) string {
+	h := p.host()
+	if h.IsGitHub() {
+		return msg
+	}
+	msg = strings.ReplaceAll(msg, " (or `./chalkeus forge github watch`)", "")
+	return strings.ReplaceAll(msg, "on GitHub", "on "+h.Name)
+}
+
 func (p *P) branch() string {
 	if p.item() {
 		return p.Target.Branch
@@ -478,7 +490,7 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 		}
 		t["state"] = "awaiting-merge"
 		p.pause(run, "awaiting-merge", map[string]any{"task": "A"})
-		p.say("\nTask A draft PR: %v\nReview and merge it on GitHub yourself, then run: ./chalkeus forge resume", pr["url"])
+		p.say(p.onHost("\nTask A draft PR: %v\nReview and merge it on GitHub yourself, then run: ./chalkeus forge resume"), pr["url"])
 		p.ensureWatcher(run)
 		return ExitOK
 	}
@@ -486,7 +498,7 @@ func (p *P) publishTask(run *evidence.Run, task string) int {
 		p.dropGrading(run) // grading is over once the item's PR is open
 		t["state"] = "awaiting-merge"
 		p.pause(run, "awaiting-merge", map[string]any{"task": task})
-		p.say("\nItem %s draft PR: %v\nReview and merge it on GitHub yourself, then run: ./chalkeus forge resume --run %s", task, pr["url"], run.ID)
+		p.say(p.onHost("\nItem %s draft PR: %v\nReview and merge it on GitHub yourself, then run: ./chalkeus forge resume --run %s"), task, pr["url"], run.ID)
 		p.ensureWatcher(run)
 		return ExitOK
 	}
@@ -736,9 +748,9 @@ func (p *P) reconcileA(run *evidence.Run) int {
 	case ExitAwaitMerge:
 		p.pause(run, "awaiting-merge", map[string]any{"task": task})
 		if task == "A" {
-			p.say("A's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` again.") // the guide quotes this
+			p.say(p.onHost("A's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` again.")) // the guide quotes this
 		} else {
-			p.say("%s's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` again.", task)
+			p.say(p.onHost("%s's PR is not merged yet. Merge it on GitHub, then run `./chalkeus forge resume` again."), task)
 		}
 		return ExitAwaitMerge
 	case ExitDeclined:
