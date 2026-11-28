@@ -1,7 +1,21 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.44.0 → 1.45.0 (this revision)
+Version change: 1.45.0 → 1.45.1 (this revision)
+Bump rationale: PATCH — status transitions and clarifications; no new item or open question.
+Changes this revision (owner go-ahead 2026-11-28, Tosin Akinosho):
+  - 026, 029, 030, 033, 037 → in-progress: each was recorded specced with most tasks done
+    (47/50, 24/27, 13/37, 41/42, 24/67); none is implemented or verified yet.
+  - 033 gains two diagnosis fixes from documcp 004: skipped checks shown as skipped, and the
+    baseline's test time not taken as a full run when an `&&` test command stopped early.
+  - 036 gains one CI-review fix: a CI step the test command already runs under another name
+    (documcp's build = tsc = typecheck) counts as run.
+  - 035 and 040 cross-reference each other: the owner-only hidden-test output stays out of
+    committed evidence.
+Specs affected: 026, 029, 030, 033, 037 (status); 033, 036 (scope wording); 035, 040 (notes)
+Open questions added/resolved: none
+
+Prior: Version change: 1.44.0 → 1.45.0
 Bump rationale: MINOR — a new planned spec, 041, and scope added to 040.
 Changes this revision (owner go-ahead 2026-11-28, Tosin Akinosho):
   - New 041 — Proven hidden tests: a reference check (fail on the baseline, pass on a reference
@@ -2087,7 +2101,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     after its item is verified; the status-change commit says why it failed without a git
     identity; the 024 docs match the output.
 
-### 026 — Slice runs  [status: specced]
+### 026 — Slice runs  [status: in-progress]
 
 - **Description:** Let a run build one slice of a roadmap item (one user-story phase of its
   approved `tasks.md`) instead of the whole item. The roadmap item stays the unit that is
@@ -2253,7 +2267,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   draft PR; a proposal becomes a run only after the owner approves it, and the gate and
   mode confirmation still decide.
 
-### 029 — Brownfield intake: tech-debt triage and dependency items  [status: specced]
+### 029 — Brownfield intake: tech-debt triage and dependency items  [status: in-progress]
 
 - **Description:** Help an owner bring an existing repository with tech debt (red CI, piles of
   bot dependency PRs, a fragile test baseline) into the forge loop: a read-only triage report,
@@ -2287,7 +2301,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   published input schema) has no path through the forge today. The friction log is in
   specs/026-slice-runs/evidence/documcp-onboarding.md.
 
-### 030 — Resource budgets and capacity checks  [status: specced]
+### 030 — Resource budgets and capacity checks  [status: in-progress]
 
 - **Description:** Let a target's profile raise the CPU, memory and time its pods get, and check
   before a run that the cluster can schedule them, so a large or slow project fails in doctor
@@ -2408,7 +2422,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   owner: split by task, automated like `forge step`, and cheaper in tokens because each attempt
   carries one task, not the slice. Relates to Q4 (granularity, decided per slice by 026) and Q12.
 
-### 033 — Research before build: route unknown work back to planning  [status: specced]
+### 033 — Research before build: route unknown work back to planning  [status: in-progress]
 
 - **Description:** Notice when a slice holds work nobody yet knows how to do, or work that
   needs the environment changed, and send it back to the humans' planning (C-12) with the
@@ -2441,6 +2455,12 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     item when the scope itself changes;
   - docs: what each trigger means, for a new project and for an existing one, and how to do
     the research (an agent may assist the owner, C-12).
+  - **diagnosis fixes from documcp 004 (2026-11-28):** checks a grader timeout never ran are
+    shown as skipped, not failed (attempt 1 listed G1–G5 as failed after `grader_timeout`); the
+    baseline's test-command time is not taken as the full run when the command is an `&&` chain
+    that stopped early (the baseline stopped at `typecheck` in 13 s and the diagnosis said "267
+    full test runs fit", while the full chain takes about 223 s): measure the full chain on the
+    default branch (doctor's baseline) or say the time is partial.
 - **Scope (out):** forge doing the research or editing specs, tasks or the roadmap itself
   (C-12); changing the environment from an attempt; blocking a run on a heuristic (warnings
   only); automatic retries or budget raises; judging model quality (C-16).
@@ -2497,7 +2517,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 - **Notes:** Added 2026-11-25 (owner), from 031's privacy check (T031,
   specs/031-macos-multiarch/evidence/privacy.md): 14 committed `prefetch.json` files across
   specs carry hidden-test output from the private companion. Workers never see evidence, so
-  runs aren't affected; the companion's confidentiality is.
+  runs aren't affected; the companion's confidentiality is. 040 shows hidden-test failure
+  output to the owner only, through a human-only path; it must not land in committed evidence
+  either (2026-11-28).
 
 ### 036 — Measure a target before building: `doctor --measure` and a CI review  [status: in-progress]
 
@@ -2541,6 +2563,9 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     CI runs → the parts read from the files (2–4) still run, and the report says why (1) is
     missing; a host without a CI reader yet → one info line;
   - docs: reading the report, and acting on it (docs/strategies.md).
+  - **fix from documcp 004 (2026-11-28):** a CI step the profile's test command already runs
+    under another name counts as run (documcp's `npm run build` is `tsc`, the same compiler its
+    `npm run typecheck` runs with `--noEmit`; the review still listed "build" as not run).
 - **Scope (out):** changing budgets or test commands automatically; profiling the project's
   code beyond its test command; measuring live-model behaviour (C-16); changing, re-running or
   approving the target's CI (the review only reads it); CI readers for GitLab and Bitbucket
@@ -2560,7 +2585,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   (001 US1), `--forceExit` and a Security Audit job red on `main` (zod advisory, its item 004)
   only after the fact. Relates to 037 (SCM interface) without depending on it.
 
-### 037 — Pluggable SCM, phase 1: GitLab and Bitbucket Cloud beside GitHub  [status: specced]
+### 037 — Pluggable SCM, phase 1: GitLab and Bitbucket Cloud beside GitHub  [status: in-progress]
 
 - **Description:** Let targets and companions live on GitLab (gitlab.com and self-managed) or
   Bitbucket Cloud as well as GitHub, with the same guarantees, so teams on those hosts can use
@@ -2713,7 +2738,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
     timed out in grading.
   - **Hidden-test failures for the owner:** when G5 fails, the owner can see the failing output
     through the same human-only path as `--show-agent`; the driving session still sees only
-    "withheld".
+    "withheld". Nothing of it is written to committed evidence (035).
 - **Scope (out):** exporting metrics or traces to a collector (007 takes these counters later);
   dashboards; storing agent output in evidence (035).
 - **Depends on:** 024, 026
@@ -2983,4 +3008,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.45.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-28
+**Version**: 1.45.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-28
