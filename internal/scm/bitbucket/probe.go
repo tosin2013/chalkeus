@@ -16,8 +16,9 @@ import (
 // the check is by elimination:
 //   - GET /user must be refused, else the token is a user's API token (SCM_TOKEN_WRONG_KIND);
 //   - the target repository must read (SCM_TOKEN_WRONG_REPO);
-//   - listing the workspace's repositories must show no other repository, else it is a project
-//     or workspace token (SCM_TOKEN_WIDER_THAN_REPO).
+//   - listing the workspace's repositories must show no other private repository, else it is a
+//     project or workspace token (SCM_TOKEN_WIDER_THAN_REPO). Public repositories are listed for
+//     anyone, so they don't count (found in the proof, 2026-11-28).
 //
 // The bot's account id is read back later from the author of the first PR it opens.
 func (c *Client) ProbePublisher(ctx context.Context, repo string) scm.TokenProbeResult {
@@ -50,7 +51,8 @@ func (c *Client) ProbePublisher(ctx context.Context, repo string) scm.TokenProbe
 	_, err = c.h.List(ctx, "repositories/"+url.PathEscape(ws)+"?pagelen=100", func(raw []byte) (int, string, error) {
 		var page struct {
 			Values []struct {
-				FullName string `json:"full_name"`
+				FullName  string `json:"full_name"`
+				IsPrivate bool   `json:"is_private"`
 			} `json:"values"`
 			Next string `json:"next"`
 		}
@@ -58,7 +60,7 @@ func (c *Client) ProbePublisher(ctx context.Context, repo string) scm.TokenProbe
 			return 0, "", err
 		}
 		for _, v := range page.Values {
-			if !strings.EqualFold(v.FullName, repo) {
+			if v.IsPrivate && !strings.EqualFold(v.FullName, repo) {
 				others = append(others, v.FullName)
 			}
 		}
@@ -70,9 +72,9 @@ func (c *Client) ProbePublisher(ctx context.Context, repo string) scm.TokenProbe
 	case err != nil:
 		add("one repository", false, "could not list the workspace's repositories: "+err.Error(), scm.TokenWiderThanRepo)
 	case len(others) > 0:
-		add("one repository", false, fmt.Sprintf("the token also reaches %d other repositories (e.g. %s): a project or workspace token; use a repository access token", len(others), others[0]), scm.TokenWiderThanRepo)
+		add("one repository", false, fmt.Sprintf("the token also reaches %d other private repositories (e.g. %s): a project or workspace token; use a repository access token", len(others), others[0]), scm.TokenWiderThanRepo)
 	default:
-		add("one repository", true, "no other repository visible", "")
+		add("one repository", true, "no other private repository visible", "")
 	}
 	return res
 }

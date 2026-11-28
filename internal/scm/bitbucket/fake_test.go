@@ -23,7 +23,8 @@ import (
 type fakeBitbucket struct {
 	m           *scmtest.Model
 	accessToken bool     // GET /user refused, as for repository access tokens
-	extraRepos  []string // other repositories the token can list (a workspace token)
+	extraRepos  []string // other private repositories the token can list (a workspace token)
+	publicRepos []string // public repositories, listed for anyone
 }
 
 var (
@@ -102,11 +103,14 @@ func (f *fakeBitbucket) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		var vals []any
 		for name := range f.m.Repos {
 			if strings.HasPrefix(name, ws+"/") {
-				vals = append(vals, map[string]any{"full_name": name})
+				vals = append(vals, map[string]any{"full_name": name, "is_private": true})
 			}
 		}
 		for _, x := range f.extraRepos {
-			vals = append(vals, map[string]any{"full_name": x})
+			vals = append(vals, map[string]any{"full_name": x, "is_private": true})
+		}
+		for _, x := range f.publicRepos {
+			vals = append(vals, map[string]any{"full_name": x, "is_private": false})
 		}
 		js(200, map[string]any{"values": vals})
 		return
@@ -271,6 +275,9 @@ func TestProbePublisher(t *testing.T) {
 	}
 	if r := setup(&fakeBitbucket{accessToken: true, extraRepos: []string{"ws/other"}}); r.Code != scm.TokenWiderThanRepo {
 		t.Fatalf("a workspace token: %+v", r)
+	}
+	if r := setup(&fakeBitbucket{accessToken: true, publicRepos: []string{"ws/public-site"}}); !r.OK() {
+		t.Fatalf("a public repository in the listing is visible to anyone, not extra reach: %+v", r)
 	}
 	f := &fakeBitbucket{accessToken: true, m: scmtest.NewModel(owner, other)}
 	c := newFake(t, f)
