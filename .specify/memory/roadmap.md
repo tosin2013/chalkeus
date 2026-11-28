@@ -1,7 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.43.0 → 1.43.1 (this revision)
+Version change: 1.43.1 → 1.44.0 (this revision)
+Bump rationale: MINOR — a new planned spec, 040.
+Changes this revision (owner go-ahead 2026-11-28, Tosin Akinosho):
+  - New 040 — Watching drafts and runs: progress, safe logs, one watcher per target. A log
+    audit first; safe per-event summaries from watchdog.py; a progress line; one watcher per
+    target with namespaces owned by draft id; fail fast when a pod vanishes; full agent output
+    only for a human, behind a flag the agent harness denies. From documcp item 004's author
+    draft (two watchers deleting each other's pods; silent pod logs).
+Specs affected: 040 (new)
+Open questions added/resolved: none
+
+Prior: Version change: 1.43.0 → 1.43.1
 Bump rationale: PATCH — status transition: 036 in-progress (US1, the CI review, built).
 Changes this revision (owner go-ahead 2026-11-27, Tosin Akinosho):
   - 036 → in-progress, spec dir specs/036-measure-and-ci-review/; US1 (doctor's CI review) is
@@ -2650,6 +2661,52 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   2026-11-18 amendment, which ruled out importing a subscription OAuth login; Q15 and Q16
   decide it.
 
+### 040 — Watching drafts and runs: progress, safe logs, one watcher per target  [status: planned]
+
+- **Description:** Let the operator see whether an author draft or a worker attempt is working,
+  stuck or dead while it runs, without the session that drives runs ever seeing hidden tests,
+  and stop two watchers from wrecking each other's drafts.
+- **Outcome:** during a draft or attempt the operator sees a progress line (phase, time against
+  the target's typical time, tokens against the cap, tasks ticked for a worker) and safe
+  per-step summaries in the pod logs; a stalled or vanished job is reported at once, not at its
+  deadline; a second `author watch` for the same target refuses to start; the agent's full
+  output, test code included, is shown only to a human who asks for it with a flag the agent
+  harness denies.
+- **Scope (in):**
+  - **Log audit first:** the owner reviews this run's raw author and worker logs, and the
+    driving session reviews the watcher, run output and evidence (never author logs); list the
+    operator's questions while watching (working or stuck? doing what? why did it fail? how long
+    left?) and sort every line into always, `-vv`, or never (tests, secrets); break things on
+    purpose (kill the pod, two watchers, cut the model) and check each failure is obvious.
+  - **Safe event summaries:** `watchdog.py` already reads OpenCode's JSON events (today they go
+    only to the spend-cap watchdog, stderr to a file, and `kubectl logs` shows only the
+    `PILOT-RESULT` frame); it prints one line per event (tool, file path, tokens so far), never
+    file contents.
+  - **Progress line:** printed by `author watch` and the run every couple of minutes: phase
+    (staging, checks, agent, draft checks or grading, PR), elapsed against the median from the
+    target's evidence history, tokens against the cap, tasks ticked for a worker; "longer than
+    usual (2x typical)" instead of a percentage bar; the worker's line also on the tracking issue.
+  - **One watcher per target:** a lock per target; a second watcher refuses and names the holder;
+    each draft labels its namespace with its draft id and cleanup only removes its own; a draft
+    that finds a namespace in use waits instead of deleting it; `doctor` warns about a second
+    watcher.
+  - **Fail fast:** a watcher whose pod or namespace disappears fails the attempt at once.
+  - **Human-only full output:** `author watch --show-agent` (author `-vvv`) streams the agent's
+    full output to the operator's terminal; the worker copies the full stream to its logs only
+    then. `.claude/settings.json` gets deny rules for that flag, author `-vvv` and
+    `kubectl logs` of an author job; the flag is classified in `command_audit.go`; its use (not
+    the output) is recorded in the draft's evidence.
+- **Scope (out):** exporting metrics or traces to a collector (007 takes these counters later);
+  dashboards; storing agent output in evidence (035).
+- **Depends on:** 024, 026
+- **Governed by:** C-10, C-14
+- **Notes:** Added 2026-11-28 (owner), from documcp item 004's author draft: a two-day-old
+  `author watch` kept running beside a new one; both used namespace `pilot-a-documcp-004` and
+  kept deleting each other's pods (64 draft records, a 41-minute timeout, no PR), and the
+  restarted watcher waited on a pod that was already gone. Nobody could tell a working draft
+  from a dead one: `kubectl logs` on the author job printed only the result frame. 007 later
+  exports the same counters; the log audit decides the always/`-vv`/never split before code.
+
 ## Open Questions
 
 - Q1 — Final project name and repo location (new repo vs. inside the spec-status
@@ -2855,4 +2912,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.43.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-27
+**Version**: 1.44.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-28
