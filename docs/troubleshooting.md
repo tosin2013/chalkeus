@@ -737,6 +737,26 @@ These entries apply only with `FORGE_GITHUB_ISSUES=on` or `FORGE_GITHUB_APPROVAL
 - **Confirm:** `./chalkeus forge gate --target <name> --item NNN` allows.
 - **Source:** `internal/readiness/readiness.go` (`hiddenInTarget`).
 
+<a id="hidden-tests-unverified"></a>
+### Hidden tests not proven: `HIDDEN_TESTS_UNVERIFIED`
+
+- **Symptom:** `./chalkeus forge gate`, `doctor --item` or `run` refuses with
+  `HIDDEN_TESTS_UNVERIFIED`, naming the item (or slice) and why: `missing`, `failed (<code>)`,
+  `stale: the hidden tests changed since the proof`, or `invalid: …`.
+- **Cause:** the hidden tests in the companion have no passing reference check (041): nothing
+  shows they can pass on a correct change. A test that doesn't compile would fail every attempt.
+- **Fix (the owner's):**
+  - put a correct implementation of the item in the companion as `references/NNN.patch` (or
+    `references/NNN/<slice>.patch`), then run, in your own terminal,
+    `./chalkeus forge author prove --target <name> --item NNN` and merge the pull request it
+    opens (it adds `proofs/NNN.json`). `stale` means the tests changed after the proof: prove
+    them again.
+  - or decide the item has no reference and commit `proofs/NNN.json` yourself:
+    `{"version": 1, "item": "NNN", "reference": "none", "result": "none", "decided_by": "<you>"}`.
+    Runs are then allowed with a warning.
+- **Confirm:** `./chalkeus forge gate --target <name> --item NNN` allows.
+- **Source:** `internal/readiness/proof.go`, `internal/proof/`.
+
 <a id="test-author"></a>
 ### Test author: `./chalkeus forge author` refuses or fails
 
@@ -770,6 +790,9 @@ These entries apply only with `FORGE_GITHUB_ISSUES=on` or `FORGE_GITHUB_APPROVAL
     `references/NNN.patch` in the companion.
   - `REFERENCE_DOESNT_APPLY` (041): the reference doesn't apply to the base (the default branch
     moved on); regenerate it against the current base.
+  - `NO_REFERENCE` (041, `author prove`): the companion has no `references/NNN.patch` for the
+    item; add one, or record `reference: none` (see
+    [`HIDDEN_TESTS_UNVERIFIED`](#hidden-tests-unverified)).
 - **Automatic drafting (`author watch`):**
   - `auto-draft is off for target …`: set `FORGE_AUTHOR_AUTO=on` in the target's profile.
   - `the author proxy pilot-egress-a is missing`: run `./chalkeus forge up`.

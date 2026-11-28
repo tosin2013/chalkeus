@@ -107,6 +107,13 @@ func (p *P) RunItem(item, sliceID string) int {
 	if len(res.Acceptance) > 0 {
 		r["acceptance"] = toAnyList(res.Acceptance)
 	}
+	if len(res.References) > 0 || res.ProofNone { // 041: for P11r, and the mode approval's note
+		var refs []any
+		for _, x := range res.References {
+			refs = append(refs, map[string]any{"path": x.Path, "sha256": x.SHA256})
+		}
+		r["references"], r["proof_none"] = refs, res.ProofNone
+	}
 	if res.Slice != nil {
 		r["slice"] = res.Slice
 		r["earlier"] = toAnyList(res.Earlier)

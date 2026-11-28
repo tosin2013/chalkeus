@@ -566,6 +566,29 @@ of the item, kept in the private companion, that the drafted tests must pass on.
   `REFERENCE_DOESNT_APPLY` (the reference's problem, for you to fix). See
   [troubleshooting](troubleshooting.md#test-author).
 
+**A run needs proven hidden tests.** Readiness refuses an item whose hidden tests have no
+passing proof with `HIDDEN_TESTS_UNVERIFIED`: no proof, a failed one, or a proof of different
+tests (it compares the tests' hash). Each slice folder needs its own proof. Two ways out, both
+yours:
+
+- **Prove the tests you already merged** (written by hand, or drafted before 041), in your own
+  terminal:
+
+  ```sh
+  ./chalkeus forge author prove --target documcp --item 004            # or --slice US2
+  ```
+
+  It runs the same reference check on the companion's merged tests and, when every file is
+  proven, opens a companion pull request that adds only `proofs/004.json`. Merge it. A failed
+  check opens nothing and prints the tests' output in your terminal.
+- **Decide there is no reference** and commit the proof yourself:
+  `{"version": 1, "item": "004", "reference": "none", "result": "none", "decided_by": "<you>"}`.
+  Runs are allowed, and readiness notes the warning.
+
+Every attempt also records **P11r**: neither the reference's path nor its hash is in the worker's
+ConfigMaps or prompt, and nothing beyond the usual three inputs was staged. A run never loads a
+reference; P11r proves it, and the audit's AU04 requires it.
+
 ### Step mode: leave it running
 
 Step mode carries items through every automatic step and stops at each of your decisions, so

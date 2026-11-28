@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/tosin2013/chalkeus/internal/config"
+	"github.com/tosin2013/chalkeus/internal/proof"
 )
 
 // A fake spec-status: the JSON a prepared target would produce, adjustable per test.
@@ -83,6 +84,43 @@ type world struct {
 	// on main after it with the bump's commit id.
 	bump     map[string]string
 	bumpSpec func(sha string) string
+	// 041: by default every hidden-test folder gets a matching proof; noProof leaves them out.
+	noProof bool
+}
+
+// withProofs adds a proven proof for every item and slice folder of the companion (041), as
+// author submit or author prove would.
+func withProofs(t *testing.T, files map[string]string, companionPath string) map[string]string {
+	t.Helper()
+	tmp := t.TempDir()
+	for p, b := range files {
+		_ = os.MkdirAll(filepath.Dir(filepath.Join(tmp, p)), 0o755)
+		_ = os.WriteFile(filepath.Join(tmp, p), []byte(b), 0o644)
+	}
+	tg := config.Target{CompanionPath: companionPath}
+	out := map[string]string{}
+	for p, b := range files {
+		out[p] = b
+	}
+	items, _ := os.ReadDir(filepath.Join(tmp, filepath.FromSlash(tg.CompanionItemDir(""))))
+	for _, it := range items {
+		if !it.IsDir() {
+			continue
+		}
+		dirs := map[string]string{"": tg.CompanionItemDir(it.Name())}
+		subs, _ := os.ReadDir(filepath.Join(tmp, filepath.FromSlash(tg.CompanionItemDir(it.Name()))))
+		for _, s := range subs {
+			if s.IsDir() {
+				dirs[s.Name()] = tg.CompanionSliceDir(it.Name(), s.Name())
+			}
+		}
+		for sl, d := range dirs {
+			tree, _ := proof.TreeSHA256(filepath.Join(tmp, filepath.FromSlash(d)))
+			pf := proof.Proof{Version: 1, Item: it.Name(), Slice: sl, Reference: "patch", TestsTreeSHA256: tree, Result: proof.Proven}
+			out[tg.CompanionProofPath(it.Name(), sl)] = string(pf.Marshal())
+		}
+	}
+	return out
 }
 
 func newWorld() *world {
@@ -120,7 +158,11 @@ func (w *world) check(t *testing.T, item string, maxMB int) (Result, string) {
 		_ = os.WriteFile(filepath.Join(tgt, "specs/002-feature/spec.md"), []byte(w.bumpSpec(sha)), 0o644)
 		g("commit", "-qam", "spec names the bump")
 	}
-	comp := gitRepo(t, w.companion)
+	companion := w.companion
+	if !w.noProof {
+		companion = withProofs(t, w.companion, w.companionPath)
+	}
+	comp := gitRepo(t, companion)
 	out := t.TempDir()
 	d := Deps{Src: w.status,
 		Clone: func(repo, branch string) (string, string, error) {

@@ -194,7 +194,14 @@ func openPR(ctx context.Context, c *github.Client, d *Draft, draftDir string, fi
 			}
 		}
 	}
-	tree, _, err := c.Git.CreateTree(ctx, owner, name, pc.GetTree().GetSHA(), entries)
+	return commitAndOpen(ctx, c, owner, name, baseBranch, parent, pc.GetTree().GetSHA(), entries,
+		branchPrefix(d.Item)+strings.ToLower(d.ID), title, body)
+}
+
+// commitAndOpen commits entries on top of parent as a new branch and opens the pull request.
+func commitAndOpen(ctx context.Context, c *github.Client, owner, name, baseBranch, parent, baseTree string,
+	entries []*github.TreeEntry, branch, title, body string) (*github.PullRequest, string, error) {
+	tree, _, err := c.Git.CreateTree(ctx, owner, name, baseTree, entries)
 	if err != nil {
 		return nil, "", err
 	}
@@ -203,7 +210,6 @@ func openPR(ctx context.Context, c *github.Client, d *Draft, draftDir string, fi
 	if err != nil {
 		return nil, "", err
 	}
-	branch := branchPrefix(d.Item) + strings.ToLower(d.ID)
 	if _, _, err := c.Git.CreateRef(ctx, owner, name, github.CreateRef{Ref: "refs/heads/" + branch, SHA: commit.GetSHA()}); err != nil {
 		return nil, "", err
 	}

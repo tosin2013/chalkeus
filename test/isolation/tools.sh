@@ -27,4 +27,4 @@ if ! "$BIN/kubectl" version --client 2>/dev/null | grep -q "$KUBECTL_VERSION"; t
   install -m 0755 "$tmp/kubectl" "$BIN/kubectl"
 fi
 "$BIN/kind" version
-"$BIN/kubectl" version --client | head -1
+"$BIN/kubectl" version --client | sed -n 1p  # not head: with pipefail, head closing early can kill kubectl (SIGPIPE) and fail the script

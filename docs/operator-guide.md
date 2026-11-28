@@ -660,7 +660,7 @@ it in that spec's `evidence/` folder instead.)
   | AU11 | Only A/1 had its acceptance details withheld |
 
 - **`checks/results.jsonl`:** the live isolation checks (P01–P10, GM01–GM04; item runs add
-  P11, P12 and, when the target declares registries, P06r).
+  P11, P11r, P12 and, when the target declares registries, P06r).
 - **`attempts/<task>-<n>/`:** each attempt's prompt, report, change bundle and grade, and
   **`proxy-denials.log`**. Refusals there are expected; they show the allowlist working. In
   the reference run, the agent tried `bootstrap.pypa.io` (installing pip tools), and the

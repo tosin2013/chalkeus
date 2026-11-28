@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "item": "001",
+  "slice": "",
+  "reference": "patch",
+  "reference_path": "references/001.patch",
+  "reference_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "tests_tree_sha256": "22bff4cb4581c6c9ff0750dcb6b12ea4d78299d2816cb86b40b65a0ace2aa6c7",
+  "files": [],
+  "repeats": 3,
+  "result": "proven",
+  "checked_at": "2026-11-28T00:00:00Z",
+  "forge_version": "integration-fixture"
+}
