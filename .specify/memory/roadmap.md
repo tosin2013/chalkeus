@@ -1,7 +1,15 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.45.0 → 1.45.1 (this revision)
+Version change: 1.45.1 → 1.45.2 (this revision)
+Bump rationale: PATCH — status transition: 041 specced.
+Changes this revision (owner go-ahead 2026-11-28, Tosin Akinosho):
+  - 041 → specced, spec dir specs/041-proven-hidden-tests/ (five stories: test-author model,
+    author eval set, reference check, per-test vote, test plan).
+Specs affected: 041
+Open questions added/resolved: none
+
+Prior: Version change: 1.45.0 → 1.45.1
 Bump rationale: PATCH — status transitions and clarifications; no new item or open question.
 Changes this revision (owner go-ahead 2026-11-28, Tosin Akinosho):
   - 026, 029, 030, 033, 037 → in-progress: each was recorded specced with most tasks done
@@ -2750,7 +2758,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   from a dead one: `kubectl logs` on the author job printed only the result frame. 007 later
   exports the same counters; the log audit decides the always/`-vv`/never split before code.
 
-### 041 — Proven hidden tests: a reference check, a per-test vote and a test plan  [status: planned]
+### 041 — Proven hidden tests: a reference check, a per-test vote and a test plan  [status: specced]
 
 - **Description:** Check the hidden tests before they grade anything: prove they can pass on a
   correct change and fail on today's code, have an independent agent judge each test against
@@ -2793,6 +2801,7 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
   budget in 54 of 70 comparisons); showing hidden-test failure output (040).
 - **Depends on:** 014, 024
 - **Governed by:** C-12, C-14
+- **Spec dir:** specs/041-proven-hidden-tests/
 - **Notes:** Added 2026-11-28 (owner), after three attempts in a row (documcp 001 US2 twice, 004
   attempt 2) passed G1–G4 and failed G5 with the output withheld; 004 attempt 2 matched the spec's
   research helper exactly and reproduced all 52 tool schemas of the contract, so the tests are
@@ -3008,4 +3017,4 @@ Status legend (lifecycle): **undecided** · **needs-info** · **planned** ·
 
 ---
 
-**Version**: 1.45.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-28
+**Version**: 1.45.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-28
