@@ -142,3 +142,14 @@ func TestParseProbe(t *testing.T) {
 		}
 	}
 }
+
+func TestReferenceMeta(t *testing.T) {
+	m := ReferenceMeta(map[string]any{"mode": "attempt", "attempt": 3, "test_command": "npm test"}, 3, "npx jest {files}", []string{"tests/**"})
+	if m["mode"] != "reference" || m["attempt"] != 0 || m["repeats"] != 3 || m["hidden_test_command"] != "npx jest {files}" ||
+		m["test_command"] != "npm test" || len(m["test_paths"].([]any)) != 1 {
+		t.Fatalf("%v", m)
+	}
+	if _, ok := ReferenceMeta(map[string]any{}, 2, "", nil)["hidden_test_command"]; ok {
+		t.Fatal("no focused command unless the profile sets one")
+	}
+}

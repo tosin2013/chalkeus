@@ -63,9 +63,19 @@ func BuildAuthor(a Author) (string, error) {
 			b.WriteString("A file of yours has a path that `spec.md`, `plan.md` or `tasks.md` names: those are the build worker's\nown files. Rename your test files (for example with an `AcceptanceTests` suffix, and the class names to\nmatch), and update `draft/.acceptance-map.json`.\n")
 		case "DRAFT_SUITE_FAILS":
 			b.WriteString("With your tests added, the project's own tests fail on today's code: your tests may break the build\n(for example a compile error) or need an undeclared dependency. Fix that.\n")
+		case "DRAFT_FAILS_ON_REFERENCE": // 041: the owner's reference change, a correct implementation of the spec
+			b.WriteString("A test file of yours did not pass on a correct implementation of the spec. It may not compile or load\n(check every import, type and API against `base/` and what the spec adds), or it asserts something the\nspec doesn't ask for (exact message wording, an order the spec leaves open). Test only what the spec\nrequires.\n")
+		case "DRAFT_PASSES_ON_BASE":
+			b.WriteString("A test file of yours already passes on today's code, so it can't tell a correct change from no change.\nMake each file test behaviour the spec adds.\n")
+		case "DRAFT_FLAKY":
+			b.WriteString("A test file of yours passed and failed across repeated runs on a correct implementation. Remove what\nmakes it nondeterministic (time, randomness, ordering, shared state, the network).\n")
 		}
 		if o := strings.TrimSpace(a.FeedbackOutput); o != "" {
-			fmt.Fprintf(&b, "\nYour tests' output on today's code:\n\n```text\n%s\n```\n", clipTail(o, 6000))
+			label := "Your tests' output on today's code"
+			if a.FeedbackCode == "DRAFT_FAILS_ON_REFERENCE" || a.FeedbackCode == "DRAFT_PASSES_ON_BASE" || a.FeedbackCode == "DRAFT_FLAKY" {
+				label = "Your tests' output, file by file, on today's code and on the correct implementation"
+			}
+			fmt.Fprintf(&b, "\n%s:\n\n```text\n%s\n```\n", label, clipTail(o, 6000))
 		}
 		b.WriteString("\nYour previous draft is still under `draft/`; change it there.\n")
 	}

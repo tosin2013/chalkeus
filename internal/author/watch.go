@@ -244,7 +244,7 @@ func (w WatchEnv) draft(ctx context.Context, item, specSHA string) (string, erro
 			code = e.Code
 		}
 		fmt.Fprintf(w.Out, "draft %s: attempt %d %s\n", item, n, code)
-		if code != CodeDraftHiddenPasses && code != CodeDraftSuiteFails && code != CodeDraftPathInSpec {
+		if !redraftable[code] {
 			break
 		}
 		feedbackCode, feedbackOut = code, d.lastOutput
@@ -254,6 +254,11 @@ func (w WatchEnv) draft(ctx context.Context, item, specSHA string) (string, erro
 	fmt.Fprintf(w.Out, "draft %s: failed, no PR\n", item)
 	return PassFailed, nil
 }
+
+// redraftable are the codes watch drafts again for, with the failure fed back to the author. The
+// reference codes the owner must fix (REFERENCE_BROKEN, REFERENCE_DOESNT_APPLY) are not (041).
+var redraftable = map[string]bool{CodeDraftHiddenPasses: true, CodeDraftSuiteFails: true, CodeDraftPathInSpec: true,
+	CodeDraftFailsOnReference: true, CodeDraftPassesOnBase: true, CodeDraftFlaky: true}
 
 // takeRedraft reports whether --redraft allows drafting item/slice again in this process, and
 // uses that allowance up.

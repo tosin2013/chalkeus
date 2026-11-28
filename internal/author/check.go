@@ -2,6 +2,7 @@ package author
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -49,6 +50,7 @@ func Check(ctx context.Context, e Env, item string, baseline Baseline) (*Draft, 
 	if si := readiness.SliceInfoOf(d.Readiness["slice"]); si != nil { // 026: the slice baseline
 		res.Slice, res.Earlier, res.Overlay = si, strs(d.Readiness["earlier"]), strs(d.Readiness["overlay"])
 	}
+	res.ManifestChange = manifestOf(d.Readiness["manifest_change"])
 	n := len(d.Checks) + 1
 	id := fmt.Sprintf("%s-check%d", d.ID, n)
 	fmt.Fprintf(e.Out, "checking draft %s (%d file(s)) against the unchanged base on the cluster; this takes a few minutes...\n", d.ID, len(files))
@@ -68,8 +70,24 @@ func Check(ctx context.Context, e Env, item string, baseline Baseline) (*Draft, 
 		fmt.Fprintf(e.Out, "----- your drafted tests' output on the unchanged base (not stored) -----\n%s\n-----\n", hidden)
 	}
 	d.lastOutput = string(hidden)
+	var rr *ReferenceResult
+	if code == CodeDraftOK && e.Reference != nil && e.LoadReference != nil { // 041 US3
+		var rout string
+		rr, code, rout, err = referenceCheck(e, d, item, filepath.Join(d.Dir(), fmt.Sprintf("check%d", n)), id, res, tarb)
+		if err != nil {
+			_ = d.Event("check_error", clip(err.Error()))
+			return d, err
+		}
+		if rout != "" {
+			fmt.Fprintf(e.Out, "----- your drafted tests' output on the base and the reference change (not stored) -----\n%s\n-----\n", rout)
+			d.lastOutput = rout
+		}
+		if rr != nil {
+			fmt.Fprintf(e.Out, "reference check: %s\n", rr.Summary())
+		}
+	}
 	d.Files, d.Mapping = files, mapping
-	d.Checks = append(d.Checks, CheckRecord{At: evidence.Now(), DraftHash: hash, Result: code, GradePath: filepath.Join(fmt.Sprintf("check%d", n), "baseline", "grade.json")})
+	d.Checks = append(d.Checks, CheckRecord{At: evidence.Now(), DraftHash: hash, Result: code, GradePath: filepath.Join(fmt.Sprintf("check%d", n), "baseline", "grade.json"), Reference: rr})
 	d.State = "checked(fail)"
 	if code == CodeDraftOK {
 		d.State = "checked(pass)"
@@ -77,14 +95,22 @@ func Check(ctx context.Context, e Env, item string, baseline Baseline) (*Draft, 
 	_ = d.Save()
 	_ = d.Event("checked", fmt.Sprintf("%s files=%d uncovered=%v", code, len(files), mapping["uncovered"]))
 	if code != CodeDraftOK {
-		return d, &Error{Code: code, Detail: map[string]string{
+		detail := map[string]string{
 			CodeDraftSuiteFails:   "with your tests added, the project's own tests fail on the unchanged base; your tests may break the build or need an undeclared dependency",
 			CodeDraftHiddenPasses: "your tests already pass on the unchanged base, so they can't tell a correct change from no change; they must fail until the spec is implemented",
 			CodeDraftGraderError:  "the grader could not finish; see the check's grade.json and try again",
-		}[code]}
+		}[code]
+		if rr != nil { // 041: the reference check failed
+			detail = referenceDetail[code] + " (" + rr.Summary() + ")"
+		}
+		return d, &Error{Code: code, Detail: detail}
 	}
-	fmt.Fprintf(e.Out, "DRAFT_OK: the project's tests pass and your tests fail on the base. Covered %v of %v criteria; uncovered: %v\nnext: ./chalkeus forge author submit --target %s --item %s\n",
-		mapping["covered"], mapping["criteria"], mapping["uncovered"], d.Target, item)
+	proof := ""
+	if rr != nil {
+		proof = " and pass with the reference change"
+	}
+	fmt.Fprintf(e.Out, "DRAFT_OK: the project's tests pass and your tests fail on the base%s. Covered %v of %v criteria; uncovered: %v\nnext: ./chalkeus forge author submit --target %s --item %s\n",
+		proof, mapping["covered"], mapping["criteria"], mapping["uncovered"], d.Target, item)
 	return d, nil
 }
 
@@ -99,6 +125,22 @@ func (d *Draft) fail(hash string, err error) error {
 	_ = d.Save()
 	_ = d.Event("check_refused", code)
 	return err
+}
+
+// manifestOf reads back the approved manifest change recorded at start (029).
+func manifestOf(v any) *readiness.ManifestChange {
+	if v == nil {
+		return nil
+	}
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	var mc readiness.ManifestChange
+	if json.Unmarshal(raw, &mc) != nil || mc.Commit == "" {
+		return nil
+	}
+	return &mc
 }
 
 func str(v any) string { s, _ := v.(string); return s }

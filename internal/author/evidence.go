@@ -43,6 +43,29 @@ type CheckRecord struct {
 	DraftHash string `json:"draft_hash"`
 	Result    string `json:"result"` // DRAFT_OK or a code
 	GradePath string `json:"grade_json,omitempty"`
+	// Reference is the reference check's outcome (041): verdicts, never output.
+	Reference *ReferenceResult `json:"reference,omitempty"`
+}
+
+// ReferenceResult is one reference check (041 data model): per hidden file, whether it failed on
+// the base and passed on the reference in every run. Names and verdicts only.
+type ReferenceResult struct {
+	Result          string        `json:"result"` // proven | failed
+	Code            string        `json:"code,omitempty"`
+	ReferencePath   string        `json:"reference_path"`
+	ReferenceSHA256 string        `json:"reference_sha256"`
+	CompanionCommit string        `json:"companion_commit,omitempty"`
+	Repeats         int           `json:"repeats"`
+	Files           []FileVerdict `json:"files"`
+	GradePath       string        `json:"grade_json,omitempty"`
+}
+
+// FileVerdict is one hidden test file's reference check.
+type FileVerdict struct {
+	Path      string   `json:"path"`
+	Base      string   `json:"base"`      // fail (as it must) | pass
+	Reference []string `json:"reference"` // one pass|fail per run
+	Verdict   string   `json:"verdict"`   // proven | passes_on_base | fails_on_reference | flaky
 }
 
 // Draft is a draft's evidence (data-model.md). It holds names, hashes and results only.

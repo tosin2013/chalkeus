@@ -24,12 +24,19 @@ const (
 	// are the build worker's own files: the worker would see the hidden test's path (P11), and
 	// the grader's overlay would replace the worker's file of that name.
 	CodeDraftPathInSpec = "DRAFT_PATH_IN_SPEC"
-	exitFail, exitError = 1, 2
-	exitRefuse          = 10
+	// 041 reference check (specs/041-proven-hidden-tests/contracts/commands.md).
+	CodeDraftFailsOnReference = "DRAFT_FAILS_ON_REFERENCE"
+	CodeDraftPassesOnBase     = "DRAFT_PASSES_ON_BASE"
+	CodeDraftFlaky            = "DRAFT_FLAKY"
+	CodeReferenceBroken       = "REFERENCE_BROKEN"
+	CodeReferenceDoesntApply  = "REFERENCE_DOESNT_APPLY"
+	exitFail, exitError       = 1, 2
+	exitRefuse                = 10
 )
 
 // failCodes are results (exit 1); every other code is a refusal (exit 10).
-var failCodes = map[string]bool{CodeDraftHiddenPasses: true, CodeDraftSuiteFails: true, CodeDraftGraderError: true}
+var failCodes = map[string]bool{CodeDraftHiddenPasses: true, CodeDraftSuiteFails: true, CodeDraftGraderError: true,
+	CodeDraftFailsOnReference: true, CodeDraftPassesOnBase: true, CodeDraftFlaky: true}
 
 // Error is a refusal or a failed result: one code the operator can act on (SC-005).
 type Error struct {

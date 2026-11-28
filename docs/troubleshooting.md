@@ -759,6 +759,17 @@ These entries apply only with `FORGE_GITHUB_ISSUES=on` or `FORGE_GITHUB_APPROVAL
   - `DRAFT_PATH_IN_SPEC`: a drafted file reuses a path the item's spec, plan or tasks name (the
     build worker's own files). Rename it, for example with an `AcceptanceTests` suffix, and
     update the map.
+  - `DRAFT_FAILS_ON_REFERENCE` (041): a hidden test file didn't pass with the companion's
+    reference change applied. Usually it doesn't compile or load (an import, type or API that
+    doesn't exist), or it asserts what the spec doesn't ask for (exact wording, an open order).
+    The terminal shows its output on the base and on the reference.
+  - `DRAFT_PASSES_ON_BASE` (041): the named file already passes on today's code.
+  - `DRAFT_FLAKY` (041): a file passed and failed across the reference runs; make it
+    deterministic.
+  - `REFERENCE_BROKEN` (041): the project's own tests fail with the reference applied; fix
+    `references/NNN.patch` in the companion.
+  - `REFERENCE_DOESNT_APPLY` (041): the reference doesn't apply to the base (the default branch
+    moved on); regenerate it against the current base.
 - **Automatic drafting (`author watch`):**
   - `auto-draft is off for target …`: set `FORGE_AUTHOR_AUTO=on` in the target's profile.
   - `the author proxy pilot-egress-a is missing`: run `./chalkeus forge up`.
