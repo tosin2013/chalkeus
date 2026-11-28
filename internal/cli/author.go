@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -94,7 +95,7 @@ func authorCmd() *cobra.Command {
 		return err
 	})
 	prove.Flags().String("slice", "", "prove one slice's hidden tests (026), e.g. US2")
-	g.AddCommand(start, check, submit, status, prove, authorWatchCmd())
+	g.AddCommand(start, check, submit, status, prove, authorEvalCmd(), authorWatchCmd())
 	return g
 }
 
@@ -166,6 +167,60 @@ func authorWatchCmd() *cobra.Command {
 	c.Flags().Bool("once", false, "one pass, then exit (0: nothing to do or a PR opened; 1: a draft failed)")
 	c.Flags().Bool("redraft", false, "draft again, once per item and slice, even when this spec version was already drafted automatically (for example after a forge fix)")
 	return c
+}
+
+// authorEvalCmd is `./chalkeus forge author eval` (041 US2): score the test author on the
+// companion's eval cases. Owner-run, in their own terminal: it prints drafted-test outcomes.
+func authorEvalCmd() *cobra.Command {
+	c := &cobra.Command{Use: "eval", Args: cobra.NoArgs,
+		Short: "041: draft and prove each eval case of the companion's evals/ with the current author settings, and compare the score with the last run; owner-run, never by the session that drives runs",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			e, _, err := authorEnv(cmd)
+			if err != nil {
+				return err
+			}
+			p, err := pipelineFor(cmd)
+			if err != nil {
+				return err
+			}
+			we, err := authorWatchEnv(e, p)
+			if err != nil {
+				return err
+			}
+			only, _ := cmd.Flags().GetString("case")
+			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			ee := author.EvalEnv{StateDir: evalStateDir(e.Target.Name), Companion: e.Target.CompanionRepo, Host: e.Target.Host(),
+				Out: cmd.OutOrStdout(), Busy: p.C.NSExists,
+				Setup: func(target string) (author.Env, func(context.Context, *author.Draft, int, string) author.JobRecord, author.Baseline, string, error) {
+					if target != e.Target.Name {
+						return author.Env{}, nil, nil, "", fmt.Errorf("case for target %s: run author eval --target %s", target, target)
+					}
+					return we.Env, we.Job, we.Baseline, p.Cfg.AuthorModel(e.Target), nil
+				}}
+			r, err := author.Eval(ctx, ee, only)
+			if err != nil {
+				return err
+			}
+			if r.Dropped {
+				return Exit(ExitFail, "the eval score dropped from %d to %d", *r.Previous, r.Score)
+			}
+			return nil
+		}}
+	addTargetFlag(c)
+	requireTarget(c)
+	c.Flags().String("case", "", "run one eval case (its folder name under evals/)")
+	return c
+}
+
+// evalStateDir is where eval results go: the owner's machine, never committed evidence (041 FR-007).
+func evalStateDir(target string) string {
+	base := os.Getenv("XDG_STATE_HOME")
+	if base == "" {
+		home, _ := os.UserHomeDir()
+		base = filepath.Join(home, ".local", "state")
+	}
+	return filepath.Join(base, "chalkeus", "evals", target)
 }
 
 func authorEnv(cmd *cobra.Command) (author.Env, string, error) {
