@@ -30,8 +30,8 @@ const (
 	CodeDraftFlaky            = "DRAFT_FLAKY"
 	CodeReferenceBroken       = "REFERENCE_BROKEN"
 	CodeReferenceDoesntApply  = "REFERENCE_DOESNT_APPLY"
-	exitFail, exitError = 1, 2
-	exitRefuse          = 10
+	exitFail, exitError       = 1, 2
+	exitRefuse                = 10
 )
 
 // failCodes are results (exit 1); every other code is a refusal (exit 10).

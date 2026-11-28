@@ -21,8 +21,8 @@ func TestReferenceKeys(t *testing.T) {
 		t.Fatalf("%v %d %q", err, tg.Repeats(), tg.HiddenTestCommand)
 	}
 	for body, want := range map[string]string{
-		"FORGE_REFERENCE_REPEATS=1\n":           "at least 2",
-		"FORGE_REFERENCE_REPEATS=0\n":           "positive integer",
+		"FORGE_REFERENCE_REPEATS=1\n":          "at least 2",
+		"FORGE_REFERENCE_REPEATS=0\n":          "positive integer",
 		"FORGE_HIDDEN_TEST_COMMAND=npx jest\n": "{files}",
 	} {
 		writeTarget(t, c, "greeting", goodTarget+body)
