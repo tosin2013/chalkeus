@@ -302,3 +302,19 @@ func TestPermissionNeedsAdmin(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+func TestBasicAuthWithEmail(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u, p, ok := r.BasicAuth()
+		got = fmt.Sprintf("%v %s %s", ok, u, p)
+		_, _ = io.WriteString(w, `{"uuid":"{x}"}`)
+	}))
+	defer srv.Close()
+	h := scm.NewHost(scm.Bitbucket, "", "")
+	h.APIBase = srv.URL + "/2.0"
+	c, _ := NewBasic(h, "me@example.com", secret.New("tok"))
+	if _, err := c.Whoami(t.Context()); err != nil || got != "true me@example.com tok" {
+		t.Fatalf("%q %v", got, err)
+	}
+}

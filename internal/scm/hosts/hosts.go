@@ -4,6 +4,8 @@ package hosts
 
 import (
 	"context"
+	"os"
+	"strings"
 
 	"github.com/tosin2013/chalkeus/internal/scm"
 	"github.com/tosin2013/chalkeus/internal/scm/bitbucket"
@@ -25,11 +27,16 @@ func New(h scm.Host, token secret.Value) (scm.Client, error) {
 	return nil, &scm.Error{Code: scm.ErrInvalid, Msg: string(h.Kind) + " support isn't built yet (roadmap 037)"}
 }
 
-// Operator returns a client acting with the operator's own credential for h (research R8).
+// Operator returns a client acting with the operator's own credential for h (research R8). On
+// Bitbucket, BITBUCKET_EMAIL makes it send Basic auth (email:token), as an Atlassian API token
+// without scopes needs.
 func Operator(h scm.Host) (scm.Client, error) {
 	tok, err := scm.OperatorCredential(h)
 	if err != nil {
 		return nil, err
+	}
+	if h.KindOrGitHub() == scm.Bitbucket {
+		return bitbucket.NewBasic(h, strings.TrimSpace(os.Getenv("BITBUCKET_EMAIL")), tok)
 	}
 	return New(h, tok)
 }

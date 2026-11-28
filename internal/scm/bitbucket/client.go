@@ -25,8 +25,13 @@ type Client struct {
 	h    *scm.HTTP
 }
 
-// New returns a client for h acting with token.
-func New(h scm.Host, token secret.Value) (*Client, error) {
+// New returns a client for h acting with token (sent as Bearer).
+func New(h scm.Host, token secret.Value) (*Client, error) { return NewBasic(h, "", token) }
+
+// NewBasic returns a client that sends Basic auth with email when email isn't empty: an
+// Atlassian API token without scopes is accepted only as email:token (research R8). The
+// operator sets BITBUCKET_EMAIL for that; repository access tokens always use Bearer.
+func NewBasic(h scm.Host, email string, token secret.Value) (*Client, error) {
 	if h.Kind == "" {
 		h = scm.NewHost(scm.Bitbucket, "", "")
 	}
@@ -34,6 +39,7 @@ func New(h scm.Host, token secret.Value) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	hc.Basic = email
 	return &Client{host: h, h: hc}, nil
 }
 
